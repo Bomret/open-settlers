@@ -47,6 +47,10 @@ own words with its address as evidence (INV-0001). Mark a rule that the program 
 **inferred** or **stand-in**. Mark a finding that lies only in the platform layer, outside the game code
 (`CONTEXT.md`), as a platform-layer finding.
 
+The install also holds the game's manual as PDF: `$SIEDLER_DIR/THE SETTLERS - Manual-EN.pdf`, with German
+and French editions beside it (`-DE.pdf`, `-FR.pdf`). The manual is a valid source of information on the
+game's rules and terms. Cite it by file and page.
+
 ## Agent skills
 
 ### Slice store

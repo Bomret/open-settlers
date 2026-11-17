@@ -16,14 +16,12 @@ The full command restores the local tools, checks formatting, runs the unit test
 CSharpier names each unformatted file, and `mise run format` fixes them. `mise.toml` holds the steps.
 
 The focused command takes the changed paths for `{paths}` and runs the unit-test classes they can affect, through
-`tools/focused-tests.py`. The header of the script states the selection. A changed `.cs` file selects the test classes
-whose files name a type it declares. Another file selects the test classes whose files name its path or file name. A
-build or toolchain file, a file under `src/Generators/`, and a helper file of the test project select every unit test.
-A change that no test class names, such as prose, runs nothing and passes. The selection follows only the names a test
-file holds, so it misses a test that reaches a changed type through a type it does not name. The full command runs
-every unit test. `mise run test` runs every unit test with no selection, and
-`python3 -I tools/focused-tests.py --list <path>...` prints the selection without a run. `FocusedTestsTests` pins the
-selection.
+`tools/focused-tests.py`. The header of the script states the selection rules. The selection follows only the names a
+test file holds, so the full command, which runs every unit test, is the check before a merge.
+`mise run test` runs every unit test with no selection, and `python3 -I tools/focused-tests.py --list <path>...` prints
+the selection without a run. The command refuses to run without a path: it prints a usage line and exits 2.
+`FocusedTestsTests` pins the selection, and compares the test classes the script knows (`--classes`) with the test
+classes of the test assembly.
 
 Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
 A violation fails the full command at its test step. That step builds the test project and the projects it references.
