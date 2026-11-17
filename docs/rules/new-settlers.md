@@ -7,7 +7,11 @@ routine names are in the [Program index](program-index.md#simulation); the first
 [Castle](castle.md); the clock is in [Timing](timing.md); the waiting list of a storage and the requests that take
 settlers from it are in [Settlers](settlers.md#the-request) and [Carriers](carriers.md#the-request).
 
-**Read from the code.** No harness run covers these rules yet.
+**Emulated.** The harness verb `supply` (`tools/GhidraDump/README.md`, "Emulator harness") runs `Player_MakeSettlers`
+in a castle game with one storage, the castle. `tests/OpenSettlers.Tests/settler-supply.txt` holds its games at rate 0 and
+rate 40, each with a stock that holds swords and shields and one that holds none. The recording shows the period, the
+knights, and the knights owed below. It does not show the pick among several storages or the cap at work, because one
+player with one storage never reaches the cap.
 
 ## The settler timer
 
@@ -34,7 +38,9 @@ player's start parameters (`Game_StartParams`, `+0x1d6 + 4 × player`). The coun
   (and of player 1 from `+0x37d` in a game of two people). Start-screen action 15 (`0x4690bb`) points at `+0x37c`
   and goes on to the bar code at `0x46919a`, which sets a value from 0 at the bar's bottom to 40 at its top
   ([Castle](castle.md#the-start-stock) describes the same code for the start stock). So the period is 3000 clock units
-  at r = 0 and 1000 at r = 40: 375 and 125 passes of 8 units.
+  at r = 0 and 1000 at r = 40: 375 and 125 passes of 8 units. **Emulated:** with the castle placed at clock 0, the first
+  new settler is made in the pass that moves the clock to 3008 at r = 0 and to 1008 at r = 40, the first pass in which the
+  countdown goes below zero, and one more follows every 375 or 125 passes.
 - A mission: r is byte `0xf` of the mission's record.
 
 ## Making one settler
@@ -79,6 +85,10 @@ Where the sum carries, the word at `+0x10c`, the knights owed, grows by 1, to at
   stay. The knights owed fall by 1. The storage loses one of each good and 1 from its word `+0x40`. The player's word
   `-0x10` falls by 1, its word `-0xe` grows by 1, and its dword `+0x11a` grows by 1.
 
+**Emulated:** from the start value `0x8000` the second and the fifth new settler carry, so each owes a knight. With
+swords and shields in the castle, each of them is made a knight at once and the stock loses one of each. With none, the
+knights owed grow to 2 and stay there, and every new settler is a settler without a job.
+
 So 20000 of each 65536 settlers are owed as knights, about 31 %. An owed knight waits, up to two of them, until a storage
 of the player holds the two goods. Goods 25 and 26 are the sword and the shield
 ([Food buildings](food-buildings.md#the-goods); which one is which is open). `Castle_CreateSettlers` turns three of the
@@ -115,8 +125,7 @@ The three dwords `+0x112`, `+0x116`, and `+0x11a` go back to 0 when they reach `
 
 ## Open leads
 
-- A harness verb that runs `Player_MakeSettlers` in a game, to confirm the period, the pick of the storage, and the
-  knights by recordings.
+- A harness game with several storages, to confirm the pick of the storage, and one that reaches the cap.
 - The second writer of `+0x112` at `0x430661`, which lies outside every function of the dump.
 - The order of the 27 counts of the player's settlers: the castle's first settler, of job 4, counts in the first word.
 - Bit 2 of byte 1 of a storage item, which bars it from new settlers.

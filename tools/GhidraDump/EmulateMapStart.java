@@ -149,6 +149,22 @@
 //   construct:...           remove: (the same arguments and lines) with the phase routine 0x42965c run at the last phase of each
 //                            phase cycle, as Sim_StepPhase (0x4291c2) runs it while the clock runs: the castle's goods go out to the
 //                            flags whose requests rank highest, and the pass draws once from the random generator
+//   supply:N:S0,S1,S2:L:cx,cy:RATE:PASSES[:G,N;G,N...]
+//                            the settler supply (docs/rules/new-settlers.md) in a game that starts as the original's start leaves its
+//                            tables (as remove), with a castle at cx,cy and no flag or road: before the castle the verb writes player 0's
+//                            start parameters as Game_SetStartParams (0x468717) does for a free game (12, the level L, 40, the settler
+//                            rate RATE, 0 to 40), the settler table's free count, share, and floor (+0x48, +0x4a, +0x58) as
+//                            Map_SetGeometry (0x42195c) works them out for one player, takes settler slot 0 as MapGen_InitParams
+//                            does, and sets the player block as 0x42055e does (byte 2 bit 6, the period (60 - RATE) * 50 at +0x122,
+//                            the countdown +0x120 at one period, the knight step 20000 at +0x124, the knight accumulator 0x8000 at
+//                            +0x126, the knights owed +0x10c at 0) and byte 3 bit 2. Each G,N sets the castle storage's stock word of
+//                            the good G to N after the placement, as k@G,N of remove. The passes of home run, with Player_MakeSettlers
+//                            (0x428a75) for the four player blocks after the object pass, as 0x4286d8 runs it, and
+//                            Player_UpdateSettlerCaps (0x42a3f1) at the last phase, without the goods hand-out 0x42965c runs after it.
+//                            The start line gives the period, the state, the free count, and the share and floor; a line per pass
+//                            where a settler was made or the knights or the stock changed lists each new settler's 16 bytes
+//                            (s<slot>=), the countdown, the knight accumulator, and the knights owed (timer=), the castle storage's
+//                            stock of the goods 25 and 26 (goods=, decimal), and the generator's words (rng=)
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -192,6 +208,7 @@ public class EmulateMapStart extends GhidraScript {
             emu = new EmulatorHelper(currentProgram);
             try {
                 castleOffAt = -1; // no verb inherits the castle-off part of an earlier one (see withoutCastleOff)
+                settlerSupply = false;
                 passesRun = 0;
                 switch (name) {
                     case "rng" -> rng(rest);
@@ -231,6 +248,13 @@ public class EmulateMapStart extends GhidraScript {
                         reserveBuildingZero = true;
                         phaseRoutine = true;
                         remove(rest);
+                    }
+                    case "supply" -> {
+                        reserveFlagZero = true;
+                        defaultPriorities = true;
+                        reserveBuildingZero = true;
+                        settlerSupply = true;
+                        supply(rest);
                     }
                     case "stockrows" -> stockrows();
                     case "peek" -> peek(rest);
@@ -1095,6 +1119,9 @@ public class EmulateMapStart extends GhidraScript {
             putInt(REGISTERS + 0x20, 0);
             call(0x45da8f);
         }
+        if (settlerSupply) {
+            startSettlerSupply(player, Integer.parseInt(parts[2]));
+        }
         call(0x442704);
         emu.writeMemory(toAddr(RECORD), new byte[0x100]);
         putInt(RECORD + 0x82, player);
@@ -1891,6 +1918,115 @@ public class EmulateMapStart extends GhidraScript {
     }
 
     /**
+     * supply:N:SEED:L:cx,cy:RATE:PASSES[:G,N;G,N...] runs the passes of home with the settler supply (see the header): a castle
+     * game whose player block is set up as a free game's start sets it, with the settler rate RATE, and each pass runs
+     * Player_MakeSettlers (0x428a75) after the object pass and Player_UpdateSettlerCaps (0x42a3f1) at the last phase.
+     */
+    protected void supply(String rest) throws Exception {
+        objectPass = true;
+        String[] parts = rest.split(":");
+        supplyRate = Integer.parseInt(parts[4]);
+        int passes = Integer.parseInt(parts[5]);
+        String label = "supply size=" + parts[0] + " seed=" + parts[1] + " castle=" + parts[3] + " level=" + parts[2]
+                + " rate=" + supplyRate;
+        int[] size = startWorld(new String[] {parts[0], parts[1], parts[2], parts[3], ""}, label);
+        if (size == null) {
+            return;
+        }
+        if (parts.length > 6 && !parts[6].isEmpty()) {
+            // G,N sets the castle storage's stock word of the good G (+4 + 2 * G of the storage item) to N, as k@G,N of remove.
+            for (String good : parts[6].split(";")) {
+                String[] gn = good.split(",");
+                putWord(TABLES + 0x60000 + 4 + 2L * Integer.parseInt(gn[0]), Integer.parseInt(gn[1]));
+            }
+        }
+        putWord(STATE + PHASE, 0);
+        long player = PLAYERS + 0x1000;
+        boolean[] used = usedSettlerSlots();
+        String state = supplyState(player);
+        String knights = state.substring(state.indexOf(',') + 1);
+        println("EMU " + label + " pass=start period=" + hex4(getWord(player + 0x122)) + " " + state + " free="
+                + hex4(getWord(STATE + 0x48)) + " cap=" + hex4(getWord(STATE + 0x4a)) + "," + hex4(getWord(STATE + 0x58))
+                + " rng=" + hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1)) + ","
+                + hex4(getWord(STATE + RNG_2)));
+        int clock = 0;
+        for (int pass = 0; pass < passes; pass++) {
+            clock += 8;
+            int phase = simulationPass(clock);
+            afterPass(pass, clock);
+            StringBuilder line = new StringBuilder();
+            boolean[] now = usedSettlerSlots();
+            for (int slot = 0; slot < now.length; slot++) {
+                if (now[slot] && !used[slot]) {
+                    line.append(" s").append(slot).append("=").append(hex(TABLES + 0x40000 + 16L * slot, 16));
+                }
+            }
+            used = now;
+            // The countdown moves every pass; a line is written where a settler was made or the knights or the stock changed.
+            String stateNow = supplyState(player);
+            String knightsNow = stateNow.substring(stateNow.indexOf(',') + 1);
+            if (line.length() > 0 || !knightsNow.equals(knights)) {
+                knights = knightsNow;
+                println("EMU " + label + " pass=" + pass + " phase=" + phase + " clock=" + clock + line + " " + stateNow
+                        + " rng=" + hex4(getWord(STATE + RNG_0)) + "," + hex4(getWord(STATE + RNG_1)) + ","
+                        + hex4(getWord(STATE + RNG_2)));
+            }
+        }
+    }
+
+    /** The settler rate of a supply game (byte 3 of player 0's start parameters). */
+    private int supplyRate;
+
+    /** Whether the passes run the settler supply: Player_MakeSettlers after the object pass, Player_UpdateSettlerCaps at phase 32. */
+    protected boolean settlerSupply;
+
+    /**
+     * Sets up the settler supply before the castle's placement, as a free game's start leaves it: the start parameters of player
+     * 0 (Game_SetStartParams, 0x468717: byte 0 12, byte 1 the start stock level, byte 2 40, byte 3 the rate), the numbers
+     * Map_SetGeometry (0x42195c) derives from the map's size for one player (the free count +0x48, the share +0x4a, the floor
+     * +0x58), settler slot 0 taken as MapGen_InitParams (0x421530) takes it, and the player block as 0x42055e writes it: byte 2
+     * bit 6 (in the game), the knights owed and the knight try at 0, the last clock at 0, the knight step 20000, the knight
+     * accumulator 0x8000, the period (60 - rate) * 50, and the countdown at one period. Byte 3 bit 2 (the cap allows settlers)
+     * is set as Castle_CreateSettlers sets it.
+     */
+    private void startSettlerSupply(long player, int level) throws Exception {
+        emu.writeMemory(toAddr(STATE + 0x1d6), new byte[] {0x0c, (byte) level, 0x28, (byte) supplyRate});
+        int all = (getWord(STATE + WIDTH) >> 5) * (getWord(STATE + HEIGHT) >> 5) * 500;
+        putWord(STATE + 0x48, all);
+        putWord(STATE + 0x58, all >> 3);
+        putWord(STATE + 0x4a, all - (all >> 3));
+        call(0x45e121);
+        byte[] bytes = emu.readMemory(toAddr(player + 2), 2);
+        emu.writeMemory(toAddr(player + 2), new byte[] {(byte) (bytes[0] | 0x40), (byte) (bytes[1] | 4)});
+        int period = (60 - supplyRate) * 50;
+        putWord(player + 0x10c, 0);
+        putWord(player + 0x10e, 0);
+        putWord(player + 0x11e, 0);
+        putWord(player + 0x120, period);
+        putWord(player + 0x122, period);
+        putWord(player + 0x124, 20000);
+        putWord(player + 0x126, 0x8000);
+    }
+
+    /** The slots of the settler table in use, from its bitmap (+0xac, bit 7 of a byte for the first of its eight slots). */
+    private boolean[] usedSettlerSlots() throws Exception {
+        int count = getWord(STATE + 0x25c);
+        byte[] bits = emu.readMemory(toAddr(TABLES + 0x50000), (count + 7) / 8);
+        boolean[] used = new boolean[count];
+        for (int slot = 0; slot < count; slot++) {
+            used[slot] = ((bits[slot >> 3] >> (7 - (slot & 7))) & 1) != 0;
+        }
+        return used;
+    }
+
+    /** The countdown, the knight accumulator, the knights owed, and the castle storage's stock of goods 25 and 26. */
+    private String supplyState(long player) throws Exception {
+        return "timer=" + hex4(getWord(player + 0x120)) + "," + hex4(getWord(player + 0x126)) + ","
+                + hex4(getWord(player + 0x10c)) + " goods=" + getWord(TABLES + 0x60000 + 0x36) + ","
+                + getWord(TABLES + 0x60000 + 0x38);
+    }
+
+    /**
      * carrier:N:SEED:L:cx,cy:FLAGS:ROADS:PASSES[:LATEROADS:AT] runs the item tables' passes with the flag slice 0x46414d
      * (see the header) on a game started as road starts it, and lists each pass what changed in the settlers (the first 64
      * slots), the flags (the first 16 slots), and the storage item.
@@ -2069,10 +2205,20 @@ public class EmulateMapStart extends GhidraScript {
         if (objectPass) {
             call(0x428d10);
         }
+        if (settlerSupply) {
+            // The end of 0x4286d8: Player_MakeSettlers (0x428a75) for each of the four player blocks.
+            for (int offset : new int[] {0x64, 0x68, 0x6c, 0x70}) {
+                putInt(REGISTERS + 0x30, getInt(STATE + offset));
+                call(0x428a75);
+            }
+        }
         int phase = (getWord(STATE + PHASE) + 1) % PHASE_COUNT;
         putWord(STATE + PHASE, phase);
         if (phaseRoutine && phase == PHASE_COUNT - 1) {
             call(0x42965c);
+        } else if (settlerSupply && phase == PHASE_COUNT - 1) {
+            // Player_UpdateSettlerCaps, the first routine 0x42965c runs while the clock runs, without the goods hand-out after it.
+            call(0x42a3f1);
         }
         call(0x46414d);
         byte[] kept = emu.readMemory(toAddr(castleType), 1);
