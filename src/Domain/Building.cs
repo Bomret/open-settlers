@@ -49,18 +49,22 @@ public sealed class Building(BuildingType type, int x, int y, int flag, bool con
     public bool IsDemolishing { get; set; }
 
     /// <summary>
-    /// The status bit the miller sets while he grinds and clears with the flour (bit 4 of byte 5, <c>0x4338d0</c>, <c>0x433a0d</c>); the baker sets it
-    /// in the pause after the baking and clears it with the bread (<c>0x4337d1</c>, <c>0x43383e</c>).
+    /// The status bit that marks the building's worker at work (bit 4 of byte 5). The miller's state routine <c>0x43386b</c> sets it where he
+    /// starts a grain (<c>0x4338d0</c>) and clears it with the flour (<c>0x433a0d</c>); the baker's, <c>0x433694</c>, sets it in the pause after
+    /// the baking (<c>0x4337d1</c>) and clears it with the bread (<c>0x43383e</c>). The pig farmer's and the butcher's set no status bit.
     /// </summary>
-    public bool Grinding
+    public bool AtWork
     {
-        get => (OtherStatus & GrindingBit) != 0;
-        set => OtherStatus = value ? OtherStatus | GrindingBit : OtherStatus & ~GrindingBit;
+        get => (OtherStatus & AtWorkBit) != 0;
+        set => OtherStatus = value ? OtherStatus | AtWorkBit : OtherStatus & ~AtWorkBit;
     }
 
-    const int GrindingBit = 0x10;
+    const int AtWorkBit = 0x10;
 
-    /// <summary>The status bits with no recovered meaning (bits 0, 1, 3, and 4 of byte 5), kept so the exporters stay lossless.</summary>
+    /// <summary>
+    /// The status bits of byte 5 that no property names (bits 0, 1, and 3 have no recovered meaning; bit 4 is <see cref="AtWork"/>), kept so
+    /// the exporters stay lossless.
+    /// </summary>
     public int OtherStatus { get; set; }
 
     /// <summary>The slot of the worker inside; 0 for none.</summary>

@@ -30,7 +30,7 @@ sealed class PigFarmerTables : JobTables<PigFarmer>
         data.Add(
             (
                 Job,
-                new PigFarmerFigureAdds
+                new FoodHutFigureAdds
                 {
                     Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.PigFarmerWalkAddress),
                     Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.PigFarmerCarryingAddress),

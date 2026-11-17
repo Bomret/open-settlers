@@ -92,7 +92,7 @@ public sealed class GrainSplitTests
     }
 
     // A digest that left a building's fill, or the castle's stock, out of the split's state would not tell these runs apart: the runs
-    // differ in one fill byte of the mill, in one grain served to the mill instead of the pig farm, or in the farm's grain.
+    // differ in one fill byte of the mill, in one more grain in the castle's stock, or in the farm's grain.
     [TestMethod]
     public void TheDigestDiffersWhereTheSplitsStateDiffers()
     {

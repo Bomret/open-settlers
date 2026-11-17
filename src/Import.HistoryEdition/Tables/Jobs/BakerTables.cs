@@ -29,11 +29,11 @@ sealed class BakerTables : JobTables<Baker>
         data.Add(
             (
                 Job,
-                new BakerFigureAdds
+                new FoodHutFigureAdds
                 {
                     Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BakerWalkAddress),
                     Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BakerCarryingAddress),
-                    Bake = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BakerBakeAddress),
+                    Work = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.BakerBakeAddress),
                 }
             )
         );

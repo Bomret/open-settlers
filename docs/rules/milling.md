@@ -90,10 +90,10 @@ so grain held on site and grain on its way are lost, and the flag's request word
 **Status:** confirmed by the draw run of the `miller` recording (`settler-draws.txt`).
 
 The figure handler of job 15 is at `0x4400d3`, reached by the stub at `0x43f7bc`. It adds `0x4300` to the figure byte for a byte below `0x80`, `0x4500` in state 5 with byte 15 at `0xd`, and `0x4380` for a byte from `0x80`,
-with no sound. The engine reads them through `RuleTables.Get<MillerFigureAdds>(new Miller())`. He is drawn while he grinds with the node held, on the step out with the flour, on the put, and at the door. The `open-settlers` content set draws him as a pale figure
+with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new Miller())`. He is drawn while he grinds with the node held, on the step out with the flour, on the put, and at the door. The `open-settlers` content set draws him as a pale figure
 (`settler/miller/*`); the flour has the sack of the goods.
 
 ## In the engine
 
 `src/Application/MillerRules.cs` is the rules module of the miller (`JobRules<Miller>`): `Start`, `Work` (state `0x23`), and `Turn` (the handler's rank). It stands the miller in a layout (`CanStandInHut`, [Settlers and goods in a layout](layouts.md)).
-The activity is `Grinds` (with the stretch in `Phase`). The step out and the put are `HutWork.StepOutWithGood` and `HutWork.PutDownGood`, shared with the sawmiller. `Building.Grinding` is status bit 4. `layouts/mill.jsonc` with `play/mill.play` shows a mill working.
+The activity is `Grinds` (with the stretch in `Phase`). The step out and the put are `HutWork.StepOutWithGood` and `HutWork.PutDownGood`, shared with the sawmiller. `Building.AtWork` is status bit 4 (the miller's state routine `0x43386b` sets it at `0x4338d0` and clears it at `0x433a0d`; the baker's sets it too, [Baking](baking.md)). `layouts/mill.jsonc` with `play/mill.play` shows a mill working.

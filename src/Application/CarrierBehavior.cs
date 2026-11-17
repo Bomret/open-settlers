@@ -594,11 +594,7 @@ public sealed class CarrierBehavior(
                 movement.Become(settler, hands with { Load = null });
                 if (movement.BuildingAt(node) is { IsDemolishing: false } building)
                 {
-                    var counter = movement.Tables.FillCounterOf(good) switch
-                    {
-                        FillCounter.None => good.FillsHigh ? FillCounter.High : FillCounter.Low,
-                        var kind => kind,
-                    };
+                    var counter = good.FillsHigh ? FillCounter.High : FillCounter.Low;
                     var sum = building.FillOf(counter) + 0x0f;
                     building.SetFill(counter, sum);
                     if (sum > 0xff)

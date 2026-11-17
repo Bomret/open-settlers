@@ -90,7 +90,7 @@ request words lose their class; no good stays counted as on its way (`butcher-re
 
 The figure handler of job 13 is at `0x43ff90`, reached by the stub at `0x43f7ac`. It adds `0x3700` to the figure byte for a byte below `0x80` (the immediate at `0x440020`), `0x3a00` in
 state 5 with byte 15 at `0xd` (`0x440015`), and `0x3780` for a byte from `0x80` (`0x43fff8`). For the bytes `0xb2`, `0xba`, `0xc2`, and `0xca` it also requests a sound (`0x44fe13`) and moves the
-word at `+0x10` by 4, which is **not ported**; the work's frame `0x8c` is none of them. The engine reads the three adds through `RuleTables.Get<ButcherFigureAdds>(new Butcher())`. He is drawn while he works with the
+word at `+0x10` by 4, which is **not ported**; the work's frame `0x8c` is none of them. The engine reads the three adds through `RuleTables.Get<FoodHutFigureAdds>(new Butcher())`. He is drawn while he works with the
 node held, on the step out with the meat, on the put, and at the door. The `open-settlers` content set draws him as a red figure (`settler/butcher/*`); the meat has the sack of the goods.
 
 ## In the engine

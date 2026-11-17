@@ -84,7 +84,7 @@ public sealed class BakeryTests
         );
         Assert.AreEqual(bread + 1, game.CastleStock.Count(Good.Bread), "one flour made one bread");
         Assert.AreEqual(0, bakery.FillLow, "no flour stays counted, on site or on the way");
-        Assert.IsFalse(bakery.Grinding, "the bakery is no longer at work");
+        Assert.IsFalse(bakery.AtWork, "the bakery is no longer at work");
     }
 
     [TestMethod]
@@ -102,7 +102,7 @@ public sealed class BakeryTests
             if (baker.Activity is Bakes bakes && (phases.Count == 0 || phases[^1] != bakes.Phase))
             {
                 phases.Add(bakes.Phase);
-                marked.Add(bakery.Grinding);
+                marked.Add(bakery.AtWork);
             }
 
             carriedOut |=
@@ -182,7 +182,7 @@ public sealed class BakeryTests
 
         Assert.AreEqual(bread, game.CastleStock.Count(Good.Bread), "no bread without flour");
         Assert.AreEqual(0, ((Bakes)baker.Activity).Phase, "he still waits for flour");
-        Assert.IsFalse(bakery.Grinding);
+        Assert.IsFalse(bakery.AtWork);
         Assert.AreEqual(0, bakery.FillLow);
     }
 

@@ -42,7 +42,7 @@ The settler takes state `0x18` with byte 11 at 0.
 
 **Status:** confirmed; **emulated**.
 
-The building's handler (`0x42da0b`) runs in the building pass. It first requests a worker, where status bits 2, 6, and 7 are clear. While the worker is inside, status bit 6 is set, and the handler keeps the rank of the request for logs.
+The building's handler (`0x42da0b`) runs in the building pass. It first requests a worker, where status bits 2, 6, and 7 are clear. While the worker is inside, status bit 6 is set, and the handler keeps the rank of the request for logs. It also keeps the rank after a request that found no worker: the routine of the request (`0x42be63`) leaves the word at `[edi]` with bit 6 set on failure, and the handler tests that bit next (`0x42da4c`), as the mill's handler does ([Milling](milling.md#the-rank-of-the-request-for-grain)). **Confirmed** from the instructions of `0x42da0b` and `0x42be63`; the engine reads the building's request-failed bit for it (`SawmillerRules.Turn`).
 
 The fill byte at 9 of the building's item holds two counts. Its high nibble counts the logs on site, and its low nibble counts the logs on the way in. The carrier's handover adds `0x0f`. A request that serves the flag counts one more log on the way ([Goods at a flag](goods.md)). The rank at the flag's `0x45` is `0xff` shifted right by the sum of both counts where the sum is below 8. Otherwise the rank is 0.
 

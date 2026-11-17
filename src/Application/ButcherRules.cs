@@ -27,10 +27,8 @@ public sealed class ButcherRules(JobParts parts) : JobRules<Butcher>(parts)
     const int OnSite = 0xf0;
     const int OneOnSite = 0x10;
 
-    // The rank the request for pigs starts from, the constant the handler shifts (0x42e1de), and the most goods the building's fill counts (on
-    // site and on the way) before it asks for no more pigs (0x42e1f4).
+    // The rank the request for pigs starts from, the constant the handler shifts (0x42e1de).
     const byte RankBase = 0xff;
-    const int StoreFull = 8;
 
     /// <inheritdoc />
     public override bool CanStandInHut => true;
@@ -52,13 +50,7 @@ public sealed class ButcherRules(JobParts parts) : JobRules<Butcher>(parts)
             return;
         }
 
-        var held = (shop.FillLow >> 4) + (shop.FillLow & 0xf);
-        var rank = held < StoreFull ? (byte)(RankBase >> held) : (byte)0;
-        if (_movement.Tables.ClassOfGood(Good.Pig) is { } asked)
-        {
-            var flag = _flags[shop.Flag];
-            flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
-        }
+        FoodHutRequest.SetRank(_movement, _flags, shop, Good.Pig, FoodHutRequest.RankOf(shop, RankBase));
     }
 
     /// <summary>
@@ -71,18 +63,8 @@ public sealed class ButcherRules(JobParts parts) : JobRules<Butcher>(parts)
         _movement.Release(_movement.Map.Index(settler.X, settler.Y));
         if (_movement.ResidueOf(settler.Activity).Mode != 0)
         {
-            // The request words' class bytes are written (0x42 to the class of the pig, 0x44 to 0), the first word's rank too (0x43); the
-            // second word's rank stays.
-            var flag = _flags[shop.Flag];
-            foreach (var word in new[] { RequestWord.First, RequestWord.Second })
-            {
-                flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
-            }
-
-            if (_movement.Tables.ClassOfGood(Good.Pig) is { } asked)
-            {
-                flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
-            }
+            // The request words' class bytes are written (0x42 to the class of the pig, 0x44 to 0), the first word's rank too (0x43).
+            FoodHutRequest.Ask(_movement, _flags, shop, Good.Pig);
         }
 
         _movement.Become(settler, new Butchers { Working = false });

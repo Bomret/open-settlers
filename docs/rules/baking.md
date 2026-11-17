@@ -14,6 +14,9 @@ The engine matches the baker after every change of his node, state, or stretch, 
 flour and bread counts in two games (`tests/OpenSettlers.Tests/baker-walks.txt`): one flour, and nine flours laid at once (the bakery takes eight, the ninth goes to the
 castle). The removal matches in four games (`baker-removals.txt`: waiting, baking, out with the bread, flour on its way), the first hand-out in one
 (`baker-materials.txt`, verb `construct:`), and the draw in one recording (`settler-draws.txt`, `baker`).
+The wait on a full flag has no emulator game for the baker: only the engine's own test (`BakeryTests`, the flag-is-full case) covers it. The baker's
+step out is the shared `HutWork.StepOutWithGood`, which the mill's full-flag game checks up to the pass 1588, where the engine's carriers free the flag's node
+earlier than the original's (triage #344, [Milling](milling.md)); a baker game on a full flag would meet the same difference.
 
 ## The building and the job
 
@@ -33,7 +36,7 @@ not 0 (`0xff` after the walk in, 0 after he laid bread down) it also writes the 
 - The class byte at `0x42` is `0x20`, class 5, which the good class table at `0x464117` gives flour, in the first word.
 - The class byte at `0x44` is 0, and the rank at `0x43` is 0. The rank at `0x45` stays.
 
-The settler takes state `0x24` with byte 11 at 0. (The program index named both words before this slice read the routine.)
+The settler takes state `0x24` with byte 11 at 0.
 
 ## The rank of the request for flour
 
@@ -83,11 +86,11 @@ bread (the bread is lost). The fill byte is cleared with the building, so flour 
 **Status:** confirmed by the draw run of the `baker` recording (`settler-draws.txt`).
 
 The figure handler of job 16 is at `0x440112`, reached by the stub at `0x43f7c4`. It adds `0x4800` to the figure byte for a byte below `0x80`, `0x4a00` in state 5 with byte 15 at `0xd`, and `0x4880` for a byte from `0x80`,
-with no sound. The engine reads them through `RuleTables.Get<BakerFigureAdds>(new Baker())`. He is drawn while he bakes with the node held, on the step out with the bread, on the put, and at the door. The `open-settlers`
+with no sound. The engine reads them through `RuleTables.Get<FoodHutFigureAdds>(new Baker())`. He is drawn while he bakes with the node held, on the step out with the bread, on the put, and at the door. The `open-settlers`
 content set draws him as a tan figure (`settler/baker/*`); the bread has the loaf of the goods.
 
 ## In the engine
 
 `src/Application/BakerRules.cs` is the rules module of the baker (`JobRules<Baker>`): `Start`, `Work` (state `0x24`), and `Turn` (the handler's rank). It stands the baker in a layout (`CanStandInHut`, [Settlers and goods in a layout](layouts.md)).
-The activity is `Bakes` (with the stretch in `Phase`). The step out and the put are `HutWork.StepOutWithGood` and `HutWork.PutDownGood`, shared with the sawmiller and the miller. `Building.Grinding` is status bit 4, which the baker sets in his pause.
+The activity is `Bakes` (with the stretch in `Phase`). The step out and the put are `HutWork.StepOutWithGood` and `HutWork.PutDownGood`, shared with the sawmiller and the miller. `Building.AtWork` is status bit 4, which the baker's state routine `0x433694` sets in his pause (`0x4337d1`) and clears with the bread (`0x43383e`); the miller's sets it too ([Milling](milling.md)).
 `layouts/baker.jsonc` with `play/baker.play` shows a bakery working.

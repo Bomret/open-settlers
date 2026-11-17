@@ -40,12 +40,14 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
 
     /// <summary>
     /// The handler of the sawmill's type (<c>0x42da0b</c>) after its request for a worker, in the turn of each building that is no site:
-    /// with the worker inside, the rank of the flag's request for logs is the full rank shifted right by the logs the building holds, on
-    /// site and on the way, and 0 where it holds eight or more. A building of another type is left alone.
+    /// with the worker inside, or where the request it just made found no worker (the failed request leaves the word at <c>[edi]</c> with
+    /// bit 6 set, which the handler tests next at <c>0x42da4c</c>, as the mill's does), the rank of the flag's request for logs is the full
+    /// rank shifted right by the logs the building holds, on site and on the way, and 0 where it holds eight or more. A building of
+    /// another type is left alone.
     /// </summary>
     public override void Turn(Building mill)
     {
-        if (mill.Type != BuildingType.Sawmill || mill.Constructing || !mill.WorkerInside)
+        if (mill.Type != BuildingType.Sawmill || mill.Constructing || !(mill.WorkerInside || mill.RequestFailed))
         {
             return;
         }

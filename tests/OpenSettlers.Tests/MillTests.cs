@@ -85,7 +85,7 @@ public sealed class MillTests
         );
         Assert.AreEqual(flour + 1, game.CastleStock.Count(Good.Flour), "one grain made one flour");
         Assert.AreEqual(0, mill.FillLow, "no grain stays counted, on site or on the way");
-        Assert.IsFalse(mill.Grinding, "the mill is no longer at work");
+        Assert.IsFalse(mill.AtWork, "the mill is no longer at work");
     }
 
     [TestMethod]
@@ -151,7 +151,7 @@ public sealed class MillTests
 
         Assert.AreEqual(flour, game.CastleStock.Count(Good.Flour), "no flour without grain");
         Assert.AreEqual(0, ((Grinds)miller.Activity).Phase, "he still waits for grain");
-        Assert.IsFalse(mill.Grinding);
+        Assert.IsFalse(mill.AtWork);
         Assert.AreEqual(0, mill.FillLow);
     }
 

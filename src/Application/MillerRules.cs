@@ -34,9 +34,6 @@ public sealed class MillerRules(JobParts parts) : JobRules<Miller>(parts)
     const int OnSite = 0xf0;
     const int OneOnSite = 0x10;
 
-    // The most goods the building's fill counts (on site and on the way) before it asks for no more grain (0x42e33e).
-    const int StoreFull = 8;
-
     /// <inheritdoc />
     public override bool CanStandInHut => true;
 
@@ -58,13 +55,13 @@ public sealed class MillerRules(JobParts parts) : JobRules<Miller>(parts)
             return;
         }
 
-        var held = (mill.FillLow >> 4) + (mill.FillLow & 0xf);
-        var rank = held < StoreFull ? (byte)(_movement.Tables.MillRankBase >> held) : (byte)0;
-        if (_movement.Tables.ClassOfGood(Good.Grain) is { } asked)
-        {
-            var flag = _flags[mill.Flag];
-            flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
-        }
+        FoodHutRequest.SetRank(
+            _movement,
+            _flags,
+            mill,
+            Good.Grain,
+            FoodHutRequest.RankOf(mill, _movement.Tables.MillRankBase)
+        );
     }
 
     /// <summary>
@@ -77,18 +74,8 @@ public sealed class MillerRules(JobParts parts) : JobRules<Miller>(parts)
         _movement.Release(_movement.Map.Index(settler.X, settler.Y));
         if (_movement.ResidueOf(settler.Activity).Mode != 0)
         {
-            // The request words' class bytes are written (0x42 to the class of the grain, 0x44 to 0), the first word's rank too (0x43); the
-            // second word's rank stays.
-            var flag = _flags[mill.Flag];
-            foreach (var word in new[] { RequestWord.First, RequestWord.Second })
-            {
-                flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
-            }
-
-            if (_movement.Tables.ClassOfGood(Good.Grain) is { } asked)
-            {
-                flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
-            }
+            // The request words' class bytes are written (0x42 to the class of the grain, 0x44 to 0), the first word's rank too (0x43).
+            FoodHutRequest.Ask(_movement, _flags, mill, Good.Grain);
         }
 
         _movement.Become(settler, new Grinds { Phase = 0 });
@@ -110,7 +97,7 @@ public sealed class MillerRules(JobParts parts) : JobRules<Miller>(parts)
             if (_movement.BuildingAt(node) is { } mill && (mill.FillLow & OnSite) != 0)
             {
                 mill.SetFill(FillCounter.Low, mill.FillLow - OneOnSite);
-                mill.Grinding = true;
+                mill.AtWork = true;
                 _movement.Become(settler, new Grinds { Phase = 1 });
                 _movement.Occupy(node, slot);
                 settler.Frame = GrindFrame;
@@ -140,7 +127,7 @@ public sealed class MillerRules(JobParts parts) : JobRules<Miller>(parts)
             {
                 if (_movement.BuildingAt(node) is { } mill)
                 {
-                    mill.Grinding = false;
+                    mill.AtWork = false;
                 }
 
                 _movement.Become(settler, new StepsOutWithGood { Good = Good.Flour });

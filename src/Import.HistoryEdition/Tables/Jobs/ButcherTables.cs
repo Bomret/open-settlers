@@ -29,7 +29,7 @@ sealed class ButcherTables : JobTables<Butcher>
         data.Add(
             (
                 Job,
-                new ButcherFigureAdds
+                new FoodHutFigureAdds
                 {
                     Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.ButcherWalkAddress),
                     Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.ButcherCarryingAddress),

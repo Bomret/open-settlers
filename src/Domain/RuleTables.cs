@@ -233,7 +233,8 @@ public sealed class RuleTables
     /// <summary>
     /// Which byte of a building's fill a good counts in: the table <c>0x462d6d</c> (<c>docs/rules/removal.md</c>), the one rule for
     /// every place that counts a good on its way (the request search and the storage's hand-out), counts it back where it is lost
-    /// (<c>0x462ca4</c>, the removal's), and counts its delivery (the carrier's handover): the food goods 1 to 6 count in the low byte.
+    /// (<c>0x462ca4</c>, the removal's): the food goods 1 to 6 count in the low byte. The carrier's handover counts the delivery by the
+    /// good's code (<see cref="Good.FillsHigh"/>), which agrees.
     /// <paramref name="good"/> is a good, its number taken to 0 to 31 (the original masks it with 0x1f).
     /// </summary>
     public FillCounter FillCounterOf(Good good) =>
@@ -425,31 +426,17 @@ public readonly record struct SawmillerFigureAdds
 }
 
 /// <summary>
-/// What the miller's handler adds to the figure byte (<c>0x4400d3</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
-/// step that takes the flour out (state 5 with state 0xd next), and <see cref="Grind"/> for a byte from 0x80, the mill's frames.
+/// What the figure handler of an indoor food job adds to the figure byte: <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in
+/// the step that takes the good out (state 5 with state 0xd next), and <see cref="Work"/> for a byte from 0x80, the building's frames. The
+/// handlers of the miller (<c>0x4400d3</c>, flour), the pig farmer (<c>0x43ff56</c>, pig), the butcher (<c>0x43ff90</c>, meat), and the baker
+/// (<c>0x440112</c>, bread) have this one shape, each with its own immediates.
 /// </summary>
-public readonly record struct MillerFigureAdds
+public readonly record struct FoodHutFigureAdds
 {
     /// <summary>The add for a figure byte below 0x80: the walk.</summary>
     public required ushort Walk { get; init; }
 
-    /// <summary>The add in the step that takes the flour out (state 5 with state 0xd next).</summary>
-    public required ushort Carrying { get; init; }
-
-    /// <summary>The add for a figure byte from 0x80: the grinding frames.</summary>
-    public required ushort Grind { get; init; }
-}
-
-/// <summary>
-/// What the pig farmer's handler adds to the figure byte (<c>0x43ff56</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
-/// step that takes the pig out (state 5 with state 0xd next), and <see cref="Work"/> for a byte from 0x80, the pig farm's frames.
-/// </summary>
-public readonly record struct PigFarmerFigureAdds
-{
-    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
-    public required ushort Walk { get; init; }
-
-    /// <summary>The add in the step that takes the pig out (state 5 with state 0xd next).</summary>
+    /// <summary>The add in the step that takes the good out (state 5 with state 0xd next).</summary>
     public required ushort Carrying { get; init; }
 
     /// <summary>The add for a figure byte from 0x80: the work's frames.</summary>
@@ -473,38 +460,6 @@ public sealed record PigFarmRates
     /// below which another pig grows in each pause of the work (the draw is the generator's 16-bit word).
     /// </summary>
     public required ImmutableArray<ushort> Growth { get; init; }
-}
-
-/// <summary>
-/// What the butcher's handler adds to the figure byte (<c>0x43ff90</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
-/// step that takes the meat out (state 5 with state 0xd next), and <see cref="Work"/> for a byte from 0x80, the shop's frames.
-/// </summary>
-public readonly record struct ButcherFigureAdds
-{
-    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
-    public required ushort Walk { get; init; }
-
-    /// <summary>The add in the step that takes the meat out (state 5 with state 0xd next).</summary>
-    public required ushort Carrying { get; init; }
-
-    /// <summary>The add for a figure byte from 0x80: the work's frames.</summary>
-    public required ushort Work { get; init; }
-}
-
-/// <summary>
-/// What the baker's handler adds to the figure byte (<c>0x440112</c>): <see cref="Walk"/> for a byte below 0x80, <see cref="Carrying"/> in the
-/// step that takes the bread out (state 5 with state 0xd next), and <see cref="Bake"/> for a byte from 0x80, the bakery's frames.
-/// </summary>
-public readonly record struct BakerFigureAdds
-{
-    /// <summary>The add for a figure byte below 0x80: the walk.</summary>
-    public required ushort Walk { get; init; }
-
-    /// <summary>The add in the step that takes the bread out (state 5 with state 0xd next).</summary>
-    public required ushort Carrying { get; init; }
-
-    /// <summary>The add for a figure byte from 0x80: the baking frames.</summary>
-    public required ushort Bake { get; init; }
 }
 
 /// <summary>

@@ -46,9 +46,6 @@ public sealed class PigFarmerRules(JobParts parts) : JobRules<PigFarmer>(parts)
     const int OnSite = 0xf0;
     const int OneOnSite = 0x10;
 
-    // The most goods the building's fill counts (on site and on the way) before it asks for no more grain (0x42e173).
-    const int StoreFull = 8;
-
     /// <inheritdoc />
     public override bool CanStandInHut => true;
 
@@ -80,11 +77,7 @@ public sealed class PigFarmerRules(JobParts parts) : JobRules<PigFarmer>(parts)
         byte rank;
         if (farm.WorkerInside || farm.RequestFailed)
         {
-            var held = (farm.FillLow >> 4) + (farm.FillLow & 0xf);
-            rank =
-                held < StoreFull
-                    ? (byte)(_movement.Tables.Get<PigFarmRates>(new PigFarmer()).RankBase >> held)
-                    : (byte)0;
+            rank = FoodHutRequest.RankOf(farm, _movement.Tables.Get<PigFarmRates>(new PigFarmer()).RankBase);
         }
         else if (farm.WorkerOnTheWay)
         {
@@ -95,11 +88,7 @@ public sealed class PigFarmerRules(JobParts parts) : JobRules<PigFarmer>(parts)
             return;
         }
 
-        if (_movement.Tables.ClassOfGood(Good.Grain) is { } asked)
-        {
-            var flag = _flags[farm.Flag];
-            flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
-        }
+        FoodHutRequest.SetRank(_movement, _flags, farm, Good.Grain, rank);
     }
 
     /// <summary>
@@ -120,17 +109,7 @@ public sealed class PigFarmerRules(JobParts parts) : JobRules<PigFarmer>(parts)
         }
 
         farm.FillHigh = 1;
-        var flag = _flags[farm.Flag];
-        foreach (var word in new[] { RequestWord.First, RequestWord.Second })
-        {
-            flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
-        }
-
-        if (_movement.Tables.ClassOfGood(Good.Grain) is { } asked)
-        {
-            flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
-        }
-
+        FoodHutRequest.Ask(_movement, _flags, farm, Good.Grain);
         _movement.Become(settler, new TendsPigs { Phase = 0 });
     }
 

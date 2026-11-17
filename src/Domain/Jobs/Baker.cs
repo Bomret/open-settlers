@@ -13,5 +13,5 @@ public sealed record Baker : Job
     public override int Code => Number;
 
     /// <inheritdoc />
-    public override IReadOnlyList<Type> Data => [typeof(BakerFigureAdds)];
+    public override IReadOnlyList<Type> Data => [typeof(FoodHutFigureAdds)];
 }

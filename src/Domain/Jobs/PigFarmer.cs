@@ -15,5 +15,5 @@ public sealed record PigFarmer : Job
     public override int Code => Number;
 
     /// <inheritdoc />
-    public override IReadOnlyList<Type> Data => [typeof(PigFarmerFigureAdds), typeof(PigFarmRates)];
+    public override IReadOnlyList<Type> Data => [typeof(FoodHutFigureAdds), typeof(PigFarmRates)];
 }

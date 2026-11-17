@@ -74,8 +74,9 @@ public sealed class BuildingSitePlacementTests
             }
 
             var needed = tables.SizeOf(type) == BuildingSize.Large ? 4 : 3;
-            // The refused nodes first: a placement changes what the evaluator judges around it.
-            foreach (var node in nodes.OrderBy(node => node.Judged[1] >= needed))
+            // The refused nodes first: a placement changes what the evaluator judges around it. Among the nodes that fit, the smallest site
+            // first, so a small type is placed on a node of site 3.
+            foreach (var node in nodes.OrderBy(node => node.Judged[1] >= needed).ThenBy(node => node.Judged[1]))
             {
                 var judged = BuildSite.Evaluate(game.Tables, game.Map, node.At[0], node.At[1], 0, hasCastle: true);
                 var where = $"{type.Code:x} on {node.At[0]},{node.At[1]}";
@@ -104,6 +105,11 @@ public sealed class BuildingSitePlacementTests
                 else
                 {
                     Assert.AreNotEqual(digest, game.Digest(), $"{where}: the site fits the type");
+                    Assert.AreEqual(
+                        needed,
+                        node.Judged[1],
+                        $"{where}: the type is placed on the smallest site that fits"
+                    );
                     break;
                 }
             }

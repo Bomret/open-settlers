@@ -29,11 +29,11 @@ sealed class MillerTables : JobTables<Miller>
         data.Add(
             (
                 Job,
-                new MillerFigureAdds
+                new FoodHutFigureAdds
                 {
                     Walk = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.MillerWalkAddress),
                     Carrying = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.MillerCarryingAddress),
-                    Grind = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.MillerGrindAddress),
+                    Work = ProgramTablesImporter.Immediate(exe, ProgramTablesImporter.MillerGrindAddress),
                 }
             )
         );

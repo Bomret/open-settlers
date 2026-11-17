@@ -254,7 +254,7 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
-  fast-forwarded to the castle's first meat beyond its start stock.
+  fast-forwarded to the castle's second meat beyond its start stock (`meat >= 27` from a start of 25).
 - `layouts/mill.jsonc` and `play/mill.play`: a finished mill with its miller inside, a road to the castle, and two grains on the castle's flag,
   fast-forwarded to the castle's first flour.
 - `layouts/baker.jsonc` and `play/baker.play`: a finished bakery with its baker inside, a road to the castle, and two flours on the castle's flag,

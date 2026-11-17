@@ -169,11 +169,11 @@ public sealed class SettlerFiguresTests
         ForesterFigureAdds forester = default,
         FigureAdds digger = default,
         SawmillerFigureAdds sawmiller = default,
-        MillerFigureAdds miller = default,
+        FoodHutFigureAdds miller = default,
         FarmerFigureAdds farmer = default,
-        BakerFigureAdds baker = default,
-        ButcherFigureAdds butcher = default,
-        PigFarmerFigureAdds pigFarmer = default
+        FoodHutFigureAdds baker = default,
+        FoodHutFigureAdds butcher = default,
+        FoodHutFigureAdds pigFarmer = default
     ) =>
         new(
             new RuleTables(
@@ -215,25 +215,25 @@ public sealed class SettlerFiguresTests
 
     // The adds of the miller's handler (0x4400d3), made up: 0x1d00 for a figure byte below 0x80, 0x1e00 for the step that takes the flour
     // out, and 0x1f80 from 0x80 on.
-    static readonly MillerFigureAdds MillerAdds = new()
+    static readonly FoodHutFigureAdds MillerAdds = new()
     {
         Walk = 0x1d00,
         Carrying = 0x1e00,
-        Grind = 0x1f80,
+        Work = 0x1f80,
     };
 
     // The adds of the baker's handler (0x440112), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the bread
     // out, and 0x2380 from 0x80 on.
-    static readonly BakerFigureAdds BakerAdds = new()
+    static readonly FoodHutFigureAdds BakerAdds = new()
     {
         Walk = 0x2100,
         Carrying = 0x2200,
-        Bake = 0x2380,
+        Work = 0x2380,
     };
 
     // The adds of the butcher's handler (0x43ff90), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the meat
     // out, and 0x2380 from 0x80 on.
-    static readonly ButcherFigureAdds ButcherAdds = new()
+    static readonly FoodHutFigureAdds ButcherAdds = new()
     {
         Walk = 0x2100,
         Carrying = 0x2200,
@@ -242,7 +242,7 @@ public sealed class SettlerFiguresTests
 
     // The adds of the pig farmer's handler (0x43ff56), made up: 0x2100 for a figure byte below 0x80, 0x2200 for the step that takes the pig
     // out, and 0x2380 from 0x80 on.
-    static readonly PigFarmerFigureAdds PigFarmerAdds = new()
+    static readonly FoodHutFigureAdds PigFarmerAdds = new()
     {
         Walk = 0x2100,
         Carrying = 0x2200,

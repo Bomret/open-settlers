@@ -897,13 +897,13 @@ public sealed class ProgramTablesTests
         // 0x7fee at +0x15a, whose high byte the mill's handler shifts for the rank of its request for grain.
         var tables = TestProgram.Tables();
         Assert.AreEqual(
-            new MillerFigureAdds
+            new FoodHutFigureAdds
             {
                 Walk = 0x4300,
                 Carrying = 0x4500,
-                Grind = 0x4380,
+                Work = 0x4380,
             },
-            tables.Get<MillerFigureAdds>(new Miller())
+            tables.Get<FoodHutFigureAdds>(new Miller())
         );
         Assert.AreEqual(0x7f, tables.MillRankBase);
     }
@@ -916,13 +916,13 @@ public sealed class ProgramTablesTests
         // figure byte from 0x80, 0x4a00 at 0x44013b for the state 5 that lays the bread down next (byte 15 is 0xd), and 0x4800 at 0x440146
         // for the walk; the draw run of the recording (settler-draws.txt, baker) draws with them.
         Assert.AreEqual(
-            new BakerFigureAdds
+            new FoodHutFigureAdds
             {
                 Walk = 0x4800,
                 Carrying = 0x4a00,
-                Bake = 0x4880,
+                Work = 0x4880,
             },
-            TestProgram.Tables().Get<BakerFigureAdds>(new Baker())
+            TestProgram.Tables().Get<FoodHutFigureAdds>(new Baker())
         );
     }
 
@@ -936,13 +936,13 @@ public sealed class ProgramTablesTests
         // request for grain. The table at 0x433684 (peek:433684:16) holds eight words, the draw below which a pig grows at each held count.
         var tables = TestProgram.Tables();
         Assert.AreEqual(
-            new PigFarmerFigureAdds
+            new FoodHutFigureAdds
             {
                 Walk = 0x3200,
                 Carrying = 0x3400,
                 Work = 0x3280,
             },
-            tables.Get<PigFarmerFigureAdds>(new PigFarmer())
+            tables.Get<FoodHutFigureAdds>(new PigFarmer())
         );
         var rates = tables.Get<PigFarmRates>(new PigFarmer());
         Assert.AreEqual(0xff, rates.RankBase);
@@ -960,13 +960,13 @@ public sealed class ProgramTablesTests
         // figure byte from 0x80, 0x3a00 at 0x440015 for the state 5 that lays the meat down next (byte 15 is 0xd), and 0x3700 at 0x440020
         // for the walk; the draw run of the recording (settler-draws.txt, butcher) draws with them.
         Assert.AreEqual(
-            new ButcherFigureAdds
+            new FoodHutFigureAdds
             {
                 Walk = 0x3700,
                 Carrying = 0x3a00,
                 Work = 0x3780,
             },
-            TestProgram.Tables().Get<ButcherFigureAdds>(new Butcher())
+            TestProgram.Tables().Get<FoodHutFigureAdds>(new Butcher())
         );
     }
 
@@ -976,13 +976,13 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(
-            new BakerFigureAdds
+            new FoodHutFigureAdds
             {
                 Walk = 0x1b00,
                 Carrying = 0x1b80,
-                Bake = 0x1c00,
+                Work = 0x1c00,
             },
-            tables.Get<BakerFigureAdds>(new Baker())
+            tables.Get<FoodHutFigureAdds>(new Baker())
         );
 
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Baker.Number;
@@ -998,13 +998,13 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(
-            new ButcherFigureAdds
+            new FoodHutFigureAdds
             {
                 Walk = 0x1b00,
                 Carrying = 0x1b80,
                 Work = 0x1c00,
             },
-            tables.Get<ButcherFigureAdds>(new Butcher())
+            tables.Get<FoodHutFigureAdds>(new Butcher())
         );
 
         var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Butcher.Number;

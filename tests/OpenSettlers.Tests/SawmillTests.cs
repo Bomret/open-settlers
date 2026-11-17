@@ -38,6 +38,26 @@ public sealed class SawmillTests
 
     static Request LogRequest(Game game) => game.Flags[SawmillFlag].RequestOf(ConstructionTables.LogClass.Word);
 
+    // The handler 0x42da0b tests the word at [edi] for bit 6 after its request for a worker, as the mill's does (docs/rules/sawmilling.md): a
+    // request that found no worker leaves the bit set, so the rank of the flag's request for logs is kept with no worker inside.
+    [TestMethod]
+    public void WhereTheRequestForAWorkerFoundNoneTheHandlerStillKeepsTheRankOfTheRequestForLogs()
+    {
+        var game = ConstructionWorld.Create(ConstructionTables.Tables(), false);
+        ConstructionWorld.Do(game, CommandKind.PlaceFlag, 15, 9);
+        Assert.IsTrue(Huts.PlaceAndTick(game, SawmillX, SawmillY, BuildingType.Sawmill), "the sawmill stands");
+        var sawmill = game.Buildings.Single(building => building.Type == BuildingType.Sawmill);
+
+        ConstructionWorld.Run(game, 1500);
+
+        Assert.IsFalse(sawmill.WorkerInside || sawmill.WorkerOnTheWay, "no road reaches the sawmill: no worker comes");
+        Assert.AreEqual(
+            0xff,
+            game.Flags[sawmill.Flag].RequestOf(ConstructionTables.LogClass.Word).Rank,
+            "the failed request leaves bit 6 set: the sawmill holds no log, the rank is the full one"
+        );
+    }
+
     [TestMethod]
     public void TheSawmillerWalksInAsksForLogsAndWaitsWhereNoLogIsOnSite()
     {

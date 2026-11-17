@@ -33,9 +33,6 @@ public sealed class BakerRules(JobParts parts) : JobRules<Baker>(parts)
     const int OnSite = 0xf0;
     const int OneOnSite = 0x10;
 
-    // The most goods the building's fill counts (on site and on the way) before it asks for no more flour (0x42e3f7).
-    const int StoreFull = 8;
-
     // The rank the request starts from: the handler loads 0xff (0x42e405) and shifts it right by the goods the building holds; the mill's
     // handler reads the player's word instead.
     const byte RankBase = 0xff;
@@ -60,13 +57,7 @@ public sealed class BakerRules(JobParts parts) : JobRules<Baker>(parts)
             return;
         }
 
-        var held = (bakery.FillLow >> 4) + (bakery.FillLow & 0xf);
-        var rank = held < StoreFull ? (byte)(RankBase >> held) : (byte)0;
-        if (_movement.Tables.ClassOfGood(Good.Flour) is { } asked)
-        {
-            var flag = _flags[bakery.Flag];
-            flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
-        }
+        FoodHutRequest.SetRank(_movement, _flags, bakery, Good.Flour, FoodHutRequest.RankOf(bakery, RankBase));
     }
 
     /// <summary>
@@ -79,18 +70,8 @@ public sealed class BakerRules(JobParts parts) : JobRules<Baker>(parts)
         _movement.Release(_movement.Map.Index(settler.X, settler.Y));
         if (_movement.ResidueOf(settler.Activity).Mode != 0)
         {
-            // The class bytes are written (0x42 to the class of the flour, 0x44 to 0), the first word's rank too (0x43); the second word's
-            // rank stays.
-            var flag = _flags[bakery.Flag];
-            foreach (var word in new[] { RequestWord.First, RequestWord.Second })
-            {
-                flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
-            }
-
-            if (_movement.Tables.ClassOfGood(Good.Flour) is { } asked)
-            {
-                flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
-            }
+            // The class bytes are written (0x42 to the class of the flour, 0x44 to 0), the first word's rank too (0x43).
+            FoodHutRequest.Ask(_movement, _flags, bakery, Good.Flour);
         }
 
         _movement.Become(settler, new Bakes { Phase = 0 });
@@ -140,7 +121,7 @@ public sealed class BakerRules(JobParts parts) : JobRules<Baker>(parts)
             {
                 if (_movement.BuildingAt(node) is { } bakery)
                 {
-                    bakery.Grinding = false;
+                    bakery.AtWork = false;
                 }
 
                 _movement.Become(settler, new StepsOutWithGood { Good = Good.Bread });
@@ -151,7 +132,7 @@ public sealed class BakerRules(JobParts parts) : JobRules<Baker>(parts)
             _movement.Become(settler, new Bakes { Phase = phase });
             if (_movement.BuildingAt(node) is { } working)
             {
-                working.Grinding = true;
+                working.AtWork = true;
             }
 
             _movement.Release(node);
