@@ -217,6 +217,39 @@ public sealed class SettlerEncoderTests
         Assert.AreEqual((0x11, 2, 0xffFd, 4, 8), Fields(cut));
     }
 
+    // fishing.md, state 0x20: bytes 11 and 12 the way back, byte 13 the turns, byte 14 the catch, byte 15 the casts. The way back (2, -3)
+    // gives byte 11 2 and byte 12 0xfd; 5 turns make byte 13 5, so the word at 12 is 0xfd + 256 * 5.
+    [TestMethod]
+    public void TheCastHoldsTheWayBackTheTurnsTheCatchAndTheCasts()
+    {
+        var cast = new Fishes
+        {
+            Back = new Vector(2, -3),
+            Turns = 5,
+            Caught = true,
+            Casts = 3,
+        };
+
+        Assert.AreEqual((0x20, 2, 0x05fd, 1, 3), Fields(cast));
+        Assert.AreEqual((0x20, 2, 0x05fd, 0, 3), Fields(cast with { Caught = false }));
+    }
+
+    // fishing.md: the walk out to the node holds the vector in bytes 11 and 12 and the way back in bytes 13 and 14, as the woodcutter's.
+    [TestMethod]
+    public void TheWalkOutToTheWaterHoldsTheWayBackInTheMarkAndTheHeading()
+    {
+        var walk = new WalksFree
+        {
+            Trip = new Trip
+            {
+                Remaining = new Vector(2, -3),
+                Purpose = new ToWater { Back = new Vector(-2, 3) },
+            },
+        };
+
+        Assert.AreEqual((0x10, 2, 0xfefd, 3, 0), Fields(walk));
+    }
+
     [TestMethod]
     public void TheDoorHoldsTheTimeItLeavesAsTheTarget()
     {
@@ -329,6 +362,7 @@ public sealed class SettlerEncoderTests
             }.Code
         );
         Assert.AreEqual(0x12, new LooksForTree().Code);
+        Assert.AreEqual(0x1f, new LooksForWater().Code);
         Assert.AreEqual(
             0x35,
             new KnightWalks

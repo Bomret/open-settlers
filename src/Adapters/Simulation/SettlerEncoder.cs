@@ -229,6 +229,15 @@ public static class SettlerEncoder
                 Heading = a.Count,
                 Next = a.Memory,
             },
+            // The fisher's cast: the way back in bytes 11 and 12, the turns in byte 13, the catch in byte 14, the casts in byte 15.
+            Fishes a => new()
+            {
+                State = a.Code,
+                Mode = a.Back.East & 0xff,
+                Target = (a.Turns << 8) | (a.Back.South & 0xff),
+                Heading = a.Caught ? 1 : 0,
+                Next = a.Casts,
+            },
             // The stonecutter's cut: the way back in bytes 11 and 12, the part of the cut in byte 13, the quarter in the word at 14.
             CutsStone a => new()
             {
@@ -310,6 +319,7 @@ public static class SettlerEncoder
         {
             ToTree tree => (tree.Back.East & 0xff, tree.Back.South),
             ToHeap heap => (heap.Back.East & 0xff, heap.Back.South),
+            ToWater water => (water.Back.East & 0xff, water.Back.South),
             ToSpot spot => (spot.Back.East & 0xff, spot.Back.South),
             ToField field => (field.Back.East & 0xff, field.Back.South),
             BackToHut back => (WayBackMark, back.Carrying ? 1 : 0),

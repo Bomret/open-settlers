@@ -131,7 +131,7 @@ public sealed class OpenSettlersSourceTests
                     "carrier",
                     "woodcutter",
                     "stonecutter",
-                    "type-one-hut",
+                    "fisher",
                     "builder",
                     "forester",
                     "digger",
@@ -870,7 +870,7 @@ public sealed class OpenSettlersSourceTests
     [DataRow("carrier")]
     [DataRow("woodcutter")]
     [DataRow("stonecutter")]
-    [DataRow("type-one-hut")]
+    [DataRow("fisher")]
     [DataRow("builder")]
     [DataRow("forester")]
     [DataRow("digger")]
@@ -886,7 +886,7 @@ public sealed class OpenSettlersSourceTests
             ["carrier"] = new Carrier(),
             ["woodcutter"] = new Woodcutter(),
             ["stonecutter"] = new Stonecutter(),
-            ["type-one-hut"] = new TypeOneHut(),
+            ["fisher"] = new Fisher(),
             ["builder"] = new Builder(),
             ["forester"] = new Forester(),
             ["digger"] = new Digger(),
@@ -1036,7 +1036,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     [DataRow("settler/carrier/walks")]
     [DataRow("settler/woodcutter/cuts")]
-    [DataRow("settler/type-one-hut/waits")]
+    [DataRow("settler/fisher/waits")]
     public void ASettlerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();

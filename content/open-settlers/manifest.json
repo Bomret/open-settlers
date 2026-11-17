@@ -1574,43 +1574,43 @@
       -21
     ]
   },
-  "settler/type-one-hut/walks": {
-    "image": "settler/type-one-hut-walks.png",
+  "settler/fisher/walks": {
+    "image": "settler/fisher-walks.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/carries": {
-    "image": "settler/type-one-hut-carries.png",
+  "settler/fisher/carries": {
+    "image": "settler/fisher-carries.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/cuts": {
-    "image": "settler/type-one-hut-cuts.png",
+  "settler/fisher/cuts": {
+    "image": "settler/fisher-cuts.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/door": {
-    "image": "settler/type-one-hut-door.png",
+  "settler/fisher/door": {
+    "image": "settler/fisher-door.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/hands-over": {
-    "image": "settler/type-one-hut-hands-over.png",
+  "settler/fisher/hands-over": {
+    "image": "settler/fisher-hands-over.png",
     "anchor": [
       -7,
       -21
     ]
   },
-  "settler/type-one-hut/waits": {
-    "image": "settler/type-one-hut-waits.png",
+  "settler/fisher/waits": {
+    "image": "settler/fisher-waits.png",
     "anchor": [
       -7,
       -21

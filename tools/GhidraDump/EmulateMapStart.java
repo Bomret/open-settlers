@@ -72,7 +72,8 @@
 //                            worker for the woodcutter (docs/rules/woodcutting.md): the passes also run the map object pass
 //                            0x428d10 after 0x428728, as the main loop 0x4286d8 does, the hut node and its flag take the marks the castle leaves, and a line per pass also lists the object
 //                            bytes that changed (o=x,y:old>new;...), the flag bytes (byte 0 of record A) that changed
-//                            (fl=x,y:old>new;...), the flag items of slots 0 to 15 that changed (f<slot>=), and
+//                            (fl=x,y:old>new;...), the lake details (byte 0 of record B) that changed (ld=x,y:old>new;...),
+//                            the flag items of slots 0 to 15 that changed (f<slot>=), and
 //                            the random generator's words (rng=) when they moved. A building of type 2 is the woodcutter's hut.
 //                            worker, wood, and goods lines also carry m= as carrier does.
 //   goods:N:S0,S1,S2:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PUT;PUT...[:SET;SET...]]]]
@@ -84,7 +85,8 @@
 //                            flag, or PASS,PLACE,GOOD,SLOT for the flag of that slot. The SET field writes an object code into
 //                            a node's object byte before a pass (bit 7 of the byte kept): each SET is PASS,X,Y,CODE with the
 //                            code in decimal, as a stone heap's stage is set for the stonecutter's scenarios
-//                            (docs/rules/stonecutting.md). A building of type 17 (the sawmill) or 12 (the farm) is a large building: its node takes
+//                            (docs/rules/stonecutting.md). A SET of the form ld@PASS,X0,Y0,X1,Y1,VALUE writes a lake detail
+//                            (byte 0 of record B) into every node of the rectangle before a pass (docs/rules/fishing.md). A building of type 17 (the sawmill) or 12 (the farm) is a large building: its node takes
 //                            the object code 3 and its item the pointer to its flag at +0xe that a built site leaves (0x43ef82),
 //                            which its handler 0x42da0b reads (docs/rules/sawmilling.md). A building of type 15 (the mill) is a
 //                            small building with the same pointer, which its handler 0x42e2a0 reads (docs/rules/milling.md). The lines also list the castle's item
@@ -1297,6 +1299,22 @@ public class EmulateMapStart extends GhidraScript {
             for (String text : sets) {
                 // An object code written by hand into a node's object byte before a pass (bit 7 of the byte kept): PASS,X,Y,CODE
                 // with the code in decimal (a stone heap's code is 72 to 79).
+                if (text.startsWith("ld@")) {
+                    // Lake details written by hand into a rectangle of nodes before a pass: ld@PASS,X0,Y0,X1,Y1,VALUE (corners
+                    // included, the value in decimal), as the fisher's scenario of a lake with no fish has them. The byte is the
+                    // link of a flag or building node, so the rectangle must hold none.
+                    String[] lake = text.substring(3).split(",");
+                    if (pass != Integer.parseInt(lake[0])) {
+                        continue;
+                    }
+                    for (int ly = Integer.parseInt(lake[2]); ly <= Integer.parseInt(lake[4]); ly++) {
+                        for (int lx = Integer.parseInt(lake[1]); lx <= Integer.parseInt(lake[3]); lx++) {
+                            long detail = layerA + layerB + ((((long) ly << bits) + lx) * 4);
+                            emu.writeMemory(toAddr(detail), new byte[] {(byte) Integer.parseInt(lake[5])});
+                        }
+                    }
+                    continue;
+                }
                 String[] set = text.split(",");
                 if (pass != Integer.parseInt(set[0])) {
                     continue;
@@ -1351,6 +1369,20 @@ public class EmulateMapStart extends GhidraScript {
                 }
                 if (flagBytes.length() > 0) {
                     line.append(" fl=").append(flagBytes);
+                }
+                // ld= lists the nodes whose byte 0 of record B (the lake detail of a lake's middle, docs/rules/fishing.md) changed.
+                StringBuilder lakeBytes = new StringBuilder();
+                for (int ty = 0; ty < height; ty++) {
+                    for (int tx = 0; tx < width; tx++) {
+                        int at = ty * 8 * width + (width + tx) * 4;
+                        if (mapNow[at] != mapSeen[at]) {
+                            lakeBytes.append(lakeBytes.length() == 0 ? "" : ";").append(tx).append(",").append(ty).append(":")
+                                    .append(String.format("%02X>%02X", mapSeen[at] & 0xff, mapNow[at] & 0xff));
+                        }
+                    }
+                }
+                if (lakeBytes.length() > 0) {
+                    line.append(" ld=").append(lakeBytes);
                 }
                 mapSeen = mapNow.clone();
                 byte[] flagsNow = emu.readMemory(toAddr(TABLES), ITEM_SIZE * 16);

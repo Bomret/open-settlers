@@ -88,13 +88,13 @@ of that type on the node, with its flag south-east of it. The entry state is the
 leaves: `0x41f2d2` places it through `Building_Place` (`0x449a63`, at `0x41f2f6`) and finishes it ([Build
 sites](build-sites.md#the-building-types)). The placement and its refusals are those of the building site, since the evaluator
 judges the node the same way, and a node that holds no site for the type's size, or no room for the flag, fails the load with
-the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a mill's miller is placed as below, the other food buildings' workers not yet) and an entry with no type fail the
+the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a mill's miller, a fisher's fisher, and a farm's farmer are placed as below, the other food buildings' workers not yet) and an entry with no type fail the
 read, naming the types. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
 word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`). Its object code is 2 for the three small
 types, following the size-table caller `0x42cf9d` of `Building_Place`, where the mission start writes 2 only for type `0xb` and
 3 for every other type. The woodcutter's worker is the castle's woodcutter, and the stonecutter's the castle's stonecutter, walked in as above, where the mission
 start creates a new settler. The forester's worker is a settler without a job that the castle makes the forester (the request's second way, no tool,
-[Forestry](forestry.md)), walked in the same way, and the farmer's a settler without a job and a scythe from the castle's stock (the request's second way with its tool; a castle whose
+[Forestry](forestry.md)), walked in the same way, the fisher's worker is the castle's settler of job 11, walked in as the woodcutter's is ([Fishing](fishing.md)), and the farmer's a settler without a job and a scythe from the castle's stock (the request's second way with its tool; a castle whose
 stock holds no scythe refuses the entry, so a layout's seed must draw a start stock level that holds one: `layouts/farm.jsonc`'s draws 38). The sawmill stands with no worker inside: its worker comes through the building's worker request as the game runs
 (`CastleRoster.HandleBuilding`, [Sawmilling](sawmilling.md#the-building-and-the-job)). A player's command places a building
 site and never a finished building.
@@ -102,12 +102,12 @@ site and never a finished building.
 ## Not supported
 
 Some settlers have no entry state here. These are every other state of a settler, every other job, and custom castle
-contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, or the farm, and a woodcutter, a stonecutter, a forester, or a farmer apart from his finished-building entry. The file reader refuses the entry.
+contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, the fisher's, or the farm, and a woodcutter, a stonecutter, a forester, a fisher, or a farmer apart from his finished-building entry. The file reader refuses the entry.
 
 ## In the engine
 
 `Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys. `Game.PlaceFinishedBuilding` stands the finished building
-(`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, a forester, a miller, or a farmer; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
+(`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, a forester, a miller, a fisher, or a farmer; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
 the settler in his hut.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a road that the layout has not built before it fails the
 load with the entry named. A good on a flag that does not stand fails it the same way.

@@ -35,6 +35,12 @@ public static class EventType
     /// <summary>The woodcutter's search for a tree.</summary>
     public const string SearchTree = "search-tree";
 
+    /// <summary>The fisher's search for a node at a shore.</summary>
+    public const string SearchWater = "search-water";
+
+    /// <summary>The fisher's turn of the cast: the timer runs down, a cast draws against the lake detail beside him.</summary>
+    public const string Fish = "fish";
+
     /// <summary>The stonecutter's search for a stone heap.</summary>
     public const string SearchStone = "search-stone";
 
@@ -264,6 +270,8 @@ public static class EventType
         FreeFlagSlot,
         Door,
         SearchTree,
+        SearchWater,
+        Fish,
         SearchStone,
         CutStone,
         StepOut,

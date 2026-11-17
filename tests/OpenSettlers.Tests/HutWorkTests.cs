@@ -16,7 +16,7 @@ public sealed class HutWorkTests
 
     // The hut at (4, 4) with its flag south-east of it at (5, 5), and a tree at (5, 4): the first entry of the spiral around the
     // hut (an offset of 1 east) that the draw 0 names.
-    static (
+    internal static (
         BehaviourBench Bench,
         HutWork Behaviour,
         List<(int Flag, int Place, int Good)> Laid,
@@ -68,7 +68,7 @@ public sealed class HutWorkTests
 
     // The registry of the hut work's activities and the modules' (the woodcutter's among them), and the wait of a step that the game's
     // own walk behaviour handles.
-    static ActivityRegistry Registry(BehaviourBench bench, HutWork behaviour, JobParts parts, Causes causes)
+    internal static ActivityRegistry Registry(BehaviourBench bench, HutWork behaviour, JobParts parts, Causes causes)
     {
         var registry = new ActivityRegistry();
         behaviour.Register(registry);
@@ -126,8 +126,8 @@ public sealed class HutWorkTests
     public void AModuleRefusesTheArrivalOfASettlerThatIsNotOnAFreeWalkWithAMessage()
     {
         var (_, _, _, _, parts) = Hut();
-        var rules = JobModules.Build(parts).Single(module => module.JobType == typeof(TypeOneHut));
-        var settler = new Settler(new TypeOneHut(), 0, HutX, HutY, 0, new SearchesHome());
+        var rules = JobModules.Build(parts).Single(module => module.JobType == typeof(Digger));
+        var settler = new Settler(new Digger(), 0, HutX, HutY, 0, new SearchesHome());
 
         var refusal = Assert.ThrowsExactly<InvalidOperationException>(() => rules.Arrive(1, settler));
 

@@ -472,6 +472,39 @@ public sealed record CutsStone : Activity
     public override bool IsDrawn => true;
 }
 
+/// <summary>State 0x1f: the fisher inside his building looks for a free node at a shore (<c>0x433f71</c>, <c>docs/rules/fishing.md</c>).</summary>
+public sealed record LooksForWater : Activity
+{
+    /// <inheritdoc />
+    public override int Code => 0x1f;
+}
+
+/// <summary>
+/// State 0x20: the fisher stands on the node he found and casts for fish (<c>0x433e05</c>, <c>docs/rules/fishing.md</c>). Each cast
+/// takes two turns of the state; a cast draws against the lake detail of the water node beside him and lowers the detail by one
+/// where it catches, and the fisher turns back after a catch or ten casts.
+/// </summary>
+public sealed record Fishes : Activity
+{
+    /// <summary>The steps of the way back to the building's flag, east and south (bytes 11 and 12).</summary>
+    public required Vector Back { get; init; }
+
+    /// <summary>The turns made, a cast on each odd one (byte 13).</summary>
+    public required int Turns { get; init; }
+
+    /// <summary>Whether a fish is caught (byte 14).</summary>
+    public required bool Caught { get; init; }
+
+    /// <summary>The casts made (byte 15).</summary>
+    public required int Casts { get; init; }
+
+    /// <inheritdoc />
+    public override int Code => 0x20;
+
+    /// <inheritdoc />
+    public override bool IsDrawn => true;
+}
+
 /// <summary>State 25: the settler looks for the nearest flag on the way home.</summary>
 public sealed record SearchesHome : Activity
 {

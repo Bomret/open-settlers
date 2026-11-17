@@ -98,8 +98,8 @@ jobs 11 and 14 write none, so the fisher's and the farm's buildings ask for no g
 
 Only two jobs put a good with `Flag_PutGood` (`0x436b46`) from a free walk: job 11 (good 1) and job 14 (good 4). The jobs inside a
 building set byte 11 and go on to state `0xd` (`Settler_PutDownGood`, `0x43c6aa`), the put of [Sawmilling](sawmilling.md). The
-type 1 hut's settler is the fisher: job 11 is the job the engine ports as `TypeOneHut`, and its walk (a node by the water) is the
-fisher's. The rename of the job is the next slice's.
+type 1 building's settler is the fisher: job 11 is the job the engine ports as `Fisher`, and his walk and cast are in
+[Fishing](fishing.md).
 
 ## The goods
 

@@ -503,7 +503,7 @@ JOBS = {
     "carrier": (60, 100, 170),
     "woodcutter": (60, 130, 60),
     "stonecutter": (140, 140, 150),
-    "type-one-hut": (170, 110, 40),
+    "fisher": (170, 110, 40),
     "builder": (190, 90, 60),
     "forester": (90, 160, 80),
     "digger": (120, 90, 50),
@@ -513,6 +513,7 @@ JOBS = {
 }
 STONE = (185, 185, 190)
 GRAIN = (225, 195, 70)
+FISH = (110, 160, 210)
 KINDS = ("walks", "carries", "cuts", "door", "hands-over", "waits")
 
 
@@ -626,7 +627,7 @@ def main():
         add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
     for job, color in JOBS.items():
         for kind in KINDS:
-            load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else WOOD
+            load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else FISH if job == "fisher" else WOOD
             add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)

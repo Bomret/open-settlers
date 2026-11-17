@@ -106,7 +106,7 @@ public sealed class LayoutSettlersTests
             distribution: distribution,
             plankRankBase: plankRankBase,
             millRankBase: millRankBase,
-            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true),
+            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true, fisher: true),
             materialOrder: materialOrder,
             blowSteps: blowSteps,
             // A request a test gives replaces the made-up one of the same job.
@@ -193,17 +193,33 @@ public sealed class LayoutSettlersTests
     }
 
     [TestMethod]
+    public void AFinishedFisherEntryStandsHisWorkerInTheDoorAndHeGoesOnToLookForAShore()
+    {
+        var game = Applied(Built.Replace("woodcutter", "fisher"));
+
+        var worker = game.Settlers.Single(settler => settler.Job == new Fisher() && settler.Activity is Door);
+        Assert.AreEqual((13, 10), (worker.X, worker.Y));
+        Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
+        Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
+
+        Run(game, 200);
+
+        Assert.IsInstanceOfType<LooksForWater>(worker.Activity);
+    }
+
+    [TestMethod]
     public void ALayoutStandsAWorkerOnlyInTheHutOfAJobWhoseRulesLetItsSettlerStandInTheHut()
     {
         var game = Applied(Built);
 
         CollectionAssert.AreEqual(
-            new[] { true, true, true, false, false, false },
+            new[] { true, true, true, true, false, false, false },
             new[]
             {
                 BuildingType.Woodcutter,
                 BuildingType.Stonecutter,
                 BuildingType.Forester,
+                BuildingType.Fisher,
                 BuildingType.Sawmill,
                 BuildingType.Castle,
                 BuildingType.Storehouse,
@@ -373,7 +389,7 @@ public sealed class LayoutSettlersTests
         );
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, miller's, forester's, or farmer's building stands on the node",
+            "no finished woodcutter's, stonecutter's, miller's, forester's, fisher's, or farmer's building stands on the node",
             game.Walks.StandWorkerInHut(x, y)
         );
     }
@@ -429,7 +445,7 @@ public sealed class LayoutSettlersTests
         Assert.IsTrue(game.Buildings[1].Constructing);
 
         Assert.AreEqual(
-            "no finished woodcutter's, stonecutter's, miller's, forester's, or farmer's building stands on the node",
+            "no finished woodcutter's, stonecutter's, miller's, forester's, fisher's, or farmer's building stands on the node",
             game.Walks.StandWorkerInHut(13, 10)
         );
     }

@@ -222,13 +222,13 @@ public sealed class HistoryEditionSettlersTests
         Assert.IsEmpty(missing, $"entries picked with no image: {string.Join(", ", missing.Take(20))}");
     }
 
-    // The settler of the type 1 hut walks to his hut (states 5, 2, 4) in the frames of the step shapes and the claim, and
-    // walks back with a load: his rows are those of his handler.
+    // The fisher walks to his building (states 5, 2, 4) in the frames of the step shapes and the claim, walks back with a fish, and
+    // casts in the frames 0x83 to 0x86 with and without a catch: his rows are those of his handler.
     [TestMethod]
     [TestCategory(Needs.Install)]
-    public void EveryEntryTheSettlerOfTheTypeOneHutIsDrawnWithHasAnImage()
+    public void EveryEntryTheFisherIsDrawnWithHasAnImage()
     {
-        var frames = Enumerable.Range(4, 55).Concat([0x51, 0x52]).Concat(Enumerable.Range(0x74, 5));
+        var frames = Enumerable.Range(4, 55).Concat([0x51, 0x52]).Concat(Enumerable.Range(0x83, 4));
         var settlers =
             from frame in frames
             from step in Enumerable.Range(0, 128)
@@ -236,22 +236,22 @@ public sealed class HistoryEditionSettlersTests
             {
                 Walking,
                 BackWithLog,
-                new Cuts
+                new Fishes
                 {
                     Back = new Vector(0, 0),
-                    SecondVariant = false,
-                    Count = 1,
-                    Memory = 0,
+                    Turns = 1,
+                    Caught = true,
+                    Casts = 1,
                 },
-                new Cuts
+                new Fishes
                 {
                     Back = new Vector(0, 0),
-                    SecondVariant = false,
-                    Count = 0,
-                    Memory = 0,
+                    Turns = 1,
+                    Caught = false,
+                    Casts = 1,
                 },
             }
-            select new Settler(new TypeOneHut(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)(step * 8) };
+            select new Settler(new Fisher(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)(step * 8) };
 
         var missing = PickedWithNoImage(Load(), settlers);
 
