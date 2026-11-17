@@ -92,6 +92,62 @@ public sealed class SiteStagesTests
     }
 
     [TestMethod]
+    [DataRow((ushort)0)]
+    [DataRow((ushort)0x4000)]
+    [DataRow((ushort)0xc400)]
+    public void TheCastleUnderConstructionDrawsTheFinishedCastleGrownByTheRawProgressWord(ushort progress)
+    {
+        // The castle's stub 0x44fd2f jumps to 0x44fee2, which grows object 178 by the progress word itself (not doubled) and never reaches
+        // the site routine 0x44fa79: no ground, base, or scaffold, even at a progress of 0.
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new SitePart { Layer = SiteLayer.Finished, Fraction = progress },
+            },
+            SiteStages.CastleParts(progress).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void TheCastlesDrawingGrowsItsImageOverItsWholeShadowAndAsksForNoOtherLayer()
+    {
+        var image = Image(width: 2, height: 4);
+        var shadow = Image(width: 3, height: 5, value: 9);
+        var asked = new System.Collections.Generic.List<SiteLayer>();
+        var sites = new SiteDrawings(
+            (type, layer) =>
+            {
+                Assert.AreEqual(BuildingType.Castle, type);
+                asked.Add(layer);
+
+                return new ObjectDrawing { Image = image, Shadow = shadow };
+            }
+        );
+
+        var drawing = sites.Of(BuildingType.Castle, 0x8000)!;
+
+        CollectionAssert.AreEqual(new[] { SiteLayer.Finished }, asked);
+        Assert.AreEqual(3, drawing.Image!.Height, "(0x8000 * 4 >> 16) + 1 rows of the castle, the raw word");
+        Assert.AreSame(shadow, drawing.Shadow, "the whole shadow");
+    }
+
+    [TestMethod]
+    public void ACastleWithNoShadowArtDrawsItsGrownImageAlone()
+    {
+        var sites = new SiteDrawings(
+            (_, layer) =>
+                layer == SiteLayer.Finished
+                    ? new ObjectDrawing { Image = Image(width: 2, height: 4), Shadow = null }
+                    : null
+        );
+
+        var drawing = sites.Of(BuildingType.Castle, 0)!;
+
+        Assert.AreEqual(1, drawing.Image!.Height, "a progress of 0 shows the bottom row (0x406350)");
+        Assert.IsNull(drawing.Shadow);
+    }
+
+    [TestMethod]
     public void AGrowingImageShowsItsBottomRowsByTheFractionOfItsHeight()
     {
         var image = Image(width: 2, height: 4, offsetY: -10);

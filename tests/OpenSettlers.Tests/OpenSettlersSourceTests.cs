@@ -554,6 +554,38 @@ public sealed class OpenSettlersSourceTests
         Assert.AreEqual(4, later.Rgba[(7 * 9) * 4], "the building's rows cover the scaffold's at the bottom");
     }
 
+    // The castle under construction grows the set's castle by its progress word, with no site layer under it; the set's castle has no
+    // shadow, so its image draws alone.
+    [TestMethod]
+    public void TheCastleUnderConstructionGrowsTheSetsCastleByItsProgressWord()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("base.png", "9x2:6");
+        folder.Png("castle.png", "9x8:4");
+        folder.Entries["building/site-small"] = ContentFolder.Entry("base.png", "-4, -1");
+        folder.Entries["building/site-large"] = ContentFolder.Entry("base.png", "-4, -1");
+        folder.Entries[OpenSettlersSource.CastleKey] = ContentFolder.Entry("castle.png", "-4, -7");
+        var source = folder.Load();
+        ObjectDrawing Castle(ushort? progress) =>
+            source.Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Castle,
+                    SiteProgress = progress,
+                }
+            )!;
+
+        // (0x8000 * 8 >> 16) + 1 = 5 rows of 8; a progress of 0 shows the bottom row, with no ground under it.
+        Assert.AreEqual((1, 0), (Castle(0).Image!.Height, Castle(0).Image!.OffsetY));
+        Assert.AreEqual((5, -4), (Castle(0x8000).Image!.Height, Castle(0x8000).Image!.OffsetY));
+        Assert.AreEqual(4, Castle(0x8000).Image!.Rgba[0], "the castle's own pixels");
+        Assert.AreEqual(8, Castle(null).Image!.Height, "the castle that stands, whole");
+        Assert.IsNull(Castle(0x8000).Shadow);
+    }
+
     [TestMethod]
     public void ABuildingTypeTheGameDrawsNoBuildingForDrawsNothing()
     {
