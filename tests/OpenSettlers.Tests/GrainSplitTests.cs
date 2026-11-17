@@ -22,16 +22,74 @@ public sealed class GrainSplitTests
     const int PigFarmFlag = 2;
     const int PigFarm = 1;
     const int Mill = 2;
+    const int FarmFlag = 3;
+
+    // With neither building asking, no flag has a request for grain, so the hand-out finds no taker and the grain stays in the castle. The
+    // cases of one asker are pig-materials.txt (the pig farm alone) and mill-materials.txt (the mill alone).
+    [TestMethod]
+    public void WithNeitherAskingTheGrainStaysInTheCastle()
+    {
+        var parts = "construct:1:1234,5678,9ABC:0:15,5:18,6;15,9:16,6,00;16,6,2223::700:900:k@4,5".Split(':');
+        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        for (var pass = 0; pass < 700; pass++)
+        {
+            game.Tick();
+        }
+
+        while (game.CastleStock.Count(Good.Grain) < 5)
+        {
+            game.CastleStock.Add(Good.Grain);
+        }
+
+        for (var pass = 700; pass < 1000; pass++)
+        {
+            game.Tick();
+        }
+
+        Assert.AreEqual(5, game.CastleStock.Count(Good.Grain), "the castle's grain after 300 passes with no asker");
+    }
 
     [TestMethod]
-    public void TheCastleSharesGrainBetweenTheMillAndThePigFarmAsTheOriginalDoes()
+    public void TheCastleSharesGrainBetweenTheMillAndThePigFarmAsTheOriginalDoes() =>
+        Replay(
+            Fixture,
+            (game, pass) =>
+            {
+                if (pass == 700)
+                {
+                    game.ApplyCommands();
+                    while (game.CastleStock.Count(Good.Grain) < 5)
+                    {
+                        game.CastleStock.Add(Good.Grain);
+                    }
+                }
+            }
+        );
+
+    // The grain of a farm, put on the farm's flag three flags from the pig farm's and one from the mill's: the pig farm's request ranks 0xff
+    // against the mill's 0x7f, and the farther flag takes it.
+    [TestMethod]
+    public void GrainFromTheFarmGoesToTheRequestThatRanksHighestAsTheOriginalDoes() =>
+        Replay(
+            "grain-split-farm.txt",
+            (game, pass) =>
+            {
+                if (pass == 500)
+                {
+                    game.Goods.LayGood(FarmFlag, 0, Good.Grain.Code);
+                }
+            },
+            from: 400
+        );
+
+    // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS][:castle-off@PASS]; before runs ahead of each pass's tick.
+    // The checks start at the pass from.
+    static void Replay(string fixture, Action<Game, int> before, int from = 0)
     {
-        var scenario = RemovalTests.Load(Fixture).Single();
-        // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:castle-off@PASS]
+        var scenario = RemovalTests.Load(fixture).Single();
         var parts = scenario.Command.Split(':');
         var map = RemovalTests.MapOf(parts);
         var game = RemovalTests.Started(parts, map, handsOutGoods: true);
-        var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         var lines = scenario
             .Lines.Where(line => line.ContainsKey("pass"))
@@ -45,16 +103,7 @@ public sealed class GrainSplitTests
 
         for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
         {
-            if (pass == at)
-            {
-                game.ApplyCommands();
-                Assert.AreEqual("k@4,5", scenario.Lines.Single(line => line.ContainsKey("click"))["click"]);
-                while (game.CastleStock.Count(Good.Grain) < 5)
-                {
-                    game.CastleStock.Add(Good.Grain);
-                }
-            }
-
+            before(game, pass);
             game.Tick();
             var line = lines.GetValueOrDefault(pass) ?? [];
             foreach (var key in new[] { "f2", "f3" })
@@ -76,6 +125,11 @@ public sealed class GrainSplitTests
             grains = line.GetValueOrDefault("grain") ?? grains;
             pigs = line.GetValueOrDefault("pig") ?? pigs;
             rng = line.GetValueOrDefault("rng") ?? rng;
+            if (pass < from)
+            {
+                continue;
+            }
+
             foreach (var (key, slot) in new[] { ("f2", MillFlag), ("f3", PigFarmFlag) })
             {
                 if (requests.TryGetValue(key, out var request))

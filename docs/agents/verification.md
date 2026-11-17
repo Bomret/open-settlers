@@ -261,6 +261,11 @@ script alone. Add a layout only where none of them holds the situation.
   fast-forwarded to the castle's first bread.
 - `layouts/pig-farm.jsonc` and `play/pig-farm.play`: a finished pig farm with its pig farmer inside, a road to the castle, and two grains on
   the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
+- `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
+  the other and joined by roads from the castle, and the script runs to the castle's first bread beyond its start stock, with fish and meat
+  beyond it too. The castle's 5 jobless settlers allow no more (the farm, the mill, and the pig farm would need 6 more), so the play
+  shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
+  the game's ticks run only after the first `shot` that follows a `fast-forward`.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
