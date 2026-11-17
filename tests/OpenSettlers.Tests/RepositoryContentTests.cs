@@ -58,7 +58,10 @@ public sealed class RepositoryContentTests
 
             var checkedIn = Path.Combine(root, "content", "basic");
             var expected = SetFiles(generated);
-            var actual = SetFiles(checkedIn).Where(file => file != ".gdignore").ToList();
+            // The rule files are hand-written, not generated: exactly the files the rule tables port names are exempt.
+            var actual = SetFiles(checkedIn)
+                .Where(file => file != ".gdignore" && !OpenSettlersRuleTables.Files.Contains(file))
+                .ToList();
             var differences = expected
                 .Except(actual)
                 .Select(file => $"missing {file}")
