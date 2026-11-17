@@ -40,7 +40,7 @@ press that moves the view by more than a few pixels is a drag and places nothing
 point is nearest to it. A click on a flag's picture goes to that flag's node. Where two flag pictures overlap, the click goes to the southern flag. If both flags are in one row, it goes to the eastern one.
 
 The game view's buttons stand in one column right of the map, top to bottom in the order named here. The Flag, Road, Woodcutter, Forester, Stonecutter, Sawmill, Fisher, Farm, Pig farm, Butcher, Mill, Baker, and Remove buttons are on/off buttons. At most one is on: pressing one turns the others
-off. The Build help button is an on/off button apart from them (below).
+off. The Build help button is an on/off button apart from them (below). The Speed button stands last (below).
 
 ### No button on
 
@@ -111,6 +111,14 @@ building has none, and neither does a node with no site.
 
 Where a flag stands south-east of a node, the node can show a flag marker. A click puts no flag there. The original does the
 same. The markers follow every change of the game in the frame that shows it. The map view has no Build help button.
+
+### Speed
+
+The Speed button sets how fast the game runs. It shows the speed factor and starts at 1x, the original's normal speed
+of 12.5 ticks a second. Each press doubles the speed: 1x, 2x, 4x, 8x, and back to 1x. These are the factors of the
+History Edition's game-speed switch; the order of the presses is a stand-in. A frame runs at most 4 ticks times the
+factor, so after a long frame the game falls behind the clock and does not catch up. The speed stays when a new seed or size starts a new game. The map view has no
+Speed button.
 
 ### Refused clicks
 

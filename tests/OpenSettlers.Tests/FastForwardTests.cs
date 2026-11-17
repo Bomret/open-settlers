@@ -275,7 +275,7 @@ public sealed class FastForwardTests
         Assert.AreEqual(0, pacer.Due(2), "the held game ticks no frame");
         Assert.AreEqual(0, pacer.Due(2), "and no later frame either");
         pacer.ShotTaken();
-        Assert.AreEqual(25, pacer.Due(2), "after the shot the game runs on, the held time not counted");
+        Assert.AreEqual(3, pacer.Due(0.3), "after the shot the game runs on, the held time not counted");
     }
 
     [TestMethod]
@@ -301,7 +301,7 @@ public sealed class FastForwardTests
 
         Assert.IsTrue(run.Finished);
         Assert.AreEqual("play/t.play line 1: fast-forward needs the game view, use --game-view", run.Problems.Single());
-        Assert.AreEqual(25, pacer.Due(2));
+        Assert.AreEqual(3, pacer.Due(0.3));
     }
 
     [TestMethod]

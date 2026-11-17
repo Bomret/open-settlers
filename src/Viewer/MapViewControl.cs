@@ -153,7 +153,10 @@ public partial class MapViewControl(
     /// <summary>The area the map is drawn in and the mouse acts on; a play run aims its input at it.</summary>
     public Control Canvas => _canvas;
 
-    /// <summary>The game-view buttons on show, in column order, top to bottom; none in the map view. A play run's <c>button</c> step clicks one.</summary>
+    /// <summary>
+    /// The game-view buttons a play run's <c>button</c> step may click, in column order, top to bottom; none in the map
+    /// view. The Speed button is left out, so a play run always runs at normal speed.
+    /// </summary>
     public System.Collections.Generic.IReadOnlyList<Button> ShownButtons =>
         [
             .. new[] { _flagButton, _roadButton }
@@ -409,6 +412,20 @@ public partial class MapViewControl(
         };
         _buildHelpButton.Toggled += _ => Redraw();
         buttons.AddChild(_buildHelpButton);
+        // Stand-in for the History Edition's game-speed switch (Speed_SetFactor, 0x405fe0): each press doubles the tick
+        // rate, and 8 times goes back to normal speed (docs/rules/timing.md). The speed stays when a new game starts.
+        var speedButton = new Button
+        {
+            Text = SpeedText(),
+            Visible = _gameView,
+            FocusMode = FocusModeEnum.None,
+        };
+        speedButton.Pressed += () =>
+        {
+            _pacer.NextSpeed();
+            speedButton.Text = SpeedText();
+        };
+        buttons.AddChild(speedButton);
 
         _canvas = new Control
         {
@@ -463,6 +480,8 @@ public partial class MapViewControl(
         Redraw();
         ShowMessage();
     }
+
+    string SpeedText() => $"Speed {_pacer.Speed}x";
 
     // The graphics source the host loads; a problem with the roads, objects, or settlers is kept for the message.
     void LoadSource()
@@ -538,7 +557,7 @@ public partial class MapViewControl(
     {
         if (_game is not null)
         {
-            // The frame rate does not set the tick rate: whole ticks are due, the fraction carries.
+            // The frame rate does not set the tick rate: whole ticks are due, the fraction carries, up to the pacer's bound.
             // A tick moves the clock, so UpdateObjects below builds the settlers' new positions into the sprites.
             for (var due = _pacer.Due(delta); due > 0; due--)
             {
