@@ -1867,5 +1867,47 @@
       -7,
       -21
     ]
+  },
+  "settler/butcher/walks": {
+    "image": "settler/butcher-walks.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/carries": {
+    "image": "settler/butcher-carries.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/cuts": {
+    "image": "settler/butcher-cuts.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/door": {
+    "image": "settler/butcher-door.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/hands-over": {
+    "image": "settler/butcher-hands-over.png",
+    "anchor": [
+      -7,
+      -21
+    ]
+  },
+  "settler/butcher/waits": {
+    "image": "settler/butcher-waits.png",
+    "anchor": [
+      -7,
+      -21
+    ]
   }
 }

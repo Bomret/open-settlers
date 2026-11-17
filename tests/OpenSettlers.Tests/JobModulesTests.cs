@@ -30,6 +30,7 @@ public sealed class JobModulesTests
             new[]
             {
                 typeof(Builder),
+                typeof(Butcher),
                 typeof(Digger),
                 typeof(Farmer),
                 typeof(Forester),
@@ -44,10 +45,18 @@ public sealed class JobModulesTests
     }
 
     [TestMethod]
-    public void OnlyTheModulesOfTheWoodcutterTheStonecutterTheForesterTheMillerAndTheFarmerLetTheirSettlerStandInTheHut()
+    public void OnlyTheModulesOfTheWoodcutterTheStonecutterTheForesterTheMillerTheFarmerAndTheButcherLetTheirSettlerStandInTheHut()
     {
         CollectionAssert.AreEqual(
-            new[] { typeof(Farmer), typeof(Forester), typeof(Miller), typeof(Stonecutter), typeof(Woodcutter) },
+            new[]
+            {
+                typeof(Butcher),
+                typeof(Farmer),
+                typeof(Forester),
+                typeof(Miller),
+                typeof(Stonecutter),
+                typeof(Woodcutter),
+            },
             Modules().Where(module => module.CanStandInHut).Select(module => module.JobType).ToArray()
         );
     }
@@ -56,7 +65,15 @@ public sealed class JobModulesTests
     public void TheModulesOfTheHutsNameTheCauseOfTheirWork()
     {
         CollectionAssert.AreEqual(
-            new[] { Cause.Farming, Cause.Forestry, Cause.Settlers, Cause.Stonecutting, Cause.Woodcutting },
+            new[]
+            {
+                Cause.Settlers,
+                Cause.Farming,
+                Cause.Forestry,
+                Cause.Settlers,
+                Cause.Stonecutting,
+                Cause.Woodcutting,
+            },
             Modules().Where(module => module.CanStandInHut).Select(module => module.Cause).ToArray()
         );
     }

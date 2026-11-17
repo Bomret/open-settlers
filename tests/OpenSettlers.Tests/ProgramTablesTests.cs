@@ -199,6 +199,14 @@ public sealed class ProgramTablesTests
         Add(ProgramTablesImporter.MillerWalkAddress, 0x1900);
         Add(ProgramTablesImporter.MillerCarryingAddress, 0x1980);
         Add(ProgramTablesImporter.MillerGrindAddress, 0x1a00);
+        var butcherStub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Butcher.Number;
+        Write(
+            butcherStub,
+            [0xe9, .. BitConverter.GetBytes(ProgramTablesImporter.ButcherHandlerAddress - (butcherStub + 5))]
+        );
+        Add(ProgramTablesImporter.ButcherWalkAddress, 0x1b00);
+        Add(ProgramTablesImporter.ButcherCarryingAddress, 0x1b80);
+        Add(ProgramTablesImporter.ButcherWorkAddress, 0x1c00);
     }
 
     static int FileOffset(int address) => RawStart + address - ImageBase - SectionStart;
@@ -861,6 +869,46 @@ public sealed class ProgramTablesTests
             tables.Get<MillerFigureAdds>(new Miller())
         );
         Assert.AreEqual(0x7f, tables.MillRankBase);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheButchersFigureAddsOfTheInstallMatchTheProgram()
+    {
+        // The handler of the stub of job 13 (0x43ff90, read from the program's instructions): add word [edi+8], 0x3780 at 0x43fff8 for a
+        // figure byte from 0x80, 0x3a00 at 0x440015 for the state 5 that lays the meat down next (byte 15 is 0xd), and 0x3700 at 0x440020
+        // for the walk; the draw run of the recording (settler-draws.txt, butcher) draws with them.
+        Assert.AreEqual(
+            new ButcherFigureAdds
+            {
+                Walk = 0x3700,
+                Carrying = 0x3a00,
+                Work = 0x3780,
+            },
+            TestProgram.Tables().Get<ButcherFigureAdds>(new Butcher())
+        );
+    }
+
+    [TestMethod]
+    public void TheButchersFigureAddsAreReadFromHisHandlerAndHisStubIsChecked()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        Assert.AreEqual(
+            new ButcherFigureAdds
+            {
+                Walk = 0x1b00,
+                Carrying = 0x1b80,
+                Work = 0x1c00,
+            },
+            tables.Get<ButcherFigureAdds>(new Butcher())
+        );
+
+        var stub = ProgramTablesImporter.JobStubAddress + ProgramTablesImporter.JobStubSize * Butcher.Number;
+        var exe = Executable(bytes => bytes[FileOffset(stub)] = 0x90);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+        StringAssert.Contains(refusal.Message, "butcher");
     }
 
     [TestMethod]
