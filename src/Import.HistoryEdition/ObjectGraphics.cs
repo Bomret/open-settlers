@@ -8,8 +8,8 @@ namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The object sprites of a History Edition install, by archive entry (ADR 0014): the sprites of codes 8 to 127 (entries
-/// 1250 to 1369), the castle's, the flag's with its further frames, the hut's, the goods', the water's, and the build markers', and the
-/// shadow masks of those that have one. Only the History Edition source reads it.
+/// 1250 to 1369), the castle's, the flag's with its further frames, the hut's, the goods', the water's, the build markers', and the
+/// border posts' (entries 610 to 619), and the shadow masks of those that have one. Only the History Edition source reads it.
 /// </summary>
 sealed class ObjectGraphics
 {
@@ -80,6 +80,7 @@ sealed class ObjectGraphics
         AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
         AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
         AddSprites(Enum.GetValues<BuildMarker>().Select(ObjectSprites.MarkerEntry), "the build marker sprite");
+        AddSprites(BorderRules.Entries, "the border post sprite");
 
         var shadows = new Dictionary<int, ObjectImage>();
         var shadowed = Enumerable

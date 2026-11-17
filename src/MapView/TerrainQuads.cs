@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.MapView;
 
-/// <summary>The drawing plan of a map's terrain and roads: one rectangle per image, grouped into bands of rows.</summary>
+/// <summary>The drawing plan of a map's terrain, roads, and border posts: one rectangle per image, the terrain grouped into bands of rows.</summary>
 public static class TerrainQuads
 {
     /// <summary>
@@ -56,15 +57,38 @@ public static class TerrainQuads
         return bands;
     }
 
-    /// <summary>The rectangles of the road <c>strips</c>, in order: each image hangs from the strip's position by its offsets. A strip the source draws nothing for gets none.</summary>
-    public static List<ObjectQuad> Strips(IReadOnlyList<RoadStrip> strips, IGraphicsSource source, ImageLayers layers)
+    /// <summary>
+    /// The rectangles of the road pass over <c>map</c>, in order: for each node in row-major order, its edges east,
+    /// south-east, and south, each the road strip where the node holds that road bit and else the border post where the
+    /// owners differ (<see cref="RoadDraws"/>, <see cref="BorderDraws"/>). Each image hangs from the term's position by
+    /// its offsets. A term the source draws nothing for gets none.
+    /// </summary>
+    public static List<ObjectQuad> Edges(Map map, IGraphicsSource source, ImageLayers layers)
     {
-        var quads = new List<ObjectQuad>(strips.Count);
-        foreach (var strip in strips)
+        var quads = new List<ObjectQuad>();
+        for (var row = 0; row < map.Size.Height; row++)
         {
-            if (source.Draw(strip) is { } image)
+            for (var column = 0; column < map.Size.Width; column++)
             {
-                quads.Add(Quad(image, strip.X, strip.Y, layers));
+                var roads = map.At(column, row).Roads;
+                for (var direction = 0; direction < 3; direction++)
+                {
+                    if (roads.Has(direction))
+                    {
+                        var strip = RoadDraws.Strip(map, column, row, (RoadDirection)direction);
+                        if (source.Draw(strip) is { } image)
+                        {
+                            quads.Add(Quad(image, strip.X, strip.Y, layers));
+                        }
+                    }
+                    else if (
+                        BorderDraws.Post(map, column, row, (RoadDirection)direction) is { } post
+                        && source.Draw(post) is { } image
+                    )
+                    {
+                        quads.Add(Quad(image, post.X, post.Y, layers));
+                    }
+                }
             }
         }
 

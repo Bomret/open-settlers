@@ -468,6 +468,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
     public ObjectImage? Draw(RoadStrip strip) => _roads[(int)strip.Direction];
 
     /// <inheritdoc />
+    public ObjectImage? Draw(BorderPost post) => null;
+
+    /// <inheritdoc />
     public ObjectDrawing? Draw(MapObjectDraw draw) =>
         draw.Object == MapObject.Flag ? _flag
         : draw.Object.Code is >= FirstObjectCode and <= LastObjectCode ? _objects[draw.Object.Code - FirstObjectCode]

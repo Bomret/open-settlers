@@ -9,8 +9,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class TerrainQuadsTests
 {
-    // A source that draws a 30 x 10 image hung 13 left of and 2 above its anchor for each terrain code except 99, and
-    // draws a road strip of difference 0 only.
+    // A source that draws a 30 x 10 image hung 13 left of and 2 above its anchor for each terrain code except 99, draws a
+    // road strip of difference 0 only, and draws every border post.
     sealed class FakeSource : IGraphicsSource
     {
         readonly Dictionary<int, ObjectImage> _images = [];
@@ -40,6 +40,18 @@ public sealed class TerrainQuadsTests
                     Rgba = new byte[8 * 5 * 4],
                 }
                 : null;
+
+        // Every border post draws one 6 x 7 image hung 2 left of and 7 above its anchor.
+        readonly ObjectImage _post = new()
+        {
+            Width = 6,
+            Height = 7,
+            OffsetX = -2,
+            OffsetY = -7,
+            Rgba = new byte[6 * 7 * 4],
+        };
+
+        public ObjectImage? Draw(BorderPost post) => _post;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) => null;
 
@@ -141,42 +153,45 @@ public sealed class TerrainQuadsTests
     {
         var layers = new ImageLayers();
         Bands([Triangle(0)], 4, layers);
-        var strips = new[]
-        {
-            new RoadStrip
-            {
-                X = 100,
-                Y = 200,
-                Direction = RoadDirection.East,
-                Difference = 0,
-                Slope = 0,
-                Ground = new Domain.Terrain { Code = 5 },
-            },
-            new RoadStrip
-            {
-                X = 300,
-                Y = 200,
-                Direction = RoadDirection.East,
-                Difference = 5,
-                Slope = 0,
-                Ground = new Domain.Terrain { Code = 5 },
-            },
-        };
+        var map = new Map(MapSize.Offered[0]);
+        map.At(10, 10).Roads = RoadSet.Of(0);
+        // A road the archive has no strip for: a height difference of 5.
+        map.At(20, 10).Roads = RoadSet.Of(0);
+        map.At(20, 10).Height = 5;
 
-        var quads = TerrainQuads.Strips(strips, new FakeSource(), layers);
+        var quads = TerrainQuads.Edges(map, new FakeSource(), layers);
 
+        var strip = RoadDraws.Strip(map, 10, 10, RoadDirection.East);
         Assert.HasCount(1, quads);
         Assert.AreEqual(
             new ObjectQuad
             {
-                X = 101,
-                Y = 197,
+                X = strip.X + 1,
+                Y = strip.Y - 3,
                 Width = 8,
                 Height = 5,
                 Layer = 1,
             },
             quads[0]
         );
+    }
+
+    [TestMethod]
+    public void TheRoadPassListsEachNodesEdgesEastSouthEastSouthEachAStripOrAPost()
+    {
+        var map = new Map(MapSize.Offered[0]);
+        map.At(10, 10).Roads = RoadSet.Of(0);
+        // The south neighbor is a player's: the node's east edge is a road, its south edge a border.
+        map.At(10, 11).Owner = Owner.Player(0);
+
+        var quads = TerrainQuads.Edges(map, new FakeSource(), new ImageLayers());
+
+        // Row 10: the south-east edge of 9,10, then the east strip and the south post of 10,10. Row 11: the east edge of
+        // 9,11, then the three edges of 10,11.
+        CollectionAssert.AreEqual(new[] { 6, 8, 6, 6, 6, 6, 6 }, quads.Select(quad => quad.Width).ToArray());
+        var post = BorderDraws.Post(map, 10, 10, RoadDirection.South)!.Value;
+        Assert.AreEqual(post.X - 2, quads[2].X);
+        Assert.AreEqual(post.Y - 7, quads[2].Y);
     }
 
     [TestMethod]
