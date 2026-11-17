@@ -281,6 +281,37 @@ public sealed class MapLaunchTests
         );
     }
 
+    // A layout entry the game refuses under the basic rules exits with the layout's problem, as under the History Edition: the
+    // entry stands on the castle's own node.
+    [TestMethod]
+    public void ALayoutEntryTheBasicRulesRefuseExitsFourWithTheLayoutsProblem()
+    {
+        var text = LayoutTests.Text(
+            extra: "\"castle\":{\"x\":15,\"y\":10},\"buildings\":[{\"type\":\"woodcutter\",\"x\":15,\"y\":10}]"
+        );
+        var read = Layout.Read(text, "refused.jsonc");
+        Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
+        var basicFolder = LaunchInstall.BasicFolder(RepositoryRoot());
+        var game = GameFactory.Create(new OpenSettlersRuleTables(basicFolder).Read(), read.Layout.BuildMap(), 0);
+
+        var code = LayoutLoad.Start(read.Layout, game, out var started, out var message);
+
+        Assert.AreEqual(4, code);
+        Assert.IsNull(started);
+        StringAssert.StartsWith(message, "ERROR refused.jsonc: ");
+    }
+
+    static string RepositoryRoot()
+    {
+        var folder = AppContext.BaseDirectory;
+        while (folder is not null && !File.Exists(Path.Combine(folder, "project.godot")))
+        {
+            folder = Path.GetDirectoryName(folder);
+        }
+
+        return folder ?? throw new InvalidOperationException("no project.godot above the test binaries");
+    }
+
     [TestMethod]
     public void ABadPlayScriptOnTheBasicSetExitsOneOnStderr()
     {
