@@ -191,9 +191,14 @@ public sealed partial class OpenSettlersRuleTablesTests
         var texts = Directory
             .EnumerateFiles(source, "*.cs", SearchOption.AllDirectories)
             .Where(file =>
-                !file.Contains($"{Path.DirectorySeparatorChar}Import.HistoryEdition{Path.DirectorySeparatorChar}")
-                && !file.Contains($"{Path.DirectorySeparatorChar}Import.OpenSettlers{Path.DirectorySeparatorChar}")
-            )
+            {
+                // The test and helper projects read job data to test it and are no simulation.
+                var folder = Path.GetRelativePath(source, file).Split(Path.DirectorySeparatorChar)[0];
+
+                return folder is not ("Import.HistoryEdition" or "Import.OpenSettlers" or "Testing")
+                    && !folder.EndsWith(".Tests", StringComparison.Ordinal)
+                    && !folder.EndsWith(".Testing", StringComparison.Ordinal);
+            })
             .Select(file => (File: file, Text: File.ReadAllText(file)))
             .ToList();
         foreach (var (file, text) in texts)
