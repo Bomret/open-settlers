@@ -16,8 +16,9 @@ public sealed class CastleGrowthTests
         Assert.IsTrue(castle.Constructing, "the castle is under construction after its placement");
         var largest = 0;
         var last = castle.Progress;
-        while (castle.Constructing)
+        for (var tick = 0; castle.Constructing; tick++)
         {
+            Assert.IsTrue(tick < 2000, "the castle stands within 2000 passes");
             game.Tick();
             if (castle.Constructing)
             {

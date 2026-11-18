@@ -22,8 +22,9 @@ public abstract record Activity
     /// <summary>
     /// Whether the view draws a settler in this activity, by its frame and the time left of its step (<c>docs/rules/settlers.md</c>,
     /// "Drawing the walk"). Such a settler takes one more turn every pass where the game gives the settlers in view their turns
-    /// (<c>MainPass.EveryPassTurns</c>), so its figure does not stand still between its slice turns. An activity the original draws
-    /// overrides this; the others are not drawn.
+    /// (<c>MainPass.EveryPassTurns</c>), so its figure does not stand still between its slice turns. That turn is decided by
+    /// <see cref="TakesEveryPassTurn"/>, which also holds for the castle's settler, which is not drawn. An activity the original
+    /// draws overrides this; the others are not drawn.
     /// </summary>
     public virtual bool IsDrawn => false;
 
