@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.MapView;
 
 namespace OpenSettlers.Tests;
 

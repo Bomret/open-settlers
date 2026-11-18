@@ -217,8 +217,8 @@ public sealed class RepositoryContentTests
         }
 
         // The layer libraries, the two sources, the ports, the map view, the launch code, the assets, the generator, the
-        // shared test helpers, the six library helper projects, the tests, and the root test project.
-        Assert.AreEqual(19, projectFolders);
+        // shared test helpers, the six library helper projects, the test pairs of the generator, the domain, and the ports, the tests, and the root test project.
+        Assert.AreEqual(22, projectFolders);
     }
 
     // The set's files by path relative to the folder, with forward slashes.
