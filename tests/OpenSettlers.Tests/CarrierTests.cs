@@ -152,8 +152,9 @@ public sealed class CarrierTests
         Assert.AreEqual(0x71, carrier.Frame, "the frame of the idle carrier: 0x6e plus the direction it came by");
     }
 
-    // The carrier next to the flag at 18,6, marked to go as the fourth empty turn at a busy road marks it, steps onto the castle's
-    // flag, walks to the storage (state 2, mode 0xfe), and goes in: the castle's list names it under job 0.
+    // The carrier next to the flag at 18,6, marked to go by hand in place of a release (the flags keep their counts; BusyRoadTests
+    // runs the release itself against the emulator), steps onto the castle's flag, walks to the storage (state 2, mode 0xfe), and
+    // goes in: the castle's list names it under job 0.
     [TestMethod]
     public void AReleasedCarrierWalksIntoTheCastleAndTheCastlesListNamesItUnderJob0()
     {

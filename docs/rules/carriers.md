@@ -201,6 +201,10 @@ node is the middle of the road.
 - Which flags' carriers a flag pass of a player with a computer opponent sees: the phase count (33) is inferred.
 - A carrier released from a busy road whose road is taken down before it reaches a flag: the removal's gather skips a marked
   carrier, and what the original does with it is not recovered.
+- A joined road with more settlers than its length class holds (the join of [Removal](removal.md#taking-a-flag-down),
+  **inferred**): a carrier that the removal marks while it hands a good over keeps working the joined road (state 0xe, above),
+  but the counts of both ends leave it out. Its turns next to a flag then see fewer than two carriers, so no fourth empty turn
+  releases it, and the road holds one carrier more than it counts. Not confirmed by a run and not handled by the engine.
 - What a carrier that walked home does in the castle after it enters: in `drain` it comes out and goes in again every 82 passes
   (states 4, 0x19, 0x10, 2), which no rule note covers yet.
 
