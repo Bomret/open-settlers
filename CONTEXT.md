@@ -110,6 +110,30 @@ judgment of the node picks it. It is switched on and off as a whole. Build help 
 that toggles it.
 _Avoid_: where-to-build overlay, placement overlay
 
+**Job search**
+What a gatherer's job rules declare about the search its worker runs from the building: the range of spiral entries
+it draws from and the target test a node of that range must pass. The woodcutter, stonecutter, forester, fisher, and
+farmer each have one. The worker's search and every view that shows the search read this one declaration.
+_Avoid_: search radius, search config
+
+**Work area**
+The nodes a gatherer's worker searches: the spiral entries of its job search, counted from the node of its building or
+building site.
+_Avoid_: work radius, range, catchment
+
+**Work-area overlay**
+The marks the game view draws while its Work areas button is on. One tint mark lies on every node in the work area of at
+least one of its player's gatherer buildings or building sites. While a gatherer's build button is pressed, a reach marker
+lies on every node where that building fits. The view draws it as plain shapes, not through the graphics source. It
+changes nothing in the game.
+_Avoid_: range overlay, heat map
+
+**Reach marker**
+The mark of the work-area overlay on a node where the gatherer building of the pressed build button fits. A filled disc
+shows where its target test accepts at least one node of the work area that building would have there. A ring shows where
+it accepts none.
+_Avoid_: in-range marker, resource marker
+
 **Content set**
 Where a run gets its game data: its graphics source, its rule data, and its walk steps. There are two: the
 History Edition set, which is the install read through the History Edition source, and the basic set, which the

@@ -351,6 +351,24 @@ public sealed class PlayScriptTests
     }
 
     [TestMethod]
+    public void An_expect_on_the_digest_takes_its_hex_digits_as_text()
+    {
+        var script = Parse("expect digest = da62d96f83fc3cae");
+
+        Assert.HasCount(0, script.Problems);
+        Assert.AreEqual(
+            new ExpectStep
+            {
+                Line = 1,
+                Field = "digest",
+                Op = "=",
+                Value = "da62d96f83fc3cae",
+            },
+            script.Steps[0]
+        );
+    }
+
+    [TestMethod]
     [DataRow("expect zoom", "takes a field, an operator, and a value")]
     [DataRow("expect height = 3", "unknown field 'height'")]
     [DataRow("expect flag-goods:27 = 3", "unknown field 'flag-goods:27'")]
@@ -359,6 +377,7 @@ public sealed class PlayScriptTests
     [DataRow("expect zoom = big", "not a number")]
     [DataRow("expect zoom = 1 2", "not a number")]
     [DataRow("expect seed < 3", "takes only '='")]
+    [DataRow("expect digest < 3", "takes only '='")]
     public void ABadExpectIsAProblemNamingItsLine(string line, string reason)
     {
         var script = Parse("wait 1\n" + line);

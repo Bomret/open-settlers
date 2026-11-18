@@ -53,8 +53,9 @@ files, layer by layer:
    data with `TestProgram.MadeJobData()`. `Job.Of(int)` finds the job of a number and is generated from the sealed job
    types.
 2. Application, a file of `src/Application/`: `public sealed class XRules(JobParts parts) : JobRules<X>(parts)`. Override
-   the hooks the job needs (`CanStandInHut`, `Cause`, `SiteWorker`, `Register`, `Start`, `Arrive`, `WalkTurn`, `Pass`,
-   `Turn`); a hook left alone keeps the shared default. `SiteWorker` names the request a building site makes for the
+   the hooks the job needs (`CanStandInHut`, `Cause`, `Search`, `SiteWorker`, `Register`, `Start`, `Arrive`, `WalkTurn`, `Pass`,
+   `Turn`); a hook left alone keeps the shared default. A gatherer declares its range and target test once in `Search`
+   (INV-0017), and its search loop draws and tests through it. `SiteWorker` names the request a building site makes for the
    job's worker at a `SiteStage`, so the shared site pass names no job. A job needing a part `JobParts` lacks extends `JobParts`, and the
    `new JobParts { ... }` initializers of the tests. It never reaches into a shared behavior. The shared states of the workers who
    go out from a building are the step out, the entry, and the arrival home. A module reaches them through `Parts.Hut`

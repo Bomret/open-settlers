@@ -185,6 +185,9 @@ public sealed record PlayState
         field switch
         {
             PlayFields.Seed => Seed,
+            PlayFields.Digest => (Game ?? throw new InvalidOperationException("no game runs"))
+                .Digest()
+                .ToString("x16", CultureInfo.InvariantCulture),
             PlayFields.Zoom => Zoom.ToString($"F{ZoomDecimals}", CultureInfo.InvariantCulture),
             _ => Number(field).ToString(CultureInfo.InvariantCulture),
         };
@@ -241,8 +244,8 @@ public static class PlayFields
     public const string Stones = "stones";
 
     /// <summary>
-    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump after the last game field. A
-    /// dump only: no <c>expect</c> step names it.
+    /// The game's digest (<c>Game.Digest()</c>) as 16 hex digits, in the game view's dump after the last game field. An
+    /// <c>expect</c> step compares it as text and takes only <c>=</c>.
     /// </summary>
     public const string Digest = "digest";
 
@@ -288,8 +291,8 @@ public static class PlayFields
     public static bool IsKnown(string field) => All.Contains(field) || IsGame(field);
 
     /// <summary>Whether the field belongs to the game view only.</summary>
-    public static bool IsGame(string field) => Game.Contains(field) || FlagNode(field) is not null;
+    public static bool IsGame(string field) => Game.Contains(field) || field == Digest || FlagNode(field) is not null;
 
-    /// <summary>Whether the field is a number; the seed is text and takes only <c>=</c>.</summary>
-    public static bool IsNumeric(string field) => field != Seed;
+    /// <summary>Whether the field is a number; the seed and the digest are text and take only <c>=</c>.</summary>
+    public static bool IsNumeric(string field) => field != Seed && field != Digest;
 }
