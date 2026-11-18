@@ -19,6 +19,9 @@ sealed class FlameLists
     /// <summary>The number of lists, one for each building type 0 to 24.</summary>
     public const int ListCount = 25;
 
+    /// <summary>The sprite entry of a small flame at phase 0, the first of the 16 flame entries (456 to 471).</summary>
+    public const int FirstEntry = 136 + 320;
+
     // The size byte of a large flame; a small flame's is 0.
     const byte LargeSize = 8;
 
@@ -76,12 +79,6 @@ sealed class FlameLists
     public static int Entry(FlameSize size, int phase) =>
         FirstEntry + (size == FlameSize.Large ? LargeSize : 0) + (phase & 7);
 
-    /// <summary>The sprite entry of a small flame at phase 0, the first of the 16 flame entries (456 to 471).</summary>
-    public const int FirstEntry = 136 + 320;
-
-    /// <summary>The number of flame sprite entries: two sizes of 8 phases.</summary>
-    public const int EntryCount = 16;
-
-    /// <summary>The flame sprite entries 456 to 471.</summary>
-    public static IEnumerable<int> Entries => Enumerable.Range(FirstEntry, EntryCount);
+    /// <summary>The flame sprite entries 456 to 471: two sizes of 8 phases.</summary>
+    public static IEnumerable<int> Entries => Enumerable.Range(FirstEntry, 16);
 }

@@ -212,8 +212,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <summary>The manifest key of a build marker: <c>marker/flag</c>, <c>marker/mine</c>, <c>marker/small</c>, or <c>marker/large</c>.</summary>
     public static string MarkerKey(BuildMarker marker) => $"marker/{marker.ToString().ToLowerInvariant()}";
 
-    /// <summary>The number of phases a flame is drawn in, 0 to 7.</summary>
-    public const int FlamePhases = 8;
+    // The number of phases a flame is drawn in, 0 to 7.
+    const int FlamePhases = 8;
 
     /// <summary>The manifest key of the image of a flame of a size at a phase, such as <c>flame/small/0</c>.</summary>
     public static string FlameKey(FlameSize size, int phase) =>

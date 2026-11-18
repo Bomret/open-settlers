@@ -26,6 +26,9 @@ public static class ObjectDraws
 
     const int GoodsBeforeFlag = 3;
 
+    // The progress below which a building site takes the flames of an early site.
+    const int EarlySiteProgress = 16000;
+
     /// <summary>
     /// The geometry of a flag for a click (<see cref="MapPicking.Pick"/>): the box of the History Edition's flag at its
     /// first animation step, 16 by 19 pixels with its top 18 above the node. It is the same under every graphics source
@@ -150,9 +153,6 @@ public static class ObjectDraws
 
         return draws;
     }
-
-    /// <summary>The progress below which a building site takes the flames of an early site.</summary>
-    public const int EarlySiteProgress = 16000;
 
     // The flames of a burning building at its draw position, in the source's order. The first flame's phase follows the
     // countdown, and each further flame's is 3 more, modulo 8.
