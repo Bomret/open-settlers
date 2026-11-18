@@ -370,6 +370,32 @@ public sealed class BasicContentSetPlayTests
     }
 
     [TestMethod]
+    public void OneLayoutWithGoodsByStableNameOpensUnderBothContentSets()
+    {
+        var read = Layout.Read(
+            LayoutTests.Text(
+                extra: """
+
+                "castle": {"x": 10, "y": 10},
+                "flags": [{"x": 14, "y": 11}],
+                "goods": [{"x": 14, "y": 11, "place": 0, "good": "shield"}, {"x": 14, "y": 11, "place": 1, "good": "plank"}]
+                """
+            ),
+            "both.jsonc"
+        );
+        Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
+
+        foreach (var tables in new[] { new OpenSettlersRuleTables(CheckedIn()).Read(), TestProgram.Made() })
+        {
+            var game = GameFactory.Create(tables, read.Layout.BuildMap(), 0);
+
+            Assert.IsNull(read.Layout.Apply(game));
+            var places = game.Flags[game.Flags.SlotAt(14, 11)].Places;
+            Assert.AreEqual((new Good { Name = "shield" }, Good.Plank), (places[0].Good, places[1].Good));
+        }
+    }
+
+    [TestMethod]
     public void TheConstructionLoopPlaysOnTheCheckedInFilesUntilASiteIsPaidWithTheSawmillsPlanks()
     {
         Assert.IsNull(ConstructionLoop(CheckedIn(), out _));

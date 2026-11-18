@@ -179,6 +179,31 @@ public sealed class StorageDistributionTests
         Assert.AreEqual(3, rig.Castle.Count(TestCatalog.GoodOf(6)), "the other foods stay");
     }
 
+    // Among equal counts the pick keeps the step's own order, whatever the goods' names or codes order: the step lists meat, fish,
+    // bread, so the meat goes (the names would say bread, the codes fish).
+    [TestMethod]
+    public void AFoodStepWithEqualCountsHandsOutTheFirstGoodOfItsOwnOrder()
+    {
+        var food = new GoodClass { Class = 7, Word = RequestWord.First };
+        var tables = LayoutSettlersTests.MadeTables(
+            distribution:
+            [
+                [new DistributionStep { Class = food, Goods = [Good.Meat, Good.Fish, Good.Bread] }],
+                [],
+                [],
+            ]
+        );
+        var rig = Started(planks: 0, stones: 0, tables: tables, food: [4, 4, 4]);
+        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request { Asks = food, Rank = 0x3e });
+
+        rig.Distribution.Run();
+
+        Assert.AreEqual(Good.Meat, rig.Bench.Flags[0].Places[0].Good);
+        Assert.AreEqual(3, rig.Castle.Count(Good.Meat));
+        Assert.AreEqual(4, rig.Castle.Count(Good.Fish));
+        Assert.AreEqual(4, rig.Castle.Count(Good.Bread));
+    }
+
     [TestMethod]
     public void WithNoPlankInStockTheRequestStands()
     {
