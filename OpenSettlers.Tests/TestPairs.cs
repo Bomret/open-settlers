@@ -158,21 +158,17 @@ static class TestPairs
             if (!projects.TryGetValue(project.LibraryFolder, out var library) || !library.IsLibrary)
             {
                 problems.Add(
-                    $"{project.Name} has no library beside it: add src/{Describe(project.LibraryFolder)} or remove the project"
+                    $"{project.Name} has no library beside it: add src/{Path.GetFileName(project.LibraryFolder)} or remove the project"
                 );
             }
-        }
 
-        foreach (
-            var project in projects.Values.Where(project =>
-                project.IsTests && project.Assembly != $"OpenSettlers.{project.Name}"
-            )
-        )
-        {
-            problems.Add(
-                $"{project.Name} builds the assembly {project.Assembly}: a test project builds OpenSettlers.{project.Name}, "
-                    + "the one assembly its library grants its internals to"
-            );
+            if (project.IsTests && project.Assembly != $"OpenSettlers.{project.Name}")
+            {
+                problems.Add(
+                    $"{project.Name} builds the assembly {project.Assembly}: a test project builds OpenSettlers.{project.Name}, "
+                        + "the one assembly its library grants its internals to"
+                );
+            }
         }
 
         // No other project builds the assembly a library grants its internals to: a helper project, a library, or a
@@ -189,20 +185,13 @@ static class TestPairs
 
         foreach (var project in projects.Values.Where(project => project.IsHelper || project.IsTests))
         {
-            if (project.Shared)
-            {
-                problems.AddRange(SharedHelperProblems(projects, project));
-            }
-            else
-            {
-                problems.AddRange(ReachProblems(projects, project));
-            }
+            problems.AddRange(
+                project.Shared ? SharedHelperProblems(projects, project) : ReachProblems(projects, project)
+            );
         }
 
         return problems;
     }
-
-    static string Describe(string folder) => Path.GetFileName(folder);
 
     // The shared helpers reference no library: not directly, and not through a helper project.
     static IEnumerable<string> SharedHelperProblems(Dictionary<string, Project> projects, Project shared)
@@ -210,8 +199,8 @@ static class TestPairs
         foreach (var (reached, through) in Closure(projects, shared, (_, known) => known is null || known.IsLibrary))
         {
             yield return through is null
-                ? $"{shared.Name} references {Describe(reached)}: the shared helpers reference no library"
-                : $"{shared.Name} reaches {Describe(reached)} through {Describe(through)}: the shared helpers reference no library";
+                ? $"{shared.Name} references {Path.GetFileName(reached)}: the shared helpers reference no library"
+                : $"{shared.Name} reaches {Path.GetFileName(reached)} through {Path.GetFileName(through)}: the shared helpers reference no library";
         }
     }
 
@@ -240,10 +229,10 @@ static class TestPairs
         foreach (var (reached, through) in Closure(projects, project, (folder, _) => !Allowed(folder)))
         {
             yield return through is null
-                ? $"{project.Name} references {Describe(reached)}, which is outside the reach of its library: "
+                ? $"{project.Name} references {Path.GetFileName(reached)}, which is outside the reach of its library: "
                     + "a test or helper project references its library, the libraries that library uses, "
                     + "src/Testing, and the helper projects of those libraries"
-                : $"{project.Name} reaches {Describe(reached)} through {Describe(through)}, which is outside the reach of its library";
+                : $"{project.Name} reaches {Path.GetFileName(reached)} through {Path.GetFileName(through)}, which is outside the reach of its library";
         }
     }
 
@@ -289,29 +278,15 @@ static class TestPairs
     static bool IsBuildOutput(string name) => name is "obj" or "bin" || name.StartsWith('.');
 
     // The files with one of the extensions below `folder`, build output and hidden folders (.git, .superdev) left out.
-    static List<string> FilesUnder(string folder, params string[] extensions)
-    {
-        var found = new List<string>();
-        var pending = new Stack<string>([folder]);
-        while (pending.TryPop(out var next))
-        {
-            found.AddRange(
-                Directory
-                    .EnumerateFiles(next)
-                    .Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.Ordinal)))
-            );
-            foreach (
-                var child in Directory
-                    .EnumerateDirectories(next)
-                    .Where(child => !IsBuildOutput(Path.GetFileName(child)))
-            )
-            {
-                pending.Push(child);
-            }
-        }
-
-        return found;
-    }
+    static List<string> FilesUnder(string folder, params string[] extensions) =>
+        [
+            .. Directory
+                .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                .Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.Ordinal)))
+                .Where(file =>
+                    !Path.GetRelativePath(folder, file).Split(Path.DirectorySeparatorChar)[..^1].Any(IsBuildOutput)
+                ),
+        ];
 
     // The assembly of a grant of internals as the attribute or the item writes it: its name, without a public key.
     static string AssemblyOf(string written) => written.Split(',')[0].Trim();
@@ -433,16 +408,15 @@ static class TestPairs
             }
         }
 
-        var fullRoot = Path.GetFullPath(root);
         foreach (var file in FilesUnder(root, ".cs"))
         {
-            var folder = Path.GetDirectoryName(Path.GetFullPath(file));
-            while (folder is not null && !projects.ContainsKey(folder) && folder.Length > fullRoot.Length)
-            {
-                folder = Path.GetDirectoryName(folder);
-            }
-
-            var owner = folder is not null && projects.TryGetValue(folder, out var found) ? found : null;
+            // The project whose folder holds the file; the longest folder wins, should one project sit below another.
+            var owner = projects
+                .Values.Where(project =>
+                    Path.GetFullPath(file)
+                        .StartsWith(project.Folder + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                )
+                .MaxBy(project => project.Folder.Length);
             var origin = owner?.Name ?? Path.GetRelativePath(root, Path.GetDirectoryName(file)!).Replace('\\', '/');
             foreach (var (assembly, text) in SourceGrants(File.ReadAllText(file)))
             {

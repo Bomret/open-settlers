@@ -47,7 +47,6 @@ import sys
 
 TEST_SUFFIX = ".Tests"
 HELPER_SUFFIX = ".Testing"
-HELPER_FOLDERS = ("src/Testing",)
 SOLUTION = "OpenSettlers.slnx"
 CATEGORIES = "TestCategory!=Install&TestCategory!=Ghidra"
 SHARED_FILES = {"Directory.Build.props", "Directory.Build.targets", "global.json", "mise.toml", ".editorconfig"}
@@ -82,20 +81,13 @@ def folders(suffix):
     return sorted(found)
 
 
-def test_projects():
-    return folders(TEST_SUFFIX)
-
-
-def helper_projects():
-    return sorted({*folders(HELPER_SUFFIX), *(path for path in HELPER_FOLDERS if os.path.isdir(path))})
-
-
 def test_files():
     """Each top-level .cs file of a test project or a helper project: (repository path, text, test classes as
     (project folder, full name) pairs, which only a test project has)."""
     files = []
-    tests = test_projects()
-    for project in tests + helper_projects():
+    tests = folders(TEST_SUFFIX)
+    shared = ["src/Testing"] if os.path.isdir("src/Testing") else []
+    for project in tests + folders(HELPER_SUFFIX) + shared:
         tested = project in tests
         for name in sorted(os.listdir(project)):
             if not name.endswith(".cs"):
@@ -119,7 +111,7 @@ def is_shared(path, test_classes):
     name = os.path.basename(path)
     if name in SHARED_FILES or name.endswith(SHARED_SUFFIXES) or path.startswith(SHARED_FOLDERS):
         return True
-    in_tests = os.path.dirname(path) in test_projects()
+    in_tests = os.path.dirname(path) in folders(TEST_SUFFIX)
     return in_tests and path.endswith(".cs") and not test_classes.get(path)
 
 
