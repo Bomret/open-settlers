@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
 using OpenSettlers.Formats;
-using OpenSettlers.MapView;
 
 namespace OpenSettlers.Tests;
 

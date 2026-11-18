@@ -1,8 +1,6 @@
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
-using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
 
@@ -11,7 +9,7 @@ public sealed class MusicKindTests
 {
     static Install Open(FakeInstall fake)
     {
-        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        Install.TryOpen(fake.Root, out var install, out _);
 
         return install!;
     }

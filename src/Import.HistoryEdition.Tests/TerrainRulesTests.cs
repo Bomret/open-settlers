@@ -1,6 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
-using OpenSettlers.MapView;
 
 namespace OpenSettlers.Tests;
 

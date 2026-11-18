@@ -18,6 +18,8 @@
     <Project Path="src/Application.Testing/OpenSettlers.Application.Testing.csproj" />
     <Project Path="src/Adapters.Testing/OpenSettlers.Adapters.Testing.csproj" />
     <Project Path="src/MapView.Testing/OpenSettlers.MapView.Testing.csproj" />
+    <Project Path="src/Import.HistoryEdition.Tests/OpenSettlers.Import.HistoryEdition.Tests.csproj" />
+    <Project Path="src/Import.OpenSettlers.Tests/OpenSettlers.Import.OpenSettlers.Tests.csproj" />
   </Folder>
   <Project Path="OpenSettlers.Tests/OpenSettlers.Tests.csproj" />
   <Folder Name="/tests/">

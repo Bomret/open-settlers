@@ -1,0 +1,21 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- The tests of the basic content set's source (ADR 0019, INV-0012). The namespace stays the one every test had in
+         the single test project, so a test keeps its name. -->
+    <RootNamespace>OpenSettlers.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Testing" />
+    <Using Include="OpenSettlers.Domain.Testing" />
+    <Using Include="OpenSettlers.Import.Testing" />
+    <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Import" />
+    <Using Include="OpenSettlers.Import.ContentSet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
+    <ProjectReference Include="../Testing/OpenSettlers.Testing.csproj" />
+    <ProjectReference Include="../Domain.Testing/OpenSettlers.Domain.Testing.csproj" />
+    <ProjectReference Include="../Import.Testing/OpenSettlers.Import.Testing.csproj" />
+  </ItemGroup>
+</Project>

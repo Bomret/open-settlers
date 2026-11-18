@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
-using OpenSettlers.MapView;
-using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
@@ -720,11 +717,21 @@ public sealed class HistoryEditionSourceTests
         var source = HistoryEditionSource.Load(TestProgram.OpenInstall(), TestProgram.Tables());
 
         Assert.IsNull(source.ObjectsProblem);
-        foreach (
-            var (type, earlySite) in BuildingPlacement
-                .Types.Select(type => (type, false))
-                .Append((BuildingType.Woodcutter, true))
-        )
+        // The types a placement builds: the construction milestone's and the six food buildings.
+        BuildingType[] placed =
+        [
+            BuildingType.Woodcutter,
+            BuildingType.Stonecutter,
+            BuildingType.Forester,
+            BuildingType.Sawmill,
+            BuildingType.Fisher,
+            BuildingType.Farm,
+            BuildingType.Butcher,
+            BuildingType.PigFarm,
+            BuildingType.Mill,
+            BuildingType.Baker,
+        ];
+        foreach (var (type, earlySite) in placed.Select(type => (type, false)).Append((BuildingType.Woodcutter, true)))
         {
             var flames = source.Flames(type, earlySite);
             Assert.IsNotEmpty(flames, $"{type} early site {earlySite}");
