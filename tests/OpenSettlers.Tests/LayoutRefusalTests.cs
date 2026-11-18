@@ -174,15 +174,9 @@ public sealed class LayoutRefusalTests
     {
         const string Reason = "must be a list of strings, one for each row";
 
-        CollectionAssert.AreEqual(
-            new[] { $"t.jsonc: terrain: {Reason}" },
-            Problems(LayoutText.Text(terrain: "\"g\""))
-        );
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: terrain: {Reason}" }, Problems(LayoutText.Text(terrain: "\"g\"")));
         CollectionAssert.AreEqual(new[] { $"t.jsonc: terrain: {Reason}" }, Problems(LayoutText.Text(terrain: "[3]")));
-        CollectionAssert.AreEqual(
-            new[] { $"t.jsonc: terrainLower: {Reason}" },
-            Problems(LayoutText.Text(lower: "{}"))
-        );
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: terrainLower: {Reason}" }, Problems(LayoutText.Text(lower: "{}")));
         CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutText.Text(lakes: "3")));
         CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutText.Text(lakes: "[null]")));
     }

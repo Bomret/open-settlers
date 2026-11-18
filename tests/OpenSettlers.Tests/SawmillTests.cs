@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Adapters.Testing.SawmillWorld;
 
 namespace OpenSettlers.Tests;
 
@@ -11,31 +12,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SawmillTests
 {
-    const int SawmillX = 14;
-    const int SawmillY = 8;
-    const int CastleFlag = 0;
-    const int SawmillFlag = 4;
-
-    internal static (Game Game, Building Sawmill) World(bool handsOutGoods = false)
-    {
-        var game = ConstructionWorld.Create(ConstructionTables.Tables(), handsOutGoods);
-        ConstructionWorld.Do(game, CommandKind.PlaceFlag, 15, 9);
-        ConstructionWorld.Do(game, CommandKind.BuildRoad, 16, 6, [2, 2, 2, 3]);
-        Assert.IsTrue(Huts.PlaceAndTick(game, SawmillX, SawmillY, BuildingType.Sawmill), "the sawmill stands");
-        var sawmill = game.Buildings.Single(building => building.Type == BuildingType.Sawmill);
-        Assert.AreEqual(SawmillFlag, sawmill.Flag, "the sawmill's flag is the flag at 15,9");
-
-        return (game, sawmill);
-    }
-
-    // Runs until the sawmiller waits inside, with the flag asking for logs.
-    internal static Settler SawmillerInside(Game game)
-    {
-        ConstructionWorld.Run(game, 1500);
-
-        return ConstructionWorld.OfJob(game, new Sawmiller()).Single();
-    }
-
     static Request LogRequest(Game game) => game.Flags[SawmillFlag].RequestOf(ConstructionTables.LogClass.Word);
 
     // The handler 0x42da0b tests the word at [edi] for bit 6 after its request for a worker, as the mill's does (docs/rules/sawmilling.md): a

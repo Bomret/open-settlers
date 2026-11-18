@@ -5,6 +5,8 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
 using OpenSettlers.MapView;
+using static OpenSettlers.Testing.GraphicEntries;
+using static OpenSettlers.Tests.ObjectPayloads;
 
 namespace OpenSettlers.Tests;
 
@@ -12,42 +14,6 @@ namespace OpenSettlers.Tests;
 public sealed class ObjectGraphicsTests
 {
     const string Archive = "loca/SPAD.PA";
-
-    // A 3 x 1 sprite: pixel 0 is skipped, pixel 1 is drawn with palette index 0, pixel 2 with index 7.
-    internal static byte[] Sprite(short offsetX = -1, short offsetY = -2) =>
-        GraphicFileTests.Entry(1, 0, 3, 1, offsetX, offsetY, [1, 2, 0, 7, 0, 0]);
-
-    // A 2 x 2 sprite with the given offsets.
-    internal static byte[] Square(short offsetX, short offsetY) =>
-        GraphicFileTests.Entry(1, 0, 2, 2, offsetX, offsetY, [0, 2, 3, 3, 0, 0, 0, 1, 4, 0, 0]);
-
-    // The red components of index 7 and the shadow color 0x80 are 28 and 36. Index 0 reads as black.
-    internal static byte[] Palette()
-    {
-        var palette = new byte[768];
-        palette[3 * 7] = 28;
-        palette[3 * 0x80] = 36;
-
-        return palette;
-    }
-
-    internal static Dictionary<int, byte[]> Payloads(bool flag = false)
-    {
-        var payloads = new Dictionary<int, byte[]>
-        {
-            [3] = Palette(),
-            [1250] = Sprite(),
-            [1251] = Square(5, 6),
-            [1369] = Sprite(),
-            [ObjectSprites.CastleEntry] = Square(7, 8),
-        };
-        if (flag)
-        {
-            payloads[ObjectSprites.FlagEntry] = Square(9, 4);
-        }
-
-        return payloads;
-    }
 
     static OpenSettlers.Import.HistoryEdition.Install Open(FakeInstall fake)
     {
@@ -58,9 +24,6 @@ public sealed class ObjectGraphicsTests
 
     static FakeInstall Install(Dictionary<int, byte[]> payloads, int rows = 1500) =>
         new FakeInstall().Put(Archive, ArchiveBytes.Build(rows, payloads));
-
-    // A 2 x 1 shadow mask.
-    internal static byte[] ShadowMask() => MaskFileTests.Entry(2, 1, 1, 1, 0, 0);
 
     [TestMethod]
     public void ACoveredPixelIsOpaqueEvenAtPaletteIndexZeroAndAnUncoveredPixelIsTransparent()

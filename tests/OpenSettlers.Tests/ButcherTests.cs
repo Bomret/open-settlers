@@ -75,7 +75,7 @@ public sealed class ButcherTests
     // of the engine's.
     static string BuildingHex(Building building, int width)
     {
-        var hex = WorkerWalkTests.Hex(building, width);
+        var hex = WorkerBytes.Hex(building, width);
 
         return hex[..16] + building.FillLow.ToString("X2") + building.FillHigh.ToString("X2") + hex[20..];
     }
@@ -208,8 +208,8 @@ public sealed class ButcherTests
             if (line.TryGetValue("s3", out var worker))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(worker, 24, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Settlers[WorkerSlot], width),
+                    FlagWords.InEngineNumbers(worker, 24, game.Flags.Count),
+                    WorkerBytes.Hex(game.Settlers[WorkerSlot], width),
                     $"{name}: the butcher after pass {pass}"
                 );
             }
@@ -217,7 +217,7 @@ public sealed class ButcherTests
             if (line.TryGetValue("b", out var hutBytes))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(hutBytes, 12, game.Flags.Count),
+                    FlagWords.InEngineNumbers(hutBytes, 12, game.Flags.Count),
                     BuildingHex(game.Buildings[HutSlot], width),
                     $"{name}: the building after pass {pass}"
                 );

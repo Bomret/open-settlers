@@ -8,7 +8,7 @@ using OpenSettlers.MapView;
 namespace OpenSettlers.Tests;
 
 // The step-offset table of entry 2 of the graphics archive (docs/rules/settlers.md, "Drawing the walk"): the placement of a
-// walking settler reads the dx and dy of each step and nothing else of the entry. The entry of SettlerFiguresTests.Sequences:
+// walking settler reads the dx and dy of each step and nothing else of the entry. The entry of GraphicEntries.Sequences:
 // the frame 7 holds the triples (3, 1, 2), (4, -1, 0), (5, 0, 0); the frame 8 holds (0x81, 0, 0).
 [TestClass]
 public sealed class StepOffsetsTests
@@ -16,7 +16,7 @@ public sealed class StepOffsetsTests
     [TestMethod]
     public void TheTimeLeftShiftedRightByThreePicksTheStepOfTheFramesSequence()
     {
-        var steps = new StepOffsets(SettlerFiguresTests.Sequences());
+        var steps = new StepOffsets(GraphicEntries.Sequences());
 
         Assert.AreEqual(new StepOffset { Dx = 1, Dy = 2 }, steps.At(7, 0));
         Assert.AreEqual(new StepOffset { Dx = 1, Dy = 2 }, steps.At(7, 7));
@@ -27,7 +27,7 @@ public sealed class StepOffsetsTests
     [TestMethod]
     public void ADxAndDyAreSignedBytes()
     {
-        var steps = new StepOffsets(SettlerFiguresTests.Sequences());
+        var steps = new StepOffsets(GraphicEntries.Sequences());
 
         Assert.AreEqual(-1, steps.At(7, 8)!.Value.Dx);
     }
@@ -38,13 +38,13 @@ public sealed class StepOffsetsTests
     [DataRow(200)]
     public void AFrameWithNoSequenceHasNoStep(int frame)
     {
-        Assert.IsNull(new StepOffsets(SettlerFiguresTests.Sequences()).At(frame, 0));
+        Assert.IsNull(new StepOffsets(GraphicEntries.Sequences()).At(frame, 0));
     }
 
     [TestMethod]
     public void ATimeLeftPastTheEndOfTheEntryHasNoStep()
     {
-        Assert.IsNull(new StepOffsets(SettlerFiguresTests.Sequences()).At(8, 8000));
+        Assert.IsNull(new StepOffsets(GraphicEntries.Sequences()).At(8, 8000));
     }
 
     [TestMethod]
@@ -67,7 +67,7 @@ public sealed class StepOffsetsTests
     {
         using var fake = new FakeInstall().Put(
             Archive,
-            ArchiveBytes.Build(3, new Dictionary<int, byte[]> { [2] = SettlerFiguresTests.Sequences() })
+            ArchiveBytes.Build(3, new Dictionary<int, byte[]> { [2] = GraphicEntries.Sequences() })
         );
 
         var steps = StepOffsets.Load(Open(fake));

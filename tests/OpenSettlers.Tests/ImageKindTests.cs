@@ -43,7 +43,7 @@ public sealed class ImageKindTests
     }
 
     static byte[] Image(ushort width, ushort height, params byte[] pixels) =>
-        GraphicFileTests.Entry(1, 0, width, height, 0, 0, pixels);
+        GraphicEntries.Entry(1, 0, width, height, 0, 0, pixels);
 
     static List<Asset> List<T>(FakeInstall fake)
         where T : ArchiveEntryKind, new()

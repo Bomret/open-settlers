@@ -34,6 +34,91 @@ public static class MadeProgram
             jobData: MadeJobData()
         );
 
+    /// <summary>
+    /// Made-up tables for the woodcutter's own logic: every step takes 100 clock units, the doors have one speed, every object
+    /// class is 0 but the flag's, and the walk's direction rows hold, as their first direction, a step that takes a vector
+    /// nearer to 0. The workers are those of <see cref="MadeWorkers"/> unless <paramref name="workers"/> gives others.
+    /// </summary>
+    public static RuleTables WoodcuttingTables(WorkerRequest?[]? workers = null)
+    {
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var rows = new byte[RuleTables.WalkRowCount * RuleTables.WalkRowSize];
+        for (var row = 0; row < RuleTables.WalkRowCount; row++)
+        {
+            // The six directions, the heading class's own first and the others after it.
+            var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
+            var order = new[] { first }.Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first));
+            order.ToArray().CopyTo(rows, row * RuleTables.WalkRowSize);
+        }
+
+        return new RuleTables(
+            classes,
+            MadeStartStock(),
+            [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
+            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
+            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+            walkRows: rows,
+            workers: workers ?? MadeWorkers()
+        );
+    }
+
+    /// <summary>
+    /// Tables for the tests of removal: the object class of the flag 3 and that of the building 4, the log the only good with a
+    /// kind, every step 100 clock units, and every road holding <paramref name="capacity"/> goods.
+    /// </summary>
+    public static RuleTables RemovalTables(byte capacity = 8, byte[]? transportPriorities = null)
+    {
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        classes[2] = 4;
+        var kinds = Enumerable.Repeat((byte)0xff, RuleTables.GoodKindCount).ToArray();
+        kinds[Good.Log.Code] = 1;
+
+        return new RuleTables(
+            classes,
+            MadeStartStock(),
+            [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
+            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
+            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+            goodKinds: kinds,
+            roadCapacities: [.. Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount)],
+            transportPriorities: transportPriorities
+        );
+    }
+
+    /// <summary>
+    /// Tables for the tests of the history:the start stock rows of <see cref="Made()"/>, the object class of the flag (code 1)
+    /// 3 and that of the building (code 2) 4, every step 100 clock units, and the workers of <see cref="MadeWorkers"/>.
+    /// </summary>
+    public static RuleTables HistoryTables()
+    {
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        classes[2] = 4;
+
+        return new RuleTables(
+            classes,
+            MadeStartStock(),
+            [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
+            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
+            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+            workers: MadeWorkers()
+        );
+    }
+
+    /// <summary>
+    /// Tables of the start stock rows of <see cref="Made()"/> and nothing else but the object class of the flag (code 1),
+    /// which is 3 as a road's end needs: every other object class is 0.
+    /// </summary>
+    public static RuleTables FlagClassTables()
+    {
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+
+        return new RuleTables(classes, MadeStartStock());
+    }
+
     /// <summary>The start stock rows of <see cref="Made()"/>: each count is the row number times 10 plus the good's index.</summary>
     public static byte[][] MadeStartStock() =>
         [

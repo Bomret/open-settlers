@@ -26,7 +26,9 @@ public static class TestProgram
         var game = Environment.GetEnvironmentVariable(GameVariable);
         if (string.IsNullOrEmpty(game))
         {
-            Assert.Inconclusive($"The emulator values need the reference install: no install given, set {GameVariable}");
+            Assert.Inconclusive(
+                $"The emulator values need the reference install: no install given, set {GameVariable}"
+            );
         }
 
         if (!Install.TryOpen(game, out var install, out var problem))

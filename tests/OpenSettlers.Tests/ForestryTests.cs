@@ -77,7 +77,10 @@ public sealed class ForestryTests
 
         map = made;
 
-        var game = GameFactory.Create(WoodcuttingTests.Made(hut == BuildingType.Forester ? Workers() : null), made);
+        var game = GameFactory.Create(
+            MadeProgram.WoodcuttingTables(hut == BuildingType.Forester ? Workers() : null),
+            made
+        );
         game.Enqueue(
             new Command
             {

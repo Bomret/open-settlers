@@ -3,16 +3,13 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
+using static OpenSettlers.Testing.GraphicEntries;
 
 namespace OpenSettlers.Tests;
 
 [TestClass]
 public sealed class MaskFileTests
 {
-    // A mask entry: the header, then each row as (skip, cover) pairs and its end pair (any skip, cover 0).
-    public static byte[] Entry(ushort width, ushort height, params byte[] body) =>
-        GraphicFileTests.Entry(2, 0, width, height, -1, -2, body);
-
     static string Rows(Mask mask) =>
         string.Join(
             "/",
@@ -28,7 +25,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void ARowIsRunsOfSkippedAndCoveredPixelsEndedByACoverOfZero()
     {
-        var mask = MaskFile.Read(Entry(6, 1, 1, 2, 1, 1, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(6, 1, 1, 2, 1, 1, 0, 0));
 
         Assert.AreEqual(".##.#.", Rows(mask));
     }
@@ -36,7 +33,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void TheSkipOfARunCountsFromTheEndOfThePreviousRun()
     {
-        var mask = MaskFile.Read(Entry(7, 1, 0, 1, 2, 1, 1, 2, 9, 0));
+        var mask = MaskFile.Read(MaskEntry(7, 1, 0, 1, 2, 1, 1, 2, 9, 0));
 
         Assert.AreEqual("#..#.##", Rows(mask));
     }
@@ -44,7 +41,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void TheSkipOfTheEndPairIsIgnored()
     {
-        var mask = MaskFile.Read(Entry(3, 1, 0, 1, 200, 0));
+        var mask = MaskFile.Read(MaskEntry(3, 1, 0, 1, 200, 0));
 
         Assert.AreEqual("#..", Rows(mask));
     }
@@ -52,7 +49,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void ARowOfOnlyTheEndPairCoversNothing()
     {
-        var mask = MaskFile.Read(Entry(2, 2, 2, 0, 0, 2, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(2, 2, 2, 0, 0, 2, 0, 0));
 
         Assert.AreEqual("../##", Rows(mask));
     }
@@ -60,7 +57,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void TheHeaderIsReadAndTheSizeIsItsWidthAndHeight()
     {
-        var mask = MaskFile.Read(Entry(3, 2, 0, 3, 0, 0, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(3, 2, 0, 3, 0, 0, 0, 0));
 
         Assert.AreEqual(3, mask.Width);
         Assert.AreEqual(2, mask.Height);
@@ -72,7 +69,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void ARunThatEndsAtTheWidthIsReadable()
     {
-        var mask = MaskFile.Read(Entry(4, 1, 1, 3, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(4, 1, 1, 3, 0, 0));
 
         Assert.AreEqual(".###", Rows(mask));
     }
@@ -81,7 +78,7 @@ public sealed class MaskFileTests
     public void ARunThatOverrunsTheWidthIsUnreadableWithItsRowAndColumn()
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
-            MaskFile.Read(Entry(4, 2, 0, 4, 0, 0, 2, 3, 0, 0))
+            MaskFile.Read(MaskEntry(4, 2, 0, 4, 0, 0, 2, 3, 0, 0))
         );
 
         StringAssert.Contains(failure.Message, "row 1");
@@ -91,13 +88,13 @@ public sealed class MaskFileTests
     [TestMethod]
     public void ARunWhoseSkipPushesItPastTheWidthIsUnreadable()
     {
-        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 1, 255, 1, 0, 0)));
+        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(MaskEntry(4, 1, 255, 1, 0, 0)));
     }
 
     [TestMethod]
     public void ARowWithNoEndPairBeforeTheEntryEndsIsAStreamPastTheEnd()
     {
-        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 1, 0, 2)));
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(MaskEntry(4, 1, 0, 2)));
 
         StringAssert.Contains(failure.Message, "row 0");
         StringAssert.Contains(failure.Message, "past the end");
@@ -106,7 +103,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void FewerRowsThanTheHeightIsAStreamPastTheEnd()
     {
-        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 2, 0, 1, 0, 0)));
+        var failure = Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(MaskEntry(4, 2, 0, 1, 0, 0)));
 
         StringAssert.Contains(failure.Message, "row 1");
         StringAssert.Contains(failure.Message, "past the end");
@@ -115,7 +112,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void AHalfPairAtTheEndOfTheEntryIsAStreamPastTheEnd()
     {
-        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(4, 1, 0, 1, 0)));
+        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(MaskEntry(4, 1, 0, 1, 0)));
     }
 
     [TestMethod]
@@ -127,8 +124,8 @@ public sealed class MaskFileTests
     [TestMethod]
     public void AWidthOrHeightOfZeroIsUnreadable()
     {
-        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(0, 1, 0, 0)));
-        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(Entry(1, 0)));
+        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(MaskEntry(0, 1, 0, 0)));
+        Assert.ThrowsExactly<InvalidDataException>(() => MaskFile.Read(MaskEntry(1, 0)));
     }
 
     [TestMethod]
@@ -137,7 +134,7 @@ public sealed class MaskFileTests
     public void AHeightThatNeedsMoreRowsThanTheEntryHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
-            MaskFile.Read(Entry((ushort)width, (ushort)height, 0, 0))
+            MaskFile.Read(MaskEntry((ushort)width, (ushort)height, 0, 0))
         );
 
         StringAssert.Contains(failure.Message, $"{width} x {height}");
@@ -153,7 +150,7 @@ public sealed class MaskFileTests
     public void AMaskWiderOrTallerThanAnImageSideHoldsIsUnreadableBeforeAnythingIsAllocated(int width, int height)
     {
         var failure = Assert.ThrowsExactly<InvalidDataException>(() =>
-            MaskFile.Read(Entry((ushort)width, (ushort)height, new byte[height * 2]))
+            MaskFile.Read(MaskEntry((ushort)width, (ushort)height, new byte[height * 2]))
         );
 
         StringAssert.Contains(failure.Message, $"{width} x {height}");
@@ -163,7 +160,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void TheBytesAfterTheLastRowAreIgnored()
     {
-        var mask = MaskFile.Read(Entry(2, 1, 0, 2, 0, 0, 7, 7, 7));
+        var mask = MaskFile.Read(MaskEntry(2, 1, 0, 2, 0, 0, 7, 7, 7));
 
         Assert.AreEqual("##", Rows(mask));
     }
@@ -180,7 +177,7 @@ public sealed class MaskFileTests
     [TestMethod]
     public void TheMaskIsDrawnInOneColorWhereItCoversAndWithAlphaZeroWhereItDoesNot()
     {
-        var mask = MaskFile.Read(Entry(2, 1, 1, 1, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(2, 1, 1, 1, 0, 0));
 
         CollectionAssert.AreEqual(new byte[] { 252, 0, 0, 0, 252, 0, 0, 255 }, mask.ToRgba(Palette(), 5));
     }
@@ -195,7 +192,7 @@ public sealed class MaskFileTests
         var bytes = new byte[768];
         bytes[color * 3] = 0xFC;
 
-        var mask = MaskFile.Read(Entry(1, 1, 0, 1, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(1, 1, 0, 1, 0, 0));
         var rgba = mask.ToRgba(PaletteFile.Read(bytes), color);
 
         CollectionAssert.AreEqual(new byte[] { (byte)red, 0, 0, 255 }, rgba);
@@ -207,7 +204,7 @@ public sealed class MaskFileTests
     [DataRow(-1)]
     public void AMaskColorOutsideThePaletteIsRefusedWithTheValue(int color)
     {
-        var mask = MaskFile.Read(Entry(1, 1, 0, 1, 0, 0));
+        var mask = MaskFile.Read(MaskEntry(1, 1, 0, 1, 0, 0));
 
         var failure = Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
             mask.ToRgba(PaletteFile.Read(new byte[768]), color)
@@ -222,7 +219,7 @@ public sealed class MaskFileTests
     [DataRow(1, 2048)]
     public void AGraphicOfTheBoundSideIsReadable(int width, int height)
     {
-        var read = MaskFile.Read(Entry((ushort)width, (ushort)height, new byte[height * 2]));
+        var read = MaskFile.Read(MaskEntry((ushort)width, (ushort)height, new byte[height * 2]));
 
         Assert.AreEqual(width * height, read.Covered.Length);
     }

@@ -25,7 +25,7 @@ public sealed class RoadLoopTests
             },
             MapSize.Offered[0]
         );
-        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(MadeProgram.RemovalTables(), map);
         Apply(game, CommandKind.PlaceCastle, 15, 5);
 
         return game;

@@ -6,14 +6,14 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The stand-in interface draws a road a step at a time and sends one BuildRoad command when it reaches a flag. The
-// game is the one of RoadsTests: the castle's flag at 16,6 and a second flag at 18,6.
+// game is the one of RoadWorld.TwoFlags: the castle's flag at 16,6 and a second flag at 18,6.
 [TestClass]
 public sealed class RoadDrawingTests
 {
     [TestMethod]
     public void AClickOnAFlagStartsARoadAndTheClicksOnTheNextNodesTakeItStepByStep()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
 
         Assert.IsNull(drawing.Click(16, 6));
@@ -27,7 +27,7 @@ public sealed class RoadDrawingTests
     [TestMethod]
     public void TheStepThatReachesAFlagEndsTheDrawingAndHandsBackTheCommandThatBuildsTheRoad()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(17, 6);
@@ -46,7 +46,7 @@ public sealed class RoadDrawingTests
     [TestMethod]
     public void AClickOnTheNodeBeforeTheEndTakesTheLastStepBack()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(17, 6);
@@ -59,7 +59,7 @@ public sealed class RoadDrawingTests
     [TestMethod]
     public void ARefusedStepAndAClickAwayFromTheEndChangeNothing()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
 
@@ -73,8 +73,8 @@ public sealed class RoadDrawingTests
     [TestMethod]
     public void ACancelledRoadLeavesNoStateBehindAndANodeWithoutAFlagStartsNone()
     {
-        var game = RoadsTests.TwoFlags();
-        var same = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
+        var same = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
 
         drawing.Click(17, 6);
@@ -93,7 +93,7 @@ public sealed class RoadDrawingTests
     [TestMethod]
     public void ARoadOverTheWrappingEdgeContinuesInUnwrappedCoordinates()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(16, 7);

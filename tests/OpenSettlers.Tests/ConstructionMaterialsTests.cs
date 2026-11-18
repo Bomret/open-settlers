@@ -27,11 +27,11 @@ public sealed class ConstructionMaterialsTests
     [DataRow("stock-empty")]
     public void TheRequestsTheGoodsOnSiteAndOnTheWayAndTheStockMatchTheEmulator(string name)
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == name);
         // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS
         var parts = scenario.Command.Split(':');
-        var map = RemovalTests.MapOf(parts);
-        var game = RemovalTests.Started(parts, map, handsOutGoods: true);
+        var map = RemovalGame.MapOf(parts);
+        var game = RemovalGame.Started(parts, map, handsOutGoods: true);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         var lines = scenario

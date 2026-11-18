@@ -160,7 +160,7 @@ public sealed class GameHistoryTests
     [TestMethod]
     public void TheGameRecordsThroughItsHistory()
     {
-        var game = ThingHistoryTests.NewGame();
+        var game = HistoryWorld.NewGame();
         game.Enqueue(
             new Command
             {

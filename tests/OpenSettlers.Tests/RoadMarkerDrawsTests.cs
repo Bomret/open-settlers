@@ -64,7 +64,7 @@ public sealed class RoadMarkerDrawsTests
     [TestMethod]
     public void NoRoadBeingDrawnDrawsNoMarker()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
 
         Assert.IsEmpty(RoadMarkerDraws.Of(game, new RoadDrawing(game)));
     }
@@ -72,7 +72,7 @@ public sealed class RoadMarkerDrawsTests
     [TestMethod]
     public void AtTheStartFlagTheEndMarkAndEachNeighborsMarkerShowFromTheCursorsVerdicts()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
 
@@ -86,7 +86,7 @@ public sealed class RoadMarkerDrawsTests
     [TestMethod]
     public void AfterAStepTheMarkersStandAroundTheNewEndWithTheWayBackAndAfterAStepBackAroundTheStart()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(17, 6);
@@ -138,7 +138,7 @@ public sealed class RoadMarkerDrawsTests
     [TestMethod]
     public void AClickOnANeighborsMarkerPicksItsNodeAndStepsTheRoad()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         var draws = RoadMarkerDraws.Of(game, drawing);
@@ -162,7 +162,7 @@ public sealed class RoadMarkerDrawsTests
     [TestMethod]
     public void TheMarkersFollowAChangeToTheNodesAroundTheEnd()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(17, 6);
@@ -180,7 +180,7 @@ public sealed class RoadMarkerDrawsTests
     [TestMethod]
     public void AnInnerNodePassingToAnotherOwnerShowsTheBlockedMarkOnEveryNeighbor()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(17, 6);

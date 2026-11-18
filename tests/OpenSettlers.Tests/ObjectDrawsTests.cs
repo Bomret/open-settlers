@@ -915,7 +915,7 @@ public sealed class ObjectDrawsTests
     {
         // The removal tests' rule tables give the hut's object the class of a building, which the Remove click needs.
         var map = MadeMap();
-        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(MadeProgram.RemovalTables(), map);
         game.Enqueue(
             new Command
             {

@@ -15,32 +15,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RemovalLogicTests
 {
-    internal static RuleTables Made(byte capacity = 8, byte[]? transportPriorities = null)
-    {
-        var classes = new ObjectClass[RuleTables.ClassCount];
-        classes[1] = 3;
-        classes[2] = 4;
-        var kinds = Enumerable.Repeat((byte)0xff, RuleTables.GoodKindCount).ToArray();
-        kinds[WoodcutterRules.GoodLog] = 1;
-
-        return new RuleTables(
-            classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
-            [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            goodKinds: kinds,
-            roadCapacities: [.. Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount)],
-            transportPriorities: transportPriorities
-        );
-    }
-
     static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
     {
         var map = MapGenerator.Generate(
@@ -62,7 +36,7 @@ public sealed class RemovalLogicTests
             }
         }
 
-        var game = GameFactory.Create(Made(capacity, transportPriorities), map);
+        var game = GameFactory.Create(MadeProgram.RemovalTables(capacity, transportPriorities), map);
         game.Enqueue(
             new Command
             {

@@ -14,10 +14,7 @@ public sealed class BuildMarkerDrawsTests
 {
     static Layout Woodcutter() =>
         Layout
-            .Read(
-                File.ReadAllText(Path.Combine(CheckedInLayoutsTests.LayoutsFolder(), "woodcutter.jsonc")),
-                "woodcutter.jsonc"
-            )
+            .Read(File.ReadAllText(Path.Combine(LayoutFiles.Folder(), "woodcutter.jsonc")), "woodcutter.jsonc")
             .Layout!;
 
     // The game on the layout's map, the layout's entries applied (the castle stands) or not.

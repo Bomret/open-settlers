@@ -251,8 +251,8 @@ public sealed class FisherTests
             if (line.TryGetValue("s15", out var worker))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(worker, 24, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Settlers[WorkerSlot], width),
+                    FlagWords.InEngineNumbers(worker, 24, game.Flags.Count),
+                    WorkerBytes.Hex(game.Settlers[WorkerSlot], width),
                     $"{name}: the fisher after pass {pass}"
                 );
             }
@@ -260,8 +260,8 @@ public sealed class FisherTests
             if (line.TryGetValue("b", out var hutBytes))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(hutBytes, 12, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Buildings[HutSlot], width),
+                    FlagWords.InEngineNumbers(hutBytes, 12, game.Flags.Count),
+                    WorkerBytes.Hex(game.Buildings[HutSlot], width),
                     $"{name}: the building after pass {pass}"
                 );
             }

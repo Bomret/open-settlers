@@ -6,7 +6,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The map view's click-to-command decision: each branch, with the command it issues. The game is the one of
-// RoadsTests: the castle's flag at 16,6 and a second flag at 18,6, two ticks in.
+// RoadWorld.TwoFlags: the castle's flag at 16,6 and a second flag at 18,6, two ticks in.
 [TestClass]
 public sealed class ClickDecisionTests
 {
@@ -31,7 +31,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void WithNoMapACastleClickIssuesNothing()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
 
         Assert.IsNull(ClickDecision.Decide(ClickMode.None, game, null, null, Refuses, 20, 8));
     }
@@ -39,7 +39,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void WithNoButtonPressedAClickPlacesTheCastleAtTheCurrentTickForPlayerZero()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
 
         var command = Decide(ClickMode.None, game);
 
@@ -60,7 +60,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void WithTheFlagButtonPressedAClickPlacesAFlag()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
 
         var command = Decide(ClickMode.None with { Flag = true }, game);
 
@@ -80,7 +80,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void WithABuildingButtonPressedAClickPlacesThatBuildingInsteadOfAFlag()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var mode = ClickMode.None with { Flag = true, Buildings = [BuildingType.Sawmill] };
 
         var command = Decide(mode, game);
@@ -102,7 +102,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void WithTwoBuildingButtonsPressedAClickPlacesTheFirstOne()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var mode = ClickMode.None with { Buildings = [BuildingType.Woodcutter, BuildingType.Sawmill] };
 
         var command = Decide(mode, game);
@@ -113,7 +113,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void InRemoveModeAClickIssuesTheRemovalTheCheckGivesAtTheCurrentTick()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var mode = ClickMode.None with { Remove = true, Flag = true };
 
         var command = Decide(mode, game, removal: (_, _) => CommandKind.RemoveRoad);
@@ -134,7 +134,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void InRemoveModeARefusedRemovalIssuesNothingAndDoesNotFallThroughToPlacing()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var mode = ClickMode.None with { Remove = true, Flag = true, Buildings = [BuildingType.Sawmill] };
 
         Assert.IsNull(Decide(mode, game));
@@ -143,7 +143,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void InRoadModeADrawingThatDoesNotReachAFlagIssuesNothing()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         var mode = ClickMode.None with { Road = true, Flag = true };
 
@@ -155,7 +155,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void InRoadModeADrawingThatReachesAFlagIssuesTheBuildRoadCommandAtTheCurrentTick()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var drawing = new RoadDrawing(game);
         var mode = ClickMode.None with { Road = true };
         ClickDecision.Decide(mode, game, game.Map, drawing, Refuses, 16, 6);
@@ -180,7 +180,7 @@ public sealed class ClickDecisionTests
     [TestMethod]
     public void InRoadModeWithNoRoadBeingDrawnTheClickFallsThroughToTheLaterChoices()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
 
         var flag = Decide(ClickMode.None with { Road = true, Flag = true }, game);
         var castle = Decide(ClickMode.None with { Road = true }, game);

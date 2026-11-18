@@ -321,7 +321,7 @@ public sealed class ArchiveEntryKindTests
     public void TheCheckReportsPresentEntriesAndAliasesSeparatelyPerArchive()
     {
         // Entry 1352 is a sprite and its copies are aliases; entry 3 is the palette that the sprite needs; entry 2 is rule data.
-        var sprite = GraphicFileTests.Entry(1, 0, 1, 1, 0, 0, [0, 1, 1, 0, 0]);
+        var sprite = GraphicEntries.Entry(1, 0, 1, 1, 0, 0, [0, 1, 1, 0, 0]);
         using var fake = InstallWith(
             ArchiveBytes.Build(
                 Rows,

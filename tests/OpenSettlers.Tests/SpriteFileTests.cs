@@ -20,7 +20,7 @@ public sealed class SpriteFileTests
     }
 
     static byte[] Sprite(ushort width, ushort height, short x, short y, params byte[] body) =>
-        GraphicFileTests.Entry(1, 0, width, height, x, y, body);
+        GraphicEntries.Entry(1, 0, width, height, x, y, body);
 
     [TestMethod]
     public void ARowIsRunsOfSkippedAndDrawnPixelsEndedByAZeroCount()

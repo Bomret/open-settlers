@@ -156,7 +156,7 @@ public sealed class GoldenTests
     static Func<bool, Game> OnLayout(string file) =>
         everyPass =>
         {
-            var path = Path.Combine(CheckedInLayoutsTests.LayoutsFolder(), file);
+            var path = Path.Combine(LayoutFiles.Folder(), file);
             var read = Layout.Read(File.ReadAllText(path), file);
             Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
             var game = GameFactory.Create(

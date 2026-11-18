@@ -58,7 +58,7 @@ public sealed class SettlerSpritesLoadTests
     [TestMethod]
     public void AnAbsentPaletteNamesItsEntry()
     {
-        var failure = Refused(new Dictionary<int, byte[]> { [2] = SettlerFiguresTests.Sequences() });
+        var failure = Refused(new Dictionary<int, byte[]> { [2] = GraphicEntries.Sequences() });
 
         StringAssert.Contains(failure.Message, "the palette (entry 3) of loca/SPAD.PA is unreadable");
     }
@@ -77,7 +77,7 @@ public sealed class SettlerSpritesLoadTests
         var failure = Refused(
             new Dictionary<int, byte[]>
             {
-                [2] = SettlerFiguresTests.Sequences(),
+                [2] = GraphicEntries.Sequences(),
                 [3] = new byte[768],
                 [4] = [1, 2, 3],
             }

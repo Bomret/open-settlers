@@ -418,17 +418,17 @@ public sealed class HistoryEditionSourceTests
     static FakeInstall ObjectFake(Action<Dictionary<int, byte[]>>? change = null)
     {
         var payloads = Payloads();
-        foreach (var (entry, bytes) in ObjectGraphicsTests.Payloads(flag: true))
+        foreach (var (entry, bytes) in ObjectPayloads.Payloads(flag: true))
         {
             payloads[entry] = bytes;
         }
 
         payloads[3][3 * 8] = 40;
         payloads[3][3 * 8 + 1] = 12;
-        payloads[ObjectSprites.FlagEntry + 1] = ObjectGraphicsTests.Square(10, 5);
-        payloads[ObjectSprites.GoodEntry(new Good { Code = 7 })] = ObjectGraphicsTests.Square(3, 1);
-        payloads[ObjectSprites.WaterEntry(0, 0)] = ObjectGraphicsTests.Square(4, 4);
-        payloads[1250 + ObjectGraphics.ShadowOffset] = ObjectGraphicsTests.ShadowMask();
+        payloads[ObjectSprites.FlagEntry + 1] = GraphicEntries.Square(10, 5);
+        payloads[ObjectSprites.GoodEntry(new Good { Code = 7 })] = GraphicEntries.Square(3, 1);
+        payloads[ObjectSprites.WaterEntry(0, 0)] = GraphicEntries.Square(4, 4);
+        payloads[1250 + ObjectGraphics.ShadowOffset] = GraphicEntries.ShadowMask();
         change?.Invoke(payloads);
 
         return new FakeInstall().Put(Archive, ArchiveBytes.Build(1700, payloads));
@@ -519,9 +519,7 @@ public sealed class HistoryEditionSourceTests
     [TestMethod]
     public void TheCastleAndTheHutDrawTheirOwnSpritesAndAnotherBuildingDrawsNothing()
     {
-        using var fake = ObjectFake(payloads =>
-            payloads[ObjectSprites.WoodcutterEntry] = ObjectGraphicsTests.Square(11, 3)
-        );
+        using var fake = ObjectFake(payloads => payloads[ObjectSprites.WoodcutterEntry] = GraphicEntries.Square(11, 3));
         var source = Open(fake);
 
         Assert.AreEqual(
@@ -572,11 +570,11 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = ObjectFake(payloads =>
         {
-            payloads[1250 + 169] = ObjectGraphicsTests.Square(21, 3);
-            payloads[1250 + 170] = ObjectGraphicsTests.Square(22, 3);
-            payloads[1250 + 160] = ObjectGraphicsTests.Square(23, 3);
-            payloads[1250 + 144] = ObjectGraphicsTests.Square(24, 3);
-            payloads[1250 + 145] = ObjectGraphicsTests.Square(25, 3);
+            payloads[1250 + 169] = GraphicEntries.Square(21, 3);
+            payloads[1250 + 170] = GraphicEntries.Square(22, 3);
+            payloads[1250 + 160] = GraphicEntries.Square(23, 3);
+            payloads[1250 + 144] = GraphicEntries.Square(24, 3);
+            payloads[1250 + 145] = GraphicEntries.Square(25, 3);
         });
         var source = Open(fake);
 
@@ -661,9 +659,9 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = ObjectFake(payloads =>
         {
-            payloads[1250 + 145] = ObjectGraphicsTests.Square(25, 3);
-            payloads[1250 + 186] = ObjectGraphicsTests.Square(26, 3);
-            payloads[1250 + 170] = ObjectGraphicsTests.Square(22, 3);
+            payloads[1250 + 145] = GraphicEntries.Square(25, 3);
+            payloads[1250 + 186] = GraphicEntries.Square(26, 3);
+            payloads[1250 + 170] = GraphicEntries.Square(22, 3);
         });
         var source = Open(fake);
 
@@ -755,8 +753,8 @@ public sealed class HistoryEditionSourceTests
     {
         using var fake = ObjectFake(payloads =>
         {
-            payloads[ObjectSprites.CastleEntry] = ObjectGraphicsTests.Square(30, 3);
-            payloads[ObjectSprites.CastleEntry + 250] = ObjectGraphicsTests.ShadowMask();
+            payloads[ObjectSprites.CastleEntry] = GraphicEntries.Square(30, 3);
+            payloads[ObjectSprites.CastleEntry + 250] = GraphicEntries.ShadowMask();
         });
         var source = Open(fake);
         BuildingDraw Castle(ushort? progress) =>
@@ -883,10 +881,10 @@ public sealed class HistoryEditionSourceTests
         {
             for (var entry = 367; entry <= 370; entry++)
             {
-                payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 360), 2);
+                payloads[entry] = GraphicEntries.Square((short)(entry - 360), 2);
             }
 
-            payloads[370 + 250] = ObjectGraphicsTests.ShadowMask();
+            payloads[370 + 250] = GraphicEntries.ShadowMask();
         });
         var source = Open(fake);
 
@@ -915,7 +913,7 @@ public sealed class HistoryEditionSourceTests
         {
             for (var each = 352; each <= 365; each++)
             {
-                payloads[each] = ObjectGraphicsTests.Square((short)(each - 340), 2);
+                payloads[each] = GraphicEntries.Square((short)(each - 340), 2);
             }
         });
         var source = Open(fake);
@@ -933,7 +931,7 @@ public sealed class HistoryEditionSourceTests
     [DataRow(-31)]
     public void ARoadMarkerOutsideThePresentSpritesDrawsNothing(int difference)
     {
-        using var fake = ObjectFake(payloads => payloads[373] = ObjectGraphicsTests.Square(1, 1));
+        using var fake = ObjectFake(payloads => payloads[373] = GraphicEntries.Square(1, 1));
 
         Assert.IsNull(Open(fake).Draw(new RoadMarker { Kind = RoadMarkerKind.Slope, Difference = difference }));
     }
@@ -976,7 +974,7 @@ public sealed class HistoryEditionSourceTests
         {
             for (var entry = 610; entry <= 619; entry++)
             {
-                payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 600), 0);
+                payloads[entry] = GraphicEntries.Square((short)(entry - 600), 0);
             }
         });
         var source = Open(fake);
@@ -1086,10 +1084,10 @@ public sealed class HistoryEditionSourceTests
 
     // A program whose flame lists' header points past its image: list 3 starts at 0x7000.
     static byte[] BadFlameListsProgram() =>
-        FlameListsTests.Executable(exe =>
+        ProgramImage.Executable(exe =>
         {
-            FlameListsTests.Lists(exe);
-            BitConverter.GetBytes((short)0x7000).CopyTo(exe, FlameListsTests.At(FlameLists.Address) + 2 * 3);
+            FlameListImage.Lists(exe);
+            BitConverter.GetBytes((short)0x7000).CopyTo(exe, ProgramImage.At(FlameLists.Address) + 2 * 3);
         });
 
     [TestMethod]
@@ -1137,11 +1135,11 @@ public sealed class HistoryEditionSourceTests
     static FakeInstall SettlerFake(Action<Dictionary<int, byte[]>>? change = null)
     {
         var payloads = Payloads();
-        payloads[2] = SettlerFiguresTests.Sequences();
-        payloads[4] = ObjectGraphicsTests.ShadowMask();
-        payloads[1950] = ObjectGraphicsTests.Sprite();
-        payloads[2600] = ObjectGraphicsTests.Sprite();
-        payloads[3200] = ObjectGraphicsTests.Square(5, 6);
+        payloads[2] = GraphicEntries.Sequences();
+        payloads[4] = GraphicEntries.ShadowMask();
+        payloads[1950] = GraphicEntries.Sprite();
+        payloads[2600] = GraphicEntries.Sprite();
+        payloads[3200] = GraphicEntries.Square(5, 6);
         change?.Invoke(payloads);
 
         return new FakeInstall().Put(Archive, ArchiveBytes.Build(3300, payloads));
@@ -1247,7 +1245,7 @@ public sealed class HistoryEditionSourceTests
             figureOffsets: offsets,
             jobData: MadeProgram.MadeJobData()
         );
-        using var fake = SettlerFake(payloads => payloads[1951] = ObjectGraphicsTests.Sprite());
+        using var fake = SettlerFake(payloads => payloads[1951] = GraphicEntries.Sprite());
         var source = OpenWithSettlers(fake, tables);
 
         var first = source.Draw(Term(SettlerPart.SecondFigure))!;

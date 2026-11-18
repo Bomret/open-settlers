@@ -207,8 +207,8 @@ public sealed class ForesterTests
             if (line.TryGetValue("s4", out var worker))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(worker, 24, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Settlers[WorkerSlot], width),
+                    FlagWords.InEngineNumbers(worker, 24, game.Flags.Count),
+                    WorkerBytes.Hex(game.Settlers[WorkerSlot], width),
                     $"{name}: the forester after pass {pass}"
                 );
             }
@@ -216,8 +216,8 @@ public sealed class ForesterTests
             if (line.TryGetValue("b", out var hutBytes))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(hutBytes, 12, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Buildings[HutSlot], width),
+                    FlagWords.InEngineNumbers(hutBytes, 12, game.Flags.Count),
+                    WorkerBytes.Hex(game.Buildings[HutSlot], width),
                     $"{name}: the building after pass {pass}"
                 );
             }

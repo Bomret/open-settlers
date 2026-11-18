@@ -17,7 +17,7 @@ public sealed class RoadSplitTests
 
     // The scenarios whose clicks are flag buttons: the building placements (b@x,y) are the build site's slice.
     public static IEnumerable<object[]> Scenarios =>
-        RemovalTests
+        EmulatorFixture
             .Load(Fixture)
             .Where(scenario =>
                 scenario.Name.StartsWith("split-", System.StringComparison.Ordinal)
@@ -28,14 +28,14 @@ public sealed class RoadSplitTests
     [TestMethod]
     [DynamicData(nameof(Scenarios))]
     public void AFlagOnARoadSplitsItAsTheOriginalDoes(string name) =>
-        RemovalTests.Replay(Fixture, name, (_, _) => [CommandKind.PlaceFlag], line => !line.ContainsKey("m"));
+        RemovalReplay.Replay(Fixture, name, (_, _) => [CommandKind.PlaceFlag], line => !line.ContainsKey("m"));
 
     // The building button's click (0x449a63) on a node whose flag node holds a road splits the road under the building's flag;
     // the click's map bytes, the flags' items, and the building site's item are the original's, and so are the bytes after each
     // pass that follows it.
     [TestMethod]
     public void AHutWhoseFlagLandsOnARoadSplitsItAsTheOriginalDoes() =>
-        RemovalTests.Replay(
+        RemovalReplay.Replay(
             Fixture,
             "building-state6",
             (click, _) => [click == 'b' ? CommandKind.PlaceBuilding : CommandKind.PlaceFlag],

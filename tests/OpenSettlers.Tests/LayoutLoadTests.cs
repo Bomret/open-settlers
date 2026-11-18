@@ -119,9 +119,7 @@ public sealed class LayoutLoadTests
     [TestMethod]
     public void AStartWithARefusedEntryExitsFourWithTheFullMessageAndNoGame()
     {
-        var layout = Layout
-            .Read(LayoutText.Text(extra: "\n\"flags\": [{\"x\": 14, \"y\": 11}]"), "test.jsonc")
-            .Layout!;
+        var layout = Layout.Read(LayoutText.Text(extra: "\n\"flags\": [{\"x\": 14, \"y\": 11}]"), "test.jsonc").Layout!;
 
         var code = LayoutLoad.Start(layout, NewGame(layout), out var game, out var message);
 

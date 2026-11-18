@@ -27,7 +27,7 @@ public sealed class RoadSplitGameTests
             },
             MapSize.Offered[0]
         );
-        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(MadeProgram.RemovalTables(), map);
         Apply(game, CommandKind.PlaceCastle, castleX, castleY);
         Apply(game, CommandKind.PlaceFlag, endX, endY);
         beforeRoad?.Invoke(map);

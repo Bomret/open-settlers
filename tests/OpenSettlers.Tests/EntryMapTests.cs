@@ -110,7 +110,7 @@ public sealed class EntryMapTests
         var palette = new byte[768];
         palette[2 * 3] = 0xFC;
         // Row 1: skip 1, one pixel of color 2; row 2: nothing drawn.
-        var sprite = GraphicFileTests.Entry(1, 0, 2, 2, 0, 0, [1, 1, 2, 0, 0, 0, 0, 0]);
+        var sprite = GraphicEntries.Entry(1, 0, 2, 2, 0, 0, [1, 1, 2, 0, 0, 0, 0, 0]);
         using var fake = InstallWith(new Dictionary<int, byte[]> { [3] = palette, [630] = sprite });
 
         var preview = (SpritePreview)List<SpriteOverColor8Kind>(fake).First(a => a.File == Files[0]).Load();

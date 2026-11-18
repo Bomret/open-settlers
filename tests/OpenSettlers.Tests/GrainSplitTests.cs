@@ -30,7 +30,7 @@ public sealed class GrainSplitTests
     public void WithNeitherAskingTheGrainStaysInTheCastle()
     {
         var parts = "construct:1:1234,5678,9ABC:0:15,5:18,6;15,9:16,6,00;16,6,2223::700:900:k@4,5".Split(':');
-        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts), handsOutGoods: true);
         for (var pass = 0; pass < 700; pass++)
         {
             game.Tick();
@@ -136,8 +136,8 @@ public sealed class GrainSplitTests
 
     static ulong FarmRunDigest(bool grainOnTheFlag)
     {
-        var parts = RemovalTests.Load("grain-split-farm.txt").Single().Command.Split(':');
-        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var parts = EmulatorFixture.Load("grain-split-farm.txt").Single().Command.Split(':');
+        var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts), handsOutGoods: true);
         for (var pass = 0; pass < 700; pass++)
         {
             if (pass == 500 && grainOnTheFlag)
@@ -153,9 +153,9 @@ public sealed class GrainSplitTests
 
     static Game Both(int grains)
     {
-        var scenario = RemovalTests.Load(Fixture).Single();
+        var scenario = EmulatorFixture.Load(Fixture).Single();
         var parts = scenario.Command.Split(':');
-        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts), handsOutGoods: true);
         for (var pass = 0; pass < 700; pass++)
         {
             game.Tick();
@@ -208,10 +208,10 @@ public sealed class GrainSplitTests
     // The checks run from the pass from to the pass to.
     static void Replay(string fixture, Action<Game, int> before, int from = 0, int to = int.MaxValue)
     {
-        var scenario = RemovalTests.Load(fixture).Single();
+        var scenario = EmulatorFixture.Load(fixture).Single();
         var parts = scenario.Command.Split(':');
-        var map = RemovalTests.MapOf(parts);
-        var game = RemovalTests.Started(parts, map, handsOutGoods: true);
+        var map = RemovalGame.MapOf(parts);
+        var game = RemovalGame.Started(parts, map, handsOutGoods: true);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         var lines = scenario
             .Lines.Where(line => line.ContainsKey("pass"))
