@@ -126,4 +126,26 @@ public sealed class CodelessGoodTests
 
         StringAssert.Contains(error.Message, "ai-token");
     }
+
+    // Both names share the exporter word: the hash's low 31 bits, low byte cleared (found by search).
+    [TestMethod]
+    public void TwoGoodsWithNoCodeAndOneExporterWordAreRefusedNamingBoth()
+    {
+        var catalog = new ContentCatalog([CodelessEntry("g5258", 1), CodelessEntry("g7361", 2)]);
+
+        var error = Assert.ThrowsExactly<ArgumentException>(() => GoodWords.Check(catalog));
+
+        StringAssert.Contains(error.Message, "g5258");
+        StringAssert.Contains(error.Message, "g7361");
+    }
+
+    static GoodEntry CodelessEntry(string name, int rank) =>
+        new()
+        {
+            Name = name,
+            Counter = FillCounter.Low,
+            HandoverCounter = FillCounter.Low,
+            CountsAgainstResource1 = false,
+            TransportRank = rank,
+        };
 }

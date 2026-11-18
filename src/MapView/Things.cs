@@ -63,9 +63,9 @@ public sealed record Thing
         // The readout shows the original's own encoding of the settler beside the names (INV-0006).
         var raw = SettlerEncoder.Fields(settler, catalog);
 
-        // The mode holds the exporter word of the carried good, which for a good with no original code is a hash: the readout leaves
-        // it out and shows the good by name (INV-0006).
-        var codeless = Load(settler) is { } load && catalog.Require(load).OriginalCode is null;
+        // A mode that is the exporter word of a good with no original code is a hash: the readout leaves it out and shows the good by
+        // name (INV-0006).
+        var codeless = GoodWords.IsCodelessWord(catalog, raw.Mode);
 
         return new()
         {
@@ -194,7 +194,7 @@ public sealed record Thing
         return goods.Length == 0 ? [] : [("goods", string.Join(",", goods))];
     }
 
-    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load, the settler who steps out
+    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load or handing it over, the settler who steps out
     // with a good or puts it down).
     static (string, string)[] CarriedGood(Settler settler) =>
         Load(settler) is { } good ? [("carrying", GoodText(good))] : [];
@@ -203,8 +203,9 @@ public sealed record Thing
         settler.Activity switch
         {
             WalksRoad { Load: { Good.IsNone: false } load } => load.Good,
-            StepsOutWithGood stepping => stepping.Good,
-            PutsDownGood putting => putting.Good,
+            HandsOver { Load: { Good.IsNone: false } load } => load.Good,
+            StepsOutWithGood { Good.IsNone: false } stepping => stepping.Good,
+            PutsDownGood { Good.IsNone: false } putting => putting.Good,
             _ => null,
         };
 

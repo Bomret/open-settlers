@@ -115,7 +115,7 @@ and cast.
 ## The goods
 
 **Status:** confirmed for the classes, inferred for the names. The names are those the chains, the tool list, and the art give (INV-0006);
-no text of the install names a good. Every good 1 to 26 is an entry of the content catalog under its stable name (`GoodTables` holds the evidence for the original's codes).
+no text of the install names a good. Every good 1 to 26 is an entry of the content catalog under its stable name (`GoodTables` holds the evidence for each good's name).
 
 `Good_DestinationClasses` (`0x464117`) gives each good a class and a request word; a good of class `0xff` goes to storage at once. The
 goods 1 to 26 are the 26 steps of `Player_SetTransportPriorities` (`0x445570`).

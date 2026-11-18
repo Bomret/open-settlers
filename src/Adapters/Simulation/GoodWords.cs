@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
@@ -24,7 +27,42 @@ public static class GoodWords
 
         var entry = catalog.Require(good);
 
-        return entry.OriginalCode ?? ContentCatalog.WordOf(entry.Name);
+        return entry.OriginalCode ?? WordOf(entry.Name);
+    }
+
+    // The word of a good with no original code, as the class summary states it.
+    static int WordOf(string name)
+    {
+        var word = (int)(Fnv1a.Of(name) & 0x7fffff00);
+
+        return word == 0 ? 0x100 : word;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="word"/> is the word of a good of the catalog that has no original code. The readout leaves such a word out
+    /// and shows the good by name (INV-0006).
+    /// </summary>
+    public static bool IsCodelessWord(ContentCatalog catalog, int word) =>
+        catalog.Goods.Any(entry => entry.OriginalCode is null && WordOf(entry.Name) == word);
+
+    /// <summary>
+    /// Throws an <see cref="ArgumentException"/> that names both goods where two goods of the catalog with no original code have one word,
+    /// which the flag word, the carrier's mode, and the snapshot could not tell apart.
+    /// </summary>
+    public static void Check(ContentCatalog catalog)
+    {
+        var byWord = new Dictionary<int, string>();
+        foreach (var entry in catalog.Goods.Where(entry => entry.OriginalCode is null))
+        {
+            var word = WordOf(entry.Name);
+            if (!byWord.TryAdd(word, entry.Name))
+            {
+                throw new ArgumentException(
+                    $"The goods {byWord[word]} and {entry.Name} have no original code and the same exporter word, 0x{word:x}.",
+                    nameof(catalog)
+                );
+            }
+        }
     }
 
     /// <summary>

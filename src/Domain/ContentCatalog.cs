@@ -20,7 +20,7 @@ public sealed class ContentCatalog
     /// <summary>
     /// Creates the catalog from its goods. Throws an <see cref="ArgumentException"/> that names the entry and builds nothing for a duplicate
     /// stable name, a duplicate original code, a stable name outside lowercase letters, digits, and hyphens, a transport rank below 1 or
-    /// one that another good holds, and a request class that does not fit its request word (0 to 7), and a good with no original code whose exporter word (<see cref="WordOf"/>) another such good has.
+    /// one that another good holds, and a request class that does not fit its request word (0 to 7).
     /// </summary>
     /// <param name="goods">The goods, in any order.</param>
     public ContentCatalog(IEnumerable<GoodEntry> goods)
@@ -29,7 +29,6 @@ public sealed class ContentCatalog
         _byName = [];
         Dictionary<int, GoodEntry> byCode = [];
         var byRank = new Dictionary<int, string>();
-        var byWord = new Dictionary<int, string>();
         foreach (var good in ordered)
         {
             if (good.Name.Length == 0 || !good.Name.All(IsNameCharacter))
@@ -45,11 +44,6 @@ public sealed class ContentCatalog
             if (good.OriginalCode is { } code && !byCode.TryAdd(code, good))
             {
                 throw Refuse(good, $"{byCode[code].Name} has this original code, {code}");
-            }
-
-            if (good.OriginalCode is null && !byWord.TryAdd(WordOf(good.Name), good.Name))
-            {
-                throw Refuse(good, $"{byWord[WordOf(good.Name)]} has the same exporter word, 0x{WordOf(good.Name):x}");
             }
 
             if (good.TransportRank < 1)
@@ -72,18 +66,6 @@ public sealed class ContentCatalog
         }
 
         Goods = [.. ordered];
-    }
-
-    /// <summary>
-    /// The number an exporter writes for a good with no original code: the hash's low 31 bits with the low byte cleared (<see cref="Fnv1a.Of"/>),
-    /// and 0x100 where that leaves 0. So it never equals the code of an original good (1 to 26), no good (0), or the carrier's storage and
-    /// building modes (0xfe and 0xff), and a packed byte with a direction above the good keeps its direction bits.
-    /// </summary>
-    public static int WordOf(string name)
-    {
-        var word = (int)(Fnv1a.Of(name) & 0x7fffff00);
-
-        return word == 0 ? 0x100 : word;
     }
 
     /// <summary>A catalog with no good.</summary>

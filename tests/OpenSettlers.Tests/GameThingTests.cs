@@ -147,6 +147,63 @@ public sealed class GameThingTests
     }
 
     [TestMethod]
+    public void ACarrierWhoHandsOverAGoodWithNoCodeShowsItsNameAndNoRawModeValue()
+    {
+        var load = new Load { Good = TestCatalog.AiToken, Destination = null };
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            3,
+            4,
+            0,
+            new HandsOver
+            {
+                Load = load,
+                Heading = new Heading { Value = 0 },
+            }
+        );
+        var values = Thing.Of(settler, TestCatalog.WithAiToken()).Values.ToList();
+
+        CollectionAssert.Contains(values, ("carrying", "ai-token"));
+        Assert.IsFalse(values.Any(value => value.Item1 == "mode"));
+    }
+
+    [TestMethod]
+    public void ASettlerWhoseResidueHoldsTheWordOfAGoodWithNoCodeShowsNoRawModeValue()
+    {
+        var catalog = TestCatalog.WithAiToken();
+        var putsDown = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = TestCatalog.AiToken });
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            3,
+            4,
+            0,
+            new Door { TimeLeft = 0 }.Carrying(SettlerEncoder.ResidueOf(putsDown, catalog))
+        );
+        var values = Thing.Of(settler, catalog).Values.ToList();
+
+        Assert.IsFalse(values.Any(value => value.Item1 == "mode"));
+    }
+
+    [TestMethod]
+    public void ASettlerWhoStepsOutOrPutsDownNoGoodShowsNoGoodAndDoesNotThrow()
+    {
+        foreach (
+            var activity in new Activity[]
+            {
+                new PutsDownGood { Good = Good.None },
+                new StepsOutWithGood { Good = Good.None },
+            }
+        )
+        {
+            var settler = new Settler(new Carrier(), 0, 3, 4, 0, activity);
+
+            Assert.IsFalse(Thing.Of(settler, TestCatalog.Default).Values.Any(value => value.Item1 == "carrying"));
+        }
+    }
+
+    [TestMethod]
     public void ASettlerWhoCarriesNothingShowsNoGood()
     {
         var settler = new Settler(new Carrier(), 0, 3, 4, 0, new BuildsCastle());
