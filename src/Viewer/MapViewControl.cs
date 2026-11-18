@@ -518,13 +518,9 @@ public partial class MapViewControl(
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                GameFactory.Create(
-                    _tables,
-                    _state.Map,
-                    _stockLevel ?? _state.StockLevel,
-                    everyPassTurns: true,
-                    handsOutGoods: true
-                ),
+                _tables,
+                _state.Map,
+                _stockLevel ?? _state.StockLevel,
                 out _game,
                 out var layoutProblem
             );
