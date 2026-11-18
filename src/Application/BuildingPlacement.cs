@@ -119,7 +119,7 @@ public sealed class BuildingPlacement(
             {
                 if (tables.ClassOfGood(good) is { } asked)
                 {
-                    flags[flag].SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
+                    flags[flag].AskFor(asked.Word, asked);
                 }
             }
         }

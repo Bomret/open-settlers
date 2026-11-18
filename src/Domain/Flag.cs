@@ -45,8 +45,35 @@ public sealed class Flag(int x, int y)
     /// </summary>
     public Request RequestOf(RequestWord word) => _requests[(int)word];
 
-    /// <summary>Sets the request of the flag in a request word.</summary>
-    internal void SetRequest(RequestWord word, Request request) => _requests[(int)word] = request;
+    /// <summary>The flag asks for a class of goods in a request word, at a rank (a new ask starts at rank 0).</summary>
+    public void AskFor(RequestWord word, GoodClass asks, byte rank = 0) =>
+        _requests[(int)word] = new Request { Asks = asks, Rank = rank };
+
+    /// <summary>The flag asks for nothing more in a request word; the rank stays.</summary>
+    public void ClearAsk(RequestWord word) => _requests[(int)word] = _requests[(int)word] with { Asks = null };
+
+    /// <summary>Gives the request of a request word a rank; the class it asks for stays.</summary>
+    public void RankRequest(RequestWord word, byte rank) =>
+        _requests[(int)word] = _requests[(int)word] with { Rank = rank };
+
+    /// <summary>
+    /// A good is on its way to the flag's request: the rank of the request word shifts right by one where bit 0 is set, else it
+    /// becomes 0.
+    /// </summary>
+    public void ServeRequest(RequestWord word)
+    {
+        var rank = _requests[(int)word].Rank;
+        RankRequest(word, (rank & 1) != 0 ? (byte)(rank >> 1) : (byte)0);
+    }
+
+    /// <summary>Records whether the flag's request for a carrier found none.</summary>
+    public void RecordCarrierRequest(bool failed) => CarrierRequestFailed = failed;
+
+    /// <summary>The goods on the flag are due their turn.</summary>
+    public void MarkGoodsTurnDue() => NeedsGoodsTurn = true;
+
+    /// <summary>The turn of the goods on the flag has begun: none is due until a put or an unfinished turn sets it again.</summary>
+    public void ClearGoodsTurn() => NeedsGoodsTurn = false;
 
     /// <summary>The eight places of the flag, for the goods that lie on it.</summary>
     public IReadOnlyList<WaitingGood> Places => _places;

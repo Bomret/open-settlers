@@ -214,8 +214,8 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
         site.Constructing = false;
         site.Site = null;
         var flag = _flags[site.Flag];
-        flag.SetRequest(RequestWord.First, flag.RequestOf(RequestWord.First) with { Asks = null });
-        flag.SetRequest(RequestWord.Second, flag.RequestOf(RequestWord.Second) with { Asks = null });
+        flag.ClearAsk(RequestWord.First);
+        flag.ClearAsk(RequestWord.Second);
 
         _movement.Become(settler, new LeavesSite());
         settler.Timer = 0;

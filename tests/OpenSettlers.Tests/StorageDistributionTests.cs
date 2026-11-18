@@ -103,10 +103,8 @@ public sealed class StorageDistributionTests
 
     static Building Site(Rig rig, int flag, byte plankRank, byte stoneRank = 0)
     {
-        rig.Bench.Flags[flag]
-            .SetRequest(RequestWord.First, new Request { Asks = ConstructionTables.PlankClass, Rank = plankRank });
-        rig.Bench.Flags[flag]
-            .SetRequest(RequestWord.Second, new Request { Asks = ConstructionTables.StoneClass, Rank = stoneRank });
+        rig.Bench.Flags[flag].AskFor(RequestWord.First, ConstructionTables.PlankClass, plankRank);
+        rig.Bench.Flags[flag].AskFor(RequestWord.Second, ConstructionTables.StoneClass, stoneRank);
         var site = new Building(BuildingType.Woodcutter, 3 + 2 * flag, 3, flag, constructing: true)
         {
             Progress = 1,
@@ -164,7 +162,7 @@ public sealed class StorageDistributionTests
             ]
         );
         var rig = Started(planks: 0, stones: 0, tables: tables, food: [2, 5, 3]);
-        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request { Asks = food, Rank = 0x3e });
+        rig.Bench.Flags[1].AskFor(RequestWord.First, food, 0x3e);
 
         rig.Distribution.Run();
 

@@ -14,8 +14,6 @@ namespace OpenSettlers.Tests;
 public sealed class SitePassTests
 {
     const int SiteFlag = 1;
-    static readonly Request Planks = new() { Asks = ConstructionTables.PlankClass, Rank = 0 };
-    static readonly Request Stones = new() { Asks = ConstructionTables.StoneClass, Rank = 0 };
 
     // The requests the site's pass sent to the castle, in order, with the building each came from (MSTest makes an instance for each test).
     readonly List<(Building Site, WorkerRequest Request)> _asked = [];
@@ -30,8 +28,8 @@ public sealed class SitePassTests
         var bench = new BehaviourBench();
         bench.Flags.Add(4, 4);
         bench.Flags.Add(8, 6);
-        bench.Flags[SiteFlag].SetRequest(RequestWord.First, Planks);
-        bench.Flags[SiteFlag].SetRequest(RequestWord.Second, Stones);
+        bench.Flags[SiteFlag].AskFor(RequestWord.First, ConstructionTables.PlankClass);
+        bench.Flags[SiteFlag].AskFor(RequestWord.Second, ConstructionTables.StoneClass);
         var site = new Building(type, 7, 5, SiteFlag, constructing: true)
         {
             Progress = progress,
