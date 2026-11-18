@@ -295,6 +295,45 @@ public sealed class TestPairTests
         CollectionAssert.AreEqual(Array.Empty<string>(), TestPairs.Problems(tree.Root));
     }
 
+    // The scan never enters a hidden folder or build output, so an unreadable folder there breaks nothing.
+    [TestMethod]
+    public void AnUnreadableFolderUnderAHiddenFolderOrBuildOutputIsNoProblem()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("the platform sets no Unix file mode");
+            return;
+        }
+
+        using var tree = Chain();
+        string[] locked =
+        [
+            Path.Combine(tree.Root, ".hidden", "locked"),
+            Path.Combine(tree.Root, "src", "Domain", "obj", "locked"),
+        ];
+        foreach (var folder in locked)
+        {
+            Directory.CreateDirectory(folder);
+        }
+
+        try
+        {
+            foreach (var folder in locked)
+            {
+                File.SetUnixFileMode(folder, UnixFileMode.None);
+            }
+
+            CollectionAssert.AreEqual(Array.Empty<string>(), TestPairs.Problems(tree.Root));
+        }
+        finally
+        {
+            foreach (var folder in locked)
+            {
+                File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        }
+    }
+
     [TestMethod]
     public void TheSharedHelpersReferencingALibraryIsAProblem()
     {

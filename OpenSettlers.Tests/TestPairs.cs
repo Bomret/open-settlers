@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -277,15 +278,25 @@ static class TestPairs
 
     static bool IsBuildOutput(string name) => name is "obj" or "bin" || name.StartsWith('.');
 
-    // The files with one of the extensions below `folder`, build output and hidden folders (.git, .superdev) left out.
+    // The files with one of the extensions below `folder`. The walk never enters build output or a hidden folder (.git,
+    // .superdev), so their size and their permissions do not matter.
     static List<string> FilesUnder(string folder, params string[] extensions) =>
         [
-            .. Directory
-                .EnumerateFiles(folder, "*", SearchOption.AllDirectories)
-                .Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.Ordinal)))
-                .Where(file =>
-                    !Path.GetRelativePath(folder, file).Split(Path.DirectorySeparatorChar)[..^1].Any(IsBuildOutput)
-                ),
+            .. new FileSystemEnumerable<string>(
+                folder,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                // A dot file still counts, and an unreadable folder the walk enters still fails the scan.
+                new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    AttributesToSkip = 0,
+                    IgnoreInaccessible = false,
+                }
+            )
+            {
+                ShouldRecursePredicate = (ref FileSystemEntry entry) => !IsBuildOutput(entry.FileName.ToString()),
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory,
+            }.Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.Ordinal))),
         ];
 
     // The assembly of a grant of internals as the attribute or the item writes it: its name, without a public key.
@@ -411,10 +422,10 @@ static class TestPairs
         foreach (var file in FilesUnder(root, ".cs"))
         {
             // The project whose folder holds the file; the longest folder wins, should one project sit below another.
+            var full = Path.GetFullPath(file);
             var owner = projects
                 .Values.Where(project =>
-                    Path.GetFullPath(file)
-                        .StartsWith(project.Folder + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                    full.StartsWith(project.Folder + Path.DirectorySeparatorChar, StringComparison.Ordinal)
                 )
                 .MaxBy(project => project.Folder.Length);
             var origin = owner?.Name ?? Path.GetRelativePath(root, Path.GetDirectoryName(file)!).Replace('\\', '/');
