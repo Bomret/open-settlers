@@ -5,18 +5,11 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
+// The settlers sprites on the History Edition (SettlerPair is internal to its import, which the map view cannot reach);
+// the rest of this class is in src/MapView.Tests.
 [TestClass]
 public sealed class SpriteLayerTests
 {
-    // Godot keeps a vertex color in 8 bits a channel: the low byte of the layer goes in red, the high byte in green, each
-    // a whole number of 255ths, which the shaders read back as red + 256 * green.
-    [TestMethod]
-    public void ALayerIsSplitIntoItsLowByteInRedAndItsHighByteInGreen()
-    {
-        Assert.AreEqual((44 / 255f, 1 / 255f), SpriteLayer.Channels(300));
-        Assert.AreEqual((255 / 255f, 7 / 255f), SpriteLayer.Channels(2047));
-    }
-
     // The settlers' sprites take more layers than one 8-bit channel holds: the woodcutter's lie past 255.
     [TestMethod]
     [TestCategory(Needs.Install)]

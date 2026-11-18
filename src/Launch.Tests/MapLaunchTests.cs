@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
 using OpenSettlers.Launch;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -329,39 +328,6 @@ public sealed class MapLaunchTests
         var text = CrashText.Of("a/b.dat", new InvalidOperationException("boom"));
 
         Assert.AreEqual("a/b.dat: crashed: InvalidOperationException: boom", text);
-    }
-
-    [TestMethod]
-    public void TheCrashSubjectIsTheSelectedAssetFile()
-    {
-        var asset = new Asset
-        {
-            Kind = "text",
-            File = "x/a",
-            Name = "a",
-            Load = () => new NotePreview { Summary = "s" },
-        };
-        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("text", asset)), selectFirst: false);
-        state.SelectKind("text");
-
-        Assert.AreEqual("x/a", state.CrashSubject);
-    }
-
-    [TestMethod]
-    public void WithNoSelectedAssetTheCrashSubjectIsTheSelectedKind()
-    {
-        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("empty")), selectFirst: false);
-        state.SelectKind("empty");
-
-        Assert.AreEqual("empty", state.CrashSubject);
-    }
-
-    [TestMethod]
-    public void WithNeitherSelectedTheCrashSubjectIsNull()
-    {
-        var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("empty")), selectFirst: false);
-
-        Assert.IsNull(state.CrashSubject);
     }
 
     [TestMethod]

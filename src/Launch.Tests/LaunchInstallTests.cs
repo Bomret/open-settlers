@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
 using OpenSettlers.Launch;
 using OpenSettlers.Simulation;
 
@@ -12,31 +11,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class LaunchInstallTests
 {
-    [TestMethod]
-    public void AnAssetCheckWithNoInstallGivenExitsTwoNamingBothWaysToGiveOne()
-    {
-        var args = LaunchArgs.Parse(["--check"], null);
-
-        var report = AssetCheck.Run(args, LaunchInstall.Assets(args));
-
-        Assert.AreEqual(
-            (2, $"ERROR no install given: {LaunchInstall.HowToGive}"),
-            (report.ExitCode, string.Join("\n", report.Lines))
-        );
-        StringAssert.Contains(LaunchInstall.HowToGive, "pass --game <dir> or set SIEDLER_DIR");
-        StringAssert.Contains(LaunchInstall.HowToGive, "--content-set basic");
-    }
-
-    [TestMethod]
-    public void AnAssetCheckWithABadArgumentExitsFour()
-    {
-        var args = LaunchArgs.Parse(["--check", "--game"], null);
-
-        var report = AssetCheck.Run(args, LaunchInstall.Assets(args));
-
-        Assert.AreEqual(LaunchArgs.BadArgumentExitCode, report.ExitCode);
-    }
-
     // Seed info on the basic set reads the rule files of content/basic/ and nothing else: no install is named anywhere,
     // and SIEDLER_DIR points at a folder that does not exist.
     [TestMethod]
