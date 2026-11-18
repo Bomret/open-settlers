@@ -2,7 +2,10 @@
 
 Usage: python3 -I emulate.py [--game <dir>] [--project <dir>] <command>...
 
-Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. The script finds
+Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. The commands of one call
+run in one Ghidra launch, in argument order. They are independent: each prints the lines it prints in a call of its own
+(INV-0018). A command that fails ends the launch, and the later commands print nothing. A draw batch is the
+exception, as below. The script finds
 EmulateMapStart.java and EmulateDraw.java beside itself, from any folder. The install is the --game folder or
 SIEDLER_DIR, as for the game itself. The script imports Siedler1.exe into a project in a temporary folder, without
 analysis, and removes the project afterwards: it keeps no program bytes.
