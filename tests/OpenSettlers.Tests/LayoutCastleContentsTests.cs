@@ -328,11 +328,11 @@ public sealed class LayoutCastleContentsTests
     [TestMethod]
     public void ALayoutWithNoSizeFailsTheLoadWhateverCountItsCastleNames()
     {
-        var read = Layout.Read(
-            "{\"castle\": {\"x\": 10, \"y\": 10, \"settlers\": {\"jobless\": 2147483647}}}",
-            "t.jsonc"
-        );
+        // The size is the only problem: the castle entry adds no line of its own and the count makes no settlers.
+        var text = LayoutTests
+            .Text(extra: "\n\"castle\": {\"x\": 10, \"y\": 10, \"settlers\": {\"jobless\": 2147483647}}")
+            .Replace("\"size\": 1,", "");
 
-        Assert.IsNotEmpty(read.Problems);
+        CollectionAssert.AreEqual(new[] { "t.jsonc: size: missing" }, Layout.Read(text, "t.jsonc").Problems.ToArray());
     }
 }
