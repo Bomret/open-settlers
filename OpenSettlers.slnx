@@ -21,6 +21,7 @@
     <Project Path="src/Application.Testing/OpenSettlers.Application.Testing.csproj" />
     <Project Path="src/Adapters.Testing/OpenSettlers.Adapters.Testing.csproj" />
     <Project Path="src/MapView.Testing/OpenSettlers.MapView.Testing.csproj" />
+    <Project Path="src/Adapters.Tests/OpenSettlers.Adapters.Tests.csproj" />
   </Folder>
   <Project Path="OpenSettlers.Tests/OpenSettlers.Tests.csproj" />
   <Folder Name="/tests/">

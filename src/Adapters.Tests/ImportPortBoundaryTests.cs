@@ -41,12 +41,13 @@ public sealed class ImportPortBoundaryTests
         );
     }
 
-    // The positive control: the scan finds the History Edition types an assembly does name, such as the tests' use of Install.
+    // The positive control: the scan finds the History Edition types an assembly does name, such as the use of Install by the
+    // History Edition test helpers.
     [TestMethod]
     public void TheScanFindsTheHistoryEditionTypesAnAssemblyNames()
     {
         CollectionAssert.Contains(
-            TypesNamed(typeof(ImportPortBoundaryTests).Assembly, HistoryEdition).ToList(),
+            TypesNamed(typeof(TestProgram).Assembly, HistoryEdition).ToList(),
             $"{HistoryEdition}.Install"
         );
     }
