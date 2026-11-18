@@ -104,6 +104,9 @@ public static class EventType
     /// <summary>A knight's turn in the castle: its timer and the draws for a promotion.</summary>
     public const string KnightIdled = "knight-idled";
 
+    /// <summary>The settler supply makes a settler without a job, or a knight, in the castle.</summary>
+    public const string SettlerMade = "settler-made";
+
     /// <summary>The settler that stands by while the castle is built adds to the castle's progress.</summary>
     public const string CastleSettlerBuilds = "castle-settler-builds";
 
@@ -315,5 +318,6 @@ public static class EventType
         TendsPigs,
         BuildingFinished,
         LeavesSite,
+        SettlerMade,
     ];
 }
