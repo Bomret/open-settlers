@@ -17,9 +17,10 @@ rules read about it. It orders its entries by stable name, so a game plays the s
 A content set's source builds the catalog through the rule tables port. The History Edition importer builds the
 original's entries and fills their facts from the tables of `Siedler1.exe`. The basic set's reader builds entries
 without original codes from its own data files. Only the History Edition importer and the exporters read an
-original code; the map view's readout reads whether an entry has one, to show a raw value beside the name. Where an exporter must write a code for an entry that has none, it writes the FNV-1a hash of the
-entry's stable name, so the digests of the original's games do not change. A repository test holds the domain and
-the application to this: they read no original code.
+original code; the map view's readout reads whether an entry has one, to show a raw value beside the name. Where
+an exporter must write a code for an entry that has none, it writes the FNV-1a hash of the entry's stable name, so
+the digests of the original's games do not change. A repository test holds the domain and the application to this:
+they read no original code.
 
 ## Considered options
 
