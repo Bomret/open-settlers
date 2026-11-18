@@ -177,6 +177,6 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   `BuildingNames` and its refusal text, `ProgramTablesImporter.WorkerRequestAddresses`, `NameTable`, the build panel in
   `MapViewControl`, `SiteStages.ScaffoldIsLarge`, `ObjectSprites.Objects` (History Edition), and `OpenSettlersSource.FinishedKeys` with
   the art of `tools/basic-art.py`. The other goods 7 to 26 are catalog entries only.
-- `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar. `CastleReadout.AddedGoods` adds each good beyond the original's 26 that the castle holds, by stable name.
+- `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar. `CastleReadout.AddedGoods` adds each good that the content set's start stock does not list and the castle holds, by stable name.
   The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) by their stable names (`good.Name`), with no raw value beside them.
 - The workers of the fisher, farm, mill, pig farm, butcher, and baker run their work cycles ([Fishing](fishing.md), [Farming](farming.md), [Milling](milling.md), [Pig farming](pig-farming.md), [Butchering](butchering.md), [Baking](baking.md)).

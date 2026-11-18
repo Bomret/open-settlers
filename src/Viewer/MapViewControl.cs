@@ -219,7 +219,7 @@ public partial class MapViewControl(
             game.CastleStock.Planks,
             game.CastleStock.Stones,
             game.CastleStock.FoodCounts,
-            CastleReadout.AddedGoods(game.CastleStock)
+            CastleReadout.AddedGoods(game.CastleStock, game.Tables.StartStock[0].Keys)
         );
 
     /// <summary>

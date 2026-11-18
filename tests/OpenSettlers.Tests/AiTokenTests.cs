@@ -131,7 +131,7 @@ public sealed class AiTokenTests
             game.CastleStock.Planks,
             game.CastleStock.Stones,
             game.CastleStock.FoodCounts,
-            CastleReadout.AddedGoods(game.CastleStock)
+            CastleReadout.AddedGoods(game.CastleStock, game.Tables.StartStock[0].Keys)
         );
 
         Assert.AreEqual(
@@ -146,6 +146,6 @@ public sealed class AiTokenTests
     {
         var game = NewGame(withAiToken: false);
 
-        Assert.IsEmpty(CastleReadout.AddedGoods(game.CastleStock));
+        Assert.IsEmpty(CastleReadout.AddedGoods(game.CastleStock, game.Tables.StartStock[0].Keys));
     }
 }

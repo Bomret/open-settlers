@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
+using OpenSettlers.Import.ContentSet;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
 
@@ -29,14 +32,10 @@ public sealed class CastleReadoutTests
         );
     }
 
-    // The basic content set's shape: no good has an original code, and the start stock holds goods beside the nine of the bar.
-    static CastleStock PlacedWithNoCodes(params Good[] extra)
+    // A castle of `catalog` holding `count` of each of `held`.
+    static CastleStock Holding(ContentCatalog catalog, IEnumerable<string> held, int count)
     {
-        var entries = TestCatalog
-            .WithAiToken()
-            .Goods.Select(entry => entry with { OriginalCode = null })
-            .Where(entry => entry.Name != TestCatalog.AiToken.Name || extra.Contains(TestCatalog.AiToken));
-        var stock = new CastleStock(new ContentCatalog(entries));
+        var stock = new CastleStock(catalog);
         stock.Place(
             new Castle
             {
@@ -44,24 +43,113 @@ public sealed class CastleReadoutTests
                 Y = 1,
                 Height = 1,
             },
-            TestCatalog.Names.ToDictionary(name => new Good { Name = name }, _ => 1)
+            held.ToDictionary(name => new Good { Name = name }, _ => count)
         );
 
         return stock;
     }
 
-    [TestMethod]
-    public void TheBarOfACatalogWithNoCodesAddsNoGoodTheOriginalHas()
+    static IEnumerable<Good> StartGoodsOf(RuleTables tables) => tables.StartStock[0].Keys;
+
+    static string RepositoryRoot()
     {
-        Assert.IsEmpty(CastleReadout.AddedGoods(PlacedWithNoCodes()));
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
+        {
+            folder = folder.Parent;
+        }
+
+        return folder?.FullName
+            ?? throw new InvalidOperationException("OpenSettlers.csproj not found above the test output");
+    }
+
+    static RuleTables Basic() => new OpenSettlersRuleTables(Path.Combine(RepositoryRoot(), "content", "basic")).Read();
+
+    // The rule of the bar rests on this: each content set lists every good it has in each row of its start stock, zeros included.
+    [TestMethod]
+    public void EveryStartStockRowOfEachContentSetListsEveryGoodOfItsCatalog()
+    {
+        foreach (var tables in new[] { Basic(), TestProgram.Made() })
+        {
+            var names = tables.Catalog.Goods.Select(entry => entry.Name).Order().ToArray();
+            foreach (var row in tables.StartStock)
+            {
+                CollectionAssert.AreEqual(names, row.Keys.Select(good => good.Name).Order().ToArray());
+            }
+        }
     }
 
     [TestMethod]
-    public void TheBarOfACatalogWithNoCodesNamesAGoodOutsideTheOriginalsByItsName()
+    public void TheBasicSetAddsNoGoodHoldingOneOfEachItHas()
     {
-        var stock = PlacedWithNoCodes(TestCatalog.AiToken);
+        var tables = Basic();
+        var stock = Holding(tables.Catalog, tables.Catalog.Goods.Select(entry => entry.Name), 1);
+
+        Assert.IsEmpty(CastleReadout.AddedGoods(stock, StartGoodsOf(tables)));
+    }
+
+    [TestMethod]
+    public void TheBasicSetAddsNoGoodAtGameStart()
+    {
+        var tables = Basic();
+        var stock = new CastleStock(tables.Catalog);
+        stock.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            StartStock.At(tables, 0)
+        );
+
+        Assert.IsEmpty(CastleReadout.AddedGoods(stock, StartGoodsOf(tables)));
+    }
+
+    [TestMethod]
+    public void TheBarOfACatalogWithNoCodesAddsNoGoodTheStartStockLists()
+    {
+        var tables = TestProgram.Made();
+        var stock = Holding(tables.Catalog, TestCatalog.Names, 1);
+
+        Assert.IsEmpty(CastleReadout.AddedGoods(stock, StartGoodsOf(tables)));
+    }
+
+    [TestMethod]
+    public void AGoodTheStartStockDoesNotListIsNamedByItsName()
+    {
+        var tables = TestProgram.Made();
+        var stock = Holding(TestCatalog.WithAiToken(), TestCatalog.Names, 1);
         stock.Add(TestCatalog.AiToken);
 
-        CollectionAssert.AreEqual(new[] { ("ai-token", 1) }, CastleReadout.AddedGoods(stock).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { ("ai-token", 1) },
+            CastleReadout.AddedGoods(stock, StartGoodsOf(tables)).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void TwoAddedGoodsAreNamedInTheOrderOfTheirNames()
+    {
+        var tables = TestProgram.Made();
+        var zeta = new Good { Name = "zeta" };
+        var entry = TestCatalog.WithAiToken().Require(TestCatalog.AiToken);
+        var catalog = new ContentCatalog([
+            .. TestCatalog.WithAiToken().Goods,
+            entry with
+            {
+                Name = zeta.Name,
+                TransportRank = 101,
+            },
+        ]);
+        var stock = Holding(catalog, TestCatalog.Names, 1);
+        stock.Add(zeta);
+        stock.Add(zeta);
+        stock.Add(TestCatalog.AiToken);
+
+        CollectionAssert.AreEqual(
+            new[] { ("ai-token", 1), ("zeta", 2) },
+            CastleReadout.AddedGoods(stock, StartGoodsOf(tables)).ToArray()
+        );
     }
 }
