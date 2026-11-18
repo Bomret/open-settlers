@@ -170,20 +170,7 @@ public sealed class OpenSettlersSourceTests
                 select $"settler/{job}/{kind}"
             );
 
-    static readonly string[] FlamesKeys =
-    [
-        "flames/woodcutter",
-        "flames/stonecutter",
-        "flames/forester",
-        "flames/sawmill",
-        "flames/fisher",
-        "flames/farm",
-        "flames/baker",
-        "flames/mill",
-        "flames/pig-farm",
-        "flames/butcher",
-        "flames/early-site",
-    ];
+    static readonly string[] FlamesKeys = ["flames/small", "flames/large", "flames/early-site"];
 
     static TerrainTriangle Triangle(int code, bool upper) =>
         new()
@@ -384,8 +371,8 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
-    [DataRow("flames/woodcutter")]
-    [DataRow("flames/butcher")]
+    [DataRow("flames/small")]
+    [DataRow("flames/large")]
     [DataRow("flames/early-site")]
     [DataRow("flame/small/0")]
     [DataRow("flame/large/7")]
@@ -404,16 +391,16 @@ public sealed class OpenSettlersSourceTests
     public void AMalformedFlamePlacementIsRefusedNamingItsKey(string value)
     {
         using var folder = new ContentFolder();
-        folder.Entries["flames/mill"] = value;
+        folder.Entries["flames/large"] = value;
 
-        Refuses(folder, "manifest.json", "flames/mill");
+        Refuses(folder, "manifest.json", "flames/large");
     }
 
     [TestMethod]
-    public void ABuildingsFlamesAreItsPlacementsInOrderAndAnEarlySiteTakesTheEarlySitesWhateverItsType()
+    public void ASmallBuildingsFlamesAreTheSmallPlacementsInOrderAndAnEarlySiteTakesTheEarlySitesWhateverItsType()
     {
         using var folder = new ContentFolder();
-        folder.Entries["flames/woodcutter"] = ContentFolder.Flames("small, -3, -10", "large, 4, -12");
+        folder.Entries["flames/small"] = ContentFolder.Flames("small, -3, -10", "large, 4, -12");
         folder.Entries["flames/early-site"] = ContentFolder.Flames("large, 1, -5");
 
         var source = folder.Load();
@@ -449,6 +436,26 @@ public sealed class OpenSettlersSourceTests
             source.Flames(BuildingType.Mill, earlySite: true).ToArray()
         );
         Assert.IsEmpty(source.Flames(BuildingType.Castle, earlySite: false));
+    }
+
+    [TestMethod]
+    public void ALargeBuildingsFlamesAreTheLargePlacements()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/large"] = ContentFolder.Flames("large, 2, -20");
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 2,
+                    Y = -20,
+                },
+            },
+            folder.Load().Flames(BuildingType.Sawmill, earlySite: false).ToArray()
+        );
     }
 
     [TestMethod]

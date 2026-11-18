@@ -109,8 +109,8 @@ mise run map
 - The building sites that have not started.
 - The goods at flags.
 - The four build markers of the build-site overlay.
-- The flames over a burning building: one plain image per flame size and phase, at places of the project's own choosing for
-  each building the game can take down and for an early site.
+- The flames over a burning building: one plain image per flame size and phase, at places of the project's own choosing:
+  one set for a small building, one for a large building, and one for an early site.
 - The road markers of road mode: the end, blocked, and way-back marks, and a slope mark for each height difference from -4 to 4.
 - The border posts of the territory: a pole on land and a post in water.
 - One figure per job and kind of activity for the settlers.

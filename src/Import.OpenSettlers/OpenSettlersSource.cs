@@ -18,8 +18,8 @@ namespace OpenSettlers.Import.ContentSet;
 /// for each of the four build markers, <c>road-marker/end</c>, <c>road-marker/blocked</c>, <c>road-marker/way-back</c>, and
 /// <c>road-marker/slope/</c> and the height difference for each slope from -4 to 4, <see cref="BorderPoleKey"/> and
 /// <see cref="BorderWaterKey"/> for the border posts, <see cref="SettlerKey"/> for each job and kind of activity of a
-/// settler, and <see cref="FlameKey"/> for each flame size and phase. The keys <see cref="FlamesKey"/> of each finished building but the
-/// castle and <see cref="EarlySiteFlamesKey"/> hold no image but <c>{ "flames": [{ "size": "small" | "large", "at": [x, y] }, …] }</c>,
+/// settler, and <see cref="FlameKey"/> for each flame size and phase. The keys <see cref="SmallFlamesKey"/> and <see cref="LargeFlamesKey"/>
+/// for the finished small and large buildings and <see cref="EarlySiteFlamesKey"/> hold no image but <c>{ "flames": [{ "size": "small" | "large", "at": [x, y] }, …] }</c>,
 /// the flames of a burning building in the order they are drawn, each at its offset from the building (ADR 0021). The art is flat: one image per terrain code
 /// and triangle, one strip per direction, whatever the slope, one border post on land and one in water, whatever the slope,
 /// one frame per object, and one figure per job and kind of
@@ -50,7 +50,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectImage[] _settlers;
     readonly ObjectImage[] _markers;
     readonly ObjectImage[] _flameImages;
-    readonly IReadOnlyDictionary<string, IReadOnlyList<Flame>> _flames;
+    readonly IReadOnlyDictionary<BuildingType, IReadOnlyList<Flame>> _flames;
+    readonly IReadOnlyList<Flame> _earlySiteFlames;
     readonly IReadOnlyDictionary<RoadMarker, ObjectImage> _roadMarkers;
     readonly ObjectImage _pole;
     readonly ObjectImage _waterPost;
@@ -72,7 +73,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ObjectImage[] settlers,
         ObjectImage[] markers,
         ObjectImage[] flameImages,
-        IReadOnlyDictionary<string, IReadOnlyList<Flame>> flames,
+        IReadOnlyDictionary<BuildingType, IReadOnlyList<Flame>> flames,
+        IReadOnlyList<Flame> earlySiteFlames,
         IReadOnlyDictionary<RoadMarker, ObjectImage> roadMarkers,
         ObjectImage pole,
         ObjectImage waterPost,
@@ -81,6 +83,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     {
         _flameImages = flameImages;
         _flames = flames;
+        _earlySiteFlames = earlySiteFlames;
         _settlers = settlers;
         _markers = markers;
         _roadMarkers = roadMarkers;
@@ -220,24 +223,18 @@ public sealed class OpenSettlersSource : IGraphicsSource
     const int FlamePhases = 8;
 
     /// <summary>The manifest key of the image of a flame of a size at a phase, such as <c>flame/small/0</c>.</summary>
-    public static string FlameKey(FlameSize size, int phase) =>
-        $"flame/{size.ToString().ToLowerInvariant()}/{phase & (FlamePhases - 1)}";
+    public static string FlameKey(FlameSize size, int phase) => $"flame/{size.ToString().ToLowerInvariant()}/{phase}";
 
-    /// <summary>The manifest key of the flames of a burning finished building, such as <c>flames/woodcutter</c> for <see cref="WoodcutterKey"/>.</summary>
-    public static string FlamesKey(string buildingKey) => $"flames/{buildingKey["building/".Length..]}";
+    /// <summary>The manifest key of the flames of a burning finished small building (<see cref="SiteStages.ScaffoldIsLarge"/> false).</summary>
+    public const string SmallFlamesKey = "flames/small";
+
+    /// <summary>The manifest key of the flames of a burning finished large building (<see cref="SiteStages.ScaffoldIsLarge"/> true).</summary>
+    public const string LargeFlamesKey = "flames/large";
 
     /// <summary>The manifest key of the flames of a burning building site below 16000 progress.</summary>
     public const string EarlySiteFlamesKey = "flames/early-site";
 
-    // The keys of the flame placements: each finished building the game can take down (every one but the castle), then
-    // the early site.
-    static readonly string[] FlamesKeys =
-    [
-        .. FinishedKeys
-            .Where(finished => finished.Type != BuildingType.Castle)
-            .Select(finished => FlamesKey(finished.Key)),
-        EarlySiteFlamesKey,
-    ];
+    static readonly string[] FlamesKeys = [SmallFlamesKey, LargeFlamesKey, EarlySiteFlamesKey];
 
     /// <summary>The largest height difference either way the set draws a slope mark for.</summary>
     const int SlopeRange = 4;
@@ -375,10 +372,18 @@ public sealed class OpenSettlersSource : IGraphicsSource
             .. Enum.GetValues<FlameSize>()
                 .SelectMany(size => Enumerable.Range(0, FlamePhases).Select(phase => Image(FlameKey(size, phase)))),
         ];
-        var flames = FlamesKeys.ToDictionary(
+        var placements = FlamesKeys.ToDictionary(
             key => key,
             key => flameLists.TryGetValue(key, out var list) ? list : throw Fault(key, "no flames")
         );
+        var flames = new Dictionary<BuildingType, IReadOnlyList<Flame>>();
+        foreach (var (type, _) in FinishedKeys)
+        {
+            if (SiteStages.ScaffoldIsLarge(type) is { } large)
+            {
+                flames[type] = placements[large ? LargeFlamesKey : SmallFlamesKey];
+            }
+        }
         var roadMarkers = RoadMarkerKeys.ToDictionary(pair => pair.Marker, pair => Image(pair.Key));
         var pole = Image(BorderPoleKey);
         var waterPost = Image(BorderWaterKey);
@@ -400,6 +405,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
             markers,
             flameImages,
             flames,
+            placements[EarlySiteFlamesKey],
             roadMarkers,
             pole,
             waterPost,
@@ -688,11 +694,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) =>
-        earlySite ? _flames[EarlySiteFlamesKey]
-        : type != BuildingType.Castle
-        && FinishedKeys.FirstOrDefault(finished => finished.Type == type) is { Key: not null } known
-            ? _flames[FlamesKey(known.Key)]
-        : [];
+        earlySite ? _earlySiteFlames : _flames.GetValueOrDefault(type, []);
 
     /// <inheritdoc />
     public ObjectImage? Draw(FlameDraw flame) =>

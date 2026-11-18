@@ -5,7 +5,7 @@ The art is the project's own: a flat color per terrain code, a plain strip per r
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
 buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, the border posts
 (a pole on land and a post in water), one pose per job and kind of activity for the
-settlers, and a flame per size and phase, all drawn here from nothing but numbers. The flames of each building that burns,
+settlers, and a flame per size and phase, all drawn here from nothing but numbers. The flames of a small and of a large building that burns,
 and of an early site, stand at places of the project's own choosing, read from nothing (ADR 0021). It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -531,20 +531,11 @@ def flame(size, phase):
 
 
 # The flames of a burning building as (size, x, y) from its node: two over a small building, three over a large one, and one
-# over a site below 16000 progress. The places are the project's own.
-SMALL_FLAMES = [("small", -6, -12), ("large", 4, -18)]
-LARGE_FLAMES = [("large", -14, -16), ("small", 2, -26), ("large", 14, -14)]
+# over a site below 16000 progress. OpenSettlersSource gives each building type the small or the large list by the size of its
+# scaffold. The places are the project's own.
 FLAMES = {
-    "woodcutter": SMALL_FLAMES,
-    "stonecutter": SMALL_FLAMES,
-    "forester": SMALL_FLAMES,
-    "fisher": SMALL_FLAMES,
-    "butcher": SMALL_FLAMES,
-    "sawmill": LARGE_FLAMES,
-    "farm": LARGE_FLAMES,
-    "baker": LARGE_FLAMES,
-    "mill": LARGE_FLAMES,
-    "pig-farm": LARGE_FLAMES,
+    "small": [("small", -6, -12), ("large", 4, -18)],
+    "large": [("large", -14, -16), ("small", 2, -26), ("large", 14, -14)],
     "early-site": [("small", 0, -8)],
 }
 
