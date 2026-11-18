@@ -184,49 +184,6 @@ public sealed class WoodcuttingHistoryTests
         CollectionAssert.IsSubsetOf(new[] { 4, 5, 0x10, 0x11, 0x12 }, seen.ToArray());
     }
 
-    [TestMethod]
-    public void AWoodcutterOnTheWalkHomeRecordsItsWorkEventsWithTheCauseWalkHome()
-    {
-        var game = Laid();
-        var slot = game.Settlers.ToList().FindIndex(s => s.Job == new Woodcutter());
-        var id = game.History.SettlerId(slot);
-        for (var i = 0; i < 4000 && Woodcutter(game).Activity is not LooksForTree; i++)
-        {
-            game.Tick();
-        }
-
-        Assert.IsInstanceOfType<LooksForTree>(Woodcutter(game).Activity);
-        // No command or removal rule sends a woodcutter home without a carried cause, so the walk home is begun directly.
-        game.WalkHome.Begin(slot);
-        var before = game.History.EventsOf(id).Count;
-        for (var i = 0; i < 30; i++)
-        {
-            game.Tick();
-        }
-
-        var recorded = game.History.EventsOf(id).Skip(before).ToList();
-        Assert.IsNotEmpty(recorded);
-        Assert.IsTrue(
-            recorded.All(e => e.Cause == Cause.WalkHome),
-            string.Join(", ", recorded.Select(e => $"{e.Type}/{e.Cause}"))
-        );
-    }
-
-    [TestMethod]
-    public void AWoodcutterCarryingACommandCauseRecordsItsWorkEventsWithIt()
-    {
-        var game = Laid();
-        var slot = game.Settlers.ToList().FindIndex(s => s.Job == new Woodcutter());
-        var id = game.History.SettlerId(slot);
-        var command = Cause.Placed(game.History.BuildingId(1));
-        game.History.CarryCause(slot, command);
-        RunTrip(game);
-
-        var work = game
-            .History.EventsOf(id)
-            .Where(e => e.Type is EventType.SearchTree or EventType.StepOut or EventType.CutTree)
-            .ToList();
-        Assert.IsNotEmpty(work);
-        Assert.IsTrue(work.All(e => e.Cause == command));
-    }
+    // The woodcutter on the walk home and the woodcutter carrying a command cause are in the class of the same name in
+    // src/Application.Tests: they begin the walk home and set the carry through members internal to the application.
 }

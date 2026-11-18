@@ -26,8 +26,8 @@ public sealed class CarrierTests
         );
     }
 
-    // The castle and the three flags.
-    static Game World()
+    // The castle and the three flags. With castleSettlers the castle holds those settlers after its first.
+    static Game World(System.Collections.Generic.IReadOnlyList<Job>? castleSettlers = null)
     {
         var game = GameFactory.Create(
             Made(),
@@ -50,6 +50,7 @@ public sealed class CarrierTests
                 Kind = CommandKind.PlaceCastle,
                 X = 15,
                 Y = 5,
+                Settlers = castleSettlers,
             }
         );
         game.Tick();
@@ -172,7 +173,7 @@ public sealed class CarrierTests
         carrier.Timer = 0;
         var toStorage = false;
 
-        for (var tick = 0; tick < 2000 && game.Roster.Waiting(new Carrier()) == 0; tick++)
+        for (var tick = 0; tick < 2000 && game.CastleWaitingSlot(new Carrier()) == 0; tick++)
         {
             game.Tick();
             toStorage |= carrier.Activity is Walks { Errand: ToStorage };
@@ -180,7 +181,7 @@ public sealed class CarrierTests
 
         Assert.IsTrue(toStorage, "it walks to the storage from the castle's flag");
         Assert.IsInstanceOfType<WaitsInCastle>(carrier.Activity, "it waits in the castle");
-        Assert.AreEqual(slot, game.Roster.Waiting(new Carrier()));
+        Assert.AreEqual(slot, game.CastleWaitingSlot(new Carrier()));
     }
 
     [TestMethod]
@@ -230,18 +231,12 @@ public sealed class CarrierTests
     [TestMethod]
     public void ARoadGetsNoCarrierWhereTheCastleHoldsNoSettlerOfJob0Or21()
     {
-        var game = World();
-        // The castle's five settlers without a job are used up: the table of waiting settlers is emptied (a road to ask
-        // for a sixth would need flags the map's territory does not offer here).
+        // The castle holds no settler without a job and no carrier: its castle command names its settlers without them (a road to
+        // ask for a sixth would need flags the map's territory does not offer here).
+        var game = World(ConstructionWorld.CastleJobsWithout(new Carrier(), new Jobless()));
         Build(game, 16, 6, 0, 0);
 
-        // The settlers enter the table as their turns come, so it is emptied before every tick.
-        for (var tick = 0; tick < 40; tick++)
-        {
-            game.Roster.ClearWaiting(new Carrier());
-            game.Roster.ClearWaiting(new Jobless());
-            game.Tick();
-        }
+        Run(game, 40);
 
         Assert.AreEqual(0, Carriers(game).Length);
         Assert.AreEqual(0, game.Flags[0].Side(0).Carriers, "no carrier is on the road");

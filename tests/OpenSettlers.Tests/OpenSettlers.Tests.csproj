@@ -39,8 +39,4 @@
     <!-- JobGeneratorTests drive the generator through the compiler API, so the tests reference its assembly as well as run it. -->
     <ProjectReference Include="../../src/Generators/OpenSettlers.Generators.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="road-builds.txt" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

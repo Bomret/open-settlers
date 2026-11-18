@@ -61,19 +61,19 @@ public sealed class CommandHandlerTests
         Assert.AreEqual(7, CommandKind.All.Distinct().Count());
     }
 
-    [TestMethod]
-    public void EveryCommandKindHasItsOwnHandlerAndNoHandlerHasNoKind()
+    // The handler's answer, read through the game's public operations: the command is queued for the game's tick and applied, and
+    // the game logs it among the commands applied where its handler applied it.
+    static bool Handled(Game game, Command command)
     {
-        var game = NewGame();
+        var revision = game.Revision;
+        game.Enqueue(command with { Tick = game.TickCount });
+        game.ApplyCommands();
 
-        foreach (var kind in CommandKind.All)
-        {
-            Assert.IsTrue(game.Handlers.TryGetValue(kind, out var handler), $"kind {kind} has no handler");
-            Assert.AreEqual(kind, handler!.Kind);
-        }
-
-        Assert.AreEqual(CommandKind.All.Count, game.Handlers.Count);
+        return game.Revision > revision;
     }
+
+    // That every command kind has a handler of its own is in the class of the same name in src/Application.Tests: it reads the game's
+    // handler table, which is internal to the application.
 
     [TestMethod]
     public void EveryKindButTheCastleIsRefusedBeforeTheCastleStandsAndChangesNothing()
@@ -83,7 +83,7 @@ public sealed class CommandHandlerTests
 
         foreach (var kind in CommandKind.All.Where(kind => kind != CommandKind.PlaceCastle))
         {
-            Assert.IsFalse(game.Handlers[kind].Handle(Of(kind, 17, 0)), $"kind {kind} was applied");
+            Assert.IsFalse(Handled(game, Of(kind, 17, 0)), $"kind {kind} was applied");
         }
 
         Assert.AreEqual(before, game.Digest());
@@ -96,7 +96,7 @@ public sealed class CommandHandlerTests
         var (x, y) = NodeWhere(game, site => !site.IsCastleSite, hasCastle: false);
         var before = game.Digest();
 
-        Assert.IsFalse(game.Handlers[CommandKind.PlaceCastle].Handle(Of(CommandKind.PlaceCastle, x, y)));
+        Assert.IsFalse(Handled(game, Of(CommandKind.PlaceCastle, x, y)));
         Assert.IsNull(game.CastleStock.Castle);
         Assert.AreEqual(before, game.Digest());
     }
@@ -105,12 +105,11 @@ public sealed class CommandHandlerTests
     public void ThePlaceCastleHandlerPlacesTheCastleOnceAndRefusesASecond()
     {
         var game = NewGame();
-        var handler = game.Handlers[CommandKind.PlaceCastle];
 
-        Assert.IsTrue(handler.Handle(Of(CommandKind.PlaceCastle, 17, 0)));
+        Assert.IsTrue(Handled(game, Of(CommandKind.PlaceCastle, 17, 0)));
         Assert.AreEqual(17, game.CastleStock.Castle!.Value.X);
         Assert.AreEqual(1, game.Flags.Count);
-        Assert.IsFalse(handler.Handle(Of(CommandKind.PlaceCastle, 18, 0)));
+        Assert.IsFalse(Handled(game, Of(CommandKind.PlaceCastle, 18, 0)));
         Assert.AreEqual(17, game.CastleStock.Castle!.Value.X);
     }
 
@@ -118,14 +117,13 @@ public sealed class CommandHandlerTests
     public void ThePlaceFlagHandlerPlacesAFlagWhereTheOriginalAllowsAndRefusesElsewhere()
     {
         var game = NewGame();
-        game.Handlers[CommandKind.PlaceCastle].Handle(Of(CommandKind.PlaceCastle, 17, 0));
-        var handler = game.Handlers[CommandKind.PlaceFlag];
+        Handled(game, Of(CommandKind.PlaceCastle, 17, 0));
         var (x, y) = NodeWhere(game, site => site.AllowsFlag, hasCastle: true);
         var (blockedX, blockedY) = NodeWhere(game, site => !site.AllowsFlag, hasCastle: true);
 
-        Assert.IsFalse(handler.Handle(Of(CommandKind.PlaceFlag, blockedX, blockedY)));
+        Assert.IsFalse(Handled(game, Of(CommandKind.PlaceFlag, blockedX, blockedY)));
         Assert.AreEqual(1, game.Flags.Count);
-        Assert.IsTrue(handler.Handle(Of(CommandKind.PlaceFlag, x, y)));
+        Assert.IsTrue(Handled(game, Of(CommandKind.PlaceFlag, x, y)));
         Assert.AreEqual(2, game.Flags.Count);
     }
 

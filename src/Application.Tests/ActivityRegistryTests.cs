@@ -7,27 +7,18 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The table pass hands each settler to the behaviour registered for its activity type (INV-0008: the registry lives in the
-// application layer; the behaviours the game registers live in the adapters).
+// application layer; the behaviours the game registers live in the application's parts, which the adapters wire). The game is the
+// bench's, wired from the parts as GameFactory wires them. The activity types are the domain's public ones: this pair reads no
+// internal type of another library.
 [TestClass]
 public sealed class ActivityRegistryTests
 {
     static IEnumerable<Type> ActivityTypes() =>
-        typeof(Activity).Assembly.GetTypes().Where(type => type.IsSubclassOf(typeof(Activity)) && !type.IsAbstract);
+        typeof(Activity)
+            .Assembly.GetExportedTypes()
+            .Where(type => type.IsSubclassOf(typeof(Activity)) && !type.IsAbstract);
 
-    static Game NewGame() =>
-        GameFactory.Create(
-            MadeProgram.MadeTables(),
-            MapGenerator.Generate(
-                MadeProgram.Made(),
-                new MapSeed
-                {
-                    W0 = 0x1234,
-                    W1 = 0x5678,
-                    W2 = 0x9ABC,
-                },
-                MapSize.Offered[0]
-            )
-        );
+    static Game NewGame() => GameBench.Create(MadeProgram.MadeTables(), GameBench.Flat());
 
     [TestMethod]
     public void EveryActivityTypeHasABehaviourRegistered()

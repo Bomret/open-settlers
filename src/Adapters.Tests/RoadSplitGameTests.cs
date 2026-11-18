@@ -177,17 +177,8 @@ public sealed class RoadSplitGameTests
         );
     }
 
-    [TestMethod]
-    public void TwoWaterRoadsJoinIntoAWaterRoad()
-    {
-        // The original's click refuses a flag between water roads, so the join is reached through the take-down itself.
-        var game = WaterRoad();
-        Apply(game, CommandKind.PlaceFlag, 18, 6);
-
-        game.Removal.TakeFlagDown(game.Map.Index(18, 6));
-
-        Assert.AreEqual("0.0>1.3 0000 True", Describe(game.Network.Roads.Single()));
-    }
+    // Two water roads joining into a water road is in the class of the same name in src/Application.Tests: the original's click
+    // refuses a flag between water roads, so the join is reached through the take-down itself, which is internal to the application.
 
     [TestMethod]
     public void AFlagBesideAFlagOnTheRoadIsRefusedAndTheRoadStaysAsItWas()
@@ -264,7 +255,7 @@ public sealed class RoadSplitGameTests
     public void ACarrierThatCarriesAGoodWhenTheRoadSplitsStillCarriesIt()
     {
         var game = EastRoad();
-        game.Goods.LayGood(0, 0, Good.Log, destination: 1);
+        game.LayGood(0, 0, Good.Log, destination: 1);
         for (
             var tick = 0;
             tick < 3000 && !game.Settlers.Any(settler => settler is { Activity: WalksRoad { Load.Good.Name: "log" } });
@@ -439,20 +430,8 @@ public sealed class RoadSplitGameTests
         Assert.AreEqual(Describe(before), Describe(game.Network.Roads.Single()));
     }
 
-    // The click refuses the flag while the hut stands (ClickClass), so the join is reached through the take-down itself.
-    [TestMethod]
-    public void TheMarkOfAStandingHutAtItsFlagIsNoRoadWhenTheFlagJoinsTheRoad()
-    {
-        var game = EastRoad();
-        var before = game.Network.Roads.Single();
-        Huts.PlaceAndTick(game, 17, 5);
-        var node = game.Map.Index(18, 6);
-        Assert.IsTrue(game.Map.At(node).Roads.Has(4), "the hut's mark is set");
-
-        game.Removal.TakeFlagDown(node);
-
-        Assert.AreEqual(Describe(before), Describe(game.Network.Roads.Single()));
-    }
+    // The mark of a standing hut at its flag is in the class of the same name in src/Application.Tests: the click refuses the flag
+    // while the hut stands (ClickClass), so the join is reached through the take-down itself, which is internal to the application.
 
     [TestMethod]
     public void BothHalvesOfARoadSplitByAHutHoldACarrier()

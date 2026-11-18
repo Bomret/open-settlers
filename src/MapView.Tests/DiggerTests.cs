@@ -32,9 +32,22 @@ public sealed class DiggerTests
     // south-east, south, west, north-west, north), and a shovel in the stock.
     static (Game Game, Building Site, int Target) World(int node, params int[] around) => World(false, node, around);
 
-    static (Game Game, Building Site, int Target) World(bool everyPassTurns, int node, params int[] around)
+    static (Game Game, Building Site, int Target) World(bool everyPassTurns, int node, params int[] around) =>
+        World(everyPassTurns, null, node, around);
+
+    // With castleSettlers the castle holds those settlers after its first (ConstructionWorld.CastleJobsWithout).
+    static (Game Game, Building Site, int Target) World(
+        bool everyPassTurns,
+        IReadOnlyList<Job>? castleSettlers,
+        int node,
+        params int[] around
+    )
     {
-        var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 100), everyPassTurns: everyPassTurns);
+        var game = ConstructionWorld.Create(
+            ConstructionTables.Tables(stepTime: 100),
+            everyPassTurns: everyPassTurns,
+            castleSettlers: castleSettlers
+        );
         game.CastleStock.Add(ConstructionTables.DiggerTool);
         ConstructionWorld.Do(game, CommandKind.PlaceFlag, 15, 9);
         ConstructionWorld.Do(game, CommandKind.BuildRoad, 16, 6, [2, 2, 2, 3]);
@@ -157,41 +170,8 @@ public sealed class DiggerTests
         Assert.IsTrue(levelled);
     }
 
-    // The node of the pass is busy (0x43e7ac): the digger takes the frame 0x57 less the node's index (6 for the east neighbour), the timer
-    // 0x7f, and the phase 0; when the timer has run out he looks again, and steps onto the node once it is free.
-    [TestMethod]
-    public void ADiggerWhoseNodeIsBusyWaitsInPhase0AndStepsOntoItOnceItIsFree()
-    {
-        var (game, site, target) = World(0, 2, 0, 0, 0, 0, 0);
-        var east = game.Map.Index(SiteX + 1, SiteY);
-        var digger = ConstructionWorld.OfJob(game, new Digger()).Single();
-        const int Stranger = 200;
-        game.Movement.Occupy(east, Stranger);
-
-        Digs? waiting = null;
-        for (var tick = 0; tick < 6000 && waiting is null; tick++)
-        {
-            game.Tick();
-            waiting = digger.Activity as Digs is { Phase: 0 } digs ? digs : null;
-        }
-
-        Assert.IsNotNull(waiting, "the digger reaches the busy node");
-        Assert.AreEqual(6, waiting.Node);
-        Assert.AreEqual(0x57 - 6, digger.Frame);
-        Assert.AreEqual((ushort)0x7f, digger.Timer);
-
-        ConstructionWorld.Run(game, 2000);
-
-        Assert.AreEqual(target + 2, Neighbour(game, 0).Height, "he has not stepped onto the busy node");
-        Assert.AreEqual(0, ((Digs)digger.Activity).Phase, "he looks again and waits again");
-        Assert.AreEqual(0x57 - 6, digger.Frame);
-
-        game.Movement.Occupy(east, 0);
-        ConstructionWorld.Run(game, 6000);
-
-        CollectionAssert.AreEqual(Levelled(target), Heights(game));
-        Assert.IsGreaterThanOrEqualTo(1, site.Progress);
-    }
+    // The digger whose node is busy is in the class of the same name in src/Application.Tests: it occupies the node through the
+    // settlers' movement, which is internal to the application.
 
     [TestMethod]
     public void ANodeMoreThanEightFromTheTargetIsLeftAsItIs()
@@ -207,32 +187,37 @@ public sealed class DiggerTests
     [TestMethod]
     public void WithNoDiggerAndNoShovelTheSiteWaitsAndAsksAgainOnceAShovelIsThere()
     {
-        var (game, site, target) = World(-2, 2, 0, -1, 0, 1, 0);
+        // The castle holds no digger of its own: its castle command names its settlers without him.
+        var (game, site, target) = World(
+            false,
+            ConstructionWorld.CastleJobsWithout(new Digger()),
+            -2,
+            2,
+            0,
+            -1,
+            0,
+            1,
+            0
+        );
         while (game.CastleStock.Take(ConstructionTables.DiggerTool)) { }
 
-        // The castle's own digger is not there (the settlers enter the castle's list as their turns come, so it is emptied before every tick).
         var failed = false;
         for (var tick = 0; tick < 300; tick++)
         {
-            game.Roster.ClearWaiting(new Digger());
             game.Tick();
             failed |= site.RequestFailed;
         }
 
         Assert.IsTrue(failed, "the request found no digger and no shovel and set the request-failed bit");
-        Assert.IsTrue(ConstructionWorld.OfJob(game, new Digger()).All(digger => digger.Activity is WaitsInCastle));
+        Assert.IsEmpty(ConstructionWorld.OfJob(game, new Digger()), "no settler took the job");
         Assert.AreEqual((ushort)0, site.Progress);
         Assert.AreEqual(target - 2, game.Map.At(SiteX, SiteY).Height);
 
         game.CastleStock.Add(ConstructionTables.DiggerTool);
-        for (var tick = 0; tick < 6000; tick++)
-        {
-            game.Roster.ClearWaiting(new Digger());
-            game.Tick();
-        }
+        ConstructionWorld.Run(game, 6000);
 
         Assert.AreEqual(
-            2,
+            1,
             ConstructionWorld.OfJob(game, new Digger()).Length,
             "a settler without a job took the job: the site asked again"
         );

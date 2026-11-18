@@ -322,7 +322,7 @@ public sealed class RoadBuildingTests
         var map = OwnedLandWithFlags();
         map.At(11, 10).Object = new MapObject { Code = TreeCode };
 
-        var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
+        var status = RoadFromTheFlagEast(map);
 
         Assert.AreEqual(RoadStatus.Complete, status);
     }
@@ -337,7 +337,7 @@ public sealed class RoadBuildingTests
         var map = OwnedLandWithFlags();
         map.At(11, 10).Object = new MapObject { Code = code };
 
-        var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
+        var status = RoadFromTheFlagEast(map);
 
         Assert.AreEqual(RoadStatus.Complete, status);
     }
@@ -351,7 +351,7 @@ public sealed class RoadBuildingTests
         var map = OwnedLandWithFlags();
         map.At(11, 10).Object = new MapObject { Code = code };
 
-        var (status, _) = RoadBuilding.Walk(TestProgram.Tables(), map, 10, 10, [0, 0], keep: false);
+        var status = RoadFromTheFlagEast(map);
 
         Assert.AreEqual(RoadStatus.Refused, status);
     }
@@ -364,6 +364,25 @@ public sealed class RoadBuildingTests
         map.At(11, 12).Object = new MapObject { Code = TreeCode };
 
         Assert.AreEqual(0, BuildSite.Evaluate(TestProgram.Tables(), map, 11, 12, 0, hasCastle: true).Site);
+    }
+
+    // The click's judgment of the road drawn from the flag at 10,10 two steps east, through the road planner: it judges a road
+    // only once a castle stands, so a castle stands at 1,1.
+    static RoadStatus RoadFromTheFlagEast(Map map)
+    {
+        var tables = TestProgram.Tables();
+        var castle = new CastleStock(tables.Catalog);
+        castle.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            new Dictionary<Good, int>()
+        );
+
+        return new RoadPlanner(tables, map, castle).Check(10, 10, [0, 0]);
     }
 
     // A map whose every node is player 0's and land, with flags (object code 1) at 10,10 and 12,10.

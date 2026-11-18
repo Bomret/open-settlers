@@ -226,21 +226,12 @@ public sealed class BuilderTests
     [TestMethod]
     public void ASiteWithItsMaterialsAndNoBuilderDoesNotProgress()
     {
-        var (game, site) = World();
+        // No settler of the builder's job waits, no settler without a job waits, and the stock holds no tool: the castle holds
+        // neither.
+        var (game, site) = World(castleSettlers: ConstructionWorld.CastleJobsWithout(new Builder(), new Jobless()));
         var failed = false;
 
-        Progress(
-            game,
-            site,
-            400,
-            () =>
-            {
-                // No settler of the builder's job waits, no settler without a job waits, and the stock holds no tool.
-                game.Roster.ClearWaiting(new Builder());
-                game.Roster.ClearWaiting(new Jobless());
-                failed |= site.RequestFailed;
-            }
-        );
+        Progress(game, site, 400, () => failed |= site.RequestFailed);
 
         Assert.AreEqual(1, site.Progress);
         Assert.IsTrue(failed, "the request found no builder");
