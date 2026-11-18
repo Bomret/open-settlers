@@ -145,7 +145,11 @@ layer digests of the canonical map form after each pass (`docs/rules/map-form.md
 seconds to a few minutes, the longer for the larger sizes. Every other command that starts from a map generates it
 silently, once per size and seed in one Ghidra launch: the first run keeps the memory the generation wrote and the
 registers it left, and later commands of the same launch, `draw:` batch commands among them, start from that state
-instead of generating again. The `gen` command always generates, because it prints each pass. The commands `site`, `castle`, `stockrows`,
+instead of generating again. Each command restores a copy of that state. A launch is one `emulate.py` call, and its
+commands are independent. A command prints the lines it prints in a launch of its own, whatever commands ran before it
+(INV-0018). A command that fails ends a launch that runs no `draw:` batch, and the later commands of the launch print
+nothing. A command of a `draw:` batch that fails prints a failure line, and the batch runs on. The `gen` command
+always generates, because it prints each pass. The commands `site`, `castle`, `stockrows`,
 `opponents`, and `peek` run the build-site evaluator, the castle placement, the start stock table, the free-game
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they
 check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `flag` command runs the flag button (`0x442244`) on every tile and counts, per pair of node state and site,
@@ -154,8 +158,7 @@ spiral table and the object codes of the large objects. The `supply` command run
 settler rate and start stock level it takes, for example `supply:1:1234,5678,9ABC:0:18,20:40:1200:25,0;26,0` (rate 40, no swords
 and shields in the castle). It prints a line for each pass where a settler was made or the knights or the stock changed:
 `tests/OpenSettlers.Tests/settler-supply.txt` holds its games, each run in a launch of its own, and `docs/rules/new-settlers.md` the
-rules it checks. A command that runs after others in one launch can start from state their passes left, so its generator words can
-differ from those of a launch of its own.
+rules it checks.
 
 ### The draw verb
 
