@@ -35,7 +35,8 @@ public sealed record LayoutResult
 /// <item><c>objects</c> (optional): a list of <c>{"x": column, "y": row, "code": 1 to 127}</c>, the original's object
 /// codes, at most one for each tile.</item>
 /// <item><c>castle</c> (optional): <c>{"x", "y"}</c>, the node of the castle, and optionally <c>"stock"</c>, an object of good names and
-/// counts the castle holds in place of its start stock (an engine stand-in, <c>docs/rules/layouts.md</c>); <c>flags</c>: a list of
+/// counts the castle holds in place of its start stock, and <c>"settlers"</c>, an object of job names and counts that wait in it in
+/// place of its 20 first settlers (engine stand-ins, <c>docs/rules/layouts.md</c>); <c>flags</c>: a list of
 /// <c>{"x", "y"}</c>; <c>buildings</c>: a list of finished-building entries <c>{"type", "x", "y"}</c>, the type one of
 /// <c>woodcutter</c>, <c>stonecutter</c>, <c>forester</c>, or <c>sawmill</c> (a building of any other type fails the read),
 /// placed finished as the original's mission start places one, a woodcutter's, stonecutter's, or forester's building with its worker inside (<c>docs/rules/layouts.md</c>); <c>roads</c>: a list of <c>{"x", "y", "directions"}</c>, the flag the road starts at and one
@@ -330,7 +331,7 @@ public sealed partial class Layout
                 var objects = entries.TryGetValue("objects", out var objectsEntry)
                     ? ReadObjects(objectsEntry, size)
                     : [];
-                var steps = ReadSteps(root);
+                var steps = ReadSteps(root, size);
 
                 return
                     size is null

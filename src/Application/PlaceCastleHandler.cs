@@ -2,7 +2,7 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// Puts the player's first castle on the node where the original allows it, and once (<see cref="CommandKind.PlaceCastle"/>):
-/// the castle with its stock, its flag, and its 20 first settlers.
+/// the castle with its stock, its flag, and its 20 first settlers, or the stock and settlers the command names.
 /// </summary>
 /// <param name="tables">The rule tables.</param>
 /// <param name="map">The map the castle is written into: the castle, its flag, the heights, and the territory.</param>
@@ -57,7 +57,7 @@ public sealed class PlaceCastleHandler(
         CastlePlacement.Apply(map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
         FlagSlots.Add(flags, history, (x + 1) & (map.Size.Width - 1), (y + 1) & (map.Size.Height - 1));
-        roster.CreateCastleSettlers(x, y);
+        roster.CreateCastleSettlers(x, y, command.Settlers);
         supply?.Start();
         var cause = causes.Command(history.BuildingId(0));
         history.RecordBuilding(0, EventType.PlaceCastle, cause, history.FlagId(0).ToString());

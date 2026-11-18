@@ -7,7 +7,7 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A player's action that the simulation takes at a given tick. <c>Kind</c> names the action; its codes belong to
 /// the slices that add actions. <c>X</c> and <c>Y</c> are the tile the action aims at. Two commands are equal when
-/// their fields, their <c>Directions</c>, and their <c>Stock</c>, element by element, are equal.
+/// their fields, their <c>Directions</c>, their <c>Stock</c>, and their <c>Settlers</c>, element by element, are equal.
 /// </summary>
 public readonly record struct Command : IEquatable<Command>
 {
@@ -42,6 +42,13 @@ public readonly record struct Command : IEquatable<Command>
     /// </summary>
     public IReadOnlyList<int>? Stock { get; init; }
 
+    /// <summary>
+    /// The settlers that wait in the castle a <see cref="CommandKind.PlaceCastle"/> places in place of its 20 first settlers, after its
+    /// castle settler, in order; null for the 20 first settlers and for every other action. Only a layout's castle names them
+    /// (<c>docs/rules/layouts.md</c>), an engine stand-in.
+    /// </summary>
+    public IReadOnlyList<Job>? Settlers { get; init; }
+
     /// <inheritdoc/>
     public bool Equals(Command other) =>
         Tick == other.Tick
@@ -52,7 +59,9 @@ public readonly record struct Command : IEquatable<Command>
         && Building == other.Building
         && (Directions ?? []).SequenceEqual(other.Directions ?? [])
         && (Stock is null) == (other.Stock is null)
-        && (Stock ?? []).SequenceEqual(other.Stock ?? []);
+        && (Stock ?? []).SequenceEqual(other.Stock ?? [])
+        && (Settlers is null) == (other.Settlers is null)
+        && (Settlers ?? []).SequenceEqual(other.Settlers ?? []);
 
     /// <inheritdoc/>
     public override int GetHashCode()
@@ -66,6 +75,11 @@ public readonly record struct Command : IEquatable<Command>
         foreach (var count in Stock ?? [])
         {
             hash = HashCode.Combine(hash, count);
+        }
+
+        foreach (var job in Settlers ?? [])
+        {
+            hash = HashCode.Combine(hash, job);
         }
 
         return hash;
