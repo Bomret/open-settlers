@@ -9,7 +9,7 @@ namespace OpenSettlers.MapView;
 /// values of the two nodes differ (<c>0x427d3e</c>, <c>0x427e3a</c>, <c>0x427f1f</c> with <c>0x428389</c>,
 /// <c>0x42846d</c>, and <c>0x428528</c>). A node nobody owns counts as an owner value of its own.
 /// </summary>
-public static class BorderDraws
+static class BorderDraws
 {
     // The anchor lies one pixel left of the middle of the edge and 4 pixels above it.
     const int Left = 1;

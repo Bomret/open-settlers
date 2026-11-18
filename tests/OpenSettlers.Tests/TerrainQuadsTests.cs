@@ -202,6 +202,50 @@ public sealed class TerrainQuadsTests
     }
 
     [TestMethod]
+    public void OnTheLargestMapTheRoadPassHandsEachEdgeOnce()
+    {
+        var map = OwnersDifferOnEveryEdge();
+        var (width, height) = (map.Size.Width, map.Size.Height);
+
+        var edges = EdgeTerms.Posts(map).Select(post => (post.Column, post.Row, post.Direction)).ToList();
+
+        Assert.HasCount(3 * width * height, edges.Distinct());
+        Assert.HasCount(3 * width * height, edges);
+    }
+
+    [TestMethod]
+    public void OnTheLargestMapFullOfRoadsTheRoadPassHandsAStripForEveryEdge()
+    {
+        // Every edge would carry a post; the road bits take each one's place.
+        var map = OwnersDifferOnEveryEdge();
+        for (var index = 0; index < map.Count; index++)
+        {
+            map.At(index).Roads = RoadSet.Of(0).With(1).With(2);
+        }
+
+        var terms = EdgeTerms.Of(map);
+
+        Assert.HasCount(3 * map.Size.Width * map.Size.Height, terms.OfType<RoadStrip>());
+        Assert.HasCount(terms.Count, terms.OfType<RoadStrip>());
+    }
+
+    // The largest offered map with owners 0 to 3 by column plus twice the row: the east, south-east, and south neighbors
+    // differ by 1, 3, and 2, and the pattern repeats across both seams, so the owners differ on every edge.
+    static Map OwnersDifferOnEveryEdge()
+    {
+        var map = new Map(MapSize.Offered[^1]);
+        for (var row = 0; row < map.Size.Height; row++)
+        {
+            for (var column = 0; column < map.Size.Width; column++)
+            {
+                map.At(column, row).Owner = Owner.Player((column + 2 * row) % 4);
+            }
+        }
+
+        return map;
+    }
+
+    [TestMethod]
     public void TheRoadPassDrawsEachEdgeAsAStripOrAPostInTheOneWalk()
     {
         var map = new Map(MapSize.Offered[0]);

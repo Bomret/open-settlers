@@ -10,7 +10,7 @@ namespace OpenSettlers.MapView;
 /// the direction east, south-east, or south (<c>0x427d3e</c>, <c>0x427e3a</c>, <c>0x427f1f</c> with <c>0x428008</c>,
 /// <c>0x428105</c>, and <c>0x4281cc</c>); the other three directions are drawn from the node at the other end.
 /// </summary>
-public static class RoadDraws
+static class RoadDraws
 {
     // Pixels the strip reaches above its higher node (0x428008 subtracts 2 more after the height); the level strip is
     // 5 rows high, so it is centered on the line.
