@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -17,33 +16,8 @@ public static class RoadDraws
     // 5 rows high, so it is centered on the line.
     const int Above = 2;
 
-    /// <summary>
-    /// The strips of the map's roads in row-major order of the node each is drawn from. Every strip gives a term; the
-    /// source decides which it draws.
-    /// </summary>
-    public static List<RoadStrip> Of(Map map)
-    {
-        var strips = new List<RoadStrip>();
-        var width = map.Size.Width;
-        for (var row = 0; row < map.Size.Height; row++)
-        {
-            for (var column = 0; column < width; column++)
-            {
-                var roads = map.At(column, row).Roads;
-                for (var direction = 0; direction < 3; direction++)
-                {
-                    if (roads.Has(direction))
-                    {
-                        strips.Add(Strip(map, column, row, (RoadDirection)direction));
-                    }
-                }
-            }
-        }
-
-        return strips;
-    }
-
-    // The strip of the road that leaves a node east, south-east, or south.
+    // The strip of the road that leaves a node east, south-east, or south. Every strip gives a term; the source decides
+    // which it draws.
     internal static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
     {
         int H(int dx, int dy) => map.At(column + dx, row + dy).Height;

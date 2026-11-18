@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -15,27 +14,6 @@ public static class BorderDraws
     // The anchor lies one pixel left of the middle of the edge and 4 pixels above it.
     const int Left = 1;
     const int Above = 4;
-
-    /// <summary>The border posts of the map in row-major order of the node each is drawn from, east, south-east, south.</summary>
-    public static List<BorderPost> Of(Map map)
-    {
-        var posts = new List<BorderPost>();
-        for (var row = 0; row < map.Size.Height; row++)
-        {
-            for (var column = 0; column < map.Size.Width; column++)
-            {
-                for (var direction = 0; direction < 3; direction++)
-                {
-                    if (Post(map, column, row, (RoadDirection)direction) is { } post)
-                    {
-                        posts.Add(post);
-                    }
-                }
-            }
-        }
-
-        return posts;
-    }
 
     /// <summary>
     /// The post on the edge that leaves a node in a direction, or null where the node holds the road bit of that
