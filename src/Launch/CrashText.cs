@@ -1,16 +1,10 @@
 using System;
-using OpenSettlers.Assets;
 
 namespace OpenSettlers.Launch;
 
-/// <summary>The crash of the asset browser's state, caught and worded.</summary>
+/// <summary>The crash of the asset browser, caught and worded.</summary>
 public static class CrashText
 {
-    /// <summary>
-    /// The subject a crash names: the selected asset's file, else the selected kind, else null.
-    /// </summary>
-    public static string? Subject(AssetBrowserState state) => state.SelectedAsset?.File ?? state.SelectedKind;
-
     /// <summary>
     /// <c>subject: crashed: exception type name: message</c>. The subject is the selected asset's file, else the
     /// selected kind.

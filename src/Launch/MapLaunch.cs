@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using OpenSettlers.Assets;
 using OpenSettlers.Import.HistoryEdition;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;

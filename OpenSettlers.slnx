@@ -7,6 +7,9 @@
     <Project Path="src/Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
     <Project Path="src/Application/OpenSettlers.Application.csproj" />
     <Project Path="src/Adapters/OpenSettlers.Adapters.csproj" />
+    <Project Path="src/MapView/OpenSettlers.MapView.csproj" />
+    <Project Path="src/Launch/OpenSettlers.Launch.csproj" />
+    <Project Path="src/Assets/OpenSettlers.Assets.csproj" />
     <Project Path="src/Generators/OpenSettlers.Generators.csproj" />
   </Folder>
   <Folder Name="/tests/">
