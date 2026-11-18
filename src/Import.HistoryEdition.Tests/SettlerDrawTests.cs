@@ -176,7 +176,10 @@ public sealed class SettlerDrawTests
                         {
                             var shift = SettlerFigureShift.Of(picks[i], shifts);
                             Assert.AreEqual(
-                                (picks[i].Dx + shift.X - picks[0].Dx - first.X, picks[i].Dy + shift.Y - picks[0].Dy - first.Y),
+                                (
+                                    picks[i].Dx + shift.X - picks[0].Dx - first.X,
+                                    picks[i].Dy + shift.Y - picks[0].Dy - first.Y
+                                ),
                                 (original[i].X - original[0].X, original[i].Y - original[0].Y),
                                 describe
                             );

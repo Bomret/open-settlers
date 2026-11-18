@@ -65,7 +65,7 @@ public sealed class RoadDrawsTests
             return;
         }
 
-        Assert.IsNotNull(source.Draw(strip),"the source has an image for the strip the original draws");
+        Assert.IsNotNull(source.Draw(strip), "the source has an image for the strip the original draws");
         // The routine's row is the pass's row less 38 and less four pixels a unit of the node's height, less 2: the
         // strip's top above the node's row of pixels.
         var expectedTop =

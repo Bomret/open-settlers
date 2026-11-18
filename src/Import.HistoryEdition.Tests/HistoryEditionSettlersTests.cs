@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 namespace OpenSettlers.Tests;
 
 // What the History Edition source draws for the settlers of the install: the picks of the exe's figure tables over the terms

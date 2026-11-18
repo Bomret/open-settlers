@@ -103,16 +103,8 @@ public sealed class RoadDrawsTests
                 -3 * (here - H(1, 0)) + H(0, -1) - H(1, 1),
                 Terrain.Higher(Low(0, 0), High(0, -1))
             ),
-            RoadDirection.SouthEast => (
-                here - H(1, 1),
-                2 * (H(1, 0) - H(0, 1)),
-                Terrain.Higher(Low(0, 0), High(0, 0))
-            ),
-            _ => (
-                here - H(0, 1),
-                3 * (here - H(0, 1)) - H(-1, 0) + H(1, 1),
-                Terrain.Higher(High(0, 0), Low(-1, 0))
-            ),
+            RoadDirection.SouthEast => (here - H(1, 1), 2 * (H(1, 0) - H(0, 1)), Terrain.Higher(Low(0, 0), High(0, 0))),
+            _ => (here - H(0, 1), 3 * (here - H(0, 1)) - H(-1, 0) + H(1, 1), Terrain.Higher(High(0, 0), Low(-1, 0))),
         };
 
         return new RoadStrip
