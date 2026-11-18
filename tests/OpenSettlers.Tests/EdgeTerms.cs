@@ -28,6 +28,8 @@ static class EdgeTerms
 
         public ObjectImage? Draw(BuildMarker marker) => null;
 
+        public ObjectImage? Draw(RoadMarker marker) => null;
+
         public ObjectImage? Draw(RoadStrip strip)
         {
             Terms.Add(strip);

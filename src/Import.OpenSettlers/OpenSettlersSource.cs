@@ -75,7 +75,6 @@ public sealed class OpenSettlersSource : IGraphicsSource
         _settlers = settlers;
         _markers = markers;
         _roadMarkers = roadMarkers;
-
         _pole = pole;
         _waterPost = waterPost;
         _headroom = headroom;
