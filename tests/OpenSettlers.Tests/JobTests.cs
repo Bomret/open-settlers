@@ -161,15 +161,15 @@ public sealed class JobTests
     [TestMethod]
     public void AKnightCanBePromotedBelowItsLastLevelAndTheLastLevelMatchesTheNumbersTheLookupKnows()
     {
-        for (var level = 0; level < Knight.LastLevel; level++)
+        for (var level = 0; level < 4; level++)
         {
             Assert.IsTrue(new Knight(level).CanBePromoted, $"level {level}");
         }
 
-        Assert.AreEqual(4, Knight.LastLevel);
-        Assert.IsFalse(new Knight(Knight.LastLevel).CanBePromoted);
-        Assert.AreEqual(Knight.LastNumber - Knight.Number, Knight.LastLevel);
-        Assert.ThrowsExactly<ArgumentException>(() => new Knight(Knight.LastLevel + 1));
+        var last = Knight.LastLevel;
+        Assert.IsFalse(new Knight(last).CanBePromoted);
+        Assert.AreEqual(Job.Of(Knight.LastNumber), new Knight(last));
+        Assert.ThrowsExactly<ArgumentException>(() => new Knight(last + 1));
     }
 
     [TestMethod]
