@@ -9,6 +9,35 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ObjectDrawsTests
 {
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheFlagGeometryIsTheBoxOfTheHistoryEditionsFlagAtRest()
+    {
+        var image = OpenSettlers
+            .Import.HistoryEdition.HistoryEditionSource.Load(TestProgram.OpenInstall())
+            .Draw(
+                new MapObjectDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Object = MapObject.Flag,
+                    Step = 0,
+                }
+            )!
+            .Image!;
+
+        Assert.AreEqual(
+            (
+                ObjectDraws.FlagGeometry.Width,
+                ObjectDraws.FlagGeometry.Height,
+                ObjectDraws.FlagGeometry.OffsetX,
+                ObjectDraws.FlagGeometry.OffsetY
+            ),
+            (image.Width, image.Height, image.OffsetX, image.OffsetY)
+        );
+    }
+
     static Map Generated() => MapViewState.Open(TestProgram.Tables(), "1234567812345678", 1).Map!;
 
     static (Map Map, Game Game) CastleWorld()

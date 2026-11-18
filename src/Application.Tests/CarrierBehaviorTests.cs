@@ -14,6 +14,36 @@ public sealed class CarrierBehaviorTests
     const int East = 0;
     const int West = 3;
 
+    // The basic set's road capacities by length class (content/basic/rules/world.jsonc); the basic set's test project
+    // pins the same table in TheBasicSetsRoadCapacitiesAreTheTableTheBusyRoadTestRuns.
+    static readonly byte[] BasicCapacities = [1, 1, 2, 2, 3, 3, 4, 4];
+
+    [TestMethod]
+    public void UnderTheBasicSetABusyRoadsCarriersStopAtItsLengthClassInTheSetsTable()
+    {
+        foreach (var (steps, carriers) in new[] { (2, (int)BasicCapacities[0]), (6, BasicCapacities[2] - 1) })
+        {
+            var rig = new CarrierRig(carrier: true, capacities: BasicCapacities, steps: steps);
+            rig.Bench.Flags[0].Side(East).KeepCarriers(carriers);
+            rig.Bench.Flags[1].Side(West).KeepCarriers(carriers);
+            for (var place = 0; place < 3; place++)
+            {
+                rig.Goods.LayGood(0, place, Log, destination: 1, way: East);
+            }
+
+            var slot = rig.Bench.Settlers.Add(new Settler(new Jobless(), 0, 0, 0, 0, new WaitsInCastle()));
+            rig.Roster.Waiting[new Jobless()] = slot;
+
+            rig.Carriers.FlagPass(0);
+
+            Assert.AreEqual(
+                carriers == BasicCapacities[LengthClass.OfSteps(steps).Value] ? 0 : 1,
+                rig.Roster.Sent,
+                $"a road of {steps} steps with {carriers} carriers"
+            );
+        }
+    }
+
     [TestMethod]
     public void ARoadWithoutACarrierAsksTheCastleAtItsFlagsTurnAndTheSettlerWithoutAJobIsSentToIt()
     {

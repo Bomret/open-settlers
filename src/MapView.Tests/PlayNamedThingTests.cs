@@ -74,6 +74,26 @@ public sealed class PlayNamedThingTests
         return run;
     }
 
+    [TestMethod]
+    public void AnEventsLineOfACarrierNamesTheFlagItWaitsAtAsOther()
+    {
+        var game = LaidGame.Laid();
+        var waiting = game.History.Events.All.Single(e =>
+            e.Type == EventType.LayoutWaitingOnRoad
+            && e.Thing.Kind == ThingId.SettlerKind
+            && e.Other is { } other
+            && other.StartsWith("flag#", StringComparison.Ordinal)
+        );
+
+        var settler = game.Settlers[waiting.Thing.Slot];
+
+        var run = Run($"name c {settler.X} {settler.Y} settler\nevents c carrier", game);
+        Assert.AreEqual("", string.Join("\n", run.Problems));
+        var text = File.ReadAllText(Path.Combine(_out, "carrier.events.txt"));
+
+        StringAssert.Contains(text, $" other={waiting.Other} ");
+    }
+
     static string Problem(PlayRun run)
     {
         Assert.IsTrue(run.Finished);
