@@ -71,6 +71,24 @@ carrier or carrier on the way, and land roads join it to the castle. The settler
 Both ends of the road count one carrier in the low nibble of their road bytes, and bit 7 is clear (`0x4398ea`). A good
 at either end of the road then sends him on at his next turn (`0x42ff81`).
 
+## The castle's goods
+
+**Stand-in.** The `castle` entry takes an optional `stock` key: an object of good names and counts, such as
+`{"scythe": 1, "butcher-knife": 1, "grain": 1}`. The castle then holds exactly those counts and 0 of every other good. The
+start stock the seed's level or `--stock` gives plays no part, and nothing is taken from the named counts for the castle's
+construction or the tools of the first settlers. Later deliveries and takings of any good count as for a castle placed with
+its start stock. An empty object leaves the castle with no goods. Without the key the castle holds its
+[start stock](castle.md#the-start-stock). The original has no such start.
+
+The names are the good names of the name table (`NameTable.GoodName`, the goods 1 to 26), the same on the install and on
+the basic content set. A name of an object, a job, or a building type that is no good's name is not a good (`stone` names
+both an object and a good, and under `stock` it is the good). The castle keeps its 20 first settlers. The key is taken on the
+castle entry only, and a flag entry naming it fails as an unknown key.
+
+The load fails with a problem naming the file and the castle entry, and no game starts, for a name that is no good's, a name
+given twice, a value that is not an object, and a count that is not a whole number from 0 to 50000 (the most a count of the
+castle's stock holds).
+
 ## Goods
 
 `{"x", "y", "place": 0 to 7, "good": 1 to 25}` puts the good on the place of the flag at the node, as `Flag_PutGood`
@@ -101,12 +119,12 @@ site and never a finished building.
 
 ## Not supported
 
-Some settlers have no entry state here. These are every other state of a settler, every other job, and custom castle
-contents: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, the fisher's, the farm, or the butcher's shop, and a woodcutter, a stonecutter, a forester, a fisher, a farmer, or a butcher apart from his finished-building entry. The file reader refuses the entry.
+Some settlers have no entry state here. These are every other state of a settler, every other job, and the castle's own
+settlers: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, the fisher's, the farm, or the butcher's shop, and a woodcutter, a stonecutter, a forester, a fisher, a farmer, or a butcher apart from his finished-building entry. The file reader refuses the entry.
 
 ## In the engine
 
-`Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys. `Game.PlaceFinishedBuilding` stands the finished building
+`Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys, and the castle entry's `stock`, which travels on the castle's command (`Command.Stock`) to `PlaceCastleHandler`. `Game.PlaceFinishedBuilding` stands the finished building
 (`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, a forester, a miller, a fisher, a farmer, a butcher, a baker, or a pig farmer; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
 the settler in his hut.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a road that the layout has not built before it fails the
