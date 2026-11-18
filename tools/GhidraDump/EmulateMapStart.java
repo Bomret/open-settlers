@@ -2201,8 +2201,6 @@ public class EmulateMapStart extends GhidraScript {
     private int passesRun;
 
     private String[] withoutCastleOff(String[] parts) {
-        castleOffAt = -1;
-        passesRun = 0;
         java.util.List<String> kept = new java.util.ArrayList<>();
         for (String part : parts) {
             if (part.startsWith("castle-off@")) {
