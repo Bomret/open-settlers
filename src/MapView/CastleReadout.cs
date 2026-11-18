@@ -35,14 +35,47 @@ public static class CastleReadout
             (added ?? []).Select(good => $"  {good.Name} {good.Count.ToString(CultureInfo.InvariantCulture)}")
         );
 
+    // The stable names of the original's 26 goods, whichever content set holds them: the basic set gives no good an original code.
+    static readonly HashSet<string> OriginalNames =
+    [
+        "fish",
+        "pig",
+        "meat",
+        "grain",
+        "flour",
+        "bread",
+        "log",
+        "plank",
+        "boat",
+        "stone",
+        "iron-ore",
+        "iron",
+        "coal",
+        "gold-ore",
+        "gold",
+        "shovel",
+        "hammer",
+        "fishing-rod",
+        "butcher-knife",
+        "scythe",
+        "hatchet",
+        "saw",
+        "pickaxe",
+        "pliers",
+        "sword",
+        "shield",
+    ];
+
     /// <summary>
-    /// The goods the castle holds that have no original code, an added good, each with its count, in the catalog's order of stable names.
-    /// A good the stock holds none of is left out, so the readout of the original's content is as it was.
+    /// The goods the castle holds that are none of the original's 26, an added good, each with its count, in the catalog's order of
+    /// stable names. The rule is the stable name alone, never the original code, because the basic set gives no good a code and its
+    /// start stock holds goods beside the nine of the bar: with it, the readout of either content set at game start is the nine
+    /// fields and nothing more. A good the stock holds none of is left out.
     /// </summary>
     public static IReadOnlyList<(string Name, int Count)> AddedGoods(CastleStock stock) =>
         [
             .. stock
-                .Catalog.Goods.Where(entry => entry.OriginalCode is null)
+                .Catalog.Goods.Where(entry => !OriginalNames.Contains(entry.Name))
                 .Select(entry => (entry.Name, Count: stock.Count(new Good { Name = entry.Name })))
                 .Where(good => good.Count > 0),
         ];

@@ -70,11 +70,11 @@ public sealed class AiTokenTests
     }
 
     // The game with the road built and a token on the far flag, run until the castle holds it. The far flag is flag 1, the castle's flag 0.
-    static Game Delivered(bool withAiToken = true)
+    static Game Delivered()
     {
-        var game = NewGame(withAiToken);
-        game.Goods.LayGood(1, 0, withAiToken ? TestCatalog.AiToken : TestCatalog.GoodOf(1), destination: 0);
-        for (var i = 0; i < 3000 && game.CastleStock.Count(TestCatalog.AiToken) == 0 && withAiToken; i++)
+        var game = NewGame(withAiToken: true);
+        game.Goods.LayGood(1, 0, TestCatalog.AiToken, destination: 0);
+        for (var i = 0; i < 3000 && game.CastleStock.Count(TestCatalog.AiToken) == 0; i++)
         {
             game.Tick();
         }
@@ -99,16 +99,26 @@ public sealed class AiTokenTests
     [TestMethod]
     public void TheDigestDiffersFromTheSameGameWithoutTheGood()
     {
-        var with = NewGame(withAiToken: true);
-        var without = NewGame(withAiToken: false);
-        with.Goods.LayGood(1, 0, TestCatalog.AiToken, destination: 0);
-        for (var i = 0; i < 500; i++)
+        var with = Delivered();
+        var without = NewGame(withAiToken: true);
+        while (without.TickCount < with.TickCount)
         {
-            with.Tick();
             without.Tick();
         }
 
+        Assert.AreEqual(1, with.CastleStock.Count(TestCatalog.AiToken), "the token reached the castle");
         Assert.AreNotEqual(without.Digest(), with.Digest());
+    }
+
+    // After the delivery no flag and no carrier holds the token, so only the stock's name hash (GameDigest) tells the games apart.
+    [TestMethod]
+    public void TheDigestCountsTheTokenInTheCastleStock()
+    {
+        var game = Delivered();
+        var before = game.Digest();
+
+        Assert.IsTrue(game.CastleStock.Take(TestCatalog.AiToken), "the token was in the castle");
+        Assert.AreNotEqual(before, game.Digest());
     }
 
     [TestMethod]

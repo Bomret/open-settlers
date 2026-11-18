@@ -1,5 +1,9 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Domain;
 using OpenSettlers.MapView;
+using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
@@ -23,5 +27,41 @@ public sealed class CastleReadoutTests
             "Logs 4  Planks 9  Stones 2  Fish 11  Pigs 12  Meat 13  Grain 14  Flour 15  Bread 16",
             CastleReadout.Text(4, 9, 2, [11, 12, 13, 14, 15, 16])
         );
+    }
+
+    // The basic content set's shape: no good has an original code, and the start stock holds goods beside the nine of the bar.
+    static CastleStock PlacedWithNoCodes(params Good[] extra)
+    {
+        var entries = TestCatalog
+            .WithAiToken()
+            .Goods.Select(entry => entry with { OriginalCode = null })
+            .Where(entry => entry.Name != TestCatalog.AiToken.Name || extra.Contains(TestCatalog.AiToken));
+        var stock = new CastleStock(new ContentCatalog(entries));
+        stock.Place(
+            new Castle
+            {
+                X = 1,
+                Y = 1,
+                Height = 1,
+            },
+            TestCatalog.Names.ToDictionary(name => new Good { Name = name }, _ => 1)
+        );
+
+        return stock;
+    }
+
+    [TestMethod]
+    public void TheBarOfACatalogWithNoCodesAddsNoGoodTheOriginalHas()
+    {
+        Assert.IsEmpty(CastleReadout.AddedGoods(PlacedWithNoCodes()));
+    }
+
+    [TestMethod]
+    public void TheBarOfACatalogWithNoCodesNamesAGoodOutsideTheOriginalsByItsName()
+    {
+        var stock = PlacedWithNoCodes(TestCatalog.AiToken);
+        stock.Add(TestCatalog.AiToken);
+
+        CollectionAssert.AreEqual(new[] { ("ai-token", 1) }, CastleReadout.AddedGoods(stock).ToArray());
     }
 }
