@@ -43,9 +43,9 @@ public sealed class RepositoryContentTests
         Assert.IsEmpty(found, $"install file types in the repository: {string.Join(", ", found)}");
     }
 
-    // The check judges the files git would commit: a tracked file, a force-added one, and an untracked file no ignore rule
-    // covers, each by its real name and its last extension in any letter case. A gitignored folder and a linked worktree
-    // under the root hold nothing it judges, and run in a linked worktree it judges that worktree's own files.
+    // The check judges the files git would commit: a tracked file, a force-added one, a tracked one deleted from disk, and
+    // an untracked file no ignore rule covers, each by its real name and its last extension in any letter case. A gitignored
+    // folder and a linked worktree under the root hold nothing it judges, and run in a linked worktree it judges that worktree's own files.
     [TestMethod]
     public void TheInstallCheckJudgesTheFilesGitWouldCommit()
     {
@@ -69,12 +69,15 @@ public sealed class RepositoryContentTests
             Write("a.txt.pal");
             Run("add", "X.PAL");
             Run("add", "-f", "ignored/forced.pal");
+            Write("gone.pal");
+            Run("add", "gone.pal");
+            File.Delete(Path.Combine(main, "gone.pal"));
             Run("worktree", "add", "-q", Path.Combine(main, "nested"));
             Write("nested/other.pal");
             File.WriteAllText(Path.Combine(worktree, "own.pal"), "");
 
             CollectionAssert.AreEquivalent(
-                new[] { "X.PAL", "ignored/forced.pal", "loose.pal", "é b.pal", "a.txt.pal" },
+                new[] { "X.PAL", "ignored/forced.pal", "gone.pal", "loose.pal", "é b.pal", "a.txt.pal" },
                 InstallFiles(main)
             );
             // A git hook runs the suite with GIT_DIR set; the check must not list that repository. The case sets GIT_DIR on
