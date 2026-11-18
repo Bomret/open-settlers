@@ -43,6 +43,10 @@ when it fills the player blocks of a new game:
 - The fisher's work cycle: the search for a node at a shore (`0x433f71`), the arrival (`0x438232`), the cast (`0x433e05`), the catch from the
   lake details, and the fish on the flag: [Fishing](../rules/fishing.md). known
 - The butcher's work cycle (state `0x26`, `0x4332a8`), his request for pigs and its rank (`0x43d275`, `0x42e1b3`), the butcher's figure (`0x43ff90`), the castle's hand-out of pigs, and the shop's removal: [Butchering](../rules/butchering.md). known
+- The settlers after the castle's 20 first settlers, which hold 5 jobless ones: the settler supply adds a settler without a job to the
+  castle each period, so a game gets more settlers than its 5 jobless first ones: [New settlers](../rules/new-settlers.md). A carrier for
+  each road and a worker for each food building without a tool take them. `play/basic-production.play` plays the farm, the mill, and the
+  baker in one game. known
 
 ## Open questions
 
@@ -59,7 +63,3 @@ when it fills the player blocks of a new game:
 - What are the player words `0x445752` (`Player_SetDefaults2`) stores at `+0x14a` to `+0x150` for? Only the word at `+0x148` has a
   known reader (the planks' rank, [Materials](../rules/construction-materials.md)); the four words after it have no read through a fixed
   displacement that a search finds.
-- The castle's start holds 5 jobless settlers and the engine makes no more ([Castle](../rules/castle.md)): a carrier for each road and
-  a worker for each food building without a tool need 11 for the whole chain. How the original brings new settlers is open
-  ([Construction](../rules/construction.md): the player counter at `+0x116`, not ported); `play/food-chain.play` builds the three
-  buildings that 5 can staff.
