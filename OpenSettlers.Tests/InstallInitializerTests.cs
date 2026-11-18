@@ -32,40 +32,74 @@ public sealed class InstallInitializerTests
 {
     static readonly string[] InstallCalls = ["Tables", "OpenInstall"];
 
-    static string ProjectDirectory()
-    {
-        var dir = AppContext.BaseDirectory;
-        while (!File.Exists(Path.Combine(dir, "OpenSettlers.Tests.csproj")))
-        {
-            dir =
-                Path.GetDirectoryName(dir.TrimEnd(Path.DirectorySeparatorChar))
-                ?? throw new InvalidOperationException("OpenSettlers.Tests.csproj not found");
-        }
+    static readonly string[] GeneratedFolders = ["bin", "obj", ".godot", ".git", ".superdev", "node_modules"];
 
-        return dir;
-    }
+    // The source files of every test project (*.Tests.csproj) and helper project (*.Testing.csproj) under the root, as
+    // paths relative to it. A library's own sources are no test code and stay out.
+    static List<string> TestSources(string root) =>
+        [
+            .. Directory
+                .EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
+                .Where(project => Path.GetFileNameWithoutExtension(project).EndsWith(".Tests") || Path.GetFileNameWithoutExtension(project).EndsWith(".Testing"))
+                .Select(project => Path.GetDirectoryName(project)!)
+                .Where(folder => !Path.GetRelativePath(root, folder).Split(Path.DirectorySeparatorChar).Any(GeneratedFolders.Contains))
+                .SelectMany(folder => Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
+                .Select(file => Path.GetRelativePath(root, file))
+                .Where(file => !file.Split(Path.DirectorySeparatorChar).Any(GeneratedFolders.Contains))
+                .Order(StringComparer.Ordinal),
+        ];
+
+    // The static initializers of the test sources under the root that reach the install, as <file>:<line>.
+    static List<string> Offenders(string root) =>
+        [
+            .. TestSources(root)
+                .SelectMany(file => Lines(File.ReadAllText(Path.Combine(root, file))).Select(line => $"{file}:{line}")),
+        ];
 
     [TestMethod]
     public void NoTestClassReachesTheInstallFromAStaticInitializer()
     {
-        var project = ProjectDirectory();
-        var files = Directory
-            .EnumerateFiles(project, "*.cs", SearchOption.AllDirectories)
-            .Select(file => Path.GetRelativePath(project, file))
-            .Where(file => !IsBuildOutput(file))
-            .Order(StringComparer.Ordinal)
-            .ToList();
-        Assert.AreNotEqual(0, files.Count, $"No source file found under {project}");
+        var root = PythonTool.RepoRoot();
+        Assert.IsNotEmpty(TestSources(root), $"No test source file found under {root}");
 
-        var offenders = files
-            .SelectMany(file => Lines(File.ReadAllText(Path.Combine(project, file))).Select(line => $"{file}:{line}"))
-            .ToList();
+        var offenders = Offenders(root);
 
         Assert.AreEqual(
             0,
             offenders.Count,
             "Static initializers that reach the install (move the call into the test): " + string.Join(", ", offenders)
         );
+    }
+
+    // The scan covers every test project (*.Tests) and helper project (*.Testing) of the repository, wherever each sits,
+    // and no library: a static initializer in a project's own sources reaches the install there too.
+    [TestMethod]
+    [DataRow("OpenSettlers.Tests/Late.cs")]
+    [DataRow("tests/OpenSettlers.Tests/Late.cs")]
+    [DataRow("src/Domain.Tests/Late.cs")]
+    [DataRow("src/Import.HistoryEdition.Testing/Late.cs")]
+    public void ATestProjectOrHelperProjectWithAnInstallInitializerIsFlaggedWhereverItSits(string path)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "install-initializers-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Write(root, Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(Path.GetDirectoryName(path)!) + ".csproj"));
+            Write(root, path, "class A { static readonly Install Game = TestProgram.OpenInstall(); }");
+            Write(root, "src/Domain/Library.cs", "class B { static readonly Install Game = TestProgram.OpenInstall(); }");
+
+            CollectionAssert.AreEqual(new[] { path.Replace('/', Path.DirectorySeparatorChar) + ":1" }, Offenders(root));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    static void Write(string root, string path, string text = "<Project />")
+    {
+        var full = Path.Combine(root, path);
+        Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+        File.WriteAllText(full, text);
     }
 
     [TestMethod]
@@ -328,12 +362,6 @@ public sealed class InstallInitializerTests
             """;
 
         CollectionAssert.AreEqual(Array.Empty<int>(), Lines(source).ToArray());
-    }
-
-    static bool IsBuildOutput(string relative)
-    {
-        var first = relative.Split(Path.DirectorySeparatorChar)[0];
-        return first is "bin" or "obj";
     }
 
     // A static method or property of a type of the source, and the code that runs when it is called or read: the
