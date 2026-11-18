@@ -357,6 +357,78 @@ public sealed class CarrierBehaviorTests
         Assert.AreEqual(slot, rig.Bench.Movement.Occupant(rig.Bench.Map.Index(5, 4)), "it holds the node");
     }
 
+    // A carrier on flag 0, at 4,4, that came along the road from flag 1 (heading west), marked to go: by the fourth empty turn at
+    // the end of a busy road (Wait) or by the removal of its road (Removal: the mark with its good dropped).
+    static (Rig Rig, Settler Carrier, int Slot) MarkedOnFlag(Load? load)
+    {
+        var rig = new Rig(carrier: true);
+        var map = rig.Bench.Map;
+        map.At(4, 4).FlagMark = true;
+        map.At(4, 4).LinkTo(0);
+        var castle = new Building(BuildingType.Castle, 3, 3, 0) { FillLow = 0xff, FillHigh = 0xff };
+        rig.Bench.Buildings.Add(castle);
+        map.At(3, 3).LinkTo(0);
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            4,
+            4,
+            0,
+            new WalksRoad
+            {
+                Load = load,
+                Heading = Heading.Facing(West),
+                Marked = true,
+            }
+        );
+        var slot = rig.Bench.Settlers.Add(settler);
+        rig.Bench.Clock = 8;
+
+        return (rig, settler, slot);
+    }
+
+    [TestMethod]
+    public void ACarrierMarkedToGoWalksToAStorageFromTheFlagItReaches()
+    {
+        var (rig, settler, slot) = MarkedOnFlag(load: null);
+
+        rig.Registry.Handle(slot, settler);
+
+        var walks = (Walks)settler.Activity;
+        Assert.IsInstanceOfType<ToStorage>(walks.Errand, "state 2 with the storage mode 0xfe (0x43aea4)");
+        Assert.AreEqual(Heading.Facing(West), walks.Heading, "it keeps its heading");
+        Assert.AreEqual(0, settler.Timer);
+        Assert.IsTrue(
+            rig.Bench.History.Events.All.Any(e => e.Type == EventType.CarrierGoesHome && e.Cause == Cause.Carriers),
+            "the history records it with the carriers as the cause"
+        );
+    }
+
+    [TestMethod]
+    public void ACarrierMarkedToGoTakesNoGoodThatWaitsAtTheFlag()
+    {
+        var (rig, settler, slot) = MarkedOnFlag(load: null);
+        rig.Goods.LayGood(0, 2, Log, destination: 1, way: East);
+        rig.Goods.WaitForRoad(0, East, 2);
+
+        rig.Registry.Handle(slot, settler);
+
+        Assert.IsInstanceOfType<Walks>(settler.Activity);
+        Assert.AreEqual(Log, rig.Bench.Flags[0].Places[2].Good, "the good stays on its place");
+        Assert.AreEqual(2, rig.Bench.Flags[0].Side(East).WaitingPlace, "and still waits for the road");
+    }
+
+    [TestMethod]
+    public void ACarrierMarkedToGoWithAGoodForThisFlagsBuildingDeliversNothing()
+    {
+        var (rig, settler, slot) = MarkedOnFlag(new Load { Good = Log, Destination = 0 });
+
+        rig.Registry.Handle(slot, settler);
+
+        Assert.IsInstanceOfType<Walks>(settler.Activity, "the mark is read before the delivery: no handover begins");
+        Assert.AreEqual(0, rig.Stocked.Count);
+    }
+
     [TestMethod]
     public void ACarrierOnTheFlagItCarriesAGoodToHandsItOverAndTheCastleCountsIt()
     {

@@ -127,7 +127,7 @@ the word at 12 the destination of that good (the destination words of the flag's
 one), and the heading (byte 14) the direction of the road it works, as seen from this flag: the direction it came in turned
 round. The order is:
 
-1. Byte 15 negative: the carrier is sent home (`0x43aea4`, **not ported**).
+1. Byte 15 negative: the carrier is sent to a storage (`0x43aea4`, [Carriers](carriers.md#the-carriers-walk)).
 2. A good carried and its destination the flag the carrier stands on: state 0xe, the delivery below.
 3. Else the exchange (`0x43af07`) with byte `0x3c + heading` of the flag, then a step out of the flag along the heading:
    - **Bit 7 set** (a good waits to go along this road, in the place of bits 0 to 2): byte 15 is 0. A carrier that carries a good
@@ -222,7 +222,7 @@ picks, with its overlay and a second figure, in every recorded pass. The engine'
 
 - The counter in the player block that the put adds to (`+good - 0x6f`).
 - Which road a good takes when several hold a carrier and no storage was reached (`0x464539`, the register it starts from).
-- A carrier sent home (byte 15 negative, `0x43aea4`), and state 0x44 and later (`0x43007b`, `0x4300f1`).
+- State 0x44 and later (`0x43007b`, `0x4300f1`).
 - The passing of two settlers that come the other way at a flag (the emulated game of several carriers shows it at a flag where
   a carrier with a log and a carrier that is to fetch one meet): the swap of a step east, south-east, or south is ported with the
   walk home ([Settlers](settlers.md#walking-home)). The golden scenario `head-on-pass-layout` (`layouts/head-on-pass.jsonc`) meets a carrier

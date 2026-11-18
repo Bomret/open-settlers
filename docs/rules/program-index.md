@@ -578,7 +578,7 @@ Sites:
 - `0x43910b`, `0x4391eb`, `0x4392cb`, `0x4393ab`: the knights of the jobs 22 to 25 draw for promotion (limits 4000, 2000, 1000, 500), reached through the jumps by job at `0x43904b` (in `Settler_WaitInStorage`).
 - `0x439985`: the step against a chain of blocked settlers; `0x43a24e`: a settler bound for a storage that finds no road on takes state 0x19 (in `Settler_Walk`).
 - `0x43a6c1`: two settlers that block each other pass; `0x43a791`: a blocked step marks the heading and waits `0x7f` (in `Settler_StepEast`).
-- `0x43aea4`: a carrier with byte 15 negative is sent home (not ported); `0x43b410`: the end of the exchange of goods at a flag that starts at `0x43af07` (in `Settler_WalkRoad`).
+- `0x43aea4`: a carrier with byte 15 negative on a flag is sent to a storage, before the delivery and the exchange ([Carriers](carriers.md#the-carriers-walk)); `0x43b410`: the end of the exchange of goods at a flag that starts at `0x43af07` (in `Settler_WalkRoad`).
 - `0x43c9cf`: a settler entering a building whose link is 0 takes state 0x19 (in `Settler_PassDoor`).
 - `0x46427c`, `0x464364` to `0x46444c`, `0x464539`, and `0x464aa8` lie in the goods part of a flag's turn. They hold these parts, which `Table70_Pass` runs:
   - the thermometer of goods per direction, kept at `+0x218` to `+0x21b` and built at every turn, and the count of the flag's goods at `+0x24e`, set only on a turn that routes them ([Goods](goods.md#the-turn-of-a-flags-goods));

@@ -191,6 +191,9 @@ public static class EventType
     /// <summary>The worker of a building taken down walks home (removal).</summary>
     public const string SendWorkerHome = "send-worker-home";
 
+    /// <summary>A carrier marked to go reaches a flag and walks to a storage (carriers, 0x43aea4).</summary>
+    public const string CarrierGoesHome = "carrier-goes-home";
+
     /// <summary>What waits for a building taken down is released (removal).</summary>
     public const string ReleaseGoodsFor = "release-goods-for";
 
@@ -276,6 +279,7 @@ public static class EventType
         JoinRoads,
         SplitRoads,
         SendWorkerHome,
+        CarrierGoesHome,
         ReleaseGoodsFor,
         Burn,
         FreeBuilding,

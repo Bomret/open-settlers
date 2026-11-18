@@ -66,7 +66,7 @@ public sealed class MillerTests
         return scenarios;
     }
 
-    static List<int[]> Points(string list) =>
+    internal static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     static string Words(RandomGenerator generator) =>
@@ -93,7 +93,7 @@ public sealed class MillerTests
             })
         );
 
-    static Game Start(
+    internal static Game Start(
         string command,
         out Map map,
         out int hutFlag,

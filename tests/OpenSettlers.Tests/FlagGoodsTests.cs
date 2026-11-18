@@ -98,7 +98,7 @@ public sealed class FlagGoodsTests
         string.Concat((Convert.ToByte(fields[..2], 16) & 0x80).ToString("X2"), fields[2..]);
 
     // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
-    static string Carrier(Settler s, int width)
+    internal static string Carrier(Settler s, int width)
     {
         var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
         var bytes = new List<byte> { (byte)(s.Job.OriginalCode!.Value << 2 | s.Player), (byte)s.Frame };

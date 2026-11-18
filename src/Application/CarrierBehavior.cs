@@ -429,8 +429,19 @@ public sealed class CarrierBehavior(
             }
             else
             {
-                // A carrier on a flag: with a good for the building at this flag it goes in, else it swaps goods with the flag and
-                // goes on along the road it came by.
+                // A carrier on a flag: marked to go, it leaves for a storage (0x43aea4: state 2, mode 0xfe, the word at 12 and the
+                // timer 0, the mark cleared, its frame and heading as they are) and takes no further step this turn. Else, with a
+                // good for the building at this flag it goes in, else it swaps goods with the flag and goes on along the road it
+                // came by.
+                if (walks.Marked)
+                {
+                    settler.Timer = 0;
+                    movement.Become(settler, new Walks { Errand = new ToStorage(), Heading = walks.Heading });
+                    history.RecordSettler(slot, EventType.CarrierGoesHome, Cause.Carriers);
+
+                    return;
+                }
+
                 if (walks.Load is { Destination: { } destination } && destination == Map.At(here).LinkedSlot)
                 {
                     Deliver(slot, settler, walks);
@@ -469,8 +480,7 @@ public sealed class CarrierBehavior(
     // node holds no settler for the others to wait for) and takes state 0x42 with the flag and the direction of the road at
     // that flag as its target. The dword at 12 holds a pointer to the flag's item in the original; the engine keeps the slot in
     // the target.
-    // **Inferred:** the fourth turn at a road that holds two carriers is read from the code; no emulator or debugger run reaches
-    // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
+    // The fourth turn at a road that holds two carriers is emulated: a busy road that drains (busy-road-walks.txt) releases one.
     void Wait(int slot, Settler settler, WalksRoad walks, int back, int flag)
     {
         settler.Timer = 0x3f;
