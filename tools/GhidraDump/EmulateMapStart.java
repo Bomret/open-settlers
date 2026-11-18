@@ -5,7 +5,8 @@
 // The game code keeps its registers in a block that EDI points to, and the game state at the block's +0x34
 // pointer. The script builds both in unused memory, loads the input, runs the original's instructions from
 // a start address to a stop address, and reads the result back. Each script argument is one command, with
-// hexadecimal words and no spaces:
+// hexadecimal words and no spaces. The commands of one launch are independent: each prints the lines it prints in a
+// launch of its own (INV-0018).
 //
 //   rng:S0,S1,S2             one Rng_Step (0x466ade) from the state words S0,S1,S2; prints the new words
 //   steps:N:S0,S1,S2         N steps in a row; prints the words after each
@@ -164,9 +165,7 @@
 //                            The start line gives the period, the state, the free count, and the share and floor; a line per pass
 //                            where a settler was made or the knights or the stock changed lists each new settler's 16 bytes
 //                            (s<slot>=), the countdown, the knight accumulator, and the knights owed (timer=), the castle storage's
-//                            stock of the goods 25 and 26 (goods=, decimal), and the generator's words (rng=). Run each supply
-//                            command in a launch of its own: a command after others in one launch can start from state their passes
-//                            left, and its generator words differ
+//                            stock of the goods 25 and 26 (goods=, decimal), and the generator's words (rng=)
 //   stockrows:x             the five rows of start stock numbers the placement interpolates (0x442e8a)
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
@@ -453,8 +452,10 @@ public class EmulateMapStart extends GhidraScript {
                 + rest.substring(rest.indexOf(':') + 1).toUpperCase();
         Generated cached = report ? null : GENERATED.get(key);
         if (cached != null) {
+            // A copy: the emulator keeps the array it is handed as a page where the chunk starts on a page and fills it
+            // (MemoryPageBank.setPage), so the command's writes would change the cache that later commands restore.
             for (int i = 0; i < cached.starts().size(); i++) {
-                emu.writeMemory(cached.starts().get(i), cached.bytes().get(i));
+                emu.writeMemory(cached.starts().get(i), cached.bytes().get(i).clone());
             }
             for (int i = 0; i < cached.registers().size(); i++) {
                 emu.writeRegister(cached.registers().get(i), cached.values().get(i));
