@@ -202,6 +202,15 @@ public sealed class LayoutCastleContentsTests
     }
 
     [TestMethod]
+    public void ACastleThatNamesAKnightOfALevelHoldsAKnightOfThatLevelWaiting()
+    {
+        var game = Applied(""" "castle": {"x": 10, "y": 10, "settlers": {"knight-level-2": 1}} """);
+
+        CollectionAssert.AreEqual(new Job[] { new CastleSettler(), new Knight(2) }, Jobs(game));
+        Assert.IsInstanceOfType<WaitsInCastle>(game.Settlers[1].Activity);
+    }
+
+    [TestMethod]
     public void AnEmptySettlersLeavesTheCastleSettlerAloneAndTheCastleIsStillBuilt()
     {
         var game = Applied(""" "castle": {"x": 10, "y": 10, "settlers": {}} """);
