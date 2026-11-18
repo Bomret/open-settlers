@@ -143,20 +143,21 @@ destination flag holds no building (the program reads a null pointer there; the 
 `0x44dedc` where the mark is set (`0x44e37f`); a building without the mark is drawn by its type through the jump table at `0x44e3aa`.
 The branch does this, in order:
 
-- **The sound.** Where bits 3 and 4 of the countdown (the word that held the worker's slot) are both set, it asks once for sound `0x54`
-  through `0x44fe05` (`0x44df40`) and sets bit 3 of the status byte; otherwise it clears that bit. The sound plays while the countdown
-  passes through those values. **Not ported:** the map view plays no sound.
-- **The countdown.** It reads the game clock (state `+0x206`), stores it in the word at 14, and takes the clock since the old word off
-  the countdown, as the building pass does. Where that borrows, it sets the countdown to 0 and draws nothing for the building, neither
-  the building nor its flames. The draw thus writes the countdown and the stamp back into the building, every frame the building is on
-  screen. **Not ported:** the engine's view derives the countdown at the clock and writes nothing (INV-0015); the burn's own pass keeps
-  the count off screen.
+- **The sound.** The countdown is the word that held the worker's slot. Where bits 3 and 4 of it are both set, the branch asks once
+  for sound `0x54` through `0x44fe05` (`0x44df40`) and sets bit 3 of the status byte. Otherwise it clears that bit. The sound plays
+  while the countdown passes through those values. **Not ported:** the map view plays no sound.
+- **The countdown.** It reads the game clock at state `+0x206` and stores it in the word at 14. It takes the clock since the old word
+  off the countdown, as the building pass does. Where that borrows, it sets the countdown to 0 and draws neither the building nor its
+  flames. The draw thus writes the countdown and the stamp back into the building every frame the building is on screen.
+  **Not ported:** the engine's view derives the countdown at the clock and writes nothing (INV-0015). The burn's own pass keeps the
+  count off screen.
 - **The building.** It draws the building as usual through `Building_DrawByType` (`0x44e385`, called at `0x44dfc2`), the tail of
   `Building_Draw` that dispatches by the type, a site's stage included.
-- **The list.** It picks a flame list by the building's type: the list of the type's number, or list 0 for a building site (bit 7 of the
-  type byte) whose progress word (at 12) is below 16000. `Gfx_SpriteLists` starts with 25 word offsets from its own start, one per list.
-  A list holds 3 bytes for each flame: a size byte (0 for a small flame, 8 for a large one) and a signed x and y offset in pixels from
-  the building's draw position; a byte of `0x80` or more ends it. The types 7 and 8 share one list.
+- **The list.** It picks a flame list by the building's type. That is the list of the type's number, or list 0 for a building site
+  whose progress word at 12 is below 16000. A site has bit 7 of the type byte set. `Gfx_SpriteLists` starts with 25 word offsets
+  from its own start, one per list. A list holds 3 bytes for each flame. The first is a size byte, 0 for a small flame and 8 for a
+  large one. The others are a signed x and y offset in pixels from the building's draw position. A byte of `0x80` or more ends the
+  list. The types 7 and 8 share one list.
 - **The flames.** The phase of the first flame is the countdown shifted right by 3, masked to 0 to 7, and inverted (`^ 7`), so it runs
   from 0 at the start of the burn. Each flame draws the entry of its size byte, plus the phase, plus 136 through
   `Gfx_DrawSpriteBase320` (`0x44e0d1`), so the entries 456 to 471 ([Graphics images](graphics-images.md)). Each further flame of the

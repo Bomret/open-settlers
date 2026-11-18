@@ -28,5 +28,5 @@ The decision has these consequences:
 - A flame's size, its offset, and its phase are game terms. Only the History Edition source maps a size and a phase
   to an archive entry.
 - The flames of a burning building differ between the two content sets.
-- The type that picks a list is read only inside the source, so building types that become catalog entries
-  (ADR 0020) change the source and not the map view.
+- The type that picks a list is read only inside the source, so a change in how building types are named
+  changes the source and not the map view.
