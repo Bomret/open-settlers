@@ -59,6 +59,18 @@ public readonly record struct Good
     /// <summary>The bread, good 6: the job of the type 0x10 puts it (<c>0x43384f</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
     public static Good Bread => new() { Code = 6 };
 
+    /// <summary>
+    /// The sword, good 25: a new knight takes one from the castle's stock (<c>0x428a75</c>, <c>docs/rules/new-settlers.md</c>). **Inferred**
+    /// name; which of the goods 25 and 26 is the sword and which the shield is open (<c>docs/rules/food-buildings.md</c>).
+    /// </summary>
+    public static Good Sword => new() { Code = 25 };
+
+    /// <summary>
+    /// The shield, good 26: a new knight takes one from the castle's stock (<c>0x428a75</c>). **Inferred** name; which of the goods 25
+    /// and 26 is the sword and which the shield is open.
+    /// </summary>
+    public static Good Shield => new() { Code = 26 };
+
     /// <summary>The six food goods in the order of their numbers, 1 to 6: fish, pig, meat, grain, flour, bread.</summary>
     public static IReadOnlyList<Good> Foods { get; } = [Fish, Pig, Meat, Grain, Flour, Bread];
 

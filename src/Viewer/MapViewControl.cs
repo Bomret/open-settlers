@@ -35,6 +35,7 @@ namespace OpenSettlers.Viewer;
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
 /// <param name="stockLevel">The start stock level of the game's castle; null takes the level the seed draws.</param>
+/// <param name="settlerRate">The settler rate of the game's settler supply; null takes the rate the seed draws.</param>
 public partial class MapViewControl(
     IRuleTablesSource tablesSource,
     Func<RuleTables?, GraphicsLoad> loadGraphics,
@@ -42,7 +43,8 @@ public partial class MapViewControl(
     string seedText,
     int sizeValue,
     bool gameView = false,
-    int? stockLevel = null
+    int? stockLevel = null,
+    int? settlerRate = null
 ) : Control
 {
     // Rows of tiles in one mesh; 16 rows of the widest map are about 8,200 vertices.
@@ -58,6 +60,7 @@ public partial class MapViewControl(
 
     readonly bool _gameView = gameView;
     readonly int? _stockLevel = stockLevel;
+    readonly int? _settlerRate = settlerRate;
     Game? _game;
     readonly TickPacer _pacer = new();
 
@@ -522,7 +525,9 @@ public partial class MapViewControl(
                     _state.Map,
                     _stockLevel ?? _state.StockLevel,
                     everyPassTurns: true,
-                    handsOutGoods: true
+                    handsOutGoods: true,
+                    settlerSupply: true,
+                    settlerRate: _settlerRate ?? _state.SettlerRate
                 ),
                 out _game,
                 out var layoutProblem
