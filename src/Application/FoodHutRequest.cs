@@ -35,7 +35,7 @@ static class FoodHutRequest
         if (movement.Tables.ClassOfGood(asked) is { } asks)
         {
             var flag = flags[hut.Flag];
-            flag.SetRequest(asks.Word, flag.RequestOf(asks.Word) with { Rank = rank });
+            flag.RankRequest(asks.Word, rank);
         }
     }
 
@@ -48,12 +48,12 @@ static class FoodHutRequest
         var flag = flags[hut.Flag];
         foreach (var word in new[] { RequestWord.First, RequestWord.Second })
         {
-            flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
+            flag.ClearAsk(word);
         }
 
         if (movement.Tables.ClassOfGood(asked) is { } asks)
         {
-            flag.SetRequest(asks.Word, new Request { Asks = asks, Rank = 0 });
+            flag.AskFor(asks.Word, asks);
         }
     }
 }

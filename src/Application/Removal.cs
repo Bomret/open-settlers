@@ -376,8 +376,7 @@ public sealed class Removal(
 
         var side = flags[slot].Side(back);
         var carrierOnTheWay = side.CarrierOnTheWay;
-        side.CarrierOnTheWay = false;
-        side.HoldsCarrier = false;
+        side.EndRoad();
         if (carrierOnTheWay)
         {
             for (var walker = 0; walker < settlers.Count; walker++)
@@ -390,14 +389,14 @@ public sealed class Removal(
             }
         }
 
-        side.WaitingPlace = null;
+        side.Wait(null);
         for (var place = Flag.PlaceCount - 1; place >= 0; place--)
         {
             var good = flags[slot].Places[place];
             if (!good.IsEmpty && good.Way == back)
             {
-                good.Way = null;
-                flags[slot].NeedsGoodsTurn = true;
+                good.Direct(null);
+                flags[slot].MarkGoodsTurnDue();
             }
         }
 
@@ -430,12 +429,12 @@ public sealed class Removal(
             }
             else if (walks.Errand is ToRoad toRoad)
             {
-                flags[toRoad.At].Side(toRoad.Direction).CarrierOnTheWay = false;
+                flags[toRoad.At].Side(toRoad.Direction).ForgetExpectedCarrier();
                 TouchFlag(toRoad.At, EventType.Dismiss);
                 if (roads.RoadAt(toRoad.At, toRoad.Direction) is { } road)
                 {
                     var (far, farDirection) = RoadNetwork.FarEnd(road, toRoad.At, toRoad.Direction);
-                    flags[far].Side(farDirection).CarrierOnTheWay = false;
+                    flags[far].Side(farDirection).ForgetExpectedCarrier();
                     TouchFlag(far, EventType.Dismiss);
                 }
             }
@@ -721,8 +720,8 @@ public sealed class Removal(
             return;
         }
 
-        flags[a.Flag].Side(a.Direction).HoldsCarrier = true;
-        flags[b.Flag].Side(b.Direction).HoldsCarrier = true;
+        flags[a.Flag].Side(a.Direction).HoldCarrier();
+        flags[b.Flag].Side(b.Direction).HoldCarrier();
         var kept = onRoad.Count;
         if (capacity < onRoad.Count)
         {
@@ -761,8 +760,8 @@ public sealed class Removal(
             }
         }
 
-        flags[a.Flag].Side(a.Direction).Carriers = kept;
-        flags[b.Flag].Side(b.Direction).Carriers = kept;
+        flags[a.Flag].Side(a.Direction).KeepCarriers(kept);
+        flags[b.Flag].Side(b.Direction).KeepCarriers(kept);
     }
 
     // The join of the two roads of a flag (0x462153): one road of the summed length between the flags at the far ends. The
@@ -812,10 +811,8 @@ public sealed class Removal(
 
         var sideA = flags[a.Far].Side(a.FarDirection);
         var sideB = flags[b.Far].Side(b.FarDirection);
-        sideA.FarDirection = b.FarDirection;
-        sideB.FarDirection = a.FarDirection;
-        sideA.HoldsCarrier = false;
-        sideB.HoldsCarrier = false;
+        sideA.Reroute(b.FarDirection);
+        sideB.Reroute(a.FarDirection);
         var length = LengthClass.OfSteps(path.Count);
         sideA.SetLength(length, carrierOnTheWay: false);
         sideB.SetLength(length, carrierOnTheWay: false);
@@ -873,7 +870,7 @@ public sealed class Removal(
         // search finds the flag any more.
         foreach (var word in new[] { RequestWord.First, RequestWord.Second })
         {
-            flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
+            flag.ClearAsk(word);
         }
 
         var worker = building.Worker;
@@ -958,14 +955,14 @@ public sealed class Removal(
                 }
 
                 released = true;
-                good.Destination = null;
-                flags[holder].NeedsGoodsTurn = true;
+                good.SendTo(null);
+                flags[holder].MarkGoodsTurnDue();
                 if (good.Way is not { } way)
                 {
                     continue;
                 }
 
-                good.Way = null;
+                good.Direct(null);
                 var best = 0;
                 var bestPlace = -1;
                 for (var other = 0; other < Flag.PlaceCount; other++)
@@ -978,7 +975,7 @@ public sealed class Removal(
                     }
                 }
 
-                flags[holder].Side(way).WaitingPlace = bestPlace >= 0 ? bestPlace : null;
+                flags[holder].Side(way).Wait(bestPlace >= 0 ? bestPlace : null);
             }
 
             if (released)
@@ -1052,7 +1049,7 @@ public sealed class Removal(
                 HeadsToRoad(settler, a.Far, a.FarDirection) || HeadsToRoad(settler, b.Far, b.FarDirection)
             );
             var loser = onItsWay is not null && HeadsToRoad(onItsWay, b.Far, b.FarDirection) ? a : b;
-            flags[loser.Far].Side(loser.FarDirection).CarrierOnTheWay = false;
+            flags[loser.Far].Side(loser.FarDirection).ForgetExpectedCarrier();
         }
 
         // The half on the side of the road's start, and the steps the road took before the node.
@@ -1132,10 +1129,8 @@ public sealed class Removal(
         var length = LengthClass.OfSteps(half.Steps);
         side.SetLength(length, onItsWay);
         farSide.SetLength(length, onItsWay);
-        side.FarDirection = farDirection;
-        farSide.FarDirection = direction;
-        side.HoldsCarrier = false;
-        farSide.HoldsCarrier = false;
+        side.Reroute(farDirection);
+        farSide.Reroute(direction);
         CountCarriers(
             half.Settlers,
             (flag, direction),

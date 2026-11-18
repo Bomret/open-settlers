@@ -73,7 +73,7 @@ public sealed class StorageDistribution(
         }
 
         var word = step.Class.Word;
-        flags[asking].SetRequest(word, flags[asking].RequestOf(word) with { Rank = 0 });
+        flags[asking].RankRequest(word, 0);
         var counter = tables.FillCounterOf(good);
         if (counter != FillCounter.None && buildings.OfFlag(asking) is { } building)
         {
