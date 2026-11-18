@@ -7,7 +7,8 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A player's action that the simulation takes at a given tick. <c>Kind</c> names the action; its codes belong to
 /// the slices that add actions. <c>X</c> and <c>Y</c> are the tile the action aims at. Two commands are equal when
-/// their fields, their <c>Directions</c> and their <c>Settlers</c>, element by element, and their <c>Stock</c>, good by good, are equal.
+/// their fields, their <c>Directions</c> and their <c>Settlers</c>, element by element, and their <c>Stock</c>, good by good, are equal; a
+/// good a stock does not name counts 0 there.
 /// </summary>
 public readonly record struct Command : IEquatable<Command>
 {
@@ -59,14 +60,16 @@ public readonly record struct Command : IEquatable<Command>
         && Building == other.Building
         && (Directions ?? []).SequenceEqual(other.Directions ?? [])
         && (Stock is null) == (other.Stock is null)
-        && (Stock ?? Empty).Count == (other.Stock ?? Empty).Count
-        && (Stock ?? Empty).All(pair =>
-            (other.Stock ?? Empty).TryGetValue(pair.Key, out var count) && count == pair.Value
-        )
+        && Holds(Stock ?? Empty, other.Stock ?? Empty)
+        && Holds(other.Stock ?? Empty, Stock ?? Empty)
         && (Settlers is null) == (other.Settlers is null)
         && (Settlers ?? []).SequenceEqual(other.Settlers ?? []);
 
     static readonly IReadOnlyDictionary<Good, int> Empty = new Dictionary<Good, int>();
+
+    // Whether every count of a holds in b, where a good b does not name counts 0.
+    static bool Holds(IReadOnlyDictionary<Good, int> a, IReadOnlyDictionary<Good, int> b) =>
+        a.All(pair => b.GetValueOrDefault(pair.Key) == pair.Value);
 
     /// <inheritdoc/>
     public override int GetHashCode()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -197,6 +198,28 @@ public sealed class CommandQueueTests
         Assert.AreEqual(2, forward.Count);
         Assert.AreEqual(2, backward.Count);
         Assert.AreEqual(Taken(forward), Taken(backward));
+    }
+
+    // A good the stock does not name counts 0, so a stock that names a good with 0 is the stock that leaves it out.
+    [TestMethod]
+    public void ACastleWhoseStockNamesAGoodWithNoneIsTheCastleWhoseStockLeavesItOut()
+    {
+        Command Castle(Dictionary<Good, int> stock) =>
+            new()
+            {
+                Tick = 1,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 4,
+                Y = 4,
+                Stock = stock,
+            };
+        var named = Castle(new() { [Good.Grain] = 0, [Good.Log] = 3 });
+        var left = Castle(new() { [Good.Log] = 3 });
+
+        Assert.AreEqual(named, left);
+        Assert.AreEqual(left, named);
+        Assert.AreNotEqual(Castle(new() { [Good.Log] = 3 }), Castle(new() { [Good.Log] = 3, [Good.Grain] = 1 }));
     }
 
     [TestMethod]
