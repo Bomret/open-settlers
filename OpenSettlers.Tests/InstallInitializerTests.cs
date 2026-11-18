@@ -82,7 +82,6 @@ public sealed class InstallInitializerTests
     // and no library: a static initializer in a project's own sources reaches the install there too.
     [TestMethod]
     [DataRow("OpenSettlers.Tests/Late.cs")]
-    [DataRow("tests/OpenSettlers.Tests/Late.cs")]
     [DataRow("src/Domain.Tests/Late.cs")]
     [DataRow("src/Import.HistoryEdition.Testing/Late.cs")]
     public void ATestProjectOrHelperProjectWithAnInstallInitializerIsFlaggedWhereverItSits(string path)

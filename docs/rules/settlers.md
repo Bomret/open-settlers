@@ -9,7 +9,7 @@ roads are in [Flags](flags.md) and [Roads](roads.md); the castle's first settler
 (castle, flags, roads), places a finished building on the node north-west of a flag, and runs the program's own
 routines for each pass: `0x428728`, the phase step, `0x46414d`, `0x42cb2d`, and `0x42f3d9`. The engine runs the same
 commands and matches the bytes of the worker's item and of the hut's item after every pass until the worker's first turn in
-state 4, in three games (`tests/OpenSettlers.Tests/worker-walks.txt`): a hut one road from the castle, a hut three
+state 4, in three games (`src/Adapters.Tests/worker-walks.txt`): a hut one road from the castle, a hut three
 flags away over four roads, and a hut that gets a road only at pass 100. The flag pass sends a carrier to each road
 ([Carriers](carriers.md)), so the worker walks among carriers and waits where one stands on its way.
 
@@ -163,7 +163,7 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 ## Drawing the walk: leads
 
 **Status:** confirmed for the carrier, the woodcutter, and the settler of the type 1 hut by the emulator verb `draw:`
-([Emulated](#the-draw-path-emulated)). The recordings `tests/OpenSettlers.Tests/settler-draws.txt` hold what the original draws,
+([Emulated](#the-draw-path-emulated)). The recordings `src/Import.HistoryEdition.Tests/settler-draws.txt` hold what the original draws,
 and the engine matches them pass for pass. The figure word and the two tables are also confirmed by the program evidence below
 and by the screenshots of `play/woodcutter-figures.play`. Inferred parts are marked. The jobs and states that no recording holds
 a settler of are inferred.
@@ -321,7 +321,7 @@ node's map pixel. The graphics archive is read from the install. The rule data o
 passes before the first window run without the view, so a game's first settlers walk as in the other recordings. From the first
 window on, each settler in view takes a turn every pass.
 
-**Recordings** (`tests/OpenSettlers.Tests/settler-draws.txt`, from the History Edition's `Siedler1.exe`, SHA-256 in `docs/rules/AGENTS.md`):
+**Recordings** (`src/Import.HistoryEdition.Tests/settler-draws.txt`, from the History Edition's `Siedler1.exe`, SHA-256 in `docs/rules/AGENTS.md`):
 - `carrier`: a hut of the woodcutter with a road to the castle and a log laid on the hut's flag at pass 5 (`goods:`), the carrier walking
   its road (state 3), waiting next to a flag (0x42: no record), and walking with the log (state 3, mode 7);
 - `woodcutter`: the same game without the log, the woodcutter walking to his door (state 2, 5), stepping through it (4), walking free
@@ -351,7 +351,7 @@ stubs lie at `0x42fca1` plus 8 times the state, so `0x1c` is `0x434946` and `0x1
 **Emulated.** The harness verb `home:` runs the passes of `wood:` and, before one pass, sends a chosen castle settler home
 (optionally moved to another node first, or put into another state and mode byte); the engine matches the settler's 16 bytes
 and the generator's words after every pass, and the word of its job in the castle's list of waiting settlers, until the
-settler waits in the castle in state 1, in six games (`tests/OpenSettlers.Tests/home-walks.txt`): settlers of the jobs 7, 2, and
+settler waits in the castle in state 1, in six games (`src/Adapters.Tests/home-walks.txt`): settlers of the jobs 7, 2, and
 5 (the woodcutter) from the castle, a settler 11 nodes away whose search finds no flag and walks by random nodes (about 700
 passes), a settler in state `0x19` with mode 1 that meets the road's carrier and passes it, and a settler on a flag no road
 leads from to the castle, which takes state `0x19` with mode 1. The game takes the building table's dummy first, as a real

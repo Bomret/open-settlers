@@ -30,7 +30,4 @@
     <Project Path="src/Import.OpenSettlers.Tests/OpenSettlers.Import.OpenSettlers.Tests.csproj" />
   </Folder>
   <Project Path="OpenSettlers.Tests/OpenSettlers.Tests.csproj" />
-  <Folder Name="/tests/">
-    <Project Path="tests/OpenSettlers.Tests/OpenSettlers.Tests.csproj" />
-  </Folder>
 </Solution>

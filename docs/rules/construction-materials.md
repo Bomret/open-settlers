@@ -6,7 +6,7 @@ This note covers how a building site asks for the planks and stones its type nee
 
 The click `l@x,y,H` of the verb sets the heights of a node and its six neighbours. That is the ground a digger leaves a large site.
 
-The file `tests/OpenSettlers.Tests/construction-materials.txt` holds the request words, the goods on site and on the way, the castle's stock, and the generator. It records them after the passes of three games, and the engine matches them (`ConstructionMaterialsTests`).
+The file `src/Adapters.Tests/construction-materials.txt` holds the request words, the goods on site and on the way, the castle's stock, and the generator. It records them after the passes of three games, and the engine matches them (`ConstructionMaterialsTests`).
 
 In the game `two-sites-carried` both sites are placed at pass 400, when both roads hold their carriers. Both requests are reachable at the first hand-out. The forester's and the sawmill's requests rank alike (`0x3e`). The castle hands that cycle's plank and stone to the sawmill's flag, not to the forester's. Both flags lie on the first level of the search. Of equal ranks, the flag met first keeps the lead, because the directions are tried from 5 down to 0.
 

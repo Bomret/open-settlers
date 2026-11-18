@@ -10,7 +10,7 @@ items are in [Flags](flags.md) and [Item tables](item-tables.md); the carriers t
 roads, a finished building of type 2 at a flag) and runs the program's own routines for each pass: `0x428728`, the object pass
 `0x428d10`, the phase step, `0x46414d`, `0x42cb2d`, and `0x42f3d9`. The engine runs the same commands and matches the worker's
 item and the hut's after every state or node change, every object byte that changes, the goods on the hut's flag, and the
-generator's words, in two games (`tests/OpenSettlers.Tests/wood-walks.txt`, run with the verb `goods:`, so that the logs the
+generator's words, in two games (`src/Adapters.Tests/wood-walks.txt`, run with the verb `goods:`, so that the logs the
 woodcutter lays are carried to the castle, [Goods at a flag](goods.md)): a hut among trees for 4700 passes (three cuts, the
 first felled tree gone from the map) and a hut with no tree in its reach for 2500 passes.
 
@@ -120,7 +120,7 @@ generation's own 0x53 objects vanish the same way. A felled tree grows back only
 **Status:** confirmed; **emulated**.
 
 The game's generator continues from the map's generation (the verb's words at the first pass are those of the pass `CountResource1`
-in `tests/OpenSettlers.Tests/map-digests.txt`: the castle's placement draws nothing). Besides the woodcutter's search, the draws that
+in `OpenSettlers.Tests/map-digests.txt`: the castle's placement draws nothing). Besides the woodcutter's search, the draws that
 reach the words in the first 5000 passes are those of the object pass above and of the knights waiting in the castle: a settler of
 job 22 to 25 draws when its timer has run out until a draw is below 4000, 2000, 1000, or 500, which promotes it to the next job (and
 moves its entry in the castle's list), adding 6000 to its timer for each draw above (`0x43910b`, `0x4391eb`, `0x4392cb`, `0x4393ab`);
@@ -139,7 +139,7 @@ state 0x10), and the felling at the cut (figure bytes from 0x80, frames `0x74` t
 back with a log in the carries pose (`settler/woodcutter/carries`), as it does the stonecutter's way back with a stone.
 
 The frames `0x74` to `0x78` are **confirmed** by the draw run of the `woodcutter` recording
-([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`, every pass of the cut). A screenshot
+([Settlers](settlers.md#the-draw-path-emulated), `src/Import.HistoryEdition.Tests/settler-draws.txt`, every pass of the cut). A screenshot
 of `play/woodcutter-figures.play` confirms the frame `0x74`. The frames `0x74`, `0x76`, and `0x77` draw the felling figure bytes.
 Those are from `0x80`, with two sprites and no second figure. The frames `0x75` and `0x78` draw walking bytes with the figure, its
 overlay, and a second figure. The figure bytes of the walk, the way back with the log, and the door (state 4) are the rows of the

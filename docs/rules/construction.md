@@ -2,7 +2,7 @@
 
 This note covers how a building site asks for its builder and how the builder walks out and builds in state 9. It also covers how the finished building asks for its own worker and how a site is drawn as it grows. Addresses and routine names are in the [Program index](program-index.md#castle-and-build-sites). The materials the builder works from are in [Materials for a building site](construction-materials.md). The site's placement is in [Build sites](build-sites.md#placing-a-building).
 
-**Emulated.** The file `tests/OpenSettlers.Tests/construction-builder.txt` holds checkpoints of two games of the harness verb `construct:` (`tools/GhidraDump/README.md`).
+**Emulated.** The file `src/Adapters.Tests/construction-builder.txt` holds checkpoints of two games of the harness verb `construct:` (`tools/GhidraDump/README.md`).
 
 - In the first game, the castle's builder walks out to a forester's site. He takes the two planks as they reach it, builds it in 16 blows, and goes home. The finished forester asks for its worker, and a settler without a job walks out to it.
 - The second game places a woodcutter's site beside it. A settler without a job and a tool from the stock builds it.

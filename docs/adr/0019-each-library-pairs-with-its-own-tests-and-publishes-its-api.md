@@ -15,7 +15,9 @@ library references, directly or through another library. The Godot host pairs wi
 repository root, which also holds the tests of the repository itself: the code-style build, the tools, the
 content set, and the test category filters.
 
-A library grants its internals to its own test project and to no other assembly. A type or member that
+A library grants its internals to its own test project and to no other assembly, by no route: no
+`InternalsVisibleTo` item, `AssemblyAttribute` item, source attribute, or shared build file names another
+assembly, and no reflection skips the access check. The rule has no exception. A type or member that
 another library uses is public, and is part of the library's API; the rest stays internal. A consumer
 changes another library's state through that library's public API, never by writing its internals.
 

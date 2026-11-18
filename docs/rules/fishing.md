@@ -4,7 +4,7 @@ This note covers how the fisher works. It states which building and which job he
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) starts a game as the woodcutter's scenarios do. The game has a finished building of type 1 at a flag, on a map with a lake east of the castle. The verb runs the original's own routines for each pass. The verb's `ld=` field lists the lake details (byte 0 of record B) that change in a pass.
 
-The engine runs the same commands. It matches these values in two games (`tests/OpenSettlers.Tests/fish-walks.txt`):
+The engine runs the same commands. It matches these values in two games (`src/Adapters.Tests/fish-walks.txt`):
 
 - the fisher's item after every change of his state, his node, his timers, and his counters;
 - every object byte and every lake detail that changes;

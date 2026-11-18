@@ -8,7 +8,7 @@ with the first worker is in [Settlers](settlers.md); the roads are in [Roads](ro
 **Emulated.** The harness verb `carrier:` (`tools/GhidraDump/emulate.py`) starts a game as the `road` verb does (castle,
 flags, roads) and runs the program's own routines for each pass: `0x428728`, the phase step, `0x46414d`, `0x42cb2d`, and
 `0x42f3d9`. The engine runs the same commands and matches the bytes of the castle's settlers 1 to 5 and the status and road
-bytes of the flag items after every pass (`tests/OpenSettlers.Tests/carrier-walks.txt`), in three games: two roads built at
+bytes of the flag items after every pass (`src/Adapters.Tests/carrier-walks.txt`), in three games: two roads built at
 the same tick, a second road built from the end of the first after 400 passes, and three roads built at the same tick whose
 carriers meet on the way. The `worker` verb runs `0x46414d` too, so `worker-walks.txt` holds the first worker's walk with
 the carriers on the roads.
@@ -160,7 +160,7 @@ not marked from, however long the road.
 **Status:** confirmed for a carrier on its road (state 3, with no good and with each of the goods 1 to 26), handing a good over (state 0xe), walking
 to its road (states 2 and 5), walking home (0x19, 0x10, and 2 after a road was taken down), and waiting next to a flag (state 0x42) or for its
 turn to go home (states 0x44 and 0x45: no settler record) by the draw runs of the `carrier`, `goods`, `goods-alone`, `rejoined`, `dismissed`, and `dismissed-with-log`
-recordings ([Settlers](settlers.md#the-draw-path-emulated), `tests/OpenSettlers.Tests/settler-draws.txt`).
+recordings ([Settlers](settlers.md#the-draw-path-emulated), `src/Import.HistoryEdition.Tests/settler-draws.txt`).
 
 The carrier is drawn as the walking worker is ([Settlers](settlers.md#drawing-the-walk-leads)) in states 2, 3, 5, 0xe, 0x10, and
 0x19. It uses the figure tables' row of job 0, the figure base 0. A carrier in state 3 or 0xe that carries a good adds the good's

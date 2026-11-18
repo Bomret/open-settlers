@@ -1,7 +1,7 @@
 <Project Sdk="MSTest.Sdk">
   <PropertyGroup>
-    <!-- The tests of the History Edition source (ADR 0019, INV-0012). The namespace stays the one every test had in the
-         single test project, so a test keeps its name. -->
+    <!-- The tests of the History Edition source (ADR 0019, INV-0012). Every test project uses the namespace
+         OpenSettlers.Tests, so a class split across two projects keeps one full name. -->
     <RootNamespace>OpenSettlers.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>

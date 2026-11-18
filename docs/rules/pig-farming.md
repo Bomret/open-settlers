@@ -9,7 +9,7 @@ the grain to the pig farm and the pig away from it ([Goods at a flag](goods.md))
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) puts a finished building of type 14 at a flag, as it does for the mill. The type is large (object code 3), and its
 item holds the pointer to its flag at `+0xe` that a built site leaves (`0x43ef82`), which the handler reads. The verb also runs `0x44579c` with the player setup, so the rank starts from the
 original's word. The engine matches the pig farmer after every change of his node, state, or stretch, the building's bytes, the flag's goods and request words, the castle's grain and pig counts,
-and the generator's words in three games (`tests/OpenSettlers.Tests/pig-walks.txt`): no grain in 3000 passes, one grain to the castle's first pig (pass 12709), and eight grains laid at once
+and the generator's words in three games (`src/Adapters.Tests/pig-walks.txt`): no grain in 3000 passes, one grain to the castle's first pig (pass 12709), and eight grains laid at once
 with a ninth later. The removal matches in six games (`pig-removals.txt`), the first hand-out in one (`pig-materials.txt`, verb `construct:`), and the draw in one recording
 (`settler-draws.txt`, `pig-farmer`). The part `castle-off@300` of those commands is explained in [The rank](#the-rank-of-the-request-for-grain).
 

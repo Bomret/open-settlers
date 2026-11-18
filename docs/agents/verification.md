@@ -21,18 +21,14 @@ test file holds, so the full command, which runs every unit test, is the check b
 `mise run test` runs every unit test with no selection, and `python3 -I tools/focused-tests.py --list <path>...` prints
 the selection without a run. The command refuses to run without a path: it prints a usage line and exits 2.
 `FocusedTestsTests` pins the selection, and compares the test classes the script knows (`--classes`) with the test
-classes of the test assembly.
+classes of the root test assembly (`OpenSettlers.Tests/`).
 
 Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
-A violation fails the full command at its test step. That step builds the test project and the projects it references.
-The focused command fails at its build on the same violations where it selects a test.
+A violation fails the full command at its test step. That step builds every test project and the projects each
+references. The focused command fails at its build on the same violations where it selects a test.
 
-Two kinds of violation fail only the build step of the full command, which builds `OpenSettlers.csproj`. The focused
-command does not report them:
-
-- A violation in a file under `src/Viewer`. Only `OpenSettlers.csproj` compiles that folder.
-- A doc-comment diagnostic (CS1591 and the others that "Document" names) in a file under `src/Launch`, `src/Assets`, or
-  `src/MapView`. The test project compiles these folders but generates no documentation file.
+A violation in a file under `src/Viewer` fails only the build step of the full command, which builds
+`OpenSettlers.csproj`: only that project compiles the folder. The focused command does not report it.
 
 A violation prints as
 `<file>(<line>,<column>): error <rule ID>: <message>`. A play run with a violation exits 3 and prints the build output.
@@ -56,7 +52,7 @@ runs report inconclusive on Windows. The worktree cases also report inconclusive
 when the test host started with that signal ignored, such as under `nohup`, because a non-interactive shell cannot trap
 a signal that was ignored on entry.
 
-The category names are the constants of `tests/OpenSettlers.Tests/Needs.cs`. Put
+The category names are the constants of `src/Testing/Needs.cs`. Put
 `[TestCategory(Needs.Install)]` (and `Needs.Ghidra` where the test runs `analyzeHeadless`) on every test
 that needs one, on the class where every test in it does. A test without the category fails or reports
 inconclusive in either command without the install. `NeedsTests` pins the filters to `Needs`.
@@ -73,17 +69,21 @@ reaches one of them. Its header comment lists the forms of reach the check catch
 
 ## Run one test class
 
-`--filter 'ClassName=OpenSettlers.Tests.<Class>'` runs exactly one test class:
+Every test project has its own folder (`src/<Name>.Tests/`, and `OpenSettlers.Tests/` for the repository's own tests), and
+every test class has the namespace `OpenSettlers.Tests`. `--project <folder>` with
+`--filter 'ClassName=OpenSettlers.Tests.<Class>'` runs exactly one test class of one project:
 
 ```sh
-mise exec -- dotnet test --project tests/OpenSettlers.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests'
+mise exec -- dotnet test --project src/MapView.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests'
 ```
 
+A class split across two projects has the same full name in each, so run the filter once per project, or use
+`mise run test:focused`, which runs the class in each project that holds it.
 `FullyQualifiedName~<Class>` matches by substring: `FullyQualifiedName~GameTests` also selects `RoadSplitGameTests`.
 Without the install, add the category clauses, which run the class's unit tests alone:
 
 ```sh
-mise exec -- dotnet test --project tests/OpenSettlers.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests&TestCategory!=Install&TestCategory!=Ghidra'
+mise exec -- dotnet test --project src/MapView.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests&TestCategory!=Install&TestCategory!=Ghidra'
 ```
 
 The test host (MSTest on Microsoft.Testing.Platform) has no `--filter-class`: it exits 5 and lists the test project under
@@ -98,13 +98,13 @@ missing reports inconclusive. An install whose `Siedler1.exe` holds no rule tabl
 remove the variable inside `mise`:
 
 ```sh
-mise exec -- env -u SIEDLER_DIR dotnet test --project tests/OpenSettlers.Tests
+mise exec -- env -u SIEDLER_DIR dotnet test --solution OpenSettlers.slnx
 ```
 
 On Windows, run this with PowerShell 7 (`pwsh`). If only Windows PowerShell 5.1 is installed, write `powershell` for `pwsh`.
 
 ```powershell
-mise exec -- pwsh -NoProfile -Command 'Remove-Item Env:\SIEDLER_DIR -ErrorAction SilentlyContinue; dotnet test --project tests/OpenSettlers.Tests'
+mise exec -- pwsh -NoProfile -Command 'Remove-Item Env:\SIEDLER_DIR -ErrorAction SilentlyContinue; dotnet test --solution OpenSettlers.slnx'
 ```
 
 Neither the full command nor the focused one runs these tests. Run the integration command for a change to what they
@@ -112,7 +112,7 @@ test: the install readers, the emulator tools in `tools/GhidraDump/`.
 
 ## Timing command
 
-`mise exec -- dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory!=Install&TestCategory!=Ghidra' --output detailed`
+`mise exec -- dotnet test --solution OpenSettlers.slnx --filter 'TestCategory!=Install&TestCategory!=Ghidra' --ignore-exit-code 8 --output detailed`
 
 It runs the unit tests of the full command. Microsoft.Testing.Platform prints one `passed <test> (<duration>)`
 line per test, then the total duration in the run summary.
@@ -126,7 +126,6 @@ packages itself.
 
 ## Test paths
 
-- `tests/`
 - `*.Tests/`
 
 ## Map view Definition-of-Done lines

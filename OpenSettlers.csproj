@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- The libraries (Domain, Import, Import.HistoryEdition, Import.OpenSettlers, Application, Adapters, MapView, Launch, Assets) are their own projects, and so is the job generator, which runs in the compiler. Only src/Viewer holds Godot code. -->
-    <Compile Remove="tools/**;tests/**;**/*.Tests/**;**/*.Testing/**;src/Testing/**;OpenSettlers.Tests/**;src/Domain/**;src/Import/**;src/Import.HistoryEdition/**;src/Import.OpenSettlers/**;src/Application/**;src/Adapters/**;src/MapView/**;src/Launch/**;src/Assets/**;src/Generators/**" />
+    <Compile Remove="tools/**;**/*.Tests/**;**/*.Testing/**;src/Testing/**;OpenSettlers.Tests/**;src/Domain/**;src/Import/**;src/Import.HistoryEdition/**;src/Import.OpenSettlers/**;src/Application/**;src/Adapters/**;src/MapView/**;src/Launch/**;src/Assets/**;src/Generators/**" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Import" />

@@ -5,8 +5,8 @@ Run it from the repository root, with the changed paths as arguments:
 
     python3 -I tools/focused-tests.py [--list] <path>...
 
-A test project is a folder named `*.Tests` at the root, under tests/, under src/, or under a folder of src/ (TEST_GLOBS).
-It runs `dotnet test` on each test project that holds a selected class, filtered to the selected classes and always to
+A test project is a folder named `*.Tests` at the root, under src/, or under a folder of src/ (TEST_GLOBS). A class may be
+split across two test projects under one full name: a selection runs it in each. It runs `dotnet test` on each test project that holds a selected class, filtered to the selected classes and always to
 `TestCategory!=Install&TestCategory!=Ghidra`. A whole-suite selection runs `dotnet test --solution OpenSettlers.slnx`
 with the category filter, which reaches every test project. With --list it prints the selection instead and runs
 nothing: one class name per line, or the line `all` for the whole unit suite. Without a path it prints a usage line on
@@ -43,7 +43,7 @@ import re
 import subprocess
 import sys
 
-TEST_GLOBS = ("*.Tests", "tests/*.Tests", "src/*.Tests", "src/*/*.Tests")
+TEST_GLOBS = ("*.Tests", "src/*.Tests", "src/*/*.Tests")
 HELPER_GLOBS = ("src/Testing", "src/*.Testing", "src/*/Testing", "src/*/*.Testing")
 SOLUTION = "OpenSettlers.slnx"
 CATEGORIES = "TestCategory!=Install&TestCategory!=Ghidra"
@@ -135,7 +135,7 @@ def declared(text):
 
 
 def type_names(path, files):
-    """The types a .cs file declares, and the types of the test project's helper files that name one of them."""
+    """The types a .cs file declares, and the types of the helper files of the test and helper projects that name one of them."""
     names = declared(read(path)) if os.path.isfile(path) else {os.path.basename(path)[: -len(".cs")]}
     helpers = [(text, declared(text)) for _, text, classes in files if not classes]  # no test class, so a helper
     grown = True
