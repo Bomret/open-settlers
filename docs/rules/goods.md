@@ -14,7 +14,7 @@ in `wood:` runs a log never leaves its flag (the flag pass looks for the castle 
 slot's dummy only, the other tables keep the numbers the earlier verbs use. `goods:` and `remove:` also run
 `Player_SetTransportPriorities` (`0x445570`) on the player block before the castle is placed, as `0x42055e` does at a new game,
 so the [transport priorities](#transport-priorities) are in place; their start line `prio=` lists the 32 bytes the exchange reads
-for the goods 0 to 31. `tests/OpenSettlers.Tests/flag-goods.txt` holds the flags' goods fields and the carriers' bytes after the
+for the goods 0 to 31. `src/Adapters.Tests/flag-goods.txt` holds the flags' goods fields and the carriers' bytes after the
 passes of the verb's games, and the engine matches them (`FlagGoodsTests`): a log laid by the woodcutter, a log laid by hand at
 pass 5 before any carrier is on the road, and on a road of three flags logs and goods of different ranks laid by hand.
 

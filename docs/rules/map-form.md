@@ -92,7 +92,7 @@ the number of draws, so a pass's draw count is part of what a digest line checks
 ## The passes
 
 **Status:** confirmed; every pass is **emulated** for the three sizes and three seeds in
-`tests/OpenSettlers.Tests/map-digests.txt`.
+`OpenSettlers.Tests/map-digests.txt`.
 
 Each pinned line is a harness line `EMU gen size=N pass=P rng=W0,W1,W2 flags=… height=… terrain=… lake=…
 object=… resource=… [total=T]` rewritten as `N S0,S1,S2 P W0,W1,W2 D0 … D5 [total=T]`: the size value, the

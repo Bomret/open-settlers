@@ -167,7 +167,7 @@ and commit, and `roaddraw` runs the three strip routines that draw a road (`docs
 command prints the digest of the spiral table and the object codes of the large objects. The `supply` command runs the
 settler supply of the original in a castle game at a settler rate and start stock level it takes, for example
 `supply:1:1234,5678,9ABC:0:18,20:40:1200:25,0;26,0` (rate 40, no swords and shields in the castle). It prints a line for
-each pass where a settler was made or the knights or the stock changed: `tests/OpenSettlers.Tests/settler-supply.txt`
+each pass where a settler was made or the knights or the stock changed: `src/Adapters.Tests/settler-supply.txt`
 holds its games, each run in a launch of its own, and `docs/rules/new-settlers.md` the rules it checks.
 
 ### The draw verb
@@ -199,9 +199,9 @@ and no lines, with `N` counting from 1. A command fails where its run does not e
 stops before it. A batch exits non-zero where any command fails. A single `draw:` command prints no `command=` line.
 
 The settler draw turns the settlers in view every pass, so from the first window on a run differs from the verb it wraps. A recording keeps each
-pass's output with the `EMU draw ` prefix removed, under a `# name command` line (`tests/OpenSettlers.Tests/settler-draws.txt`).
+pass's output with the `EMU draw ` prefix removed, under a `# name command` line (`src/Import.HistoryEdition.Tests/settler-draws.txt`).
 
 `site@X,Y` in place of `CX,CY` draws the building of the node `X,Y` alone in each pass of `WINDOWS` instead: the building draw `0x44e329`,
 which reaches the draw of a building under construction (`0x44fa79`), or `0x44fee2` for the castle under construction. It turns no settler, so the run is the verb's. Each line lists the
 building's bytes and the shadows, sprites (with the fraction a grown sprite shows), and goods the draw drew
-(`tests/OpenSettlers.Tests/site-draws.txt`, `docs/rules/construction.md`).
+(`src/Import.HistoryEdition.Tests/site-draws.txt`, `docs/rules/construction.md`).

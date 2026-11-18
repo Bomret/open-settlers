@@ -6,7 +6,7 @@ Addresses and routine names are in the [Program index](program-index.md#simulati
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) starts a game as the woodcutter's scenarios do. The game has a finished building of type 4 at a flag. The verb runs the original's own routines for each pass.
 
-The engine runs the same commands. It matches these values in three games (`tests/OpenSettlers.Tests/stone-walks.txt`):
+The engine runs the same commands. It matches these values in three games (`src/Adapters.Tests/stone-walks.txt`):
 
 - the stonecutter's item after every change of its node, its state, or the part of its cut;
 - every object byte that changes;

@@ -4,7 +4,7 @@ The operator runs two checks of the original in the Windows VM:
 
 - The map generator check. ADR 0008 asks for a run of the original in Windows under a debugger that
   confirms the emulator's values for at least one seed and every map size. Its results go in
-  `tests/OpenSettlers.Tests/windows-run.txt`.
+  `OpenSettlers.Tests/windows-run.txt`.
 - The elapsed-units probe (`elapsed-probe.ps1`, "The elapsed-units probe" below). It tallies the clock
   units of the main loop's passes for the measurement in
   [Timing](../../docs/rules/timing.md#the-frame-wait).
@@ -104,7 +104,7 @@ run for each of seed B and seed C is optional, for more coverage.
 
 ## Expected rows
 
-The rows are those of `tests/OpenSettlers.Tests/map-digests.txt` after the pass `CountResource1`. The
+The rows are those of `OpenSettlers.Tests/map-digests.txt` after the pass `CountResource1`. The
 emulator and the engine agree on each. Each row holds: size, map seed, pass, the three generator words, the
 digests of the layers flags, height, terrain, lake, object, resource, and the total.
 
@@ -138,7 +138,7 @@ for seed B, and `0003,E001,0001` for seed C. They are read at `0x421749`, the fi
 
 ## Recording the results
 
-Append each row `digest.py` printed, unedited, to `tests/OpenSettlers.Tests/windows-run.txt`, one row per
+Append each row `digest.py` printed, unedited, to `OpenSettlers.Tests/windows-run.txt`, one row per
 seed and size. The test `WindowsRunMatchesTheEmulator` compares each row with the emulator's row.
 
 ## A mismatch

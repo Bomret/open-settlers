@@ -4,7 +4,7 @@ This note covers the sawmill and its sawmiller. It states which building and whi
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) starts a game as the woodcutter's scenarios do. The game has a finished building of type 17 at a flag. Type 17 is a large building with object code 3. A built site leaves a pointer at `+0xe` of the building's item (`0x43ef82`), and the building's handler reads its flag through it. The verb sets that pointer by hand.
 
-The engine runs the same commands as the harness. It matches the sawmiller after every change of his node, his state, or the part of his work. It also matches the building's bytes, the goods on its flag, and the request words of its flag. It matches the castle's log and plank counts and the generator's words. Two games (`tests/OpenSettlers.Tests/saw-walks.txt`) hold these checkpoints.
+The engine runs the same commands as the harness. It matches the sawmiller after every change of his node, his state, or the part of his work. It also matches the building's bytes, the goods on its flag, and the request words of its flag. It matches the castle's log and plank counts and the generator's words. Two games (`src/Adapters.Tests/saw-walks.txt`) hold these checkpoints.
 
 - The first game lays two logs on the castle's flag. The whole run lasts 2200 passes: the walk in, the wait, two sawings, and two planks to the castle.
 - The second game lays eight logs on a flag beside the castle. A ninth log follows that no request takes, so the castle's log count rises.

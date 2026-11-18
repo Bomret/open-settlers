@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <!-- The tests of the ports see their internal members. -->
+    <InternalsVisibleTo Include="OpenSettlers.Import.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="OpenSettlers.Domain" />
   </ItemGroup>
   <ItemGroup>

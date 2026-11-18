@@ -10,8 +10,8 @@ public sealed partial class Layout
 {
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
-    // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
-    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null. A command's Check runs
+    // its Place puts it in the game directly (Game.PlaceFinishedBuilding, Game.StandWorkerInFinishedHut,
+    // Game.PlaceCarrierOnRoad, Game.PlaceGood) and returns why it refused, or null. A command's Check runs
     // before the game takes it and returns why the game's content set refuses a name the entry gives, or null.
     sealed record Step
     {
@@ -33,14 +33,14 @@ public sealed partial class Layout
     /// </summary>
     public string? Apply(Game game)
     {
-        game.Causes.InLayout = true;
+        game.SetLayoutMode(true);
         try
         {
             return Build(game);
         }
         finally
         {
-            game.Causes.InLayout = false;
+            game.SetLayoutMode(false);
         }
     }
 
@@ -250,8 +250,7 @@ public sealed partial class Layout
                         PlaceableNames(game.Tables.Catalog).ToList() is var placeable && !placeable.Contains(type.Name)
                             ? $"the building type {given} is no stable name of a building type of this content set, use {string.Join(", ", placeable)}"
                         : !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
-                        : game.Walks.StandsWorker(type) ? game.Walks.StandWorkerInHut(x, y)
-                        : null,
+                        : game.StandWorkerInFinishedHut(type, x, y),
                 }
             );
 
@@ -315,7 +314,7 @@ public sealed partial class Layout
                 {
                     Name = name,
                     Command = default,
-                    Place = game => game.Carriers.PlaceCarrierOnRoad(x, y, direction),
+                    Place = game => game.PlaceCarrierOnRoad(x, y, direction),
                 }
             );
 
@@ -368,7 +367,7 @@ public sealed partial class Layout
                     Place = game =>
                         good.IsNone || game.Tables.Catalog.EntryOf(good) is null
                             ? $"the good {given} is no stable name of a good of this content set, use {string.Join(", ", game.Tables.Catalog.Goods.Select(entry => entry.Name))}"
-                            : game.Goods.PlaceGood(x, y, place, good),
+                            : game.PlaceGood(x, y, place, good),
                 }
             );
 

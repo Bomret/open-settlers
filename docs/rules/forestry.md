@@ -4,7 +4,7 @@ This note covers how the forester works. It states which building and which job 
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) starts a game as the woodcutter's scenarios do. The game has a finished building of type 9 at a flag. The verb runs the original's own routines for each pass.
 
-The engine runs the same commands. It matches these values in two games (`tests/OpenSettlers.Tests/forester-walks.txt`):
+The engine runs the same commands. It matches these values in two games (`src/Adapters.Tests/forester-walks.txt`):
 
 - the forester's item after every change of his state;
 - every object byte that changes;

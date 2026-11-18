@@ -142,6 +142,6 @@ public sealed class SitePass(
             rank &= 0xfe;
         }
 
-        flag.SetRequest(word, flag.RequestOf(word) with { Rank = (byte)rank });
+        flag.RankRequest(word, (byte)rank);
     }
 }

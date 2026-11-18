@@ -1,0 +1,48 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <RootNamespace>OpenSettlers.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Testing" />
+    <Using Include="OpenSettlers.Domain.Testing" />
+    <Using Include="OpenSettlers.Import.Testing" />
+    <Using Include="OpenSettlers.Import.HistoryEdition.Testing" />
+    <Using Include="OpenSettlers.Application.Testing" />
+    <Using Include="OpenSettlers.Adapters.Testing" />
+    <Using Include="OpenSettlers.MapView.Testing" />
+    <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Import" />
+    <Using Include="OpenSettlers.Import.HistoryEdition" />
+    <Using Include="OpenSettlers.Import.ContentSet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Testing/OpenSettlers.Testing.csproj" />
+    <ProjectReference Include="../Domain.Testing/OpenSettlers.Domain.Testing.csproj" />
+    <ProjectReference Include="../Import.Testing/OpenSettlers.Import.Testing.csproj" />
+    <ProjectReference Include="../Import.HistoryEdition.Testing/OpenSettlers.Import.HistoryEdition.Testing.csproj" />
+    <ProjectReference Include="../Application.Testing/OpenSettlers.Application.Testing.csproj" />
+    <ProjectReference Include="../Adapters.Testing/OpenSettlers.Adapters.Testing.csproj" />
+    <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="../Import/OpenSettlers.Import.csproj" />
+    <ProjectReference Include="../Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
+    <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
+    <ProjectReference Include="../Adapters/OpenSettlers.Adapters.csproj" />
+    <ProjectReference Include="../Launch/OpenSettlers.Launch.csproj" />
+    <ProjectReference Include="../MapView.Testing/OpenSettlers.MapView.Testing.csproj" />
+    <ProjectReference Include="../MapView/OpenSettlers.MapView.csproj" />
+    <ProjectReference Include="../Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The files live in OpenSettlers.Import.HistoryEdition.Tests/, which checks the picks, masks, and textures against them. -->
+    <None
+      Include="../Import.HistoryEdition.Tests/settler-draws.txt"
+      Link="settler-draws.txt"
+      CopyToOutputDirectory="PreserveNewest"
+    />
+    <None
+      Include="../Import.HistoryEdition.Tests/road-strips.txt"
+      Link="road-strips.txt"
+      CopyToOutputDirectory="PreserveNewest"
+    />
+  </ItemGroup>
+</Project>

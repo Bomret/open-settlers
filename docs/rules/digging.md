@@ -2,7 +2,7 @@
 
 This note covers how a large building site asks for a digger. It states how he levels the ground of the site's node and its six neighbours to the site's height in state 8. It also states how the build-site evaluator treats a large site that waits for him. Addresses and routine names are in the [Program index](program-index.md#castle-and-build-sites). The request for a worker is in [The builder](construction.md#the-worker-request). The site's placement is in [Build sites](build-sites.md#placing-a-building). The materials the site asks for after the levelling are in [Materials for a building site](construction-materials.md#the-building-passs-turn-of-a-site).
 
-**Emulated.** The file `tests/OpenSettlers.Tests/construction-digger.txt` holds the output of the harness verb `construct:` (`tools/GhidraDump/README.md`). The game has a sawmill's site, a large type, on ground that is not level. The castle's own digger is the settler of slot 13 with job 2. He walks out to the site at pass 292. He works from pass 342 to pass 1695 in 11 digs that change 11 heights. He walks home by pass 1959.
+**Emulated.** The file `src/Adapters.Tests/construction-digger.txt` holds the output of the harness verb `construct:` (`tools/GhidraDump/README.md`). The game has a sawmill's site, a large type, on ground that is not level. The castle's own digger is the settler of slot 13 with job 2. He walks out to the site at pass 292. He works from pass 342 to pass 1695 in 11 digs that change 11 heights. He walks home by pass 1959.
 
 `ConstructionDiggerTests` runs the engine through the same commands. These values match the fixture:
 
@@ -121,7 +121,7 @@ A node of the third ring contributes its target height to the lowest and the hig
 - Its building is under construction.
 - Its progress word is still 0, so the site waits for its digger.
 
-A large site that has started contributes nothing. A finished large building contributes nothing either. **Emulated:** the verdict sweep `sweep-site-started` of `tests/OpenSettlers.Tests/construction-digger.txt` covers this. It runs before pass 1960 of `digger-sawmill`, where the site has started and the digger is home. It matches the engine on every node with the node state 4 to 7.
+A large site that has started contributes nothing. A finished large building contributes nothing either. **Emulated:** the verdict sweep `sweep-site-started` of `src/Adapters.Tests/construction-digger.txt` covers this. It runs before pass 1960 of `digger-sawmill`, where the site has started and the digger is home. It matches the engine on every node with the node state 4 to 7.
 
 A large site taken down while it waited still contributes. It contributes the clock that its take-down put into that word ([Removal](removal.md#taking-a-building-site-down)).
 

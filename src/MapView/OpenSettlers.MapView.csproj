@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- The tests read the internal members of the map view. -->
+    <InternalsVisibleTo Include="OpenSettlers.MapView.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Import" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="../Import/OpenSettlers.Import.csproj" />
+    <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
+    <ProjectReference Include="../Adapters/OpenSettlers.Adapters.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,288 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The lines of mill-walks.txt are the output of the emulator verb goods (tools/GhidraDump/emulate.py, ADR 0008): the original's passes
+// over the item tables on a game started as the original's game start leaves its tables, with a finished mill (type 15, a small
+// building) at a flag, and the carriers that bring it grain and take its flour to the castle (the whole run is checked). A scenario
+// starts with a "#" line that names its verb command; the lines after it give, for a pass, the 16 bytes of the miller (slot 3, s3=: a
+// settler without a job the castle made the miller) where his node, state, or part of the work changed, the 16 bytes of the busy road's
+// second carrier (slot 2, s2=: a settler without a job the castle made a carrier) where listed, the 18 bytes of the building (b=)
+// where they changed, the flag's byte 4 and goods bytes (g=) where they changed, the request words of the flag (req=) where they changed,
+// the castle's grain and flour counts (grain=, flour=) where they changed, and the generator's words (rng=). The engine runs the same
+// commands and must hold the same values at each listed pass.
+//
+// **Inferred input:** the verb writes the marks 0x42 on the building's node and 0x10 on its flag's node by hand, as the woodcutter's
+// scenarios have them (WoodcutterTests), and the flag pointer a built site leaves in the building's item (0x43ef82).
+[TestClass]
+[TestCategory(Needs.Install)]
+public sealed class MillerTests
+{
+    const string Fixture = "mill-walks.txt";
+    const int WorkerSlot = 3;
+    const int SecondCarrierSlot = 2;
+    const int HutSlot = 1;
+
+    sealed record Scenario
+    {
+        public required string Name { get; init; }
+
+        public required string Command { get; init; }
+
+        public required List<Dictionary<string, string>> Lines { get; init; }
+    }
+
+    public static IEnumerable<object[]> Scenarios => Load().Select(scenario => new object[] { scenario.Name });
+
+    static List<Scenario> Load()
+    {
+        var scenarios = new List<Scenario>();
+        foreach (var line in File.ReadAllLines(Fixture).Where(line => !line.StartsWith("//", StringComparison.Ordinal)))
+        {
+            if (line.StartsWith("# ", StringComparison.Ordinal))
+            {
+                var parts = line[2..].Split(' ', 2);
+                scenarios.Add(
+                    new Scenario
+                    {
+                        Name = parts[0],
+                        Command = parts[1],
+                        Lines = [],
+                    }
+                );
+                continue;
+            }
+
+            scenarios[^1]
+                .Lines.Add(line.Split(' ').Select(field => field.Split('=')).ToDictionary(p => p[0], p => p[1]));
+        }
+
+        return scenarios;
+    }
+
+    internal static List<int[]> Points(string list) =>
+        list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
+
+    static string Words(RandomGenerator generator) =>
+        string.Join(',', new[] { generator.W0, generator.W1, generator.W2 }.Select(word => word.ToString("X4")));
+
+    // The building's 18 bytes with its two fill bytes, which the shared hex of the walk tests leaves out; the flag pointer is no byte
+    // of the engine's.
+    static string BuildingHex(Building building, int width)
+    {
+        var hex = WorkerBytes.Hex(building, width);
+
+        return hex[..16] + building.FillLow.ToString("X2") + building.FillHigh.ToString("X2") + hex[20..];
+    }
+
+    // The request words of a flag as the bytes 0x42 to 0x45 of its item: a class byte (bit k for the class k) and the rank, twice.
+    static string Requests(Flag flag) =>
+        string.Concat(
+            new[] { RequestWord.First, RequestWord.Second }.Select(word =>
+            {
+                var request = flag.RequestOf(word);
+
+                return (request.Asks is { } asked ? 1 << asked.Class : 0).ToString("X2", CultureInfo.InvariantCulture)
+                    + request.Rank.ToString("X2", CultureInfo.InvariantCulture);
+            })
+        );
+
+    internal static Game Start(
+        string command,
+        out Map map,
+        out int hutFlag,
+        out int passes,
+        out List<(int Pass, int Place, int Good, int Flag)> puts
+    )
+    {
+        // goods:N:SEED:L:cx,cy:FLAGS:ROADS:fx,fy,T:PASSES[:WARM[:LATEROADS:AT[:PASS,PLACE,GOOD,SLOT;...]]]
+        var parts = command.Split(':');
+        MapSize.TryFromValue(int.Parse(parts[1], CultureInfo.InvariantCulture), out var size, out _);
+        var seed = parts[2].Split(',').Select(word => Convert.ToUInt16(word, 16)).ToArray();
+        map = MapGenerator.Generate(
+            TestProgram.Tables(),
+            new MapSeed
+            {
+                W0 = seed[0],
+                W1 = seed[1],
+                W2 = seed[2],
+            },
+            size!
+        );
+        var game = GameFactory.Create(TestProgram.Tables(), map, int.Parse(parts[3], CultureInfo.InvariantCulture));
+        var castle = Points(parts[4]).Single();
+        var flags = Points(parts[5]);
+        var hut = parts[7].Split(',').Select(int.Parse).ToArray();
+        passes = int.Parse(parts[8], CultureInfo.InvariantCulture);
+        // Each put lays a good on a place of the flag of the slot (the original numbers its flags from 1) before the pass.
+        puts =
+        [
+            .. parts.Length > 12
+                ? parts[12]
+                    .Split(';')
+                    .Select(text => text.Split(',').Select(int.Parse).ToArray())
+                    .Select(put => (put[0], put[1], put[2], put[3] - 1))
+                : [],
+        ];
+
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = castle[0],
+                Y = castle[1],
+            }
+        );
+        foreach (var flag in flags)
+        {
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.PlaceFlag,
+                    X = flag[0],
+                    Y = flag[1],
+                }
+            );
+        }
+
+        foreach (var road in parts[6].Split(';').Select(text => text.Split(',')))
+        {
+            game.Enqueue(
+                new Command
+                {
+                    Tick = 0,
+                    Player = 0,
+                    Kind = CommandKind.BuildRoad,
+                    X = int.Parse(road[0]),
+                    Y = int.Parse(road[1]),
+                    Directions = [.. road[2].Select(c => c - '0')],
+                }
+            );
+        }
+
+        game.ApplyCommands();
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Mill), hut[2], "the fixture's building is a mill");
+        Assert.IsTrue(
+            Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Mill),
+            "the fixture's building has its site"
+        );
+        hutFlag = flags.FindIndex(flag => flag[0] == hut[0] && flag[1] == hut[1]) + 1;
+
+        return game;
+    }
+
+    [TestMethod]
+    [DynamicData(nameof(Scenarios))]
+    public void TheMillerWorksAsTheOriginalsPassesRunIt(string name)
+    {
+        var scenario = Load().Single(candidate => candidate.Name == name);
+        var game = Start(scenario.Command, out var map, out var hutFlag, out var passes, out var puts);
+        var width = map.Size.Width;
+        var last = scenario.Lines.Max(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
+
+        for (var pass = 0; pass <= Math.Min(last, passes - 1); pass++)
+        {
+            foreach (var put in puts.Where(put => put.Pass == pass))
+            {
+                game.LayGood(put.Flag, put.Place, TestCatalog.GoodOf(put.Good));
+            }
+
+            game.Tick();
+            var line = scenario.Lines.SingleOrDefault(candidate =>
+                candidate["pass"] == pass.ToString(CultureInfo.InvariantCulture)
+            );
+            if (line is null)
+            {
+                continue;
+            }
+
+            if (line.TryGetValue("s3", out var worker))
+            {
+                Assert.AreEqual(
+                    FlagWords.InEngineNumbers(worker, 24, game.Flags.Count),
+                    WorkerBytes.Hex(game.Settlers[WorkerSlot], width),
+                    $"{name}: the miller after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("s2", out var carrier))
+            {
+                var expected = FlagWords.InEngineNumbers(carrier, 24, game.Flags.Count);
+                Assert.AreEqual(
+                    FlagGoodsTests.Masked(expected, expected),
+                    FlagGoodsTests.Masked(expected, WorkerBytes.Hex(game.Settlers[SecondCarrierSlot], width)),
+                    $"{name}: the busy road's second carrier after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("b", out var hutBytes))
+            {
+                Assert.AreEqual(
+                    FlagWords.InEngineNumbers(hutBytes, 12, game.Flags.Count),
+                    BuildingHex(game.Buildings[HutSlot], width),
+                    $"{name}: the building after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("g", out var goods))
+            {
+                var places = game.Flags[hutFlag].Places;
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
+                Assert.AreEqual(
+                    goods.Split('/')[1],
+                    bytes,
+                    $"{name}: the goods on the building's flag after pass {pass}"
+                );
+                Assert.AreEqual(
+                    Convert.ToInt32(goods.Split('/')[0], 16) >> 7,
+                    game.Flags[hutFlag].NeedsGoodsTurn ? 1 : 0,
+                    $"{name}: the flag's goods bit after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("req", out var requests))
+            {
+                Assert.AreEqual(
+                    requests,
+                    Requests(game.Flags[hutFlag]),
+                    $"{name}: the request words of the building's flag after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("grain", out var grain))
+            {
+                Assert.AreEqual(
+                    int.Parse(grain, CultureInfo.InvariantCulture),
+                    game.CastleStock.Count(Good.Grain),
+                    $"{name}: the castle's grain after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("flour", out var flour))
+            {
+                Assert.AreEqual(
+                    int.Parse(flour, CultureInfo.InvariantCulture),
+                    game.CastleStock.Count(Good.Flour),
+                    $"{name}: the castle's flour after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("rng", out var rng))
+            {
+                Assert.AreEqual(rng, Words(game.RandomState), $"{name}: the random generator after pass {pass}");
+            }
+        }
+    }
+}

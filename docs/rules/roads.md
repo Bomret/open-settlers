@@ -327,7 +327,7 @@ recovered.
 
 The harness verbs: `remove` with the clicks `p@x,y` (the flag button) and `b@x,y` (the building placement `0x449a63`)
 and `road` with the fourth field `2` (bit 3 held), in `tools/GhidraDump/EmulateMapStart.java`. `road-splits.txt`
-(`tests/OpenSettlers.Tests/`) holds the lines of 19 runs: the split with the carrier in each state, with a good, on the
+(`src/Adapters.Tests/`) holds the lines of 19 runs: the split with the carrier in each state, with a good, on the
 west road, with no free settler, the refused nodes, the building with node state 6, and the three road clicks. The lines
 are expected values for the engine's split; `RoadSplitTests` replays the `split-*` runs.
 

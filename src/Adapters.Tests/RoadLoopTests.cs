@@ -1,0 +1,188 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// A road that ends at the flag it started from (docs/rules/roads.md: the commit accepts it). The castle at 15,5 has its flag
+// at 16,6 (slot 0). The loop leaves it east around the hexagon of the node 17,7 (17,6 18,7 18,8 17,8 16,7) and returns by a
+// last step of direction 5, so both ends sit at slot 0, in directions 0 and 2. A flag on the opposite corner, 18,8, splits it
+// into two roads between the same two flags: 0.0>1.5 and 1.3>0.2.
+[TestClass]
+public sealed class RoadLoopTests
+{
+    static readonly int[] Loop = [0, 1, 2, 3, 4, 5];
+
+    static Game Started()
+    {
+        var map = MapGenerator.Generate(
+            MadeProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
+        var game = GameFactory.Create(MadeProgram.RemovalTables(), map);
+        Apply(game, CommandKind.PlaceCastle, 15, 5);
+
+        return game;
+    }
+
+    static Game WithLoop()
+    {
+        var game = Started();
+        Apply(game, CommandKind.BuildRoad, 16, 6, Loop);
+
+        return game;
+    }
+
+    static void Apply(Game game, int kind, int x, int y, int[]? directions = null)
+    {
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = kind,
+                X = x,
+                Y = y,
+                Directions = directions,
+            }
+        );
+        game.Tick();
+    }
+
+    static void Run(Game game, int ticks)
+    {
+        for (var i = 0; i < ticks; i++)
+        {
+            game.Tick();
+        }
+    }
+
+    [TestMethod]
+    public void ARoadFromAFlagBackToItIsBuiltWithBothEndsAtTheFlag()
+    {
+        var game = WithLoop();
+
+        var road = game.Network.Roads.Single();
+        Assert.AreEqual((0, 0, 0, 2), (road.FromSlot, road.FromDirection.Value, road.ToSlot, road.ToDirection.Value));
+        CollectionAssert.AreEqual(Loop, road.Directions.Select(step => step.Value).ToArray());
+        Assert.AreEqual(
+            new LengthClass { Value = 2 },
+            game.Flags[0].Side(0).Length,
+            "class 2 for six steps at the start end"
+        );
+        Assert.AreEqual(new LengthClass { Value = 2 }, game.Flags[0].Side(2).Length, "and at the other end");
+        Assert.AreEqual(
+            new Direction { Value = 2 },
+            game.Flags[0].Side(0).FarDirection,
+            "each end names the direction of the other"
+        );
+        Assert.AreEqual(new Direction { Value = 0 }, game.Flags[0].Side(2).FarDirection);
+    }
+
+    [TestMethod]
+    public void TheLoopGetsOneCarrierThatWalksIt()
+    {
+        var game = WithLoop();
+
+        Run(game, 1500);
+
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "one carrier at the start end");
+        Assert.AreEqual(1, game.Flags[0].Side(2).Carriers, "and at the other end");
+        Assert.AreEqual(1, game.Settlers.Count(s => s is { Job: Carrier, Activity: WalksRoad or WaitsAtFlag }));
+    }
+
+    [TestMethod]
+    public void AFlagOnTheLoopGivesTwoRoadsBetweenTheSameTwoFlagsEachWithACarrier()
+    {
+        var game = WithLoop();
+        Run(game, 1500);
+
+        Apply(game, CommandKind.PlaceFlag, 18, 8);
+        Run(game, 1500);
+
+        Assert.AreEqual(2, game.Network.Roads.Count);
+        Assert.IsTrue(
+            game.Network.Roads.All(r => (r.FromSlot == 0 && r.ToSlot == 1) || (r.FromSlot == 1 && r.ToSlot == 0))
+        );
+        Assert.AreEqual(Loop.Length, game.Network.Roads.Sum(r => r.Directions.Count));
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "the first half");
+        Assert.AreEqual(1, game.Flags[1].Side(5).Carriers, "the first half at the new flag");
+        Assert.AreEqual(1, game.Flags[1].Side(3).Carriers, "the second half");
+        Assert.AreEqual(1, game.Flags[0].Side(2).Carriers, "the second half at the castle flag");
+        Assert.AreEqual(2, game.Settlers.Count(s => s is { Job: Carrier, Activity: WalksRoad or WaitsAtFlag }));
+    }
+
+    [TestMethod]
+    public void RemovingTheLoopFreesItsTablesOnce()
+    {
+        var game = WithLoop();
+        var bare = Started();
+        Run(game, 1500);
+
+        Apply(game, CommandKind.RemoveRoad, 18, 8);
+        Run(game, 1500);
+
+        Assert.AreEqual(0, game.Network.Roads.Count);
+        Assert.IsFalse(game.Flags[0].Side(0).CarrierOnTheWay, "no carrier is on the way to the road");
+        Assert.IsFalse(game.Flags[0].Side(2).CarrierOnTheWay);
+        Assert.AreEqual(
+            0,
+            game.Settlers.Count(s => s is { Job: Carrier, Activity: WalksRoad or WaitsAtFlag }),
+            "no carrier at work"
+        );
+        CollectionAssert.AreEqual(TestMaps.Roads(bare.Map), TestMaps.Roads(game.Map));
+    }
+
+    [TestMethod]
+    public void RemovingARoadWithSeveralNodesBesideTheClickClearsTheRoadBitsOfEveryNode()
+    {
+        var game = Started();
+        Apply(game, CommandKind.PlaceFlag, 20, 6);
+        Apply(game, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]);
+        var map = game.Map;
+
+        Apply(game, CommandKind.RemoveRoad, 17, 6);
+
+        // Direction 4 is left out: at the castle's flag 16,6 it is the mark of the castle at its north-west, which the
+        // take-down keeps, and no road of this test uses it.
+        CollectionAssert.AreEqual(
+            new[] { RoadSet.Empty, RoadSet.Empty, RoadSet.Empty, RoadSet.Empty, RoadSet.Empty },
+            Enumerable.Range(16, 5).Select(x => map.At(x, 6).Roads.Without(4)).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void TheClickRefusesTheFlagThatSplitTheLoopBecauseItsTwoRoadsGoToTheSameFlag()
+    {
+        var game = WithLoop();
+        Apply(game, CommandKind.PlaceFlag, 18, 8);
+        var roads = game.Network.Roads.ToList();
+
+        Apply(game, CommandKind.RemoveFlag, 18, 8);
+
+        Assert.IsNull(game.RemovalCommandAt(18, 8));
+        CollectionAssert.AreEquivalent(roads, game.Network.Roads.ToList());
+    }
+
+    // Taking down the flag that split the loop is in the class of the same name in src/Application.Tests: the original's click refuses
+    // the flag, so the join is reached through the take-down itself, which is internal to the application.
+
+    [TestMethod]
+    public void ARoadThatWouldCloseTheLoopInOneStepStaysImpossible()
+    {
+        // Out and straight back is the click that takes the last step back, so it leaves no road.
+        var game = Started();
+        var roads = TestMaps.Roads(game.Map);
+
+        Apply(game, CommandKind.BuildRoad, 16, 6, [0, 3]);
+
+        Assert.AreEqual(0, game.Network.Roads.Count);
+        CollectionAssert.AreEqual(roads, TestMaps.Roads(game.Map));
+    }
+}
