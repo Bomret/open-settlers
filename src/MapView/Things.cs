@@ -205,7 +205,7 @@ public sealed record Thing
 
     // The good a settler carries, named, as one value; none where he carries none (a carrier with a load, the settler who steps out
     // with a good or puts it down). A carrier handing a good over shows it only where the good has no original code, since his raw mode
-    // word is then left out (INV-0006); for an original good the mode word shows it, as before.
+    // word is then left out (INV-0006); for an original good the mode word shows it.
     static (string, string)[] CarriedGood(Settler settler, ContentCatalog catalog) =>
         Load(settler, catalog) is { } good ? [("carrying", GoodText(good))] : [];
 

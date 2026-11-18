@@ -90,7 +90,7 @@ public sealed class OriginalCodeBoundaryTests
         ),
         new(
             @"^src/(Domain/(RuleTables|MapObject|Fnv1a)|Application/(HutWork|StonecutterRules|FarmerRules))\.cs$",
-            @"(^|\W)(mapObject|sapling|Object)\s*\??\.\s*Code$",
+            @"(^|\W)(mapObject|sapling|Object)\s*\.\s*Code$",
             "a map object code is no original code of the catalog",
             onAccess: true
         ),
@@ -412,6 +412,19 @@ public sealed class OriginalCodeBoundaryTests
         CollectionAssert.AreEqual(new[] { "src/Application/HutWork.cs:1: Code read" }, entry);
         Assert.IsEmpty(heap);
         Assert.HasCount(1, used);
+    }
+
+    // A conditional access records as the bare token `Code`, so no allow-list entry matches it: it is reported.
+    [TestMethod]
+    public void AConditionalMapObjectCodeReadIsReportedBecauseNoEntryMatchesTheBareToken()
+    {
+        var (reported, used) = Classify(
+            Violations("src/Application/HutWork.cs", "var c = mapObject?.Code;"),
+            AllowList
+        );
+
+        CollectionAssert.AreEqual(new[] { "src/Application/HutWork.cs:1: Code read" }, reported);
+        Assert.IsEmpty(used);
     }
 
     [TestMethod]
