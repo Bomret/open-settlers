@@ -16,7 +16,10 @@ public sealed class EmulatorLaunchTests
 {
     const string Seed = "1234,5678,9ABC";
 
-    static string[] Emulate(params string[] commands)
+    static string[] Emulate(params string[] commands) => EmulateIn(null, commands);
+
+    // With a project folder, emulate.py keeps the project there (--project): the first launch imports, later ones reuse it.
+    static string[] EmulateIn(string? project, params string[] commands)
     {
         if (
             !(Environment.GetEnvironmentVariable("PATH") ?? "")
@@ -33,6 +36,7 @@ public sealed class EmulatorLaunchTests
                 PythonTool.InRepo("tools", "GhidraDump", "emulate.py"),
                 "--game",
                 TestProgram.OpenInstall().Root,
+                .. (project is null ? Array.Empty<string>() : ["--project", project]),
                 .. commands,
             ],
             realHeadless: true
@@ -92,5 +96,53 @@ public sealed class EmulatorLaunchTests
             Recorded(376),
             lines.Where(line => line.StartsWith("EMU supply ")).Select(Unlabelled).ToArray()
         );
+    }
+
+    // The carrier game of DrawVerbTests: a goods: game whose carrier is on its road at pass 100.
+    const string Draw = $"draw:100-101:17,20:goods:1:{Seed}:0:18,20:16,20:19,21,343:16,20,2:102:0::-1:5,0,7";
+
+    // A draw batch runs each command in a script instance of its own, and the instances share the cached map generation. The
+    // third command restores the generation after the second restored it and ran its passes on it.
+    [TestMethod]
+    public void EachCommandOfADrawBatchPrintsTheLinesOfASingleDrawCommand()
+    {
+        var single = Emulate(Draw);
+        var batch = Emulate(Draw, Draw, Draw);
+
+        for (var command = 1; command <= 3; command++)
+        {
+            var start = Array.IndexOf(batch, $"EMU draw command={command} ended");
+            Assert.IsTrue(start > 0, $"command {command} ended");
+            CollectionAssert.AreEqual(
+                single[1..],
+                batch[(start + 1)..].TakeWhile(line => !line.StartsWith("EMU draw command=")).ToArray(),
+                $"command {command}"
+            );
+        }
+    }
+
+    // A kept project (--project) after an earlier launch ran passes against it: the second launch runs the script against the
+    // imported program, and the supply game prints the recording only where no emulated write of the first launch persisted.
+    [TestMethod]
+    public void ACommandAgainstAKeptProjectPrintsTheLinesOfAFreshImport()
+    {
+        var project = Path.Combine(Path.GetTempPath(), "emulator-launch-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            EmulateIn(project, $"supply:1:{Seed}:0:18,20:40:400");
+            var lines = EmulateIn(project, $"supply:1:{Seed}:0:18,20:0:376");
+
+            CollectionAssert.AreEqual(
+                Recorded(376),
+                lines.Where(line => line.StartsWith("EMU supply ")).Select(Unlabelled).ToArray()
+            );
+        }
+        finally
+        {
+            if (Directory.Exists(project))
+            {
+                Directory.Delete(project, true);
+            }
+        }
     }
 }
