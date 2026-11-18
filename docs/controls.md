@@ -134,6 +134,15 @@ hut, the 64 nearest a fisher's, and the 7th to the 38th nearest a farm, across t
 castle, the other buildings, and a building taken down and burning show no area. The tint draws over the trees and figures and
 under the build markers. It follows every change of the game in the frame that shows it. The map view has no Work areas button.
 
+While Work areas is on and the Woodcutter, Stonecutter, Forester, Fisher, or Farm button is pressed, every node where that building
+fits shows a reach marker. A building fits where Build help would show its marker: the large-building marker for the farm, the
+small- or large-building marker for the others. A filled green disc means the worker would find a target from there: a tree, a
+node beside a stone heap, ground he may plant on, a free node at a shore, or a field he may harvest or sow. A red ring means he
+would find none. The marker judges the ground as it stands, before the building, its flag, and its road exist, so a target the
+building's own site would cover still counts. The markers show whether Build help is on or off, and draw over its markers. Before
+the castle stands, no gatherer fits, so no marker shows. Another build button, or none, shows no reach marker. The markers change
+with the pressed button and follow every change of the game in the frame that shows it.
+
 ### Speed
 
 The Speed button sets how fast the game runs. It shows the speed factor and starts at 1x, the original's normal speed

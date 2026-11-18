@@ -382,6 +382,12 @@ public partial class MapViewControl(
                             other.Button.ButtonPressed = false;
                         }
                     }
+
+                    // The reach markers follow the pressed build button.
+                    if (_workAreasButton.ButtonPressed)
+                    {
+                        Redraw();
+                    }
                 };
                 buttons.AddChild(button);
 
@@ -938,6 +944,7 @@ public partial class MapViewControl(
 
         // The work-area tint is judged once for the whole map and drawn in every wrap copy.
         var tintMesh = WorkAreaMesh();
+        var reachMesh = ReachMarkerMesh();
         _framesDrawn = _frameCounter;
         _spriteNodes.Clear();
         _waterNodes.Clear();
@@ -994,6 +1001,19 @@ public partial class MapViewControl(
                     {
                         Mesh = markerMesh,
                         Material = markerMaterial,
+                        ZAsRelative = false,
+                        ZIndex = 3,
+                    }
+                );
+            }
+
+            // The reach markers paint over the build markers of every copy, so both show where Build help is on too.
+            if (reachMesh is not null)
+            {
+                copy.AddChild(
+                    new MeshInstance2D
+                    {
+                        Mesh = reachMesh,
                         ZAsRelative = false,
                         ZIndex = 3,
                     }
@@ -1158,6 +1178,68 @@ public partial class MapViewControl(
         arrays.Resize((int)Mesh.ArrayType.Max);
         arrays[(int)Mesh.ArrayType.Vertex] = vertices;
         arrays[(int)Mesh.ArrayType.Color] = colors;
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+
+        return mesh;
+    }
+
+    // One mesh of the reach markers while Work areas and the build button of a gatherer are pressed: a filled green disc where the
+    // worker would find a target, a red ring where he would find none. Null where no marker shows.
+    ArrayMesh? ReachMarkerMesh()
+    {
+        if (_game is null || !_workAreasButton.ButtonPressed)
+        {
+            return null;
+        }
+
+        var pressed = _buildButtons
+            .Where(entry => entry.Button.ButtonPressed)
+            .Select(entry => (BuildingType?)entry.Type)
+            .FirstOrDefault();
+        if (pressed is not { } type)
+        {
+            return null;
+        }
+
+        var draws = ReachMarkerDraws.Of(_game, 0, type);
+        if (draws.Count == 0)
+        {
+            return null;
+        }
+
+        const int Sides = 12;
+        const float Outer = 5f;
+        const float Inner = 3f;
+        var inReach = new Color(0.2f, 0.9f, 0.2f);
+        var outOfReach = new Color(0.95f, 0.2f, 0.2f);
+        var vertices = new System.Collections.Generic.List<Vector2>();
+        var colors = new System.Collections.Generic.List<Color>();
+        foreach (var draw in draws)
+        {
+            var center = new Vector2(draw.X, draw.Y);
+            for (var side = 0; side < Sides; side++)
+            {
+                var from = Vector2.FromAngle(Mathf.Tau * side / Sides);
+                var to = Vector2.FromAngle(Mathf.Tau * (side + 1) / Sides);
+                if (draw.InReach)
+                {
+                    vertices.AddRange([center, center + from * Outer, center + to * Outer]);
+                    colors.AddRange([inReach, inReach, inReach]);
+                }
+                else
+                {
+                    vertices.AddRange([center + from * Inner, center + from * Outer, center + to * Outer]);
+                    vertices.AddRange([center + from * Inner, center + to * Outer, center + to * Inner]);
+                    colors.AddRange([outOfReach, outOfReach, outOfReach, outOfReach, outOfReach, outOfReach]);
+                }
+            }
+        }
+
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
+        arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 

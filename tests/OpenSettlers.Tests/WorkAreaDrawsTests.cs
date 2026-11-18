@@ -34,11 +34,11 @@ public sealed class WorkAreaDrawsTests
         return folder?.FullName ?? throw new DirectoryNotFoundException("no project.godot above the test assembly");
     }
 
-    static RuleTables BasicTables() =>
+    internal static RuleTables BasicTables() =>
         new OpenSettlersRuleTables(Path.Combine(RepositoryRoot(), "content", "basic")).Read();
 
-    // A layout of a flat meadow of size 1 with the castle at 10,10 and the finished buildings given.
-    static Layout Meadow(string buildings)
+    // A layout of a flat meadow of size 1 with the castle at 10,10, the finished buildings given, and the objects given.
+    internal static Layout Meadow(string buildings, string objects = "")
     {
         var rows = string.Join(",", Enumerable.Repeat("\"" + new string('1', 32) + "\"", 32));
         var terrain = string.Join(",", Enumerable.Repeat("\"" + new string('g', 32) + "\"", 32));
@@ -48,7 +48,7 @@ public sealed class WorkAreaDrawsTests
               "seed": "1234567812345678",
               "height": [{{rows}}],
               "terrain": [{{terrain}}],
-              "objects": [],
+              "objects": [{{objects}}],
               "castle": {"x": 10, "y": 10, "stock": {"scythe": 1, "fishing-rod": 1} },
               "buildings": [{{buildings}}]
             }
@@ -58,9 +58,9 @@ public sealed class WorkAreaDrawsTests
         return read.Layout ?? throw new AssertFailedException(string.Join("; ", read.Problems));
     }
 
-    static Game Applied(string buildings, RuleTables? tables = null)
+    internal static Game Applied(string buildings, RuleTables? tables = null, string objects = "")
     {
-        var layout = Meadow(buildings);
+        var layout = Meadow(buildings, objects);
         var game = GameFactory.Create(tables ?? BasicTables(), layout.BuildMap());
         Assert.IsNull(layout.Apply(game));
 

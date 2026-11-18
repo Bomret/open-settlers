@@ -295,6 +295,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/work-areas.play` on the game view with seed `1234567812345678` and size 1: the castle's click places it at 24,19 and a
   stonecutter's site goes to 28,18, near the heaps at 26,17 and 24,15. The script shoots the work-area tint around the site with Work
   areas on and off, checks the digest is the same before and after the press, and checks that a new seed turns the button off.
+- `play/reach-markers.play` on the game view with seed `1234567812345678` and size 1: the castle's click places it at 24,13. With Work
+  areas on and the Stonecutter button pressed, the shots show green discs near the heaps at 24,15 and 26,17 and red rings around
+  24,9, both kinds over Build help's markers, and none once the button is released.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the

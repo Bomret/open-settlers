@@ -1,0 +1,26 @@
+# The reach markers of the work-area overlay: with Work areas on and the Stonecutter button pressed, each node where a
+# stonecutter's hut fits shows a green disc where a stone heap lies in reach and a red ring where none does.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   sh tools/play-run.sh reach-markers --game-view --seed 1234567812345678 --size 1 --fps 10
+# The castle's click places it at 24,13. The heaps at 24,15 and 26,17 lie in reach of the sites south of it; none lies in
+# reach of the sites around 24,9.
+click-tile 24 13
+wait 0.3
+expect-at 24 13 building
+expect-at 24 15 object
+expect-at 26 17 object
+button Work areas
+button Stonecutter
+wait 0.3
+shot near 25 16 3 2
+shot far 24 9 3 2
+
+# Build help draws its markers under the reach markers; both show.
+button Build help
+wait 0.3
+shot with-build-help 24 9 3 2
+
+# The Stonecutter button released: no reach marker.
+button Stonecutter
+wait 0.3
+shot released 24 9 3 2
