@@ -23,6 +23,15 @@ public sealed class AssetBrowserStateTests
     static AssetBrowserState Open(params IAssetKind[] kinds) => AssetBrowserState.Open(new FakeAssets(kinds));
 
     [TestMethod]
+    public void APortWithNoUsableDataGivesOneMessageAndNoCategories()
+    {
+        var state = AssetBrowserState.Open(LaunchInstall.Assets(LaunchArgs.Parse([], null)));
+
+        Assert.AreEqual($"no install given: {LaunchInstall.HowToGive}", state.Message);
+        Assert.IsEmpty(state.Categories);
+    }
+
+    [TestMethod]
     public void TwoKindsOfOneNameOpenTheBrowserOnAMessageThatNamesIt()
     {
         var state = Open(new ListedKind("text", Item("text", "a")), new ListedKind("text", Item("text", "b")));

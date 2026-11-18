@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
+using OpenSettlers.Import.HistoryEdition;
 using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
@@ -14,7 +15,7 @@ public sealed class InstallTests
     [TestMethod]
     public void AFolderWithTheProgramOpensAsAnInstall()
     {
-        using var fake = new FakeInstall();
+        using var fake = new FakeInstall().Put("snd/01.SND", [0x80, 0x90]);
 
         var opened = LaunchInstall.TryOpen(
             LaunchArgs.Parse(["--game", fake.Root], null),
@@ -23,7 +24,9 @@ public sealed class InstallTests
         );
 
         Assert.IsTrue(opened);
-        Assert.AreEqual(fake.Root, install!.Root);
+        // The install is the one at the folder: its assets port lists the file the folder holds.
+        var files = new HistoryEditionAssets(install!).Kinds().SelectMany(kind => kind.Enumerate()).Select(a => a.File);
+        CollectionAssert.Contains(files.ToList(), "snd/01.SND");
         Assert.IsNull(problem);
     }
 

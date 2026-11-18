@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Assets;
-using OpenSettlers.Formats;
 using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
@@ -16,22 +14,6 @@ public sealed class ArchiveEntryKindTests
     const int Rows = 3768;
 
     static readonly string[] Files = ["loca/SPAD.PA", "loca/SPAE.PA", "loca/SPAF.PA"];
-
-    // A kind that claims the entries first to last. It has no parameterless constructor, so Discover skips it.
-    sealed class ClaimingKind(string name, int first, int last) : ArchiveEntryKind
-    {
-        public override string Name => name;
-
-        public override bool Claims(int entry) => entry >= first && entry <= last;
-
-        protected override Preview Read(Archive archive, ArchiveEntry entry, ReadOnlyMemory<byte> data) =>
-            new ClaimedPreview { Summary = $"{data.Length} bytes", Entry = entry };
-    }
-
-    sealed record ClaimedPreview : Preview
-    {
-        public required ArchiveEntry Entry { get; init; }
-    }
 
     static FakeInstall InstallWith(byte[] archive)
     {
@@ -63,7 +45,7 @@ public sealed class ArchiveEntryKindTests
         using var fake = InstallWith(ArchiveBytes.Build(Rows, new Dictionary<int, byte[]> { [12] = [1] }));
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, RealKinds.Over(args, new UnrecoveredEntryKind()));
+        var report = AssetCheck.Run(args, NamedKinds.Over(args, "unrecovered"));
 
         Assert.AreEqual(1, report.ExitCode);
         var line = report.Lines.Single(l => l.StartsWith("FAIL loca/SPAF.PA entry 12:"));
@@ -77,10 +59,7 @@ public sealed class ArchiveEntryKindTests
         using var fake = new FakeInstall().Put(Files[0], Small()).Put(Files[1], Small()[..20]);
         var args = LaunchArgs.Parse(["--game", fake.Root], null);
 
-        var report = AssetCheck.Run(
-            args,
-            RealKinds.Over(args, new ClaimingKind("palette", 1, 7), new UnrecoveredEntryKind())
-        );
+        var report = AssetCheck.Run(args, NamedKinds.Over(args, "palette", "unrecovered"));
 
         Assert.AreEqual(1, report.Lines.Count(l => l.StartsWith($"FAIL {Files[1]}:")));
         Assert.AreEqual(1, report.Lines.Count(l => l.StartsWith($"FAIL {Files[2]}:")));
@@ -104,10 +83,7 @@ public sealed class ArchiveEntryKindTests
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(
-            args,
-            RealKinds.Over(args, new PaletteKind(), new SpriteKind(), new RuleDataKind(), new UnrecoveredEntryKind())
-        );
+        var report = AssetCheck.Run(args, NamedKinds.Over(args, "palette", "sprite", "rule data", "unrecovered"));
 
         Assert.AreEqual(0, report.ExitCode);
         CollectionAssert.Contains(

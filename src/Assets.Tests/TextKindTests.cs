@@ -26,7 +26,7 @@ public sealed class TextKindTests
 
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, RealKinds.Over(args, new TextKind()));
+        var report = AssetCheck.Run(args, NamedKinds.Over(args, "text"));
 
         Assert.AreEqual(1, report.ExitCode);
         Assert.IsTrue(report.Lines.Any(l => l.StartsWith("FAIL loca/ger.txt: line 2")));
