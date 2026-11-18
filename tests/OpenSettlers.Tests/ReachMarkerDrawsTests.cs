@@ -127,6 +127,30 @@ public sealed class ReachMarkerDrawsTests
         );
     }
 
+    // The same on the History Edition tables, where the farm is a large building.
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    [DataRow(9, 1, 128)]
+    [DataRow(0xc, 7, 38)]
+    public void With_the_History_Edition_tables_the_forester_and_the_farmer_show_their_target_test_over_their_entries(
+        int code,
+        int first,
+        int last
+    )
+    {
+        var game = WorkAreaDrawsTests.Applied("", TestProgram.Tables(), Heap);
+        var type = new BuildingType { Code = code };
+        var search = game.SearchOf(type)!;
+
+        var shown = Shown(game, type);
+
+        Assert.IsTrue(shown.Count > 0);
+        CollectionAssert.AreEquivalent(
+            Expected(game, type, first, last, (x, y) => search.Accepts(game.Map, x, y)).ToList(),
+            shown.ToList()
+        );
+    }
+
     [TestMethod]
     public void A_sawmill_shows_no_reach_marker()
     {
