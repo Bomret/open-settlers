@@ -111,7 +111,8 @@ public sealed class LayoutSettlersTests
                     workers ?? TestProgram.MadeWorkers(stonecutter: true, fisher: true),
                     materialOrder,
                     blowSteps
-                )
+                ),
+                TestCatalog.Jobs()
             ),
             noBuildingDoor: 8,
             distribution: distribution,

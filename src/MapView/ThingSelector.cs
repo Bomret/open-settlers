@@ -70,7 +70,11 @@ public sealed record ThingSelector
             return (new ThingSelector { Text = text, RawCode = code }, null);
         }
 
-        return Array.IndexOf(Kinds, text) >= 0 || NameTable.IsName(text) || BuildingNames.Contains(text)
+        return
+            Array.IndexOf(Kinds, text) >= 0
+            || NameTable.IsName(text)
+            || Job.Named(text) is not null
+            || BuildingNames.Contains(text)
             ? (
                 new ThingSelector
                 {

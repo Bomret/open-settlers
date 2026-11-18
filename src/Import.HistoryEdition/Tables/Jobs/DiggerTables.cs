@@ -4,13 +4,9 @@ namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The digger's tables: his figure adds from the immediates of his handler (<c>0x43fa87</c>), where the stub of job 2 must jump to
-/// it, the request a large site makes for him (<c>0x42d52a</c>), and his name and state. Every frame of his work is below 0x80, so
+/// it, the request a large site makes for him (<c>0x42d52a</c>), and his state. Every frame of his work is below 0x80, so
 /// the walk's add is the one he is drawn by.
 /// </summary>
-[JobName(
-    "digger",
-    "Digger; the large site's handler 0x42d328 asks for job 2 with the tool good 16 (request at 0x42d52a) and the job's state 8 changes the heights of the site's node and its six neighbours by one a pass (0x43e45e); docs/rules/digging.md"
-)]
 [StateName(
     8,
     "digs",

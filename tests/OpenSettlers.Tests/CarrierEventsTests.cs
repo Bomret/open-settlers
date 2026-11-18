@@ -224,7 +224,7 @@ public sealed class CarrierEventsTests
             var (state, _) = game.History.StateAt(request.Thing, tick);
             var raw = SettlerEncoder.Fields(settler, TestCatalog.Default);
             compared++;
-            Assert.AreEqual(settler.Job.Code, state!.Get("job"), $"job at tick {tick}");
+            Assert.AreEqual(JobWords.Of(TestCatalog.Default, settler.Job), state!.Get("job"), $"job at tick {tick}");
             Assert.AreEqual(raw.Mode, state.Get("mode"), $"mode at tick {tick}");
             Assert.AreEqual(raw.Target, state.Get("target"), $"target at tick {tick}");
             if (game.History.EventsOf(request.Thing).Any(e => e.Tick == tick))

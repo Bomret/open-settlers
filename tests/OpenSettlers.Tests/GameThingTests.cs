@@ -271,10 +271,10 @@ public sealed class GameThingTests
         Assert.AreEqual(game.Settlers.Count, settlers.Count);
         Assert.IsTrue(
             settlers.Contains(
-                $"settler {first.X},{first.Y} job={first.Job} state=0x{raw.State:x2} player={first.Player} "
+                $"settler {first.X},{first.Y} job={JobWords.Of(TestCatalog.Default, first.Job)} state=0x{raw.State:x2} player={first.Player} "
                     + $"mode=0x{raw.Mode:x2} target={raw.Target} next=0x{raw.Next:x2} heading={raw.Heading} "
                     + $"frame={first.Frame} timer={first.Timer} stamp={raw.Stamp} id=settler#0.1 "
-                    + $"{NameTable.JobName(first.Job.Code)} {NameTable.StateName(first.Activity.Code)}".TrimEnd()
+                    + $"{first.Job.Name} {NameTable.StateName(first.Activity.Code)}".TrimEnd()
             ),
             string.Join("\n", settlers.Take(3))
         );

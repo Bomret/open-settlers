@@ -420,7 +420,21 @@ static class ProgramTablesImporter
     /// <summary>The good class table as the program holds it, decoded: the request of each of the 32 good numbers, null for storage at once.</summary>
     internal static GoodClass?[] GoodClassTable(byte[] exe) => GoodClasses(Slice(exe, GoodClassAddress, 2 * GoodSlots));
 
-    // The catalog of the original's 26 goods and 12 building types. A good has its code, its name and evidence (GoodTables), its request
+    /// <summary>
+    /// The jobs of the catalog: each job of the engine that has a stable name, with the name and evidence its type declares and its number
+    /// as the original's code. The jobs of the original that the engine does not port are no entries.
+    /// </summary>
+    internal static ImmutableArray<JobEntry> JobEntries { get; } =
+    [
+        .. Job.Ported.Select(job => new JobEntry
+        {
+            Name = job.Name,
+            NameEvidence = job.NameEvidence,
+            OriginalCode = job.OriginalCode,
+        }),
+    ];
+
+    // The catalog of the original's 26 goods, 12 building types, and ported jobs. A good has its code, its name and evidence (GoodTables), its request
     // from the class table, its counter from the kind table, its rank from the routine of the transport priorities, and the two rules the
     // program holds as comparisons of the good's code (the handover's counter, resource 1). A building type has its code, name, and
     // evidence (BuildingTables) and the facts of its tables (Buildings).
@@ -449,13 +463,14 @@ static class ProgramTablesImporter
                     CountsAgainstResource1 = GoodTables.CountsAgainstResource1(good.Code),
                     TransportRank = ranks[good.Code - 1],
                 }),
-                buildings
+                buildings,
+                JobEntries
             );
         }
         catch (ArgumentException e)
         {
             throw new InvalidDataException(
-                $"Siedler1.exe holds no goods and building types as expected: {e.Message}",
+                $"Siedler1.exe holds no goods, building types, and jobs as expected: {e.Message}",
                 e
             );
         }
@@ -554,12 +569,12 @@ static class ProgramTablesImporter
     /// </summary>
     internal static void ExpectStub(byte[] exe, Job job, int handler, string what)
     {
-        var stub = JobStubAddress + JobStubSize * job.Code;
+        var stub = JobStubAddress + JobStubSize * job.OriginalCode!.Value;
         Expect(exe, stub, [0xe9, .. BitConverter.GetBytes(handler - (stub + 5))], what);
     }
 
     // A request for a worker: mov eax, job; mov [edi], eax; mov eax, tool; mov [edi+0x18], eax. The tool word halved is the good. A job
-    // the jobs' tables modules do not name, and a tool with no entry among the goods, refuse the program.
+    // with no entry among the catalog's jobs (JobEntries), and a tool with no entry among the goods, refuse the program.
     internal static WorkerRequest WorkerRequest(byte[] exe, int address)
     {
         var code = Slice(exe, address, 15);
@@ -576,7 +591,7 @@ static class ProgramTablesImporter
         }
 
         int number = code[1];
-        if (!JobTablesRegistry.JobNames.Any(job => job.Code == number))
+        if (!JobEntries.Any(job => job.OriginalCode == number))
         {
             throw new InvalidDataException(
                 $"Siedler1.exe holds no request for a worker at 0x{address:x}: the job {number} has no entry among the jobs."

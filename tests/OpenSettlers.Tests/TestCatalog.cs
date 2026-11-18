@@ -95,7 +95,8 @@ static class TestCatalog
                         kinds is not null && code < kinds.Length ? kinds[code] : (byte)0
                     )
                 ),
-            buildings ?? Buildings()
+            buildings ?? Buildings(),
+            Jobs()
         );
 
     /// <summary>The catalog of <see cref="Of"/> with its defaults: what an exporter reads a made-up game's goods from.</summary>
@@ -116,7 +117,8 @@ static class TestCatalog
                         CountsAgainstResource1 = false,
                     }
                 ),
-            buildings ?? Buildings()
+            buildings ?? Buildings(),
+            Jobs()
         );
 
     /// <summary>
@@ -179,6 +181,18 @@ static class TestCatalog
             };
         });
 
+    /// <summary>
+    /// The jobs of the engine as catalog entries, each with the number of its type as its original code, as the History Edition has them:
+    /// what an exporter reads a made-up game's jobs from. <paramref name="codes"/> false gives entries with no code, as a set of its own has.
+    /// </summary>
+    public static IEnumerable<JobEntry> Jobs(bool codes = true) =>
+        Job.Ported.Select(job => new JobEntry
+        {
+            Name = job.Name,
+            NameEvidence = codes ? job.NameEvidence : null,
+            OriginalCode = codes ? job.OriginalCode : null,
+        });
+
     /// <summary>A good that only a made-up catalog data entry gives: it has no original code.</summary>
     public static readonly Good AiToken = new() { Name = "ai-token" };
 
@@ -196,7 +210,8 @@ static class TestCatalog
                     TransportRank = 100,
                 },
             ],
-            Buildings(door)
+            Buildings(door),
+            Jobs()
         );
 
     /// <summary>One good of <see cref="Names"/> with its code and the given facts.</summary>

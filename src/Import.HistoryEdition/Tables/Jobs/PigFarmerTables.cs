@@ -5,12 +5,8 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// <summary>
 /// The pig farmer's tables: his figure adds from the immediates of his handler (<c>0x43ff56</c>), where the stub of job 12 must jump to it,
 /// the rank his request for grain starts from (the player word at <c>+0x158</c>), the table of the odds with which the pigs grow, and his
-/// name and state.
+/// state.
 /// </summary>
-[JobName(
-    "pig-farmer",
-    "Pig farmer; the handler 0x42e0fa of the building type 0xe asks for job 12 with no tool, its start 0x43d179 asks for grain (class 4) and its state 0x25 takes grain out of the building (0x4333c1) and carries a pig (good 2, 0x433577) out to the flag; inferred name, docs/rules/food-buildings.md, docs/rules/pig-farming.md"
-)]
 [StateName(
     0x25,
     "tends-pigs",

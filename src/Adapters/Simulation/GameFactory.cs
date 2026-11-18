@@ -28,6 +28,7 @@ public static class GameFactory
     {
         GoodWords.Check(tables.Catalog);
         BuildingWords.Check(tables.Catalog);
+        JobWords.Check(tables.Catalog);
         var clock = new GameClock();
         var castle = new CastleStock(tables.Catalog);
         var flags = new FlagTable();

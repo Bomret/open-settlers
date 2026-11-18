@@ -22,10 +22,12 @@ public sealed class SettlerShapesTests
     [TestMethod]
     public void TheJobsWithAWalkHomeArrivalOfTheirOwnDoNotArriveGenerically()
     {
-        foreach (var code in new[] { 5, 7, 8, 11, 14, 20, 22, 26 })
+        foreach (var code in new[] { 5, 7, 8, 11, 14, 22, 26 })
         {
             Assert.IsFalse(Job.Of(code).ArrivesHomeGenerically, $"job {code}");
         }
+
+        Assert.IsFalse(new UnportedJob(20) { Generic = false }.ArrivesHomeGenerically);
     }
 
     [TestMethod]

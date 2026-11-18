@@ -24,20 +24,34 @@ public sealed class CastleRoster(
     RuleTables tables
 ) : ICastleRoster
 {
-    // The jobs of the castle's 20 first settlers in the order of their slots (docs/rules/castle.md); a job is the
-    // byte 0 of the original's item shifted right by 2.
+    // The jobs of the castle's 20 first settlers in the order of their slots (docs/rules/castle.md). The jobs the engine does not port
+    // are the original's numbers 18, 20 (which the table at 0x437dfb excepts from the generic arrival home), and 9.
     static readonly Job[] CastleJobs =
     [
-        .. new[] { 4, 21, 21, 21, 21, 21, 22, 22, 22, 18, 5, 6, 7, 2, 3, 11, 20, 20, 9, 9 }.Select(code =>
-            Job.Of(code)
-        ),
+        new CastleSettler(),
+        new Jobless(),
+        new Jobless(),
+        new Jobless(),
+        new Jobless(),
+        new Jobless(),
+        new Knight(0),
+        new Knight(0),
+        new Knight(0),
+        new UnportedJob(18),
+        new Woodcutter(),
+        new Sawmiller(),
+        new Stonecutter(),
+        new Digger(),
+        new Builder(),
+        new Fisher(),
+        new UnportedJob(20) { Generic = false },
+        new UnportedJob(20) { Generic = false },
+        new UnportedJob(9),
+        new UnportedJob(9),
     ];
 
     // The job whose waiting settler's turn in the castle takes another branch (not ported): the original's job 10.
-    static readonly Job UnportedWaitingJob = Job.Of(10);
-
-    // The number of jobs the castle's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
-    const int JobCount = 32;
+    static readonly Job UnportedWaitingJob = new UnportedJob(10);
 
     // The castle's status bit 4, the only status bit it has besides the bit of its worker inside, with no recovered meaning in the
     // castle. It is the bit Building.AtWork names, so the castle reads at work from its placement.
@@ -67,10 +81,6 @@ public sealed class CastleRoster(
     // The entry of a job in the castle's list of waiting settlers.
     ref ushort Entry(Job job) => ref CollectionsMarshal.GetValueRefOrAddDefault(_waiting, job, out _);
 
-    /// <summary>The castle's list of waiting settlers, by job: the slot of the settler that waits there, 0 for none.</summary>
-    public IReadOnlyList<ushort> WaitingList =>
-        [.. Enumerable.Range(0, JobCount).Select(code => _waiting.GetValueOrDefault(Job.Of(code)))];
-
     /// <summary>The settlers a request has sent out that have not left the castle yet (word at 0x4a of the storage item).</summary>
     public int LeavingCount { get; private set; }
 
@@ -86,7 +96,7 @@ public sealed class CastleRoster(
     }
 
     /// <summary>The slot of the settler that waits in the castle's list for a job, 0 for none.</summary>
-    public int Waiting(Job job) => Entry(job);
+    public int Waiting(Job job) => _waiting.GetValueOrDefault(job);
 
     void ICastleRoster.WorkerSent() => LeavingCount++;
 
@@ -248,9 +258,9 @@ public sealed class CastleRoster(
     // (docs/rules/woodcutting.md, "The random generator").
     void Idle(int slot, Settler settler)
     {
-        if (settler.Job.IsKnightOrAbove)
+        if (settler.Job is Knight knight)
         {
-            KnightIdle(slot, settler);
+            KnightIdle(slot, settler, knight);
         }
         else if (settler.Job != UnportedWaitingJob)
         {
@@ -261,10 +271,10 @@ public sealed class CastleRoster(
     // A knight waiting in the castle (0x43910b and its three siblings). When its timer has run out it draws until a draw is
     // below its level's limit, which promotes it (job plus one, timer 6000, and its entry in the castle's list moves to
     // the new job), adding 6000 to the timer for each draw above it until that wraps. The last level only waits.
-    void KnightIdle(int slot, Settler settler)
+    void KnightIdle(int slot, Settler settler, Knight knight)
     {
-        var level = settler.Job.KnightLevel;
-        if (level < PromotionLimits.Length)
+        var level = knight.Level;
+        if (knight.CanBePromoted)
         {
             var delta = (ushort)(clock.Now - settler.Stamp);
             settler.Stamp = clock.Now;
@@ -277,7 +287,7 @@ public sealed class CastleRoster(
                     if (draws.Draw() < PromotionLimits[level])
                     {
                         Entry(settler.Job) = 0;
-                        settler.TakeUp(settler.Job.Promoted);
+                        settler.TakeUp(knight.Promoted);
                         settler.Timer = KnightTimerStep;
                         break;
                     }

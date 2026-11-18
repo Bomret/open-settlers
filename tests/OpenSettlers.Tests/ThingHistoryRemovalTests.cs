@@ -254,7 +254,7 @@ public sealed class ThingHistoryRemovalTests
                     var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
                     int[] expected =
                     [
-                        s.Job.Code,
+                        JobWords.Of(TestCatalog.Default, s.Job),
                         raw.State,
                         s.Player,
                         raw.Mode,

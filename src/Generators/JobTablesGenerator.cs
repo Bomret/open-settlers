@@ -11,10 +11,10 @@ namespace OpenSettlers.Generators;
 
 /// <summary>
 /// Writes <c>JobTablesRegistry</c> (ADR 0016), which builds every tables module of the compilation that declares
-/// <c>OpenSettlers.Import.HistoryEdition.JobTables&lt;TJob&gt;</c>, and lists the job and state names the modules state with
-/// <c>JobNameAttribute</c> and <c>StateNameAttribute</c>. A generic module, a module the registry cannot reach, a module with no
+/// <c>OpenSettlers.Import.HistoryEdition.JobTables&lt;TJob&gt;</c>, and lists the state names the modules state with
+/// <c>StateNameAttribute</c>. A generic module, a module the registry cannot reach, a module with no
 /// accessible parameterless constructor, a second module for
-/// one job, two modules that name one job or one state, a module that names one state twice, and a module that names a state the
+/// one job, two modules that name one state, a module that names one state twice, and a module that names a state the
 /// assembly's <c>CoreStateCodesAttribute</c> lists are build errors.
 /// </summary>
 [Generator]
@@ -35,15 +35,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         "TAB002",
         "A job has two tables modules",
         "The job tables modules '{0}' and '{1}' are both for the job '{2}'",
-        "OpenSettlers.Jobs",
-        DiagnosticSeverity.Error,
-        true
-    );
-
-    static readonly DiagnosticDescriptor SharedJobName = new(
-        "TAB003",
-        "Two job tables modules name one job",
-        "The job tables modules '{0}' and '{1}' both name the job '{2}'",
         "OpenSettlers.Jobs",
         DiagnosticSeverity.Error,
         true
@@ -152,9 +143,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             return null;
         }
 
-        var jobName = Attributes(type, "JobNameAttribute", tables)
-            .Select(attribute => Name(attribute, 0))
-            .FirstOrDefault();
         var states = Attributes(type, "StateNameAttribute", tables)
             .Select(attribute => new Named((int)attribute.ConstructorArguments[0].Value!, Name(attribute, 1)))
             .ToArray();
@@ -169,7 +157,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             ),
             generic,
             unreachable,
-            jobName,
             new Sequence<Named>(states),
             Place.Of(declaration.Identifier.GetLocation())
         );
@@ -210,7 +197,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
 
         var kept = new List<Module>();
         var jobs = new Dictionary<string, Module>();
-        var jobNames = new Dictionary<string, Module>();
         var states = new Dictionary<int, Module>();
         foreach (var module in candidates)
         {
@@ -258,14 +244,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
                 continue;
             }
 
-            if (module.JobName is { } jobName && jobNames.TryGetValue(jobName.Name, out other))
-            {
-                output.ReportDiagnostic(
-                    Diagnostic.Create(SharedJobName, module.Place.ToLocation(), other.Name, module.Name, jobName.Name)
-                );
-                continue;
-            }
-
             var clash = module.States.Items.FirstOrDefault(state => states.ContainsKey(state.Code));
             if (clash is not null)
             {
@@ -282,11 +260,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
             }
 
             jobs[module.Job] = module;
-            if (module.JobName is { } name)
-            {
-                jobNames[name.Name] = module;
-            }
-
             foreach (var state in module.States.Items)
             {
                 states[state.Code] = module;
@@ -325,20 +298,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         text.AppendLine("    ];");
         text.AppendLine();
         text.AppendLine(
-            "    /// <summary>The job names the modules state: the job's number, the name, and the evidence.</summary>"
-        );
-        text.AppendLine("    internal static readonly (int Code, string Name, string Evidence)[] JobNames =");
-        text.AppendLine("    [");
-        foreach (var module in modules.Where(module => module.JobName is not null))
-        {
-            text.AppendLine(
-                $"        (global::{module.Job}.Number, {Literal(module.JobName!.Name)}, {Literal(module.JobName.Evidence)}),"
-            );
-        }
-
-        text.AppendLine("    ];");
-        text.AppendLine();
-        text.AppendLine(
             "    /// <summary>The state names the modules state: the state's code, the name, and the evidence.</summary>"
         );
         text.AppendLine("    internal static readonly (int Code, string Name, string Evidence)[] StateNames =");
@@ -361,19 +320,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
     /// <summary>A state the module names.</summary>
     sealed record Named(int Code, Text Text);
 
-    /// <summary>A list that compares by its items, so that a model holding it compares equal across compilations.</summary>
-    sealed class Sequence<T>(T[] items) : System.IEquatable<Sequence<T>>
-    {
-        public T[] Items { get; } = items;
-
-        public bool Equals(Sequence<T>? other) => other is not null && Items.SequenceEqual(other.Items);
-
-        public override bool Equals(object? obj) => Equals(obj as Sequence<T>);
-
-        public override int GetHashCode() =>
-            Items.Aggregate(17, (hash, item) => hash * 31 + (item?.GetHashCode() ?? 0));
-    }
-
     /// <summary>
     /// What the generator keeps of a module: its type, its job type, whether it declares the constructor the registry calls, whether
     /// it or a type it is nested in is generic, whether it or a type it is nested in is private or protected, its names, and where it
@@ -386,7 +332,6 @@ public sealed class JobTablesGenerator : IIncrementalGenerator
         bool HasConstructor,
         bool Generic,
         bool Unreachable,
-        Text? JobName,
         Sequence<Named> States,
         Place Place
     );
