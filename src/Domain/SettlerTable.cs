@@ -14,6 +14,21 @@ public sealed class SettlerTable : IReadOnlyList<Settler>
     /// <summary>The number of settlers.</summary>
     public int Count => _settlers.Count;
 
+    /// <summary>
+    /// The size of the original's settler table on the map, <see cref="SizeOf"/>; <see cref="int.MaxValue"/> for a table built
+    /// without one.
+    /// </summary>
+    public int Capacity { get; init; } = int.MaxValue;
+
+    /// <summary>
+    /// Whether the table takes no more settlers. The original's slot 0 is a dummy that <c>MapGen_InitParams</c> (<c>0x421530</c>)
+    /// takes from the table's free count, so a game holds one settler less than <see cref="Capacity"/>; this table has no dummy.
+    /// </summary>
+    public bool IsFull => Count >= Capacity - 1;
+
+    /// <summary>The size of the settler table on a map of the size: (width / 32) * (height / 32) * 500 (<c>Map_SetGeometry</c>, <c>0x42195c</c>).</summary>
+    public static int SizeOf(MapSize size) => size.Width / 32 * (size.Height / 32) * 500;
+
     /// <summary>The settler in the slot.</summary>
     public Settler this[int slot] => _settlers[slot];
 

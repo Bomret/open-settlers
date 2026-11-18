@@ -60,7 +60,8 @@ public enum ContentSetName
 /// names the known sets (<see cref="KnownContentSets"/>).
 /// <c>--stock &lt;0..40&gt;</c> sets the start stock level of the human player (<see cref="Stock"/>) and belongs to
 /// <c>--game-view</c> without a layout only; a value that is no integer from 0 to 40, a repeat, or another mode is a bad argument.
-/// Two different mode flags with <c>--stock</c> give only the mode problem.
+/// Two different mode flags with <c>--stock</c> give only the mode problem. <c>--rate &lt;0..40&gt;</c> sets the settler rate of the
+/// human player (<see cref="Rate"/>) under the same rules as <c>--stock</c>.
 /// <c>--minimized</c> takes no value and minimizes the window of a play run (<see cref="Minimized"/>); without
 /// <c>--play</c>, or repeated, it is a bad argument. <c>--play</c> under Movie Maker whose window started at any size
 /// other than <see cref="PlayWindowWidth"/> x <see cref="PlayWindowHeight"/> is a bad argument; without Movie Maker only
@@ -111,6 +112,9 @@ public sealed class LaunchArgs
     /// <summary>The flag that gives the start stock level of the human player in the game view.</summary>
     public const string StockFlag = "--stock";
 
+    /// <summary>The flag that gives the settler rate of the human player in the game view.</summary>
+    public const string RateFlag = "--rate";
+
     /// <summary>The flag that minimizes the window of a play run.</summary>
     public const string MinimizedFlag = "--minimized";
 
@@ -126,6 +130,9 @@ public sealed class LaunchArgs
 
     /// <summary>The highest start stock level the free-game screen's bar sets.</summary>
     const int MaxStock = 40;
+
+    /// <summary>The highest settler rate the free-game screen's bar sets.</summary>
+    const int MaxRate = 40;
 
     /// <summary>The known content sets as the flag spells them, which the refusals name.</summary>
     const string KnownContentSets = "basic, history-edition";
@@ -162,6 +169,12 @@ public sealed class LaunchArgs
     /// game then takes the level the seed draws (<see cref="StartStock.LevelOf"/>).
     /// </summary>
     public int? Stock { get; init; }
+
+    /// <summary>
+    /// The settler rate the rate flag gave, 0 to <see cref="MaxRate"/>; null when no valid rate flag was given, and the game then
+    /// takes the rate the seed draws (<see cref="StartStock.SettlerRateOf"/>).
+    /// </summary>
+    public int? Rate { get; init; }
 
     /// <summary>The play script path as given; null when no valid play flag was given.</summary>
     public string? Play { get; init; }
@@ -206,11 +219,23 @@ public sealed class LaunchArgs
         var contentSetGiven = false;
         int? stock = null;
         var stockGiven = false;
+        int? rate = null;
+        var rateGiven = false;
         var minimized = false;
         for (var i = 0; i < args.Length; i++)
         {
             var flag = args[i];
-            if (flag is GameFlag or SeedFlag or SizeFlag or PlayFlag or LayoutFlag or ContentSetFlag or StockFlag)
+            if (
+                flag
+                is GameFlag
+                    or SeedFlag
+                    or SizeFlag
+                    or PlayFlag
+                    or LayoutFlag
+                    or ContentSetFlag
+                    or StockFlag
+                    or RateFlag
+            )
             {
                 // The value is the next argument unless it is missing or another flag; it is not consumed
                 // then, so a mode flag after the flag still selects its mode.
@@ -222,6 +247,7 @@ public sealed class LaunchArgs
                     layoutGiven |= flag == LayoutFlag;
                     contentSetGiven |= flag == ContentSetFlag;
                     stockGiven |= flag == StockFlag;
+                    rateGiven |= flag == RateFlag;
 
                     continue;
                 }
@@ -247,6 +273,7 @@ public sealed class LaunchArgs
                     || flag == SizeFlag && sizeGiven
                     || flag == ContentSetFlag && contentSetGiven
                     || flag == StockFlag && stockGiven
+                    || flag == RateFlag && rateGiven
                 )
                 {
                     problems.Add($"repeated {flag}{Known(flag)}");
@@ -282,6 +309,21 @@ public sealed class LaunchArgs
                     else
                     {
                         problems.Add($"bad {StockFlag} '{value}': not a start stock level, use 0 to {MaxStock}");
+                    }
+                }
+                else if (flag == RateFlag)
+                {
+                    rateGiven = true;
+                    if (
+                        int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var given)
+                        && given <= MaxRate
+                    )
+                    {
+                        rate = given;
+                    }
+                    else
+                    {
+                        problems.Add($"bad {RateFlag} '{value}': not a settler rate, use 0 to {MaxRate}");
                     }
                 }
                 else if (flag == PlayFlag)
@@ -429,6 +471,11 @@ public sealed class LaunchArgs
             problems.Add($"{StockFlag} applies to {GameViewFlag} without {LayoutFlag} only");
         }
 
+        if (rateGiven && conflictFlag is null && (modeFlag != GameViewFlag || layoutGiven))
+        {
+            problems.Add($"{RateFlag} applies to {GameViewFlag} without {LayoutFlag} only");
+        }
+
         if (playGiven && modeFlag is not (MapFlag or GameViewFlag) && !(layoutGiven && modeFlag is null))
         {
             problems.Add($"{PlayFlag} needs {MapFlag} or {GameViewFlag}");
@@ -471,6 +518,7 @@ public sealed class LaunchArgs
             Size = size,
             ContentSet = contentSet,
             Stock = stock,
+            Rate = rate,
             Minimized = minimized,
             Problems = problems,
         };

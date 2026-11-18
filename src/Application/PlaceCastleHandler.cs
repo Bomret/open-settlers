@@ -13,6 +13,7 @@ namespace OpenSettlers.Simulation;
 /// <param name="roster">The castle's settlers.</param>
 /// <param name="history">The history.</param>
 /// <param name="causes">The causes.</param>
+/// <param name="supply">The settler supply, which counts from the placement; null in a game without it.</param>
 public sealed class PlaceCastleHandler(
     RuleTables tables,
     Map map,
@@ -22,7 +23,8 @@ public sealed class PlaceCastleHandler(
     SettlerTable settlers,
     CastleRoster roster,
     GameHistory history,
-    Causes causes
+    Causes causes,
+    SettlerSupply? supply = null
 ) : ICommandHandler
 {
     /// <inheritdoc/>
@@ -56,6 +58,7 @@ public sealed class PlaceCastleHandler(
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
         FlagSlots.Add(flags, history, (x + 1) & (map.Size.Width - 1), (y + 1) & (map.Size.Height - 1));
         roster.CreateCastleSettlers(x, y);
+        supply?.Start();
         var cause = causes.Command(history.BuildingId(0));
         history.RecordBuilding(0, EventType.PlaceCastle, cause, history.FlagId(0).ToString());
         history.RecordFlag(0, EventType.PlaceCastle, cause);
