@@ -94,6 +94,6 @@ Class: architecture
 Concepts: Content catalog, Catalog entry, Original code, Domain, Rule
 Statement: No rule of the domain or the application reads or branches on an original code. Goods, building types, and jobs are identified by their stable names, and the facts the rules read come from their catalog entries. Only the History Edition importer and the exporters read an original code (ADR 0020).
 Breaks: silently
-Check: a repository test scans `src/Domain` and `src/Application` for reads of an original code, with planted violations as positive controls. Reviewers check that a new fact of an original entry is read from its table into the entry, not derived from its code.
+Check: `OriginalCodeBoundaryTests` (`tests/OpenSettlers.Tests/OriginalCodeBoundaryTests.cs`) scans `src/Domain` and `src/Application` for reads of an original code, with planted violations as positive controls. Reviewers check that a new fact of an original entry is read from its table into the entry, not derived from its code.
 Symbols: CatalogEntry.OriginalCode, Job.Of
 Paths: src/Domain/**, src/Application/**
