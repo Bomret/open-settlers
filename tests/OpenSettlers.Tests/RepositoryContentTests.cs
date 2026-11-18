@@ -272,13 +272,20 @@ public sealed class RepositoryContentTests
         Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(RepositoryRoot(), searchPath: ""));
     }
 
-    // An extracted archive, or a checkout git refuses as unsafe, is no git work tree.
+    // An extracted archive, or a checkout git refuses as unsafe, is no git work tree. The case needs a temporary folder outside
+    // any work tree, and reports inconclusive itself where the host's temporary folder lies inside one.
     [TestMethod]
     public void TheUidCheckReportsInconclusiveOutsideAGitWorkTree()
     {
         var folder = Directory.CreateTempSubdirectory("no-work-tree-").FullName;
         try
         {
+            var git = PythonTool.Locate(null, "git");
+            if (git is not null && PythonTool.Git(git, folder, "rev-parse", "--is-inside-work-tree").Exit == 0)
+            {
+                Assert.Inconclusive($"the temporary folder {folder} lies inside a git work tree");
+            }
+
             Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(folder));
         }
         finally
