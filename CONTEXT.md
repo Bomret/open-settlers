@@ -289,8 +289,15 @@ once given, the direction of the first road toward it.
 _Avoid_: item, cargo
 
 **Road**
-A path between two flags, built one of six directions at a time. One carrier serves each road.
+A path between two flags, built one of six directions at a time. One carrier serves a road, and a busy road gets more,
+up to the number its length class holds.
 _Avoid_: edge, path, street
+
+**Busy road**
+A road with three or more waiting goods at one of its flags that head along it. Its flag asks for another carrier for it
+while the road's carriers differ from the number its length class holds. A carrier of a road with two or more walks the road
+to and fro instead of waiting, and leaves it for a storage after four turns at a flag with nothing to take.
+_Avoid_: congested road, crowded road, jam
 
 **Road marker**
 A sign the game view shows in road mode on the end of the road being drawn and on each of its six neighbors: the end
