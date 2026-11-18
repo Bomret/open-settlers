@@ -31,6 +31,10 @@ public sealed class RepositoryContentTests
 
     static readonly string[] SkippedFolders = [".git", ".godot", "bin", "obj", ".superdev"];
 
+    // The scripts and shaders Godot writes a .uid for (Godot 4.4 and later). Scenes, resources, and imported assets carry their
+    // UID elsewhere.
+    static readonly string[] ScriptExtensions = [".cs", ".gd", ".gdshader", ".gdshaderinc"];
+
     [TestMethod]
     public void TheRepositoryHoldsNoFileOfAnInstallsFileTypes()
     {
@@ -199,6 +203,142 @@ public sealed class RepositoryContentTests
 
         // The layer libraries, the two sources, the ports, the generator, and the tests.
         Assert.AreEqual(8, projectFolders);
+    }
+
+    // Godot writes a .uid beside each script and shader in a folder it scans, so a Godot run leaves the working tree clean only
+    // where each of them is tracked; a .uid beside no source, or in a folder Godot skips, is stale.
+    [TestMethod]
+    [DataRow("src/Launch/A.cs", "no .uid: src/Launch/A.cs")]
+    [DataRow("src/Viewer/W.gdshader", "no .uid: src/Viewer/W.gdshader")]
+    [DataRow("src/Viewer/W.gdshaderinc", "no .uid: src/Viewer/W.gdshaderinc")]
+    [DataRow("tools/t.gd", "no .uid: tools/t.gd")]
+    [DataRow("src/Launch/Gone.cs.uid", "no source: src/Launch/Gone.cs.uid")]
+    [DataRow("src/Domain/.gdignore,src/Domain/D.cs,src/Domain/D.cs.uid", "in a skipped folder: src/Domain/D.cs.uid")]
+    [DataRow("src/Domain/.gdignore,src/Domain/Deep/D.cs.uid", "in a skipped folder: src/Domain/Deep/D.cs.uid")]
+    [DataRow(".claude/x/D.cs,.claude/x/D.cs.uid", "in a skipped folder: .claude/x/D.cs.uid")]
+    [DataRow("src/.hidden/D.cs.uid", "in a skipped folder: src/.hidden/D.cs.uid")]
+    [DataRow("src/Launch/A.cs,src/Launch/a.cs.uid", "no .uid: src/Launch/A.cs,no source: src/Launch/a.cs.uid")]
+    public void UidPairingNamesEachOffence(string tracked, string offences)
+    {
+        CollectionAssert.AreEquivalent(offences.Split(','), UidOffences(tracked.Split(',')));
+    }
+
+    // A script or shader with its .uid, one in a skipped folder, and a scene or resource need nothing.
+    [TestMethod]
+    public void UidPairingAcceptsPairedAndSkippedFilesAndNeedsNoneForScenes()
+    {
+        string[] tracked =
+        [
+            "src/Launch/A.cs",
+            "src/Launch/A.cs.uid",
+            "Root.cs",
+            "Root.cs.uid",
+            "src/Domain/.gdignore",
+            "src/Domain/Deep/D.cs",
+            ".github/x.gd",
+            "scenes/main.tscn",
+            "theme.tres",
+            "content/basic/object/a.png",
+        ];
+
+        Assert.IsEmpty(UidOffences(tracked));
+    }
+
+    // The offences against Godot's .uid pairing among the tracked repository-relative paths, each named by its path.
+    // The check reads the tracked files alone, so another worktree or an ignored local folder does not change its result. It
+    // finds the shaders of src/Viewer, so a wrong root or skip rule cannot pass on an empty listing.
+    [TestMethod]
+    public void EachScriptAndShaderGodotScansKeepsItsUid()
+    {
+        var tracked = TrackedFiles(RepositoryRoot());
+
+        CollectionAssert.Contains(tracked, "src/Viewer/Water.gdshader");
+        CollectionAssert.Contains(tracked, "src/Viewer/Water.gdshader.uid");
+        var offences = UidOffences(tracked);
+        Assert.IsEmpty(offences, $"unpaired Godot .uid files: {string.Join(", ", offences)}");
+    }
+
+    [TestMethod]
+    public void TheUidCheckReportsInconclusiveWithoutGit()
+    {
+        Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(RepositoryRoot(), searchPath: ""));
+    }
+
+    // The repository's tracked files by repository-relative path, from git ls-files with every GIT_* variable of the host
+    // removed. Reports inconclusive where git is not on searchPath (the host's path where null).
+    static List<string> TrackedFiles(string root, string? searchPath = null)
+    {
+        var git = PythonTool.Locate(searchPath, "git");
+        if (git is null)
+        {
+            Assert.Inconclusive("git is not on the path");
+        }
+
+        var info = new System.Diagnostics.ProcessStartInfo(git)
+        {
+            WorkingDirectory = root,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        info.ArgumentList.Add("ls-files");
+        info.ArgumentList.Add("-z");
+        foreach (
+            var name in info.Environment.Keys.Where(key => key.StartsWith("GIT_", StringComparison.Ordinal)).ToList()
+        )
+        {
+            info.Environment.Remove(name);
+        }
+
+        using var process = System.Diagnostics.Process.Start(info)!;
+        var stderr = process.StandardError.ReadToEndAsync();
+        var listing = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        Assert.AreEqual(0, process.ExitCode, $"git ls-files: {stderr.Result}");
+
+        return [.. listing.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
+    }
+
+    // Godot skips a folder whose name starts with a dot, at any depth, and every folder at any depth below a .gdignore. Names
+    // match by exact case.
+    internal static List<string> UidOffences(IReadOnlyCollection<string> tracked)
+    {
+        var files = tracked.ToHashSet(StringComparer.Ordinal);
+        var ignored = tracked
+            .Where(path => path == ".gdignore" || path.EndsWith("/.gdignore", StringComparison.Ordinal))
+            .Select(path => path[..^".gdignore".Length])
+            .ToList();
+        bool Skipped(string path)
+        {
+            var folders = path.Split('/')[..^1];
+            return folders.Any(folder => folder.StartsWith('.'))
+                || ignored.Any(folder => path.StartsWith(folder, StringComparison.Ordinal));
+        }
+
+        var offences = new List<string>();
+        foreach (var path in tracked.Order(StringComparer.Ordinal))
+        {
+            if (path.EndsWith(".uid", StringComparison.Ordinal))
+            {
+                if (Skipped(path))
+                {
+                    offences.Add($"in a skipped folder: {path}");
+                }
+                else if (!files.Contains(path[..^".uid".Length]))
+                {
+                    offences.Add($"no source: {path}");
+                }
+            }
+            else if (
+                ScriptExtensions.Contains(Path.GetExtension(path), StringComparer.Ordinal)
+                && !Skipped(path)
+                && !files.Contains(path + ".uid")
+            )
+            {
+                offences.Add($"no .uid: {path}");
+            }
+        }
+
+        return offences;
     }
 
     // The set's files by path relative to the folder, with forward slashes.

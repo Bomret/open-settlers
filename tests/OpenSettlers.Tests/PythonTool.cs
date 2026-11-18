@@ -56,7 +56,8 @@ static class PythonTool
         return found;
     }
 
-    static string? Locate(string? searchPath, string name = "python3") =>
+    /// <summary>The program <paramref name="name"/> on <paramref name="searchPath"/> (the host's path where null), or null.</summary>
+    public static string? Locate(string? searchPath, string name = "python3") =>
         (searchPath ?? Environment.GetEnvironmentVariable("PATH") ?? "")
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
             .SelectMany(dir => new[] { Path.Combine(dir, name), Path.Combine(dir, name + ".exe") })
