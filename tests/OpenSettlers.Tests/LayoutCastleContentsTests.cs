@@ -324,4 +324,15 @@ public sealed class LayoutCastleContentsTests
             Problems("{\"x\": 10, \"y\": 10, \"settlers\": {\"jobless\": " + most + ", \"carrier\": 1}}")
         );
     }
+
+    [TestMethod]
+    public void ALayoutWithNoSizeFailsTheLoadWhateverCountItsCastleNames()
+    {
+        var read = Layout.Read(
+            "{\"castle\": {\"x\": 10, \"y\": 10, \"settlers\": {\"jobless\": 2147483647}}}",
+            "t.jsonc"
+        );
+
+        Assert.IsNotEmpty(read.Problems);
+    }
 }

@@ -561,7 +561,12 @@ public sealed partial class Layout
                     Fail(name, $"settlers: {property.Name}: the count must be a whole number from 0");
                     good = false;
                 }
-                else if (size is not null && named.Count + (long)count + 1 > SettlerTable.SizeOf(size) - 1)
+                else if (size is null)
+                {
+                    // A bad or missing size fails the load already; with no table to bound the count, no settlers are made.
+                    good = false;
+                }
+                else if (named.Count + (long)count + 1 > SettlerTable.SizeOf(size) - 1)
                 {
                     Fail(
                         name,
