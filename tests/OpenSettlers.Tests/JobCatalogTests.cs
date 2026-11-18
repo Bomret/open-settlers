@@ -74,8 +74,6 @@ public sealed class JobCatalogTests
         Assert.AreEqual((int)(Fnv1a.Of("miller") & 0x7fffff00), word);
         Assert.IsTrue(JobWords.HasCode(catalog, new Baker()));
         Assert.IsFalse(JobWords.HasCode(catalog, new Miller()));
-        Assert.AreEqual("16", JobWords.Text(catalog, new Baker()));
-        Assert.AreEqual("miller", JobWords.Text(catalog, new Miller()));
         JobWords.Check(catalog);
     }
 
@@ -84,7 +82,6 @@ public sealed class JobCatalogTests
     {
         Assert.AreEqual(18, JobWords.Of(ContentCatalog.Empty, new UnportedJob(18)));
         Assert.IsTrue(JobWords.HasCode(ContentCatalog.Empty, new UnportedJob(18)));
-        Assert.AreEqual("20", JobWords.Text(ContentCatalog.Empty, new UnportedJob(20) { Generic = false }));
     }
 
     [TestMethod]

@@ -86,7 +86,7 @@ public sealed record ThingSelector
             )
             : (
                 null,
-                $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, the stable name of a building type, or object:0xNN"
+                $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, the stable name of a building type, the stable name of a job, or object:0xNN"
             );
     }
 

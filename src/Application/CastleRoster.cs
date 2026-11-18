@@ -44,8 +44,8 @@ public sealed class CastleRoster(
         new Digger(),
         new Builder(),
         new Fisher(),
-        new UnportedJob(20) { Generic = false },
-        new UnportedJob(20) { Generic = false },
+        new UnportedJob(20),
+        new UnportedJob(20),
         new UnportedJob(9),
         new UnportedJob(9),
     ];

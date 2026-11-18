@@ -27,7 +27,7 @@ public sealed class SettlerShapesTests
             Assert.IsFalse(Job.Of(code).ArrivesHomeGenerically, $"job {code}");
         }
 
-        Assert.IsFalse(new UnportedJob(20) { Generic = false }.ArrivesHomeGenerically);
+        Assert.IsFalse(new UnportedJob(20).ArrivesHomeGenerically);
     }
 
     [TestMethod]

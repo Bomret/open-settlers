@@ -17,13 +17,10 @@ public sealed record UnportedJob(int Raw) : Job
     public override int? OriginalCode => Raw;
 
     /// <summary>
-    /// Whether the settler arrives at the end of a free walk home generically (<see cref="Job.ArrivesHomeGenerically"/>). The original's table
-    /// excepts some of the jobs the engine does not port, so the one that builds the job states it; the default is generic.
+    /// The table at 0x437dfb excepts the jobs 14, 20, and 22 and up from the generic arrival; the number is all an unported job has to go by,
+    /// and its rules stay stand-ins.
     /// </summary>
-    public bool Generic { get; init; } = true;
-
-    /// <inheritdoc />
-    public override bool ArrivesHomeGenerically => Generic;
+    public override bool ArrivesHomeGenerically => !(Raw is 14 or 20 or >= 22);
 
     /// <summary>Whether <paramref name="other"/> holds the same number.</summary>
     public bool Equals(UnportedJob? other) => other is not null && Raw == other.Raw;

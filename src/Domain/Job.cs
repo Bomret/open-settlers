@@ -15,7 +15,7 @@ public abstract partial record Job
 {
     private protected Job() { }
 
-    /// <summary>The number the original gives the job (byte 0 of the settler's item, bits 2 to 6); null for a job the original lacks.</summary>
+    /// <summary>The number the original gives the job (byte 0 of the settler's item, bits 2 to 6); null for an entry whose job the original lacks, as a basic-set entry may be; every engine job type declares one (generator error JOB003).</summary>
     public abstract int? OriginalCode { get; }
 
     /// <summary>

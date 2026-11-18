@@ -76,6 +76,7 @@ public sealed class ThingCheckTests
     [DataRow("expect-count tree == 1", "unknown operator '=='")]
     [DataRow("expect-count tree >=", "'expect-count' takes 3 arguments, found 2")]
     [DataRow("expect-count oak = 1", "unknown name 'oak'")]
+    [DataRow("expect-count oak = 1", "the stable name of a job")]
     public void ABadCheckIsOneProblemNamingItsLine(string line, string reason)
     {
         var script = Parse("wait 1\n" + line);

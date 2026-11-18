@@ -34,10 +34,6 @@ public static class JobWords
     public static bool HasCode(ContentCatalog catalog, Job job) =>
         job is UnportedJob || catalog.Require(job).OriginalCode is not null;
 
-    /// <summary>The text a readout shows for the job's number: <see cref="Of"/> where the job has a code, else its stable name.</summary>
-    public static string Text(ContentCatalog catalog, Job job) =>
-        HasCode(catalog, job) ? Of(catalog, job).ToString(CultureInfo.InvariantCulture) : job.Name;
-
     /// <summary>
     /// Throws an <see cref="ArgumentException"/> that names both jobs where two jobs of the catalog with no original code have one word,
     /// which a settler's item and the digest could not tell apart.

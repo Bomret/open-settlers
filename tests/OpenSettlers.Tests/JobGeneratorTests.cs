@@ -417,4 +417,31 @@ public sealed class JobGeneratorTests
         var error = diagnostics.Single(d => d.Id == "JOB007");
         StringAssert.Contains(error.GetMessage(), "Odd");
     }
+
+    [TestMethod]
+    [DataRow(
+        """[JobName("short-0", "made-up evidence", Level = 0)] [JobName("short-1", "made-up evidence", Level = 1)] [JobName("short-0-again", "made-up evidence", Level = 0)]"""
+    )]
+    [DataRow(
+        """[JobName("short-0", "made-up evidence", Level = 0)] [JobName("short-1", "made-up evidence", Level = 1)] [JobName("short-9", "made-up evidence", Level = 9)]"""
+    )]
+    public void ADuplicateOrOutOfRangeLevelOfAJobNameIsABuildError(string names)
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            $$"""
+            namespace OpenSettlers.Domain;
+            {{names}}
+            public sealed record Short(int Level) : Job
+            {
+                public const int Number = 5;
+                public const int LastNumber = 6;
+                public override int Code => Number + Level;
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB008");
+        StringAssert.Contains(error.GetMessage(), "Short");
+    }
 }

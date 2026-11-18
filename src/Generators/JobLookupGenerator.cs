@@ -85,6 +85,15 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         true
     );
 
+    static readonly DiagnosticDescriptor StrayName = new(
+        "JOB008",
+        "A job's stable name attribute stands for no level",
+        "The job type '{0}' declares a JobName with the level {1}, which repeats a level or lies outside the job's levels",
+        "OpenSettlers.Jobs",
+        DiagnosticSeverity.Error,
+        true
+    );
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -130,8 +139,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
                 null,
                 null,
                 place,
-                new Sequence<NameEntry>([]),
-                null
+                new Sequence<NameEntry>([])
             );
         }
 
@@ -159,14 +167,6 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
                 attribute.ConstructorArguments.Length > 1 ? attribute.ConstructorArguments[1].Value as string ?? "" : ""
             ))
             .ToArray();
-        // A job that spans several numbers takes the offset as its one constructor argument; a property of that name holds it.
-        var levelProperty = type
-            .InstanceConstructors.FirstOrDefault(constructor =>
-                constructor.Parameters.Length == 1
-                && !SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, type)
-            )
-            ?.Parameters[0]
-            .Name;
         return new Declaration(
             type.ToDisplayString(),
             jobNamespace,
@@ -179,8 +179,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
                 : last is null ? "LastNumber"
                 : null,
             place,
-            new Sequence<NameEntry>(names),
-            levelProperty
+            new Sequence<NameEntry>(names)
         );
     }
 
@@ -269,6 +268,19 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
             var levels = ranged ? candidate.Last!.Value - candidate.First!.Value + 1 : 1;
             var entries = new NameEntry[levels];
             var valid = true;
+            var seen = new HashSet<int>();
+            foreach (var item in candidate.Names.Items)
+            {
+                var wanted = ranged ? item.Level >= 0 && item.Level < levels : item.Level == -1;
+                if (!wanted || !seen.Add(item.Level))
+                {
+                    output.ReportDiagnostic(
+                        Diagnostic.Create(StrayName, candidate.Place.ToLocation(), candidate.Name, item.Level)
+                    );
+                    valid = false;
+                }
+            }
+
             for (var level = 0; level < levels; level++)
             {
                 var entry = candidate.Names.Items.FirstOrDefault(item => item.Level == (ranged ? level : -1));
@@ -391,9 +403,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
                 instances.Add(
                     (
                         ranged ? $"new global::{declaration.Name}({level})" : $"new global::{declaration.Name}()",
-                        ranged
-                            ? $"global::{declaration.Name} {{ {declaration.LevelProperty ?? "Level"}: {level} }}"
-                            : $"global::{declaration.Name}",
+                        ranged ? $"global::{declaration.Name} {{ Level: {level} }}" : $"global::{declaration.Name}",
                         names[level]
                     )
                 );
@@ -471,8 +481,7 @@ public sealed class JobLookupGenerator : IIncrementalGenerator
         int? Last,
         string? Unread,
         Place Place,
-        Sequence<NameEntry> Names,
-        string? LevelProperty
+        Sequence<NameEntry> Names
     );
 
     /// <summary>A <c>JobName</c> attribute: the level it names (-1 for a job of one number), the name, and the evidence.</summary>

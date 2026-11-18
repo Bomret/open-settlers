@@ -216,18 +216,17 @@ public sealed class JobTests
     {
         for (var code = 0; code <= 31; code++)
         {
-            var own = code is 5 or 7 or 8 or 11 or 14 or >= 22 and <= 26;
+            var own = code is 5 or 7 or 8 or 11 or 14 or 20 or >= 22;
             Assert.AreEqual(!own, Job.Of(code).ArrivesHomeGenerically, $"ArrivesHomeGenerically {code}");
         }
     }
 
     [TestMethod]
-    public void AnUnportedJobTheTableExceptsStatesItAndStaysEqualToTheJobOfItsNumber()
+    public void AnUnportedJobOfAnExceptedNumberDoesNotArriveGenericallyWhereverItIsBuilt()
     {
-        var twenty = new UnportedJob(20) { Generic = false };
-
-        Assert.IsFalse(twenty.ArrivesHomeGenerically);
-        Assert.AreEqual(Job.Of(20), twenty);
-        Assert.AreEqual(Job.Of(20).GetHashCode(), twenty.GetHashCode());
+        Assert.IsFalse(new UnportedJob(20).ArrivesHomeGenerically);
+        Assert.IsFalse(new UnportedJob(27).ArrivesHomeGenerically);
+        Assert.AreEqual(Job.Of(20), new UnportedJob(20));
+        Assert.IsTrue(new UnportedJob(18).ArrivesHomeGenerically);
     }
 }
