@@ -51,5 +51,9 @@ The decision has these consequences:
 - The limits of the original (26 goods, 32 good classes, the 5-bit good field) hold only in the History Edition
   importer and the exporters. An added good gets its stock place, its transport rank, and its request from its
   entry.
+- Two commands of one tick that differ only in the building type they place come in the order of the types' tie
+  ranks, a fact of each building type's entry. The History Edition importer gives a type its original code as its
+  rank, so the order stays the original's. The basic set states a rank for each type in its data, in the History
+  Edition's order, and an added type states its own. The catalog refuses two types with one rank.
 - Layouts give goods by stable name, so one layout opens under both content sets.
 - The content set keys its good images by stable name.
