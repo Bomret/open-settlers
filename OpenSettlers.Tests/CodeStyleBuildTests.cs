@@ -254,11 +254,10 @@ public sealed class CodeStyleBuildTests
             .TakeWhile(line => !line.StartsWith('#'));
 
     static IEnumerable<string> ConfigFiles(string root, Func<string, bool> matches) =>
-        Directory
-            .EnumerateFiles(root, "*", SearchOption.AllDirectories)
+        FolderWalk
+            .Files(root, GeneratedFolders.Contains)
             .Where(matches)
-            .Select(file => Path.GetRelativePath(root, file).Replace('\\', '/'))
-            .Where(relative => !relative.Split('/').Any(part => GeneratedFolders.Contains(part)));
+            .Select(file => Path.GetRelativePath(root, file).Replace('\\', '/'));
 
     static string[] CSharpSection(string[] lines) =>
         [

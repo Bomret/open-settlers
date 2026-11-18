@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Enumeration;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -282,21 +281,9 @@ static class TestPairs
     // .superdev), so their size and their permissions do not matter.
     static List<string> FilesUnder(string folder, params string[] extensions) =>
         [
-            .. new FileSystemEnumerable<string>(
-                folder,
-                (ref FileSystemEntry entry) => entry.ToFullPath(),
-                // A dot file still counts, and an unreadable folder the walk enters still fails the scan.
-                new EnumerationOptions
-                {
-                    RecurseSubdirectories = true,
-                    AttributesToSkip = 0,
-                    IgnoreInaccessible = false,
-                }
-            )
-            {
-                ShouldRecursePredicate = (ref FileSystemEntry entry) => !IsBuildOutput(entry.FileName.ToString()),
-                ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory,
-            }.Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.Ordinal))),
+            .. FolderWalk
+                .Files(folder, IsBuildOutput)
+                .Where(file => extensions.Any(extension => file.EndsWith(extension, StringComparison.Ordinal))),
         ];
 
     // The assembly of a grant of internals as the attribute or the item writes it: its name, without a public key.

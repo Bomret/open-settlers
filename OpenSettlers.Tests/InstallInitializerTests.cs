@@ -38,21 +38,18 @@ public sealed class InstallInitializerTests
     // paths relative to it. A library's own sources are no test code and stay out.
     static List<string> TestSources(string root) =>
         [
-            .. Directory
-                .EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
+            .. FolderWalk
+                .Files(root, GeneratedFolders.Contains)
                 .Where(project =>
-                    Path.GetFileNameWithoutExtension(project).EndsWith(".Tests")
-                    || Path.GetFileNameWithoutExtension(project).EndsWith(".Testing")
+                    Path.GetExtension(project) == ".csproj"
+                    && (
+                        Path.GetFileNameWithoutExtension(project).EndsWith(".Tests")
+                        || Path.GetFileNameWithoutExtension(project).EndsWith(".Testing")
+                    )
                 )
-                .Select(project => Path.GetDirectoryName(project)!)
-                .Where(folder =>
-                    !Path.GetRelativePath(root, folder)
-                        .Split(Path.DirectorySeparatorChar)
-                        .Any(GeneratedFolders.Contains)
-                )
-                .SelectMany(folder => Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
+                .SelectMany(project => FolderWalk.Files(Path.GetDirectoryName(project)!, GeneratedFolders.Contains))
+                .Where(file => Path.GetExtension(file) == ".cs")
                 .Select(file => Path.GetRelativePath(root, file))
-                .Where(file => !file.Split(Path.DirectorySeparatorChar).Any(GeneratedFolders.Contains))
                 .Order(StringComparer.Ordinal),
         ];
 
