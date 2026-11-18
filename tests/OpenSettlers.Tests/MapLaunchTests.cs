@@ -344,7 +344,7 @@ public sealed class MapLaunchTests
         var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("text", asset)), selectFirst: false);
         state.SelectKind("text");
 
-        Assert.AreEqual("x/a", CrashText.Subject(state));
+        Assert.AreEqual("x/a", state.CrashSubject);
     }
 
     [TestMethod]
@@ -353,7 +353,7 @@ public sealed class MapLaunchTests
         var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("empty")), selectFirst: false);
         state.SelectKind("empty");
 
-        Assert.AreEqual("empty", CrashText.Subject(state));
+        Assert.AreEqual("empty", state.CrashSubject);
     }
 
     [TestMethod]
@@ -361,7 +361,7 @@ public sealed class MapLaunchTests
     {
         var state = AssetBrowserState.Open(new FakeAssets(new ListedKind("empty")), selectFirst: false);
 
-        Assert.IsNull(CrashText.Subject(state));
+        Assert.IsNull(state.CrashSubject);
     }
 
     [TestMethod]

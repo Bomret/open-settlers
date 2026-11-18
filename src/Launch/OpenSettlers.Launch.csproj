@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- The tests read the internal members of the launch code. -->
+    <InternalsVisibleTo Include="OpenSettlers.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Domain" />
+    <Using Include="OpenSettlers.Import" />
+    <Using Include="OpenSettlers.Import.HistoryEdition" />
+    <Using Include="OpenSettlers.Import.ContentSet" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+    <ProjectReference Include="../Import/OpenSettlers.Import.csproj" />
+    <ProjectReference Include="../Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
+    <ProjectReference Include="../Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
+    <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
+    <ProjectReference Include="../Adapters/OpenSettlers.Adapters.csproj" />
+    <ProjectReference Include="../MapView/OpenSettlers.MapView.csproj" />
+  </ItemGroup>
+</Project>

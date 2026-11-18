@@ -3,13 +3,6 @@
     <RootNamespace>OpenSettlers.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The Godot-free engine code is compiled in directly, so the tests run without Godot. A folder left
-         out of this list is silently untested. -->
-    <Compile Include="../../src/Launch/**/*.cs" />
-    <Compile Include="../../src/Assets/**/*.cs" />
-    <Compile Include="../../src/MapView/**/*.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Using Include="OpenSettlers.Domain" />
     <Using Include="OpenSettlers.Import" />
     <Using Include="OpenSettlers.Import.HistoryEdition" />
@@ -26,6 +19,9 @@
     <ProjectReference Include="../../src/Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
     <ProjectReference Include="../../src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="../../src/Adapters/OpenSettlers.Adapters.csproj" />
+    <ProjectReference Include="../../src/MapView/OpenSettlers.MapView.csproj" />
+    <ProjectReference Include="../../src/Launch/OpenSettlers.Launch.csproj" />
+    <ProjectReference Include="../../src/Assets/OpenSettlers.Assets.csproj" />
     <!-- JobGeneratorTests drive the generator through the compiler API, so the tests reference its assembly as well as run it. -->
     <ProjectReference Include="../../src/Generators/OpenSettlers.Generators.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
