@@ -124,3 +124,12 @@ Statement: A gatherer's search range and target test exist once, in its job rule
 Breaks: silently
 Check: `JobSearchTests` pins each gatherer's range against the draw mask of its loop. It pins its target test against the nodes its worker accepts. `GoldenTests` and the gatherer tests (`WoodcuttingTests`, `StonecuttingTests`, `ForestryTests`, `FisherTests`, `FarmerTests`) keep the searches' outcomes. `WorkAreaDrawsTests` checks that the overlay's marks equal the job search's spiral entries around each building. It also checks that no file under `src/MapView/` or `src/Viewer/` names the spiral. Reviewers check that no such file names a spiral entry bound or a target condition.
 Paths: src/Application/*Rules.cs, src/MapView/**
+
+### INV-0018
+
+Class: fidelity
+Concepts: Rule
+Statement: A command of the emulator harness prints the same lines whatever commands ran before it in the same launch, and whether the launch imports the program or reuses a kept project. Each command, of every verb and of a draw batch, starts from the state a launch of its own gives it, so a reference value recorded from the harness (ADR 0008) does not depend on the order or company of the commands it was recorded with.
+Breaks: silently
+Check: a Ghidra-category test runs commands that each change a different part of the harness's state in one launch, and compares each command's lines with the lines of a launch of its own. Reviewers check that a new verb clears every setting it adds at the start of each command, and that state shared across the commands of a launch holds only what a launch of its own would compute the same.
+Paths: tools/GhidraDump/**
