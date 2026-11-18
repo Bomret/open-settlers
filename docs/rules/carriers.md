@@ -75,7 +75,7 @@ At a flag whose count of goods is 7 or more (counted only on a turn that routed 
 [Goods at a flag](goods.md#the-turn-of-a-flags-goods)), the turn then clears the status bit of every busy road and of every
 road that asked for a carrier in this turn (`0x46520b`). The flag writes only its own status; the flag at the far end keeps its
 bit. The direction search and the storage search seed and follow only roads whose bit is set
-([Goods at a flag](goods.md#the-turn-of-a-flags-goods)), so new goods at a crowded flag no longer go along its busy roads.
+([Goods at a flag](goods.md#the-turn-of-a-flags-goods)), so new goods at a crowded flag do not go along its busy roads.
 
 ## The request
 
