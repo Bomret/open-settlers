@@ -89,8 +89,25 @@ public sealed class ProgramTablesTests
         );
     }
 
+    // The job a made-up handler asks for: a job the jobs' tables modules name, as the importer requires, a different one for each type.
+    static int MadeJob(BuildingType type) =>
+        type.Name switch
+        {
+            "woodcutter-hut" => 5,
+            "stonecutter-hut" => 7,
+            "forester-hut" => 8,
+            "sawmill" => 6,
+            "fisher-hut" => 11,
+            "pig-farm" => 12,
+            "butcher" => 13,
+            "farm" => 14,
+            "mill" => 15,
+            "baker" => 16,
+            _ => throw new ArgumentException($"{type.Name} asks for no worker"),
+        };
+
     // The handlers that ask for a worker, made up: each loads a job into [edi] and a tool word into [edi+0x18]; the builder's asks for
-    // the job 7 and the tool word 0x30, the building of the type t for the job t + 10 and the tool word 2 * (t + 3) (none for the
+    // the job 7 and the tool word 0x30, the building of the type t for its MadeJob and the tool word 2 * (t + 3) (none for the
     // forester). The builder's order of materials and steps of blows are made up: the order word of the type t has the bit t % 5 set,
     // and its steps are 0x100 * (2t + 1) and one more.
     static void WriteWorkerTables(byte[] exe)
@@ -104,10 +121,10 @@ public sealed class ProgramTablesTests
         Request(ProgramTablesImporter.DiggerRequestAddress, 5, 0x24);
         foreach (var (type, address) in ProgramTablesImporter.WorkerRequestAddresses)
         {
-            Request(address, type.Code + 10, type == BuildingType.Forester ? 0 : 2 * (type.Code + 3));
+            Request(address, MadeJob(type), type == BuildingType.Forester ? 0 : 2 * (TestCatalog.CodeOf(type) + 3));
         }
 
-        for (var type = 0; type < RuleTables.BuildingTypeCount; type++)
+        for (var type = 0; type < BuildingTables.TableTypes; type++)
         {
             BitConverter
                 .GetBytes((ushort)(1 << (type % 5)))
@@ -316,7 +333,7 @@ public sealed class ProgramTablesTests
                     .CopyTo(bytes, FileOffset(ProgramTablesImporter.StepTimeAddress) + 2 * shape);
             }
 
-            for (var type = 0; type < RuleTables.DoorSpeedCount; type++)
+            for (var type = 0; type < BuildingTables.DoorSlots; type++)
             {
                 bytes[FileOffset(ProgramTablesImporter.DoorSpeedAddress) + type] = (byte)(type + 7);
             }
@@ -338,8 +355,35 @@ public sealed class ProgramTablesTests
             "a step shape below the table reads the bytes before it"
         );
         Assert.AreEqual((ushort)0, tables.StepTime(500), "a shape outside the table reads as 0");
-        Assert.AreEqual((byte)(24 + 7), tables.DoorSpeeds[24]);
         Assert.AreEqual((ushort)(3 * 5), tables.ScanWindows[3]);
+    }
+
+    [TestMethod]
+    public void TheDoorSpeedsOfEachTypeAndOfNoBuildingAreFoundByTheirAddress()
+    {
+        var exe = Executable(bytes =>
+        {
+            for (var slot = 0; slot < BuildingTables.DoorSlots; slot++)
+            {
+                bytes[FileOffset(ProgramTablesImporter.DoorSpeedAddress) + slot] = (byte)(slot + 7);
+            }
+        });
+
+        var tables = ProgramTablesImporter.Import(exe);
+
+        // The doors of the type t stand at the table's entry t and, while it is built, at t + 0x20; the first entry is the door of no building.
+        Assert.AreEqual((byte)(9 + 7), tables.DoorSpeed(new Building(BuildingType.Forester, 0, 0, 0)));
+        Assert.AreEqual(
+            (byte)(9 + 0x20 + 7),
+            tables.DoorSpeed(new Building(BuildingType.Forester, 0, 0, 0, constructing: true))
+        );
+        Assert.AreEqual((byte)(0x18 + 7), tables.DoorSpeed(new Building(BuildingType.Castle, 0, 0, 0)));
+        Assert.AreEqual(
+            (byte)(0x18 + 0x20 + 7),
+            tables.DoorSpeed(new Building(BuildingType.Castle, 0, 0, 0, constructing: true))
+        );
+        Assert.AreEqual((byte)7, tables.NoBuildingDoor);
+        Assert.AreEqual((byte)7, tables.DoorSpeed((Building?)null));
     }
 
     [TestMethod]
@@ -347,11 +391,39 @@ public sealed class ProgramTablesTests
     public void TheTablesOfTheWalkOfTheInstallMatchTheEmulator()
     {
         var tables = TestProgram.Tables();
+        var exe = TestProgram.OpenInstall().ReadAll(Install.Program);
 
         // peek:43f208:320 (the 160 words from the step shape -32), peek:43c92b:64, and peek:421d28:16.
         Assert.AreEqual(0x05BF5D4714B4FBADUL, Fnv([.. tables.StepTimes.SelectMany(BitConverter.GetBytes)]));
-        Assert.AreEqual(0x993304FEA7F369C8UL, Fnv(tables.DoorSpeeds));
+        Assert.AreEqual(0x993304FEA7F369C8UL, Fnv(ProgramTablesImporter.DoorSpeedBytes(exe)));
         Assert.AreEqual(0x5AC52FC0C8AECD88UL, Fnv([.. tables.ScanWindows.SelectMany(BitConverter.GetBytes)]));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EveryDoorOfTheInstallReadsTheValueOfTheProgramsTableForEachTypeAndForNoBuilding()
+    {
+        var tables = TestProgram.Tables();
+        var doors = ProgramTablesImporter.DoorSpeedBytes(TestProgram.OpenInstall().ReadAll(Install.Program));
+
+        Assert.AreEqual(12, tables.Catalog.Buildings.Length);
+        foreach (var entry in tables.Catalog.Buildings)
+        {
+            var type = new BuildingType { Name = entry.Name };
+
+            Assert.AreEqual(
+                doors[entry.OriginalCode!.Value],
+                tables.DoorSpeed(new Building(type, 0, 0, 0)),
+                entry.Name
+            );
+            Assert.AreEqual(
+                doors[entry.OriginalCode.Value | 0x20],
+                tables.DoorSpeed(new Building(type, 0, 0, 0, constructing: true)),
+                $"{entry.Name} under construction"
+            );
+        }
+
+        Assert.AreEqual(doors[0], tables.DoorSpeed((Building?)null), "the door of a place with no building");
     }
 
     [TestMethod]
@@ -359,7 +431,7 @@ public sealed class ProgramTablesTests
     {
         var exe = Executable(bytes =>
         {
-            for (var type = 0; type < RuleTables.BuildingTypeCount; type++)
+            for (var type = 0; type < BuildingTables.TableTypes; type++)
             {
                 bytes[FileOffset(ProgramTablesImporter.BuildingSizeAddress) + type] = (byte)(type % 3);
                 bytes[FileOffset(ProgramTablesImporter.BuildingNeedsAddress) + 2 * type] = (byte)(type + 1);
@@ -369,20 +441,51 @@ public sealed class ProgramTablesTests
 
         var tables = ProgramTablesImporter.Import(exe);
 
-        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType { Code = 5 }));
-        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType { Code = 7 }));
-        Assert.AreEqual(new BuildingNeeds { Planks = 9, Stones = 10 }, tables.NeedsOf(new BuildingType { Code = 8 }));
+        // The size of the type t is t % 3 and its needs t + 1 planks and t + 2 stones: the mill (0xf) 0 is a mine, the farm (0xc) 0, the
+        // baker (0x10) 1 small, the butcher (0xd) 1 small, the pig farm (0xe) 2 large.
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Mill));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Baker));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.PigFarm));
+        Assert.AreEqual(new BuildingNeeds { Planks = 16, Stones = 17 }, tables.NeedsOf(BuildingType.Mill));
+        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(BuildingType.Castle));
     }
 
     [TestMethod]
     [TestCategory(Needs.Install)]
     public void TheBuildingSizeAndNeedsTablesOfTheInstallMatchTheEmulator()
     {
-        var tables = TestProgram.Tables();
+        var exe = TestProgram.OpenInstall().ReadAll(Install.Program);
 
         // peek:449f18:48 (planks and stones of the types 0 to 0x17) and peek:42d307:24 (their sizes).
-        Assert.AreEqual(0x6649B1F9CA0A7982UL, Fnv(tables.BuildingNeedsTable));
-        Assert.AreEqual(0xE5A6690EA07D4A89UL, Fnv(tables.BuildingSizes));
+        Assert.AreEqual(0x6649B1F9CA0A7982UL, Fnv(ProgramTablesImporter.BuildingNeedsBytes(exe)));
+        Assert.AreEqual(0xE5A6690EA07D4A89UL, Fnv(ProgramTablesImporter.BuildingSizeBytes(exe)));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EveryBuildingTypeOfTheInstallReadsTheSizeAndTheNeedsOfTheProgramsTables()
+    {
+        var tables = TestProgram.Tables();
+        var exe = TestProgram.OpenInstall().ReadAll(Install.Program);
+        var sizes = ProgramTablesImporter.BuildingSizeBytes(exe);
+        var needs = ProgramTablesImporter.BuildingNeedsBytes(exe);
+
+        foreach (var entry in tables.Catalog.Buildings.Where(entry => entry.OriginalCode < BuildingTables.TableTypes))
+        {
+            var code = entry.OriginalCode!.Value;
+            var type = new BuildingType { Name = entry.Name };
+
+            Assert.AreEqual(
+                sizes[code] is 1 or 2 ? (BuildingSize)sizes[code] : BuildingSize.Mine,
+                tables.SizeOf(type),
+                entry.Name
+            );
+            Assert.AreEqual(
+                new BuildingNeeds { Planks = needs[2 * code], Stones = needs[2 * code + 1] },
+                tables.NeedsOf(type),
+                entry.Name
+            );
+        }
     }
 
     [TestMethod]
@@ -688,19 +791,19 @@ public sealed class ProgramTablesTests
             tables.Get<WorkerRequest>(new Builder())
         );
         Assert.AreEqual(
-            new WorkerRequest { Job = Job.Of(12), Tool = TestCatalog.GoodOf(5) },
+            new WorkerRequest { Job = Job.Of(5), Tool = TestCatalog.GoodOf(5) },
             tables.WorkerOf(BuildingType.Woodcutter)
         );
         Assert.AreEqual(
-            new WorkerRequest { Job = Job.Of(14), Tool = TestCatalog.GoodOf(7) },
+            new WorkerRequest { Job = Job.Of(7), Tool = TestCatalog.GoodOf(7) },
             tables.WorkerOf(BuildingType.Stonecutter)
         );
         Assert.AreEqual(
-            new WorkerRequest { Job = Job.Of(19), Tool = Good.None },
+            new WorkerRequest { Job = Job.Of(8), Tool = Good.None },
             tables.WorkerOf(BuildingType.Forester)
         );
         Assert.AreEqual(
-            new WorkerRequest { Job = Job.Of(27), Tool = TestCatalog.GoodOf(20) },
+            new WorkerRequest { Job = Job.Of(6), Tool = TestCatalog.GoodOf(20) },
             tables.WorkerOf(BuildingType.Sawmill)
         );
         Assert.IsNull(tables.WorkerOf(BuildingType.Castle), "the castle's handler asks for no worker of this kind");
@@ -724,9 +827,13 @@ public sealed class ProgramTablesTests
         )
         {
             Assert.AreEqual(
-                new WorkerRequest { Job = Job.Of(type.Code + 10), Tool = TestCatalog.GoodOf(type.Code + 3) },
+                new WorkerRequest
+                {
+                    Job = Job.Of(MadeJob(type)),
+                    Tool = TestCatalog.GoodOf(TestCatalog.CodeOf(type) + 3),
+                },
                 tables.WorkerOf(type),
-                $"type {type.Code:x}"
+                $"type {type.Name}"
             );
         }
     }
@@ -751,11 +858,67 @@ public sealed class ProgramTablesTests
             Assert.AreEqual(
                 new WorkerRequest { Job = Job.Of(job), Tool = TestCatalog.GoodOf(tool) },
                 tables.WorkerOf(type),
-                $"type {type.Code:x}"
+                $"type {type.Name}"
             );
-            Assert.AreEqual(size, tables.SizeOf(type), $"type {type.Code:x} size");
+            Assert.AreEqual(size, tables.SizeOf(type), $"type {type.Name} size");
             Assert.AreEqual(new BuildingNeeds { Planks = planks, Stones = stones }, tables.NeedsOf(type));
         }
+    }
+
+    [TestMethod]
+    public void TheCatalogHoldsTheTwelveBuildingTypesWithTheirCodesNamesAndEvidence()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "baker",
+                "butcher",
+                "castle",
+                "farm",
+                "fisher-hut",
+                "forester-hut",
+                "mill",
+                "pig-farm",
+                "sawmill",
+                "stonecutter-hut",
+                "storehouse",
+                "woodcutter-hut",
+            },
+            tables.Catalog.Buildings.Select(entry => entry.Name).ToArray()
+        );
+        Assert.AreEqual(12, tables.Catalog.Buildings.Count(entry => entry.OriginalCode is not null));
+        Assert.IsTrue(tables.Catalog.Buildings.All(entry => !string.IsNullOrEmpty(entry.NameEvidence)));
+        Assert.AreEqual(2, tables.Catalog.Require(BuildingType.Woodcutter).OriginalCode);
+        Assert.AreEqual(0x18, tables.Catalog.Require(BuildingType.Castle).OriginalCode);
+    }
+
+    [TestMethod]
+    public void TheSecondFigureAndTheStorageOfATypeAreTheFactsTheProgramsRulesStateForItsCode()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        // The mask 0x4a0400 tests the codes 10, 17, 19, and 22 (0x43ceb4): the storehouse and the sawmill among the catalog's types.
+        Assert.IsTrue(tables.TakesSecondFigure(BuildingType.Sawmill));
+        Assert.IsTrue(tables.TakesSecondFigure(BuildingType.Storehouse));
+        Assert.IsFalse(tables.TakesSecondFigure(BuildingType.Woodcutter));
+        Assert.IsFalse(tables.TakesSecondFigure(BuildingType.Castle));
+        Assert.IsTrue(tables.IsStorage(BuildingType.Castle));
+        Assert.IsTrue(tables.IsStorage(BuildingType.Storehouse));
+        Assert.IsFalse(tables.IsStorage(BuildingType.Sawmill));
+    }
+
+    [TestMethod]
+    public void AHandlerThatAsksForAJobNoModuleNamesIsRefused()
+    {
+        var address = ProgramTablesImporter.WorkerRequestAddresses[0].Address;
+        var exe = Executable(bytes => bytes[FileOffset(address) + 1] = 30);
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
+
+        StringAssert.Contains(refusal.Message, "job 30");
+        StringAssert.Contains(refusal.Message, "no entry");
     }
 
     [TestMethod]

@@ -177,7 +177,7 @@ and `Cut`. `MainPass` runs `HutWork.ObjectPass` once each pass, before the modul
 own (`StonecutterRules`, `ForesterRules`, `FisherRules`). A job with no module starts nothing and records as the settlers' rules.
 They are built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`). The woodcutter, stonecutter, and
 forester modules declare `CanStandInHut`. A layout stands a worker only in their huts.
-`Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.
+`Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is the type `woodcutter-hut`, whose original code is 2.
 
 The woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree`, `Cuts`, `EntersBuilding`, and `Door`. A
 `WalksFree` carries a `Trip` whose `Purpose` is `ToTree`, `BackToHut`, or `Home`. `RuleTables.WalkRows` holds the rows of

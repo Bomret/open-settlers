@@ -158,27 +158,16 @@ public sealed partial class Layout
             return good;
         }
 
-        // The building types a finished-building entry names (docs/rules/layouts.md), by the names of the build panel.
-        static readonly Dictionary<string, BuildingType> BuildingNames = new()
-        {
-            ["woodcutter"] = BuildingType.Woodcutter,
-            ["stonecutter"] = BuildingType.Stonecutter,
-            ["forester"] = BuildingType.Forester,
-            ["sawmill"] = BuildingType.Sawmill,
-            ["fisher"] = BuildingType.Fisher,
-            ["farm"] = BuildingType.Farm,
-            ["baker"] = BuildingType.Baker,
-            ["mill"] = BuildingType.Mill,
-            ["pig-farm"] = BuildingType.PigFarm,
-            ["butcher"] = BuildingType.Butcher,
-        };
-
-        const string BuildingNameList =
-            "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher";
-
         const string BuildingShape =
-            "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", \"sawmill\", \"fisher\", \"farm\", \"baker\", \"mill\", \"pig-farm\", or \"butcher\", \"x\", \"y\"} (the node of the building, "
-            + "finished with its flag south-east of it)";
+            "{\"type\": a stable name, \"x\", \"y\"} (the node of the building, finished with its flag south-east of it)";
+
+        // The building types a finished-building entry may name (docs/rules/layouts.md): the types the placement builds that the
+        // catalog holds, by stable name in ordinal order.
+        static IEnumerable<string> PlaceableNames(ContentCatalog catalog) =>
+            BuildingPlacement
+                .Types.Where(type => catalog.EntryOf(type) is not null)
+                .Select(type => type.Name)
+                .Order(StringComparer.Ordinal);
 
         // A finished-building entry: the building stands finished at tick 0 as the original's mission start leaves a building
         // (0x41f2d2 places it through 0x449a63 and finishes it).
@@ -202,20 +191,20 @@ public sealed partial class Layout
                 return false;
             }
 
-            if (!entry.TryGetProperty("type", out var typeEntry) || typeEntry.ValueKind != JsonValueKind.String)
+            if (!entry.TryGetProperty("type", out var typeEntry))
             {
                 Fail(name, $"a building needs a \"type\": a building is {BuildingShape}");
 
                 return false;
             }
 
-            var typeName = typeEntry.GetString();
-            if (typeName is null || !BuildingNames.TryGetValue(typeName, out var type))
+            // The game's catalog is not known while the file is read: a name the catalog lacks, or a build-panel name, is refused when
+            // the layout is built, with the names the game's content set knows.
+            var type = new BuildingType
             {
-                Fail(name, $"no building type {typeName}: a layout builds {BuildingNameList}");
-
-                return false;
-            }
+                Name = typeEntry.ValueKind == JsonValueKind.String ? typeEntry.GetString() ?? "" : "",
+            };
+            var given = typeEntry.GetRawText();
 
             if (!Whole(entry, "x", out var x) || !Whole(entry, "y", out var y))
             {
@@ -249,7 +238,9 @@ public sealed partial class Layout
                     Name = name,
                     Command = command,
                     Place = game =>
-                        !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
+                        PlaceableNames(game.Tables.Catalog).ToList() is var placeable && !placeable.Contains(type.Name)
+                            ? $"the building type {given} is no stable name of a building type of this content set, use {string.Join(", ", placeable)}"
+                        : !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
                         : game.Walks.StandsWorker(type) ? game.Walks.StandWorkerInHut(x, y)
                         : null,
                 }

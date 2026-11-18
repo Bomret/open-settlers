@@ -1,9 +1,10 @@
 // The six food buildings finished on flat ground, each with its flag south-east of it and no road or worker: the farm at 7,6, the
 // baker at 12,6, the fisher at 14,10, the pig farm at 14,13, the mill at 7,14, and the butcher at 12,14 (the castle stands at 10,10).
-// Each asks for its worker and finds no road. Play it with play/food.play.
+// Each asks for its worker and finds no road. The seed draws the start stock level 38, which holds the scythe of the farmer, the
+// butcher's knife of the butcher, and the fishing rod of the fisher. Play it with play/food.play.
 {
   "size": 1,
-  "seed": "1234567812345678",
+  "seed": "1234567812345674",
   "height": [
     "11111111111111111111111111111111",
     "11111111111111111111111111111111",
@@ -76,7 +77,7 @@
   "buildings": [
     {"type": "farm", "x": 7, "y": 6},
     {"type": "baker", "x": 12, "y": 6},
-    {"type": "fisher", "x": 14, "y": 10},
+    {"type": "fisher-hut", "x": 14, "y": 10},
     {"type": "pig-farm", "x": 14, "y": 13},
     {"type": "mill", "x": 7, "y": 14},
     {"type": "butcher", "x": 12, "y": 14}

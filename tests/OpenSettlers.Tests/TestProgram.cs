@@ -35,8 +35,9 @@ static class TestProgram
         new(
             new ObjectClass[RuleTables.ClassCount],
             MadeStartStock(),
-            goods: transportPriorities is null ? TestCatalog.StandIn() : TestCatalog.Of(ranks: transportPriorities),
-            workers: MadeWorkers(),
+            goods: transportPriorities is null
+                ? TestCatalog.StandIn(TestCatalog.Buildings(workers: MadeWorkers()))
+                : TestCatalog.Of(ranks: transportPriorities, buildings: TestCatalog.Buildings(workers: MadeWorkers())),
             jobData: MadeJobData()
         );
 
@@ -90,36 +91,52 @@ static class TestProgram
         bool pigFarm = false
     )
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        workers[TestCatalog.CodeOf(BuildingType.Woodcutter)] = new WorkerRequest
         {
             Job = new Woodcutter(),
             Tool = TestCatalog.GoodOf(1),
         };
-        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
+        workers[TestCatalog.CodeOf(BuildingType.Forester)] = new WorkerRequest
+        {
+            Job = new Forester(),
+            Tool = Good.None,
+        };
         if (stonecutter)
         {
-            workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Stonecutter)] = new WorkerRequest
+            {
+                Job = new Stonecutter(),
+                Tool = Good.None,
+            };
         }
 
         if (mill)
         {
-            workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Mill)] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
         }
 
         if (fisher)
         {
-            workers[BuildingType.Fisher.Code] = new WorkerRequest { Job = new Fisher(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Fisher)] = new WorkerRequest
+            {
+                Job = new Fisher(),
+                Tool = Good.None,
+            };
         }
 
         if (baker)
         {
-            workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Baker)] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
         }
 
         if (pigFarm)
         {
-            workers[BuildingType.PigFarm.Code] = new WorkerRequest { Job = new PigFarmer(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.PigFarm)] = new WorkerRequest
+            {
+                Job = new PigFarmer(),
+                Tool = Good.None,
+            };
         }
 
         return workers;

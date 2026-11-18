@@ -316,7 +316,7 @@ public sealed class ConstructionDiggerTests
                 Kind = CommandKind.PlaceBuilding,
                 X = node[0],
                 Y = node[1],
-                Building = new BuildingType { Code = node[2] },
+                Building = TestCatalog.BuildingOf(node[2]),
             }
         );
         game.ApplyCommands();

@@ -177,35 +177,51 @@ public sealed class RuleTablesTests
     [TestMethod]
     public void ABuildingTypeTakesTheSizeAndTheNeedsOfItsTableEntries()
     {
-        var sizes = new byte[RuleTables.BuildingTypeCount];
-        sizes[5] = 1;
-        sizes[6] = 2;
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * 6] = 7;
-        needs[2 * 6 + 1] = 3;
+        var sizes = new byte[TestCatalog.BuildingSlots];
+        sizes[TestCatalog.CodeOf(BuildingType.Mill)] = 1;
+        sizes[TestCatalog.CodeOf(BuildingType.Baker)] = 2;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[2 * TestCatalog.CodeOf(BuildingType.Baker)] = 7;
+        needs[2 * TestCatalog.CodeOf(BuildingType.Baker) + 1] = 3;
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            buildingSizes: sizes,
-            buildingNeeds: needs
+            goods: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, needs: needs))
         );
 
-        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(new BuildingType { Code = 4 }));
-        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType { Code = 5 }));
-        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType { Code = 6 }));
-        Assert.AreEqual(new BuildingNeeds { Planks = 7, Stones = 3 }, tables.NeedsOf(new BuildingType { Code = 6 }));
-        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(new BuildingType { Code = 5 }));
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Farm));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Mill));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.Baker));
+        Assert.AreEqual(new BuildingNeeds { Planks = 7, Stones = 3 }, tables.NeedsOf(BuildingType.Baker));
+        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(BuildingType.Mill));
     }
 
     [TestMethod]
-    public void ATypeOutsideTheTablesIsNoSizeAndNeedsNothing()
+    public void TheCastleAndNoBuildingAreNoSizeAndNeedNothing()
     {
         var tables = TestProgram.Made();
 
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Castle));
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.None));
         Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(BuildingType.Castle));
+    }
+
+    [TestMethod]
+    public void ABuildingTypeTheCatalogLacksStopsTheRulesWithAnErrorNamingIt()
+    {
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
+
+        StringAssert.Contains(
+            Assert.ThrowsExactly<InvalidOperationException>(() => tables.SizeOf(BuildingType.Sawmill)).Message,
+            "sawmill"
+        );
+        StringAssert.Contains(
+            Assert
+                .ThrowsExactly<InvalidOperationException>(() => tables.TakesSecondFigure(BuildingType.Sawmill))
+                .Message,
+            "sawmill"
+        );
     }
 
     [TestMethod]

@@ -420,7 +420,7 @@ public sealed class OpenSettlersSourceTests
                     Row = 0,
                     X = 0,
                     Y = 0,
-                    Type = new BuildingType { Code = type },
+                    Type = TestCatalog.BuildingOf(type),
                 }
             )!;
 

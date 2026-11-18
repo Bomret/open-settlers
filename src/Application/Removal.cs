@@ -551,7 +551,7 @@ public sealed class Removal(
 
         if (
             destination is { } flag
-            && buildings.CountOneLess(flag, movement.Tables.FillCounterOf(good)) is { } building
+            && buildings.CountOneLess(flag, movement.Tables.FillCounterOf(good), movement.Tables) is { } building
         )
         {
             TouchBuilding(building, EventType.CountLost);

@@ -36,11 +36,10 @@ public sealed class WoodcuttingTests
             classes,
             TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            workers: workers ?? TestProgram.MadeWorkers(),
-            goods: TestCatalog.StandIn()
+            goods: TestCatalog.WithDoors(workers ?? TestProgram.MadeWorkers()),
+            noBuildingDoor: 8
         );
     }
 

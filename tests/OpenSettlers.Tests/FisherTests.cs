@@ -176,7 +176,7 @@ public sealed class FisherTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Fisher.Code, hut[2], "the fixture's building is a fisher's");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Fisher), hut[2], "the fixture's building is a fisher's");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Fisher),
             "the fixture's building has its site"

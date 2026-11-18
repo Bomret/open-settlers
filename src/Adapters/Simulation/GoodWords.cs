@@ -30,8 +30,9 @@ public static class GoodWords
         return entry.OriginalCode ?? WordOf(entry.Name);
     }
 
-    // The word of a good with no original code, as the class summary states it.
-    static int WordOf(string name)
+    // The word of a good with no original code, as the class summary states it. The building types use the same word
+    // (BuildingWords): its low byte is clear, so it holds neither the constructing bit 0x20 nor an original code.
+    internal static int WordOf(string name)
     {
         var word = (int)(Fnv1a.Of(name) & 0x7fffff00);
 
@@ -49,17 +50,28 @@ public static class GoodWords
     /// Throws an <see cref="ArgumentException"/> that names both goods where two goods of the catalog with no original code have one word,
     /// which the flag word, the carrier's mode, and the snapshot could not tell apart.
     /// </summary>
-    public static void Check(ContentCatalog catalog)
+    public static void Check(ContentCatalog catalog) =>
+        CheckCodeless(
+            "goods",
+            catalog.Goods.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
+            nameof(catalog)
+        );
+
+    /// <summary>
+    /// Throws an <see cref="ArgumentException"/> that names both entries (<paramref name="kind"/> says what they are) where two of the
+    /// stable names <paramref name="names"/> of entries with no original code have one exporter word.
+    /// </summary>
+    internal static void CheckCodeless(string kind, IEnumerable<string> names, string parameter)
     {
         var byWord = new Dictionary<int, string>();
-        foreach (var entry in catalog.Goods.Where(entry => entry.OriginalCode is null))
+        foreach (var name in names)
         {
-            var word = WordOf(entry.Name);
-            if (!byWord.TryAdd(word, entry.Name))
+            var word = WordOf(name);
+            if (!byWord.TryAdd(word, name))
             {
                 throw new ArgumentException(
-                    $"The goods {byWord[word]} and {entry.Name} have no original code and the same exporter word, 0x{word:x}.",
-                    nameof(catalog)
+                    $"The {kind} {byWord[word]} and {name} have no original code and the same exporter word, 0x{word:x}.",
+                    parameter
                 );
             }
         }

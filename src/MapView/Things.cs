@@ -100,12 +100,17 @@ public sealed record Thing
         return name.Length > 0 ? name : null;
     }
 
-    /// <summary>The building as a thing: its raw type, never the walk's type index, and its raw status.</summary>
-    public static Thing Of(Building building)
+    /// <summary>
+    /// The building as a thing: its raw type, never the walk's type index, and its raw status. A type with no original code shows its
+    /// stable name alone, with no raw value beside it (INV-0006).
+    /// </summary>
+    public static Thing Of(Building building, ContentCatalog catalog)
     {
         List<(string, string)> values =
         [
-            ("type", Hex(building.Type.Code)),
+            .. BuildingWords.HasCode(catalog, building.Type)
+                ? new[] { ("type", Hex(BuildingWords.Of(catalog, building.Type))) }
+                : [],
             ("constructing", building.Constructing ? "true" : "false"),
             ("status", Hex(BuildingEncoder.Status(building))),
             ("flag", building.Flag.ToString(CultureInfo.InvariantCulture)),
@@ -126,7 +131,7 @@ public sealed record Thing
             X = building.X,
             Y = building.Y,
             Values = values,
-            Name = NameTable.BuildingName(building.Type.Code),
+            Name = building.Type.Name,
         };
     }
 
@@ -237,7 +242,7 @@ public sealed record Thing
     // worker word, so it has no worker link; no worker is slot 0.
     static Thing Of(Game game, Building building, int slot)
     {
-        var thing = Of(building);
+        var thing = Of(building, game.Tables.Catalog);
         var worker = !building.IsDemolishing && building.Worker > 0 && building.Worker < game.Settlers.Count;
         var flag = FlagLink(game, building.Flag);
 

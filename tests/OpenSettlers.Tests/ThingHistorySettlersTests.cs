@@ -19,10 +19,9 @@ public sealed class ThingHistorySettlersTests
             classes,
             TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: TestProgram.MadeWorkers(),
-            goods: TestCatalog.StandIn()
+            goods: TestCatalog.WithDoors(TestProgram.MadeWorkers()),
+            noBuildingDoor: 8
         );
         var map = MapGenerator.Generate(
             TestProgram.Made(),
@@ -223,7 +222,7 @@ public sealed class ThingHistorySettlersTests
             var b = game.Buildings[hutSlot];
             int[] expected =
             [
-                b.Type.Code,
+                TestCatalog.CodeOf(b.Type),
                 b.Constructing ? 1 : 0,
                 b.X,
                 b.Y,

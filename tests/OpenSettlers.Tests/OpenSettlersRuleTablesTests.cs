@@ -101,7 +101,8 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.IsFalse(made.Classes.SequenceEqual(empty.Classes), "object classes");
         Assert.IsFalse(made.StartStock.SelectMany(row => row.Values).All(count => count == 0), "start stock");
         Assert.IsFalse(made.StepTimes.SequenceEqual(empty.StepTimes), "step times");
-        Assert.IsFalse(made.DoorSpeeds.SequenceEqual(empty.DoorSpeeds), "door speeds");
+        Assert.AreNotEqual(0, made.DoorSpeed(new Building(BuildingType.Castle, 0, 0, 0)), "door speeds");
+        Assert.AreEqual(0, empty.Catalog.Buildings.Length, "no building types by default");
         Assert.IsFalse(made.ScanWindows.SequenceEqual(empty.ScanWindows), "scan windows");
         Assert.IsFalse(made.Figures.FrameRows.SequenceEqual(empty.Figures.FrameRows), "frame rows");
         Assert.AreEqual(0, empty.Catalog.Goods.Length, "no goods by default");
@@ -111,8 +112,10 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.IsFalse(made.RoadCapacities.SequenceEqual(empty.RoadCapacities), "road capacities");
         Assert.IsFalse(made.WalkRows.SequenceEqual(empty.WalkRows), "walk rows");
         Assert.AreNotEqual(0, made.TransportPriority(Good.Log), "transport priorities");
-        Assert.IsFalse(made.BuildingSizes.SequenceEqual(empty.BuildingSizes), "building sizes");
-        Assert.IsFalse(made.BuildingNeedsTable.SequenceEqual(empty.BuildingNeedsTable), "building needs");
+        Assert.AreEqual(11, made.Catalog.Buildings.Length, "building types");
+        Assert.IsTrue(made.Catalog.Buildings.All(type => type.OriginalCode is null), "no original building codes");
+        Assert.AreEqual(BuildingSize.Large, made.SizeOf(BuildingType.Sawmill), "building sizes");
+        Assert.AreNotEqual(0, made.NeedsOf(BuildingType.Sawmill).Planks, "building needs");
         Assert.IsNotNull(made.ClassOfGood(Good.Plank), "good classes");
         Assert.IsGreaterThan(0, made.DistributionOrder(0).Length, "distribution orders");
         Assert.AreNotEqual(0, made.PlankRankBase, "plank rank base");
@@ -124,6 +127,47 @@ public sealed partial class OpenSettlersRuleTablesTests
     }
 
     [TestMethod]
+    public void TheBasicSetsBuildingTypesAreNamedByStableNameHaveNoCodesAndStateTheSecondFigure()
+    {
+        var tables = Checked();
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "baker",
+                "butcher",
+                "castle",
+                "farm",
+                "fisher-hut",
+                "forester-hut",
+                "mill",
+                "pig-farm",
+                "sawmill",
+                "stonecutter-hut",
+                "woodcutter-hut",
+            },
+            tables.Catalog.Buildings.Select(entry => entry.Name).ToArray()
+        );
+        Assert.IsTrue(tables.Catalog.Buildings.All(entry => entry.OriginalCode is null));
+        Assert.IsTrue(tables.TakesSecondFigure(BuildingType.Sawmill));
+        Assert.IsFalse(tables.TakesSecondFigure(BuildingType.Farm));
+        Assert.IsTrue(tables.IsStorage(BuildingType.Castle));
+        Assert.IsFalse(tables.IsStorage(BuildingType.Woodcutter));
+        Assert.AreEqual(0, tables.NoBuildingDoor);
+    }
+
+    [TestMethod]
+    public void ABuildingKeyThatIsABuildPanelNameIsRefusedNamingTheKey()
+    {
+        using var folder = new RuleFolder();
+        folder.Replace(OpenSettlersRuleTables.BuildingsFile, "\"woodcutter-hut\": {", "\"woodcutter\": {");
+
+        var refusal = Assert.ThrowsExactly<InvalidDataException>(() => new OpenSettlersRuleTables(folder.Root).Read());
+
+        StringAssert.Contains(refusal.Message, "woodcutter-hut");
+    }
+
+    [TestMethod]
     public void TheValuesOfTheFilesAreEncodedAsTheTablesHoldThem()
     {
         var tables = Checked();
@@ -132,7 +176,11 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.IsTrue(tables.ClassOf(new MapObject { Code = 72 }).IsStone);
         Assert.AreEqual(64, tables.StepTime(4), "a flat step, shape 4 + 9 * 0");
         Assert.AreEqual(124, tables.StepTime(4 + 9 * 5 + 4), "a steep climb in the sixth direction");
-        Assert.AreEqual(20, tables.DoorSpeed(BuildingType.Castle.Code | 0x20), "the castle's door while it is built");
+        Assert.AreEqual(
+            20,
+            tables.DoorSpeed(new Building(BuildingType.Castle, 0, 0, 0, constructing: true)),
+            "the castle's door while it is built"
+        );
         Assert.AreEqual(16, tables.ScanWindow(3), "the map size value 3 is 64 by 64");
         Assert.AreEqual(-1, tables.Figures.FrameRow(81));
         Assert.AreEqual(3, tables.RoadCapacity(5));
@@ -360,7 +408,7 @@ public sealed partial class OpenSettlersRuleTablesTests
             Buildings,
             "\"size\": \"small\", // A hut beside the trees.",
             "\"size\": \"huge\",",
-            "buildings.woodcutter.size",
+            "buildings.woodcutter-hut.size",
             "huge"
         );
     }
@@ -370,9 +418,9 @@ public sealed partial class OpenSettlersRuleTablesTests
     {
         Refuses(
             Buildings,
-            "\"materials\": [\"plank\", \"plank\"], // Two planks, in turn.\n      \"blows\": { \"firstHalf\": 8, \"secondHalf\": 8 }, // Eight blows a material, two materials, split evenly.\n      \"worker\": { \"job\": \"woodcutter\"",
-            "\"materials\": [\"plank\", \"brick\"],\n      \"blows\": { \"firstHalf\": 8, \"secondHalf\": 8 },\n      \"worker\": { \"job\": \"woodcutter\"",
-            "buildings.woodcutter.materials[1]",
+            "\"materials\": [\"plank\", \"plank\"], // Two planks, in turn.\n      \"blows\": { \"firstHalf\": 8, \"secondHalf\": 8 }, // Eight blows a material, two materials, split evenly.\n      \"secondFigure\": \"one-figure\", // A small hut is built by one builder's figure.\n      \"worker\": { \"job\": \"woodcutter\"",
+            "\"materials\": [\"plank\", \"brick\"],\n      \"blows\": { \"firstHalf\": 8, \"secondHalf\": 8 },\n      \"secondFigure\": \"one-figure\", // A small hut is built by one builder's figure.\n      \"worker\": { \"job\": \"woodcutter\"",
+            "buildings.woodcutter-hut.materials[1]",
             "brick"
         );
     }

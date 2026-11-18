@@ -57,6 +57,9 @@ sealed record StandInBuilding
 
     /// <summary>The worker the finished building asks for, or null for none.</summary>
     public required WorkerRequest? Worker { get; init; }
+
+    /// <summary>Whether the builder of the site takes a second figure.</summary>
+    public required bool SecondFigure { get; init; }
 }
 
 /// <summary>
@@ -131,36 +134,37 @@ sealed record StandInRules
             steps[at] = StepTimeByRise[((at + RuleTables.StepTimeFirst) % Rises + Rises) % Rises];
         }
 
-        var doors = new byte[RuleTables.DoorSpeedCount];
-        doors[BuildingType.Castle.Code] = CastleDoor.Standing;
-        doors[BuildingType.Castle.Code | 0x20] = CastleDoor.Constructing;
-        var sizes = Enumerable.Repeat((byte)BuildingSize.Small, RuleTables.BuildingTypeCount).ToArray();
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        var materials = new ushort[RuleTables.BuildingTypeCount];
-        var blows = new ushort[2 * RuleTables.BuildingTypeCount];
-        foreach (var (type, building) in Buildings)
+        // The castle states only its door and that it is a storage: its site is built from no needs and it asks for no worker.
+        var castle = new BuildingEntry
         {
-            doors[type.Code] = building.StandingDoor;
-            doors[type.Code | 0x20] = building.ConstructingDoor;
-            if (type.Code >= RuleTables.BuildingTypeCount)
+            Name = BuildingType.Castle.Name,
+            Size = BuildingSize.Mine,
+            Needs = new BuildingNeeds { Planks = 0, Stones = 0 },
+            StandingDoor = CastleDoor.Standing,
+            ConstructingDoor = CastleDoor.Constructing,
+            EarlyBlowStep = 0,
+            LateBlowStep = 0,
+            SecondFigure = false,
+            IsStorage = true,
+        };
+        var buildings = Buildings
+            .Select(entry => new BuildingEntry
             {
-                continue;
-            }
-
-            sizes[type.Code] = (byte)building.Size;
-            needs[2 * type.Code] = (byte)building.Needs.Planks;
-            needs[2 * type.Code + 1] = (byte)building.Needs.Stones;
-            workers[type.Code] = building.Worker;
-            for (var turn = 0; turn < building.Stones.Length; turn++)
-            {
-                materials[type.Code] |= (ushort)(building.Stones[turn] ? 1 << turn : 0);
-            }
-
-            // A blow adds the share of the half it is one of, rounded up so that the blows of a half reach it.
-            blows[2 * type.Code] = (ushort)((Whole + building.FirstHalfBlows - 1) / building.FirstHalfBlows);
-            blows[2 * type.Code + 1] = (ushort)((Whole + building.SecondHalfBlows - 1) / building.SecondHalfBlows);
-        }
+                Name = entry.Key.Name,
+                Size = entry.Value.Size,
+                Needs = entry.Value.Needs,
+                StandingDoor = entry.Value.StandingDoor,
+                ConstructingDoor = entry.Value.ConstructingDoor,
+                Worker = entry.Value.Worker,
+                Stones = entry.Value.Stones,
+                // A blow adds the share of the half it is one of, rounded up so that the blows of a half reach it.
+                EarlyBlowStep = (ushort)((Whole + entry.Value.FirstHalfBlows - 1) / entry.Value.FirstHalfBlows),
+                LateBlowStep = (ushort)((Whole + entry.Value.SecondHalfBlows - 1) / entry.Value.SecondHalfBlows),
+                SecondFigure = entry.Value.SecondFigure,
+                // The castle is the set's one storage: the basic set draws no storehouse.
+                IsStorage = false,
+            })
+            .Append(castle);
 
         var windows = new ushort[RuleTables.ScanWindowCount];
         foreach (var (size, window) in ScanWindows)
@@ -190,13 +194,10 @@ sealed record StandInRules
                         ),
                 ],
                 steps,
-                doors,
                 windows,
                 walkRows: walk,
                 roadCapacities: [.. RoadCapacities],
                 frameRows: [.. FrameRows],
-                buildingSizes: sizes,
-                buildingNeeds: needs,
                 goods: new ContentCatalog(
                     Goods.Select(good => new GoodEntry
                     {
@@ -206,14 +207,12 @@ sealed record StandInRules
                         HandoverCounter = good.Handover,
                         CountsAgainstResource1 = good.CountsAgainstResource1,
                         TransportRank = good.Priority,
-                    })
+                    }),
+                    buildings
                 ),
                 distribution: [.. Distribution.Select(order => order.ToArray())],
                 plankRankBase: PlankRank,
                 millRankBase: MillRank,
-                workers: workers,
-                materialOrder: materials,
-                blowSteps: blows,
                 jobData:
                 [
                     (new Builder(), new WorkerRequest { Job = new Builder(), Tool = BuilderTool }),

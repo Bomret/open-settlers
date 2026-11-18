@@ -169,7 +169,7 @@ public sealed class BakerWalkTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Baker.Code, hut[2], "the fixture's building is a bakery");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Baker), hut[2], "the fixture's building is a bakery");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Baker),
             "the fixture's building has its site"

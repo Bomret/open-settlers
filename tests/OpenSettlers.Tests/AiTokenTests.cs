@@ -40,9 +40,9 @@ public sealed class AiTokenTests
                 classes,
                 TestProgram.MadeStartStock(),
                 [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-                [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
                 [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-                goods: withAiToken ? TestCatalog.WithAiToken() : TestCatalog.StandIn()
+                goods: withAiToken ? TestCatalog.WithAiToken(door: 8) : TestCatalog.WithDoors(),
+                noBuildingDoor: 8
             ),
             map
         );

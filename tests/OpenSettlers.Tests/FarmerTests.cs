@@ -160,7 +160,7 @@ public sealed class FarmerTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Farm.Code, farm[2], "the fixture's building is a farm");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Farm), farm[2], "the fixture's building is a farm");
         Assert.IsTrue(
             Huts.Place(game, farm[0] - 1, farm[1] - 1, BuildingType.Farm),
             "the fixture's building has its site"

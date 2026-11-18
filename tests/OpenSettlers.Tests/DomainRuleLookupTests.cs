@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
@@ -10,55 +11,88 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class DomainRuleLookupTests
 {
-    // Door speeds: the entry of index i holds 100 + i, so the entry a lookup read names itself.
+    // The made-up speed of the door of no building, and of each type's doors: the forester's standing door speeds 109 and its
+    // constructing door 141, every other type's 100 and 140, so the entry a lookup read names itself.
+    const byte NoBuildingSpeed = 77;
+
     static RuleTables DoorTables() =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            doorSpeeds: [.. Enumerable.Range(0, RuleTables.DoorSpeedCount).Select(i => (byte)(100 + i))]
+            goods: new ContentCatalog(
+                [],
+                TestCatalog
+                    .Buildings()
+                    .Select(entry =>
+                        entry with
+                        {
+                            StandingDoor = entry.Name == BuildingType.Forester.Name ? (byte)109 : (byte)100,
+                            ConstructingDoor = entry.Name == BuildingType.Forester.Name ? (byte)141 : (byte)140,
+                        }
+                    )
+            ),
+            noBuildingDoor: NoBuildingSpeed
         );
 
     [TestMethod]
-    public void TheDoorSpeedOfNoBuildingIsTheFirstEntry()
+    public void TheDoorSpeedOfNoBuildingIsTheFactOfItsOwn()
     {
-        // RuleTables.DoorSpeed: no building reads the first entry (hand arithmetic: 100 + 0).
-        Assert.AreEqual((byte)100, DoorTables().DoorSpeed((Building?)null));
+        // RuleTables.DoorSpeed: no building reads NoBuildingDoor, which no entry holds.
+        Assert.AreEqual(NoBuildingSpeed, DoorTables().DoorSpeed((Building?)null));
     }
 
     [TestMethod]
-    public void TheDoorSpeedOfABuildingUnderConstructionIsTheEntryOfItsTypePlus0x20()
+    public void TheDoorSpeedOfABuildingUnderConstructionIsTheConstructingSpeedOfItsEntry()
     {
-        // docs/rules/build-sites.md, "the bit 0x20 is set while the building is under construction": the forester (type 9)
-        // finished reads entry 9 (109), under construction entry 0x29 (hand arithmetic: 100 + 41 = 141).
+        // docs/rules/build-sites.md, "the bit 0x20 is set while the building is under construction": the entry of the forester
+        // states its standing door and its constructing door.
         var tables = DoorTables();
 
         Assert.AreEqual((byte)109, tables.DoorSpeed(new Building(BuildingType.Forester, 3, 3, 0)));
         Assert.AreEqual((byte)141, tables.DoorSpeed(new Building(BuildingType.Forester, 3, 3, 0, constructing: true)));
     }
 
-    // A material order whose every bit is set and a blow table, step table, and worker table with a distinct entry for each
-    // type, so that only an index outside the table can read as nothing.
+    [TestMethod]
+    public void TheDoorSpeedOfATypeTheCatalogLacksStopsWithAnErrorNamingIt()
+    {
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            tables.DoorSpeed(new Building(BuildingType.Forester, 3, 3, 0))
+        );
+
+        StringAssert.Contains(error.Message, "forester-hut");
+    }
+
+    // A material order whose every bit is set and a blow table and worker table with a distinct entry for each type, so that only
+    // a type the catalog lacks, or no building, can read as nothing.
     static RuleTables LookupTables() =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
             stepTimes: [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => (ushort)(1000 + i))],
-            materialOrder: [.. Enumerable.Repeat((ushort)0xffff, RuleTables.BuildingTypeCount)],
-            blowSteps: [.. Enumerable.Range(0, 2 * RuleTables.BuildingTypeCount).Select(i => (ushort)(500 + i))],
-            workers:
-            [
-                .. Enumerable.Repeat(
-                    new WorkerRequest { Job = new Woodcutter(), Tool = Good.None },
-                    RuleTables.BuildingTypeCount
-                ),
-            ]
+            goods: TestCatalog.StandIn(
+                TestCatalog
+                    .Buildings(
+                        order: [.. Enumerable.Repeat((ushort)0xffff, TestCatalog.BuildingSlots)],
+                        blows: [.. Enumerable.Range(0, 2 * TestCatalog.BuildingSlots).Select(i => (ushort)(500 + i))],
+                        workers:
+                        [
+                            .. Enumerable.Repeat(
+                                new WorkerRequest { Job = new Woodcutter(), Tool = Good.None },
+                                TestCatalog.BuildingSlots
+                            ),
+                        ]
+                    )
+                    .Where(entry => entry.Name != BuildingType.Mill.Name)
+            )
         );
 
     [TestMethod]
-    public void StoneAtIsFalseForAStepOutsideZeroToFifteenAndForATypeOutsideTheTable()
+    public void StoneAtIsFalseForAStepOutsideZeroToFifteenAndForNoBuilding()
     {
-        // The order words at 0x43f0ba (docs/rules/construction.md) hold 16 bits, a set bit a stone; every bit is set here, so
-        // only the range checks of the lookup can answer false (RuleTables.StoneAt: false outside step 0 to 15 and outside the table).
+        // The order of an entry (0x43f0ba, docs/rules/construction.md) holds 16 turns, a stone where true; every turn is a stone
+        // here, so only the range checks of the lookup can answer false (RuleTables.StoneAt: false outside step 0 to 15).
         var tables = LookupTables();
         var forester = BuildingType.Forester;
 
@@ -66,38 +100,52 @@ public sealed class DomainRuleLookupTests
         Assert.IsTrue(tables.StoneAt(forester, 15));
         Assert.IsFalse(tables.StoneAt(forester, 16));
         Assert.IsFalse(tables.StoneAt(forester, -1));
-        Assert.IsFalse(tables.StoneAt(new BuildingType { Code = RuleTables.BuildingTypeCount }, 0));
         Assert.IsFalse(tables.StoneAt(BuildingType.None, 0));
     }
 
     [TestMethod]
-    public void BlowStepIsZeroForATypeOutsideTheTable()
+    public void BlowStepReadsTheEarlyAndTheLateStepOfTheEntryAndIsZeroForNoBuilding()
     {
-        // The words at 0x43f0fa are two for each type (docs/rules/construction.md): the forester (9) reads words 18 and 19
-        // (hand arithmetic: 500 + 18, 500 + 19); a type outside the table reads 0
-        // (RuleTables.BlowStep: 0 for a type outside the table).
+        // The words at 0x43f0fa are two for each type (docs/rules/construction.md): the forester (code 9) has the words 18 and 19
+        // (hand arithmetic: 500 + 18, 500 + 19); no building reads 0 (RuleTables.BlowStep).
         var tables = LookupTables();
 
         Assert.AreEqual((ushort)518, tables.BlowStep(BuildingType.Forester, late: false));
         Assert.AreEqual((ushort)519, tables.BlowStep(BuildingType.Forester, late: true));
-        Assert.AreEqual(
-            (ushort)0,
-            tables.BlowStep(new BuildingType { Code = RuleTables.BuildingTypeCount }, late: false)
-        );
         Assert.AreEqual((ushort)0, tables.BlowStep(BuildingType.None, late: true));
     }
 
     [TestMethod]
-    public void WorkerOfIsNullForATypeOutsideTheTable()
+    public void WorkerOfIsNullForNoBuildingAndTheRulesStopForATypeTheCatalogLacks()
     {
-        // The handlers of the jump table 0x42cd1d (docs/rules/build-sites.md) cover the 24 types; every type of the made-up
-        // table asks for the woodcutter, so only an index outside the table reads as none
-        // (RuleTables.WorkerOf: null for a type whose handler asks for none).
+        // Every type of the made-up catalog asks for the woodcutter but the mill, which the catalog lacks
+        // (RuleTables.WorkerOf: null for no building, an error naming a type with no entry).
         var tables = LookupTables();
 
         Assert.IsNotNull(tables.WorkerOf(BuildingType.Forester));
-        Assert.IsNull(tables.WorkerOf(new BuildingType { Code = RuleTables.BuildingTypeCount }));
         Assert.IsNull(tables.WorkerOf(BuildingType.None));
+        StringAssert.Contains(
+            Assert.ThrowsExactly<InvalidOperationException>(() => tables.WorkerOf(BuildingType.Mill)).Message,
+            "mill"
+        );
+        StringAssert.Contains(
+            Assert.ThrowsExactly<InvalidOperationException>(() => tables.SizeOf(BuildingType.Mill)).Message,
+            "mill"
+        );
+        StringAssert.Contains(
+            Assert.ThrowsExactly<InvalidOperationException>(() => tables.NeedsOf(BuildingType.Mill)).Message,
+            "mill"
+        );
+        StringAssert.Contains(
+            Assert.ThrowsExactly<InvalidOperationException>(() => tables.StoneAt(BuildingType.Mill, 0)).Message,
+            "mill"
+        );
+        StringAssert.Contains(
+            Assert
+                .ThrowsExactly<InvalidOperationException>(() => tables.BlowStep(BuildingType.Mill, late: false))
+                .Message,
+            "mill"
+        );
     }
 
     [TestMethod]

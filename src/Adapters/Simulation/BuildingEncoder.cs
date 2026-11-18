@@ -26,7 +26,10 @@ public static class BuildingEncoder
     /// <summary>The fill word (bytes 8 and 9): the counters of the goods the building takes in.</summary>
     public static int Fill(Building building) => building.FillLow | (building.FillHigh << 8);
 
-    /// <summary>The type as the tables of the walk index it: the type, plus 0x20 while the building is built.</summary>
-    public static int TypeIndex(Building building) =>
-        building.Type.Code | (building.Constructing ? ConstructingBit : 0);
+    /// <summary>
+    /// The type as the tables of the walk index it: the type's word (<see cref="BuildingWords.Of"/>), plus 0x20 while the building is
+    /// built. A free slot keeps the word of no building.
+    /// </summary>
+    public static int TypeIndex(Building building, ContentCatalog catalog) =>
+        BuildingWords.Of(catalog, building.Type) | (building.Constructing ? ConstructingBit : 0);
 }

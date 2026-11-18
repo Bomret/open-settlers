@@ -28,7 +28,7 @@ public sealed class SnapshotExporter(
         var b = buildings[slot];
         List<(string, int)> fields =
         [
-            ("type", b.Type.Code),
+            ("type", BuildingWords.Of(catalog, b.Type)),
             ("constructing", b.Constructing ? 1 : 0),
             ("x", b.X),
             ("y", b.Y),

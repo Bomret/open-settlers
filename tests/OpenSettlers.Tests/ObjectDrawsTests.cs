@@ -193,10 +193,14 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
-        sizes[BuildingType.Sawmill.Code] = 2;
+        var sizes = Enumerable.Repeat((byte)1, TestCatalog.BuildingSlots).ToArray();
+        sizes[TestCatalog.CodeOf(BuildingType.Sawmill)] = 2;
         var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.MadeStartStock(), buildingSizes: sizes, goods: TestCatalog.StandIn()),
+            new RuleTables(
+                classes,
+                TestProgram.MadeStartStock(),
+                goods: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes))
+            ),
             map
         );
         game.Enqueue(
