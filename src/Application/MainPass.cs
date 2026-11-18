@@ -47,7 +47,7 @@ public sealed class MainPass(
     public int ScanCursor { get; private set; }
 
     /// <summary>
-    /// Whether each pass gives every settler in an activity the view draws (<see cref="Activity.IsDrawn"/>) one more turn after
+    /// Whether each pass gives every settler in an activity that takes it (<see cref="Activity.TakesEveryPassTurn"/>) one more turn after
     /// the slices, as the original's view
     /// pass (<c>0x42f4f1</c>) does for the settlers in view. Off, a settler takes a turn only in its slice, every 16 or 17
     /// passes, as in the original's passes without a view.
@@ -109,11 +109,12 @@ public sealed class MainPass(
         }
 
         // 0x42f4f1 gives each settler in view one more turn every pass; the engine gives it to every settler in an activity
-        // the view draws (Activity.IsDrawn), so the figure on the screen does not stall between the slice turns and the
-        // simulation does not depend on the view. The other activities keep the slice turns alone.
+        // the view draws (Activity.IsDrawn), so the figure on the screen does not stall between the slice turns, and to the
+        // castle's settler, so the castle grows a little each pass. The simulation does not depend on the view. The other
+        // activities keep the slice turns alone.
         for (var slot = 0; slot < settlers.Count; slot++)
         {
-            if (settlers[slot].Activity.IsDrawn)
+            if (settlers[slot].Activity.TakesEveryPassTurn)
             {
                 tablePass.Visit(slot);
             }
