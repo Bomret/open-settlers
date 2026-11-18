@@ -15,7 +15,8 @@ original's. The emulated worker walks ([Settlers](settlers.md#the-walk)) and car
 
 ## Where a settler comes from
 
-A placed settler is one of the 20 first settlers of the [castle](castle.md). He waits in the castle in state 1 (the
+A placed settler is one of the castle's settlers: one of the 20 first settlers of the [castle](castle.md), or one the castle
+names ([The castle's settlers](#the-castles-settlers)). He waits in the castle in state 1 (the
 [walk](settlers.md#the-walk) lists the states) with the job the entry names. [Settlers](settlers.md#the-items) lists the
 jobs.
 
@@ -89,6 +90,34 @@ The load fails with a problem naming the file and the castle entry, and no game 
 given twice, a value that is not an object, and a count that is not a whole number from 0 to 50000 (the most a count of the
 castle's stock holds).
 
+## The castle's settlers
+
+**Stand-in.** The `castle` entry takes an optional `settlers` key: an object of job names and counts, such as `{"jobless": 1}`.
+The castle then holds its castle settler (job 4, slot 0, who builds the castle) and then exactly the named settlers, each job's
+together, in the order the file names them. They wait in the castle in state 1, as the 20 first settlers do. Without the key the
+castle holds the 20 first settlers. With `settlers` and no `stock`, the castle keeps the start stock as the original leaves it
+after equipping its 20 first settlers. An empty object leaves the castle settler alone, and the castle is still built. The
+original has no such start.
+
+The names are the job names of the name table (`NameTable.JobName`): `carrier`, `digger`, `builder`, `woodcutter`, `sawmiller`,
+`stonecutter`, `forester`, `fisher`, `pig-farmer`, `butcher`, `farmer`, `miller`, `baker`, and `jobless`, the same on the install
+and on the basic content set. A building type's name is not a job's: `mill` and `sawmill` are no job's names, and `woodcutter`
+names the job. The knights (jobs 22 to 26) and the jobs 9, 10, 18, and 20 have no name, so no layout names them. The castle
+settler, `castle-settler`, cannot be named. The key is taken on the castle entry only, and a flag entry naming it fails as an
+unknown key.
+
+Requests take a named settler as they take a first settler ([Where a settler comes from](#where-a-settler-comes-from)): a
+building takes one of its job first, else a settler without a job and the job's tool from the castle's goods; a road takes a
+named carrier before a settler without a job. A finished-building entry whose worker the named settlers and goods cannot give
+fails the load with the problem "the castle holds no … for the building". `layouts/castle-contents.jsonc` and
+`play/castle-contents.play` show a castle of one settler without a job: of two sawmills, the first takes him and the second
+finds no settler.
+
+The load fails with a problem naming the file and the castle entry, and no game starts, for a name that is no job's,
+`castle-settler`, a name given twice, a value that is not an object, a count that is not a whole number from 0, and counts that
+together with the castle settler are more than the settler table of the map's size holds, less the one place the game keeps
+free (`SettlerTable.SizeOf`).
+
 ## Goods
 
 `{"x", "y", "place": 0 to 7, "good": 1 to 25}` puts the good on the place of the flag at the node, as `Flag_PutGood`
@@ -119,12 +148,11 @@ site and never a finished building.
 
 ## Not supported
 
-Some settlers have no entry state here. These are every other state of a settler, every other job, and the castle's own
-settlers: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, the fisher's, the farm, or the butcher's shop, and a woodcutter, a stonecutter, a forester, a fisher, a farmer, or a butcher apart from his finished-building entry. The file reader refuses the entry.
+Some settlers have no entry state here. These are every other state of a settler and every other job: mid-walk, mid-cut, and in a building other than the woodcutter's hut, the stonecutter's, the forester's, the fisher's, the farm, or the butcher's shop, and a woodcutter, a stonecutter, a forester, a fisher, a farmer, or a butcher apart from his finished-building entry. The file reader refuses the entry.
 
 ## In the engine
 
-`Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys, and the castle entry's `stock`, which travels on the castle's command (`Command.Stock`) to `PlaceCastleHandler`. `Game.PlaceFinishedBuilding` stands the finished building
+`Layout.Placement.cs` reads the `buildings`, `settlers`, and `goods` keys, and the castle entry's `stock` and `settlers`, which travel on the castle's command (`Command.Stock`, `Command.Settlers`) to `PlaceCastleHandler` and `CastleRoster.CreateCastleSettlers`. `Game.PlaceFinishedBuilding` stands the finished building
 (`BuildingPlacement.PlaceFinished`). For a building of a job whose rules module declares `CanStandInHut` (a woodcutter, a stonecutter, a forester, a miller, a fisher, a farmer, a butcher, a baker, or a pig farmer; `WalkBehavior.StandsWorker`) the entry then calls `WalkBehavior.StandWorkerInHut` (`Game.Walks`), the entry state of
 the settler in his hut.
 `CarrierBehavior.PlaceCarrierOnRoad` and `GoodsTransport.PlaceGood` are the carrier's and the good's. A settler for a road that the layout has not built before it fails the
