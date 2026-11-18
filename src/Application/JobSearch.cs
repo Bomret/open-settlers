@@ -13,8 +13,25 @@ public sealed record JobSearch
     /// <summary>The first spiral entry of the range.</summary>
     public required int First { get; init; }
 
+    readonly int _count = 1;
+
     /// <summary>The number of entries of the range, a power of two: the draw's mask keeps as many values.</summary>
-    public required int Count { get; init; }
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The count is not a positive power of two, at construction or in a copy made with <c>with</c>.
+    /// </exception>
+    public required int Count
+    {
+        get => _count;
+        init =>
+            _count =
+                value > 0 && (value & (value - 1)) == 0
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(Count),
+                        value,
+                        "The count must be a positive power of two."
+                    );
+    }
 
     /// <summary>
     /// The target test: whether the node at the column and row of the map is one the worker goes to. It reads the map alone, draws

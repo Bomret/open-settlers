@@ -72,6 +72,20 @@ public sealed class JobSearchTests
     }
 
     [TestMethod]
+    [DataRow(0)]
+    [DataRow(-4)]
+    [DataRow(100)]
+    public void A_search_refuses_a_count_that_is_no_power_of_two(int count)
+    {
+        Assert.ThrowsExactly<System.ArgumentOutOfRangeException>(() =>
+            SearchOf(BuildingType.Woodcutter) with
+            {
+                Count = count,
+            }
+        );
+    }
+
+    [TestMethod]
     public void Buildings_whose_worker_searches_nothing_and_the_castle_answer_no_search()
     {
         var game = GameFactory.Create(BasicTables(), Meadow());
