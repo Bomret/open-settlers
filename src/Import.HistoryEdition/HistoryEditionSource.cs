@@ -12,7 +12,8 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// texture down every <see cref="TerrainGraphics.TextureHeight"/> rows from the top of the mask
 /// (<c>docs/rules/graphics-images.md</c>, "Textured fill"). A term the original has no mask for draws nothing. For the
 /// objects it holds the entry picks and the phase folding of <see cref="ObjectSprites"/>, the shadow mask of each object
-/// sprite, and the surface color of the water ripple; an object code with no sprite draws nothing. For the settlers it
+/// sprite, the surface color of the water ripple, and the image picks of the border posts (<see cref="BorderRules"/>); an
+/// object code with no sprite draws nothing. For the settlers it
 /// holds the figure tables of the exe (<see cref="SettlerFigureTables"/>), the colour and entry picks, the second figure's
 /// shift as an image anchor, and the settler shadow (<see cref="SettlerSprites"/>); a settler term with no image draws nothing.
 /// </summary>
@@ -180,6 +181,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <inheritdoc />
     public ObjectImage? Draw(FlameDraw flame) =>
         Usable(_objects?.Sprites.GetValueOrDefault(FlameLists.Entry(flame.Size, flame.Phase)));
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(BorderPost post) => Usable(_objects?.Sprites.GetValueOrDefault(BorderRules.Entry(post)));
 
     /// <inheritdoc />
     public ObjectImage? Draw(BuildMarker marker) =>

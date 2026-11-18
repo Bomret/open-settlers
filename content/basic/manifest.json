@@ -1448,6 +1448,20 @@
       -12
     ]
   },
+  "border/pole": {
+    "image": "border/pole.png",
+    "anchor": [
+      -1,
+      -9
+    ]
+  },
+  "border/water": {
+    "image": "border/water.png",
+    "anchor": [
+      -1,
+      -9
+    ]
+  },
   "settler/carrier/walks": {
     "image": "settler/carrier-walks.png",
     "anchor": [

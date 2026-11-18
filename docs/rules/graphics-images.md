@@ -136,7 +136,7 @@ same.
 | 474 to 481 | `0x44de9a` from `0x44f42e`: the counter shifted and masked to 0 to 7, plus 154, plus 320 | palette |
 | 482 to 493 | `0x44de9a` from `0x44ee56` and seven more sites: the first bytes (162 to 173) of the byte-pair table at `0x44f225`, plus 320 | palette |
 | 495 to 521 | `0x44de9a` from `0x44e6c5`: the object byte 9 (1 or more) plus 174, plus 320; 502 to 517 also from `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d`: the counter shifted and masked to 0 to 3, plus 4 times the object byte 5 masked to 0 to 3, plus 182, plus 320 | palette |
-| 610 to 619 | `0x428528`: 610 to 612, those plus 3 or 6, and 619 | palette |
+| 610 to 619 | `Render_DrawBorderEast`, `Render_DrawBorderSouthEast`, `Render_DrawBorderSouth` (`0x428389`, `0x42846d`, `0x428528`): the border posts, 610 to 612 by the slope, those plus 3 or 6 by the ground, and 619 in water ([Roads](roads.md#how-a-border-is-drawn)) | palette |
 | 750 to 793 | `0x4511d5` through `0x406490`: a character's glyph, the character's code plus 749 | one color, index 31 |
 | 810 to 853 | the same routine, the glyph plus 809, as the shadow of the text | one color, index 1 |
 | 1250 to 1273 | `0x44da4d`: an index plus 1250 | palette |
@@ -297,8 +297,9 @@ The masks 230 to 256 and the textures 300 to 309 are the strips of the roads, no
 (`0x428008` and after; [Roads](roads.md#how-a-road-is-drawn)). The map view (`src/Viewer/MapViewControl.cs`, with
 `src/MapView/TerrainQuads.cs` planning each band's rectangles) paints the fill masks 60 to 221 and the fill textures
 260 to 292 as the terrain, and the road strips over it (`src/MapView/RoadDraws.cs`), each as one RGBA image the
-History Edition source bakes from a mask and a texture. Not drawn: the borders of the
-territories that the routines `0x428389`, `0x42846d`, and `0x428528` draw where no road lies (inferred).
+History Edition source bakes from a mask and a texture. The borders of the territories are sprites, not masks: the
+border posts 610 to 619 ([Roads](roads.md#how-a-border-is-drawn)), which the map view draws with the road strips
+(`src/MapView/BorderDraws.cs`).
 
 ### Corrupt masks
 

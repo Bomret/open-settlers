@@ -15,11 +15,13 @@ namespace OpenSettlers.Import.ContentSet;
 /// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
 /// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
 /// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, <see cref="MarkerKey"/>
-/// for each of the four build markers, <see cref="SettlerKey"/> for each job and kind of activity of a settler, and
+/// for each of the four build markers, <see cref="BorderPoleKey"/> and <see cref="BorderWaterKey"/> for the border posts,
+/// <see cref="SettlerKey"/> for each job and kind of activity of a settler, and
 /// <see cref="FlameKey"/> for each flame size and phase. The keys <see cref="FlamesKey"/> of each finished building but the
 /// castle and <see cref="EarlySiteFlamesKey"/> hold no image but <c>{ "flames": [{ "size": "small" | "large", "at": [x, y] }, …] }</c>,
 /// the flames of a burning building in the order they are drawn, each at its offset from the building (ADR 0021). The art is flat: one image per terrain code
-/// and triangle, one strip per direction, whatever the slope, one frame per object, and one figure per job and kind of
+/// and triangle, one strip per direction, whatever the slope, one border post on land and one in water, whatever the slope,
+/// one frame per object, and one figure per job and kind of
 /// activity, whatever the settler's heading, step, or frame. A settler's pixels in <see cref="MarkColour"/> show the
 /// player's colour. The source draws no shadow, no water ripple, and no object of the codes 2 to 7. Every key above must
 /// be in the manifest.
@@ -48,6 +50,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectImage[] _markers;
     readonly ObjectImage[] _flameImages;
     readonly IReadOnlyDictionary<string, IReadOnlyList<Flame>> _flames;
+    readonly ObjectImage _pole;
+    readonly ObjectImage _waterPost;
     readonly int _headroom;
 
     // The figure of a job and kind in a player's colour, one instance per job, kind, and colour.
@@ -67,6 +71,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ObjectImage[] markers,
         ObjectImage[] flameImages,
         IReadOnlyDictionary<string, IReadOnlyList<Flame>> flames,
+        ObjectImage pole,
+        ObjectImage waterPost,
         int headroom
     )
     {
@@ -74,6 +80,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
         _flames = flames;
         _settlers = settlers;
         _markers = markers;
+        _pole = pole;
+        _waterPost = waterPost;
         _headroom = headroom;
         _terrain = terrain;
         _roads = roads;
@@ -227,6 +235,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
         EarlySiteFlamesKey,
     ];
 
+    /// <summary>The manifest key of the border post on land.</summary>
+    public const string BorderPoleKey = "border/pole";
+
+    /// <summary>The manifest key of the border post in water.</summary>
+    public const string BorderWaterKey = "border/water";
+
     /// <summary>The manifest key of the flag.</summary>
     public const string FlagKey = "object/flag";
 
@@ -346,6 +360,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
             key => key,
             key => flameLists.TryGetValue(key, out var list) ? list : throw Fault(key, "no flames")
         );
+        var pole = Image(BorderPoleKey);
+        var waterPost = Image(BorderWaterKey);
 
         var headroom = objects
             .Concat([flag])
@@ -364,6 +380,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
             markers,
             flameImages,
             flames,
+            pole,
+            waterPost,
             headroom
         );
     }
@@ -578,6 +596,9 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectImage? Draw(RoadStrip strip) => _roads[(int)strip.Direction];
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(BorderPost post) => post.Ground.IsWater ? _waterPost : _pole;
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(MapObjectDraw draw) =>

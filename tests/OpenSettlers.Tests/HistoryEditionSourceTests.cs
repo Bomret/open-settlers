@@ -846,14 +846,16 @@ public sealed class HistoryEditionSourceTests
     public void EachBuildMarkerDrawsItsOwnSpriteAndNoShadow()
     {
         // Entries 367 to 370 are the flag, mine, small, and large markers (docs/rules/build-sites.md, "The build-site
-        // overlay"). Each has a shadow mask at its entry plus 250 here, which the original never draws for them.
+        // overlay"). The large marker has a shadow mask at its entry plus 250 here, which the original never draws for it;
+        // the entries 617 to 619 hold border posts.
         using var fake = ObjectFake(payloads =>
         {
             for (var entry = 367; entry <= 370; entry++)
             {
                 payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 360), 2);
-                payloads[entry + 250] = ObjectGraphicsTests.ShadowMask();
             }
+
+            payloads[370 + 250] = ObjectGraphicsTests.ShadowMask();
         });
         var source = Open(fake);
 
@@ -862,6 +864,65 @@ public sealed class HistoryEditionSourceTests
 
         CollectionAssert.AreEqual(new[] { 7, 8, 9, 10 }, offsets);
         Assert.AreSame(source.Draw(BuildMarker.Mine), source.Draw(BuildMarker.Mine));
+    }
+
+    static BorderPost Post(int slope, int ground) =>
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Direction = RoadDirection.East,
+            Slope = slope,
+            Ground = new Terrain { Code = ground },
+        };
+
+    [TestMethod]
+    [DataRow(2, 5, 610)]
+    [DataRow(1, 5, 611)]
+    [DataRow(-8, 5, 611)]
+    [DataRow(-9, 5, 612)]
+    [DataRow(2, 4, 610)]
+    [DataRow(2, 10, 610)]
+    [DataRow(2, 11, 613)]
+    [DataRow(-8, 14, 614)]
+    [DataRow(-9, 15, 618)]
+    [DataRow(30, 3, 619)]
+    [DataRow(-30, 0, 619)]
+    public void ABorderPostTakesTheImageOfItsSlopeBandRaisedByItsGroundOrTheWaterPost(int slope, int ground, int entry)
+    {
+        // The bands of 0x428389, 0x42846d, and 0x428528 (docs/rules/roads.md, "How a border is drawn").
+        Assert.AreEqual(entry, BorderRules.Entry(Post(slope, ground)));
+    }
+
+    [TestMethod]
+    public void EachBorderPostDrawsItsArchiveSpriteAndTheSameInstanceForEqualPicks()
+    {
+        // Entries 610 to 619 each hang by their own offset across.
+        using var fake = ObjectFake(payloads =>
+        {
+            for (var entry = 610; entry <= 619; entry++)
+            {
+                payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 600), 0);
+            }
+        });
+        var source = Open(fake);
+
+        Assert.AreEqual(11, source.Draw(Post(0, 5))!.OffsetX);
+        Assert.AreEqual(19, source.Draw(Post(5, 2))!.OffsetX);
+        Assert.AreEqual(15, source.Draw(Post(-20, 12))!.OffsetX);
+        Assert.AreSame(source.Draw(Post(0, 5)), source.Draw(Post(-3, 6)));
+    }
+
+    [TestMethod]
+    public void ABorderPostTheArchiveLeavesOutDrawsNothingAndNoneWithoutObjectGraphics()
+    {
+        using var objects = ObjectFake();
+        using var none = Fake();
+
+        Assert.IsNull(Open(objects).Draw(Post(0, 5)));
+        Assert.IsNull(Open(none).Draw(Post(0, 5)));
     }
 
     [TestMethod]
