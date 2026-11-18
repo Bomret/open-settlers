@@ -1,0 +1,15 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <RootNamespace>OpenSettlers.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Testing" />
+    <Using Include="OpenSettlers.Domain.Testing" />
+    <Using Include="OpenSettlers.Domain" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Testing/OpenSettlers.Testing.csproj" />
+    <ProjectReference Include="../Domain.Testing/OpenSettlers.Domain.Testing.csproj" />
+    <ProjectReference Include="../Domain/OpenSettlers.Domain.csproj" />
+  </ItemGroup>
+</Project>

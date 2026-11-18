@@ -11,6 +11,9 @@
     <Project Path="src/Launch/OpenSettlers.Launch.csproj" />
     <Project Path="src/Assets/OpenSettlers.Assets.csproj" />
     <Project Path="src/Generators/OpenSettlers.Generators.csproj" />
+    <Project Path="src/Generators.Tests/OpenSettlers.Generators.Tests.csproj" />
+    <Project Path="src/Domain.Tests/OpenSettlers.Domain.Tests.csproj" />
+    <Project Path="src/Import.Tests/OpenSettlers.Import.Tests.csproj" />
     <Project Path="src/Testing/OpenSettlers.Testing.csproj" />
     <Project Path="src/Domain.Testing/OpenSettlers.Domain.Testing.csproj" />
     <Project Path="src/Import.Testing/OpenSettlers.Import.Testing.csproj" />
