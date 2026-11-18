@@ -19,7 +19,9 @@ The focused command takes the changed paths for `{paths}` and runs the unit-test
 `tools/focused-tests.py`. The header of the script states the selection rules. The selection follows only the names a
 test file holds, so the full command, which runs every unit test, is the check before a merge.
 `mise run test` runs every unit test with no selection, and `python3 -I tools/focused-tests.py --list <path>...` prints
-the selection without a run. The command refuses to run without a path: it prints a usage line and exits 2.
+the selection without a run. The command runs every selected test project, whatever an earlier one returned, and
+exits with the first non-zero status. It finds test projects (`*.Tests`) and helper projects (`*.Testing`) at any
+depth. The command refuses to run without a path: it prints a usage line and exits 2.
 `FocusedTestsTests` pins the selection, and compares the test classes the script knows (`--classes`) with the test
 classes of the root test assembly (`OpenSettlers.Tests/`).
 
