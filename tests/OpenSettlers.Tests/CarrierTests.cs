@@ -152,6 +152,36 @@ public sealed class CarrierTests
         Assert.AreEqual(0x71, carrier.Frame, "the frame of the idle carrier: 0x6e plus the direction it came by");
     }
 
+    // The carrier next to the flag at 18,6, marked to go as the fourth empty turn at a busy road marks it, steps onto the castle's
+    // flag, walks to the storage (state 2, mode 0xfe), and goes in: the castle's list names it under job 0.
+    [TestMethod]
+    public void AReleasedCarrierWalksIntoTheCastleAndTheCastlesListNamesItUnderJob0()
+    {
+        var game = World();
+        Build(game, 16, 6, 0, 0);
+        Run(game, 600);
+        var slot = Enumerable.Range(0, game.Settlers.Count).Single(s => game.Settlers[s].Job == new Carrier());
+        var carrier = game.Settlers[slot];
+        carrier.Activity = new WalksRoad
+        {
+            Load = null,
+            Heading = Heading.Facing(new Direction { Value = 0 }),
+            Marked = true,
+        };
+        carrier.Timer = 0;
+        var toStorage = false;
+
+        for (var tick = 0; tick < 2000 && game.Roster.Waiting(new Carrier()) == 0; tick++)
+        {
+            game.Tick();
+            toStorage |= carrier.Activity is Walks { Errand: ToStorage };
+        }
+
+        Assert.IsTrue(toStorage, "it walks to the storage from the castle's flag");
+        Assert.IsInstanceOfType<WaitsInCastle>(carrier.Activity, "it waits in the castle");
+        Assert.AreEqual(slot, game.Roster.Waiting(new Carrier()));
+    }
+
     [TestMethod]
     public void EachOfTwoRoadsBuiltAtTheSameTickGetsItsOwnCarrierInTheOrderOfTheirFlags()
     {

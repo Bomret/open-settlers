@@ -429,6 +429,64 @@ public sealed class CarrierBehaviorTests
         Assert.AreEqual(0, rig.Stocked.Count);
     }
 
+    // The removal marks a carrier that hands a good over (state 0xe) and drops its good. The handover's second half (0x43c4ea)
+    // reads the mark as its own, clears it, and the carrier goes on along its road in state 3.
+    [TestMethod]
+    public void ACarrierMarkedWhileItHandsAGoodOverGoesOnAlongItsRoadAndNotToAStorage()
+    {
+        var (rig, settler, slot) = MarkedOnFlag(load: null);
+        settler.Activity = new HandsOver
+        {
+            Load = null,
+            Heading = Heading.Facing(East),
+            Marked = true,
+        };
+
+        rig.Registry.Handle(slot, settler);
+
+        var walks = (WalksRoad)settler.Activity;
+        Assert.IsFalse(walks.Marked, "the second half clears the mark");
+        Assert.IsFalse(
+            rig.Bench.History.Events.All.Any(e => e.Type == EventType.CarrierGoesHome),
+            "it walks to no storage"
+        );
+    }
+
+    [TestMethod]
+    public void ABusyRoadAsksForAnotherCarrierWhileItsMarkedCarrierIsStillOnTheRoad()
+    {
+        var rig = Busy(carriers: 2, goods: 3, capacity: 2);
+        var map = rig.Bench.Map;
+        map.At(5, 4).Roads = new RoadSet { Bits = 1 << East | 1 << West };
+        map.At(6, 4).FlagMark = true;
+        map.At(6, 4).LinkTo(1);
+        // The road's second carrier, next to flag 1 at its fourth empty turn.
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            5,
+            4,
+            0,
+            new WalksRoad
+            {
+                Load = null,
+                Heading = Heading.Facing(West),
+                Waits = 3,
+            }
+        );
+        var slot = rig.Bench.Settlers.Add(settler);
+        rig.Bench.Clock = 8;
+        rig.Registry.Handle(slot, settler);
+        Assert.IsTrue(
+            ((WalksRoad)settler.Activity).Marked,
+            "the fourth empty turn marks the carrier and lowers the count"
+        );
+
+        rig.Carriers.FlagPass(0);
+
+        Assert.AreEqual(1, rig.Roster.Sent, "the road counts one carrier, fewer than its length class holds");
+    }
+
     [TestMethod]
     public void ACarrierOnTheFlagItCarriesAGoodToHandsItOverAndTheCastleCountsIt()
     {

@@ -165,7 +165,7 @@ public sealed class CarrierBehavior(
     // the flag's goods heading along it and a carrier on it sets its bit in the status. A busy road (three or more) sets none:
     // with a carrier on the way it asks for nothing, else it asks for another unless its carriers equal the number its length
     // class holds (0x465189; a road over that number asks again). A road with no carrier on it or on the way asks for one.
-    // A request is made only while no request of this flag found a carrier since the retry scan, and a water road asks for
+    // A request is made only while no request of this flag has found no carrier since the retry scan, and a water road asks for
     // none (its boatman is not ported). At a crowded flag the bit of each road that is busy or asked goes out (0x46520b).
     void VisitFlag(int slot, GoodsLoad load)
     {

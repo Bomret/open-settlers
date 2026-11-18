@@ -143,7 +143,10 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   frame and heading, and steps no further in that turn. It neither delivers the good it may carry nor takes or leaves a good at
   the flag. The walk to the storage is the walk home of [Settlers](settlers.md#walking-home). **Emulated** (`drain`): the
   released carrier reaches the castle's flag at the pass 2806 and the castle's door at the pass 2971. A carrier the removal of
-  its road marks ([Removal](removal.md#taking-a-road-down)) takes the same branch at the next flag it reaches.
+  its road marks ([Removal](removal.md#taking-a-road-down)) takes the same branch at the next flag it reaches. A carrier that
+  the removal marks while it hands a good over (state 0xe) is the exception: the second half of the handover (`Settler_DeliverGood`,
+  `0x43c4ea`) reads byte 15 not 0 as its own mark, sets it to 0, and the carrier goes on along its road in state 3, with no walk to a
+  storage. Confirmed, read from the code.
 - **State 0x42** (`0x42ff81`): the item does not change while no good waits to go along the carrier's road (in over 20 turns of the
   emulator, 350 passes). With a good at either end of the road the carrier is told to fetch it and takes state 3 again:
   [Goods at a flag](goods.md#the-carrier-told-to-fetch).
