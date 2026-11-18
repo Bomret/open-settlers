@@ -277,17 +277,17 @@ script alone. Add a layout only where none of them holds the situation.
   the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
 - `play/basic-construction.play` and `play/basic-production.play` on the game view with `--content-set basic` and no install.
   The construction loop uses seed `1234567812345634`. The castle's materials build the sawmill and the woodcutter's hut. The woodcutter's logs reach
-  the sawmill, and its planks build a stonecutter's hut. The production chains use seed `4455544685788642` and four fresh games started by `seed`. Mill and baker give
-  bread, farm and mill give flour, butcher and pig farm give meat, and a fisher gives fish. The run lines are in each script's header. The chains
-  split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
-  are the History Edition's.
+  the sawmill, and its planks build a stonecutter's hut. The production chains use seed `4455544685788642` and one game each for bread, meat, and fish. In the bread game, farm, mill, and baker give
+  bread from the farm's grain. The chain needs more settlers without a job than the castle's five. The settler supply adds them. Butcher and pig
+  farm give meat, and a fisher gives fish, each in a fresh game started by `seed`. The run lines are in each script's header. The other
+  game-view scripts run with the install: their `expect` values are the History Edition's.
 - `play/burning.play` on `layouts/woodcutter.jsonc` and `play/basic-burning.play` on the same layout with `--content-set basic`: the
   woodcutter's hut is razed with the Remove button, shots show it with its flames twice, then nothing once the burn frees its node.
   The first shows the original's flames, the second the basic set's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
   the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
-  beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.
-  The play therefore shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
+  beyond their start stock too. The three buildings are the ones the castle's 5 first jobless settlers staff. The settler supply adds
+  more as the game runs. The play shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
   the game's ticks run only after the first `shot` that follows a `fast-forward`.
 - `play/castle-growing.play` on the game view with seed `4455544685788642` and size 1, and `play/castle-growing-basic.play` on the
   basic set with seed `1234567812345634` and size 1: each script places the castle with a click. It fast-forwards to ticks 20, 30, 31, 32, and 45, while
