@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using OpenSettlers.Domain;
 
 namespace OpenSettlers.Simulation;
 
@@ -10,7 +11,8 @@ public sealed partial class Layout
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
     // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
-    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
+    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null. A command's Check runs
+    // before the game takes it and returns why the game's content set refuses a name the entry gives, or null.
     sealed record Step
     {
         public required string Name { get; init; }
@@ -18,6 +20,8 @@ public sealed partial class Layout
         public required Command Command { get; init; }
 
         public Func<Game, string?>? Place { get; init; } = null;
+
+        public Func<Game, string?>? Check { get; init; } = null;
     }
 
     /// <summary>
@@ -55,6 +59,11 @@ public sealed partial class Layout
                 continue;
             }
 
+            if (step.Check?.Invoke(game) is { } refused)
+            {
+                return $"{_file}: {step.Name}: {refused}";
+            }
+
             var revision = game.Revision;
             game.Enqueue(step.Command with { Tick = game.TickCount });
             game.ApplyCommands();
@@ -88,7 +97,7 @@ public sealed partial class Layout
     {
         // The castle, flags, roads, buildings, settlers, and goods entries in the order the file holds them. Null when an entry is bad
         // or repeats an earlier one of its kind.
-        List<Step>? ReadSteps(JsonElement root)
+        List<Step>? ReadSteps(JsonElement root, MapSize? size)
         {
             var steps = new List<Step>();
             var good = true;
@@ -97,7 +106,7 @@ public sealed partial class Layout
                 switch (property.Name)
                 {
                     case "castle":
-                        good &= ReadEntry("castle", property.Value, CommandKind.PlaceCastle, steps);
+                        good &= ReadEntry("castle", property.Value, CommandKind.PlaceCastle, steps, size);
                         break;
                     case "flags":
                         good &= ReadList(property, CommandKind.PlaceFlag, steps);
@@ -369,9 +378,11 @@ public sealed partial class Layout
         static string Shape(int kind) =>
             kind == CommandKind.BuildRoad ? "{\"x\", \"y\", \"directions\"}" : "{\"x\", \"y\"}";
 
-        bool ReadEntry(string name, JsonElement entry, int kind, List<Step> steps)
+        // The size of the map bounds the settlers a castle names (null where the size is bad, and for every other entry).
+        bool ReadEntry(string name, JsonElement entry, int kind, List<Step> steps, MapSize? size = null)
         {
             var road = kind == CommandKind.BuildRoad;
+            var castle = kind == CommandKind.PlaceCastle;
             if (entry.ValueKind != JsonValueKind.Object)
             {
                 Fail(name, $"must be {Shape(kind)}");
@@ -382,7 +393,9 @@ public sealed partial class Layout
             var unknown = entry
                 .EnumerateObject()
                 .Select(p => p.Name)
-                .FirstOrDefault(n => n is not ("x" or "y") && !(road && n == "directions"));
+                .FirstOrDefault(n =>
+                    n is not ("x" or "y") && !(road && n == "directions") && !(castle && n is "stock" or "settlers")
+                );
             if (unknown is not null)
             {
                 Fail(name, $"unknown key {unknown}, an entry is {Shape(kind)}");
@@ -403,6 +416,22 @@ public sealed partial class Layout
                 return false;
             }
 
+            Dictionary<Good, int>? stock = null;
+            if (castle && entry.TryGetProperty("stock", out var stockEntry) && !ReadStock(name, stockEntry, out stock))
+            {
+                return false;
+            }
+
+            Job[]? settlers = null;
+            if (
+                castle
+                && entry.TryGetProperty("settlers", out var settlersEntry)
+                && !ReadSettlers(name, settlersEntry, size, out settlers)
+            )
+            {
+                return false;
+            }
+
             var command = new Command
             {
                 Tick = 0,
@@ -411,6 +440,8 @@ public sealed partial class Layout
                 X = x,
                 Y = y,
                 Directions = directions,
+                Stock = stock,
+                Settlers = settlers,
             };
             var repeated = steps.FirstOrDefault(step => step.Place is null && step.Command == command);
             if (repeated is not null)
@@ -420,9 +451,148 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step { Name = name, Command = command });
+            steps.Add(
+                new Step
+                {
+                    Name = name,
+                    Command = command,
+                    Check = stock is null ? null : game => StockRefusal(game, stock),
+                }
+            );
 
             return true;
+        }
+
+        // The game's catalog is not known while the file is read: a good of the castle's stock that the catalog lacks is refused when
+        // the layout is built, with the names the game's content set knows.
+        static string? StockRefusal(Game game, IReadOnlyDictionary<Good, int> stock) =>
+            stock
+                .Keys.Where(good => game.Tables.Catalog.EntryOf(good) is null)
+                .Select(good => good.Name)
+                .FirstOrDefault()
+                is { } unknown
+                ? $"stock: the good {unknown} is no stable name of a good of this content set, use {string.Join(", ", game.Tables.Catalog.Goods.Select(entry => entry.Name))}"
+                : null;
+
+        // The castle's stock key: an object of goods by stable name and counts, each a whole number from 0 to 50000 (the most a count
+        // of CastleStock holds). Every good it does not name counts 0. An engine stand-in: the original has no such start.
+        bool ReadStock(string name, JsonElement entry, out Dictionary<Good, int>? stock)
+        {
+            stock = null;
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                Fail(name, "stock must be an object of good names and counts, such as {\"grain\": 1}");
+
+                return false;
+            }
+
+            var counts = new Dictionary<Good, int>();
+            var good = true;
+            foreach (var property in entry.EnumerateObject())
+            {
+                if (counts.ContainsKey(new Good { Name = property.Name }))
+                {
+                    Fail(name, $"stock: {property.Name} is given twice");
+                    good = false;
+                }
+                else if (
+                    property.Value.ValueKind != JsonValueKind.Number
+                    || !property.Value.TryGetInt32(out var count)
+                    || count is < 0 or > 50000
+                )
+                {
+                    Fail(name, $"stock: {property.Name}: the count must be a whole number from 0 to 50000");
+                    good = false;
+                }
+                else
+                {
+                    counts[new Good { Name = property.Name }] = count;
+                }
+            }
+
+            stock = good ? counts : null;
+
+            return good;
+        }
+
+        // The jobs with a stable name (Job.Ported) but the castle settler, by name: the jobs a castle's named settlers take.
+        static readonly Dictionary<string, Job> JobsByName = Job
+            .Ported.Where(job => job.Name != CastleSettlerName)
+            .ToDictionary(job => job.Name);
+
+        const string CastleSettlerName = "castle-settler";
+
+        static readonly string JobNameList =
+            string.Join(", ", JobsByName.Keys.SkipLast(1)) + ", or " + JobsByName.Keys.Last();
+
+        // The castle's settlers key: an object of job names and counts, each count a whole number from 0, whose settlers wait in the
+        // castle after its castle settler, each job's together in the order the file names them. With the castle settler they fit in
+        // the settler table of the map's size less the one place the game keeps free (SettlerTable.IsFull). An engine stand-in.
+        bool ReadSettlers(string name, JsonElement entry, MapSize? size, out Job[]? settlers)
+        {
+            settlers = null;
+            if (entry.ValueKind != JsonValueKind.Object)
+            {
+                Fail(name, "settlers must be an object of job names and counts, such as {\"jobless\": 1}");
+
+                return false;
+            }
+
+            var named = new List<Job>();
+            var seen = new HashSet<string>();
+            var good = true;
+            foreach (var property in entry.EnumerateObject())
+            {
+                if (property.Name == CastleSettlerName)
+                {
+                    Fail(
+                        name,
+                        $"settlers: {CastleSettlerName} is the castle's own settler, whom the castle always holds and no layout names"
+                    );
+                    good = false;
+                }
+                else if (!JobsByName.TryGetValue(property.Name, out var job))
+                {
+                    Fail(name, $"settlers: {property.Name} is no job's name: a castle names {JobNameList}");
+                    good = false;
+                }
+                else if (!seen.Add(property.Name))
+                {
+                    Fail(name, $"settlers: {property.Name} is given twice");
+                    good = false;
+                }
+                else if (
+                    property.Value.ValueKind != JsonValueKind.Number
+                    || !property.Value.TryGetInt32(out var count)
+                    || count < 0
+                )
+                {
+                    Fail(name, $"settlers: {property.Name}: the count must be a whole number from 0");
+                    good = false;
+                }
+                else if (size is null)
+                {
+                    // A bad or missing size fails the load already; with no table to bound the count, no settlers are made.
+                    good = false;
+                }
+                else if (named.Count + (long)count + 1 > SettlerTable.SizeOf(size) - 1)
+                {
+                    Fail(
+                        name,
+                        $"settlers: {named.Count + (long)count} settlers and the castle settler are more than the "
+                            + $"{SettlerTable.SizeOf(size) - 1} the settler table holds"
+                    );
+                    good = false;
+                }
+                else
+                {
+                    named.AddRange(Enumerable.Repeat(job, count));
+                }
+            }
+
+            settlers = good ? [.. named] : null;
+
+            return good;
         }
 
         // The directions of a road: one or more whole numbers from 0 to 5. A bad list is a problem naming the entry.

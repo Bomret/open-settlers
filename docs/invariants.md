@@ -36,7 +36,7 @@ Check: the test build (`docs/agents/CODING_PATTERNS.md`, "Godot boundary").
 
 Class: fidelity
 Concepts: Layout, Entry state, Settler
-Statement: A layout sets a settler or a good only in an entry state: a state some routine of the original writes at the start of a behaviour, named by its address. It never sets a settler in the middle of a behaviour (a walk, a cut, a step's timer). A settler a layout places is one of the castle's own.
+Statement: A layout sets a settler or a good only in an entry state: a state some routine of the original writes at the start of a behaviour, named by its address. It never sets a settler in the middle of a behaviour (a walk, a cut, a step's timer). A settler a layout places is one of the castle's own: one of its 20 first settlers, or one its castle entry names.
 Breaks: silently
 Check: the layout loader's tests refuse every settler or good entry that names no supported entry state, and each supported entry state's documentation names its address.
 
@@ -97,3 +97,21 @@ Breaks: silently
 Check: `OriginalCodeBoundaryTests` (`tests/OpenSettlers.Tests/OriginalCodeBoundaryTests.cs`) parses `src/Domain` and `src/Application` for reads of an original code (the code members, the job lookup, and the job number names), with planted violations as positive controls. Reviewers check that a new fact of an original entry is read from its table into the entry, not derived from its code.
 Symbols: CatalogEntry.OriginalCode, Job.Of
 Paths: src/Domain/**, src/Application/**
+
+### INV-0015
+
+Class: architecture
+Concepts: Building site, Castle under construction, Graphics source
+Statement: The view draws a building site and the castle under construction from the building's type and its progress word alone. It keeps no timer, counter, or animation state of its own for the growth, so the drawing always shows the simulation's state.
+Breaks: silently
+Check: `SiteStagesTests` and `SiteDrawTests` derive each drawing from a type and a progress word, with no clock and no earlier frame.
+Paths: src/Import/SiteStages.cs, src/MapView/ObjectDraws.cs, src/MapView/ObjectLayerWatch.cs
+
+### INV-0016
+
+Class: architecture
+Concepts: Draw term, Simulation
+Statement: The map view reads the game and never writes it. A value the view shows that the original's draw routines write back into the game state, such as the countdown of a burning building, is derived anew for each frame and never stored. A game drawn on screen and the same game not drawn give the same digest.
+Breaks: silently
+Check: `ObjectDrawsTests` builds the draw list of a game with a burning building and compares `Game.Digest()` before and after.
+Paths: src/MapView/**

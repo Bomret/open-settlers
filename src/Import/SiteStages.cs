@@ -41,8 +41,8 @@ public static class SiteStages
     /// <summary>
     /// The size of the scaffold the site of <paramref name="type"/> grows (the table at <c>0x44fcfe</c>): large for the types whose size
     /// is large (the sawmill, the farm, the butcher, the pig farm, the baker), small for the huts (the woodcutter's, stonecutter's, forester's,
-    /// fisher's, and mill's), and null for a type the view draws none for. The open-settlers source picks the scaffold's art by this
-    /// rule; the History Edition source reads the object of each type from the table.
+    /// fisher's, and mill's), and null for a type the view draws none for. The open-settlers source picks the scaffold's art, and the flames of a
+    /// burning finished building, by this rule; the History Edition source reads the object of each type from the table.
     /// </summary>
     public static bool? ScaffoldIsLarge(BuildingType type) =>
         type == BuildingType.Sawmill
@@ -92,15 +92,23 @@ public static class SiteStages
     }
 
     /// <summary>
-    /// The drawing of the site the progress word gives: the layers of <see cref="Parts"/> drawn one over another, each taken from
-    /// <paramref name="layer"/> (null for a layer the source has no art for, which draws nothing), the images and the shadows joined. Null
-    /// where no layer has art.
+    /// The layers the progress word of the castle under construction draws (<c>docs/rules/construction.md</c>): the castle's stub
+    /// <c>0x44fd2f</c> jumps to <c>0x44fee2</c>, which draws the finished castle grown by the word itself, not doubled, over its whole shadow.
+    /// The castle never reaches the site routine <c>0x44fa79</c>, so it draws no ground, base, or scaffold.
     /// </summary>
-    public static ObjectDrawing? Compose(ushort progress, Func<SiteLayer, ObjectDrawing?> layer)
+    public static IReadOnlyList<SitePart> CastleParts(ushort progress) =>
+        [new SitePart { Layer = SiteLayer.Finished, Fraction = progress }];
+
+    /// <summary>
+    /// The drawing of <paramref name="parts"/> (<see cref="Parts"/> or <see cref="CastleParts"/>) drawn one over another, each layer taken
+    /// from <paramref name="layer"/> (null for a layer the source has no art for, which draws nothing), the images and the shadows joined.
+    /// Null where no layer has art.
+    /// </summary>
+    public static ObjectDrawing? Compose(IReadOnlyList<SitePart> parts, Func<SiteLayer, ObjectDrawing?> layer)
     {
         ObjectImage? image = null;
         ObjectImage? shadow = null;
-        foreach (var part in Parts(progress))
+        foreach (var part in parts)
         {
             if (layer(part.Layer) is not { } drawing)
             {
@@ -123,20 +131,21 @@ public static class SiteStages
 
 /// <summary>
 /// The drawings of the building sites of a graphics source, made once for each type and progress word (a builder's blows give a few
-/// dozen words a building): the layers of the progress word drawn one over another (<see cref="SiteStages.Compose"/>), each layer
-/// taken from the source's art.
+/// dozen words a building): the layers of the progress word drawn one over another (<see cref="SiteStages.Parts"/>, and
+/// <see cref="SiteStages.CastleParts"/> for the castle under construction), each layer taken from the source's art.
 /// </summary>
 /// <param name="layer">The source's art for a layer of the site of a type, or null where it has none.</param>
 public sealed class SiteDrawings(Func<BuildingType, SiteLayer, ObjectDrawing?> layer)
 {
     readonly Dictionary<(BuildingType Type, ushort Progress), ObjectDrawing?> _made = [];
 
-    /// <summary>The drawing of the site of <paramref name="type"/> at <paramref name="progress"/>, or null where no layer has art.</summary>
+    /// <summary>The drawing of the site of <paramref name="type"/>, or of the castle under construction, at <paramref name="progress"/>, or null where no layer has art.</summary>
     public ObjectDrawing? Of(BuildingType type, ushort progress)
     {
         if (!_made.TryGetValue((type, progress), out var cached))
         {
-            cached = SiteStages.Compose(progress, part => layer(type, part));
+            var parts = type == BuildingType.Castle ? SiteStages.CastleParts(progress) : SiteStages.Parts(progress);
+            cached = SiteStages.Compose(parts, part => layer(type, part));
             _made[(type, progress)] = cached;
         }
 

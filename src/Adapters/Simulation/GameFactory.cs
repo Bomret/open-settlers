@@ -15,7 +15,10 @@ public static class GameFactory
     /// <see cref="GameDigest"/> by default. With <paramref name="handsOutGoods"/> the pass of the last phase of each cycle runs the
     /// original's phase routine, which draws once from the generator and hands the castle's goods out to the requests of building
     /// sites (<see cref="StorageDistribution"/>); the scenarios that compare a game with an emulator verb that skips the phase routine
-    /// leave it off.
+    /// leave it off. With <paramref name="settlerSupply"/> the castle gains new settlers and knights over time at the settler rate
+    /// <paramref name="settlerRate"/>, 0 to 40 (<see cref="SettlerSupply"/>); a rate outside that range is refused. Without the supply
+    /// the rate is not read. The games that
+    /// replay a recording made without the supply leave it off.
     /// </summary>
     public static Game Create(
         RuleTables tables,
@@ -23,7 +26,9 @@ public static class GameFactory
         int stockLevel = 0,
         bool everyPassTurns = false,
         IGameDigest? digest = null,
-        bool handsOutGoods = false
+        bool handsOutGoods = false,
+        bool settlerSupply = false,
+        int settlerRate = 0
     )
     {
         GoodWords.Check(tables.Catalog, nameof(tables));
@@ -34,7 +39,7 @@ public static class GameFactory
         var flags = new FlagTable();
         var network = new RoadNetwork();
         var buildings = new BuildingTable();
-        var settlers = new SettlerTable();
+        var settlers = new SettlerTable { Capacity = SettlerTable.SizeOf(map.Size) };
         var behaviours = new ActivityRegistry();
         var draws = new GeneratorDraws(map.Generator);
         // The history reads the tick count of the game, which exists once the parts are wired.
@@ -43,6 +48,7 @@ public static class GameFactory
             new SnapshotExporter(settlers, buildings, flags, tables.Catalog),
             () => game!.TickCount
         );
+        var supply = settlerSupply ? new SettlerSupply(settlerRate, clock, castle, settlers, history) : null;
         var movement = new SettlerMovement(
             map,
             buildings,
@@ -161,7 +167,8 @@ public static class GameFactory
             modules,
             handsOutGoods
                 ? new StorageDistribution(tables, castle, flags, network, buildings, goods, draws, history)
-                : null
+                : null,
+            supply
         )
         {
             EveryPassTurns = everyPassTurns,
@@ -198,7 +205,18 @@ public static class GameFactory
                 Queue = new CommandQueue(),
                 Handlers =
                 [
-                    new PlaceCastleHandler(tables, map, castle, startStock, flags, settlers, roster, history, causes),
+                    new PlaceCastleHandler(
+                        tables,
+                        map,
+                        castle,
+                        startStock,
+                        flags,
+                        settlers,
+                        roster,
+                        history,
+                        causes,
+                        supply
+                    ),
                     new PlaceFlagHandler(tables, map, castle, flags, history, causes, removal, buildings),
                     new BuildRoadHandler(planner, network, carriers, history, causes),
                     new PlaceBuildingHandler(placement),
@@ -206,6 +224,7 @@ public static class GameFactory
                     new RemoveBuildingHandler(removal),
                     new RemoveRoadHandler(removal),
                 ],
+                Supply = supply,
                 Digest = digest ?? new GameDigest(),
             }
         );

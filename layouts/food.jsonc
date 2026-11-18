@@ -1,10 +1,12 @@
 // The six food buildings finished on flat ground, each with its flag south-east of it and no road or worker: the farm at 7,6, the
 // baker at 12,6, the fisher at 14,10, the pig farm at 14,13, the mill at 7,14, and the butcher at 12,14 (the castle stands at 10,10).
-// Each asks for its worker and finds no road. The seed draws the start stock level 38, which holds the scythe of the farmer, the
-// butcher's knife of the butcher, and the fishing rod of the fisher. Play it with play/food.play.
+// Each asks for its worker and finds no road. Play it with play/food.play.
+// The castle names its goods (docs/rules/layouts.md): the 20 first settlers hold no farmer and no butcher, and the start stock
+// this seed draws on the install holds no scythe, so the castle holds the scythe and the butcher's knife the two take with a
+// settler without a job, and the one grain play/food.play expects. Every other good counts 0.
 {
   "size": 1,
-  "seed": "1234567812345674",
+  "seed": "1234567812345678",
   "height": [
     "11111111111111111111111111111111",
     "11111111111111111111111111111111",
@@ -73,7 +75,7 @@
     "gggggggggggggggggggggggggggggggg",
     "gggggggggggggggggggggggggggggggg"
   ],
-  "castle": {"x": 10, "y": 10},
+  "castle": {"x": 10, "y": 10, "stock": {"scythe": 1, "butcher-knife": 1, "grain": 1}},
   "buildings": [
     {"type": "farm", "x": 7, "y": 6},
     {"type": "baker", "x": 12, "y": 6},

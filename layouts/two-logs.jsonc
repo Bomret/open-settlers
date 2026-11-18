@@ -1,7 +1,7 @@
 // Five decoy roads, one at each of the five directions that leave the castle's flag at 11,11 but the north-west, take the
 // castle's five settlers that can carry, so the road from the woodcutter's flag at 9,13 to the flag at 9,11 (the far end of
-// the decoy that leaves west), seven steps round the hut, gets no carrier. The woodcutter's hut at 8,12 stands with its worker, and the logs he cuts
-// wait on his flag. Trees stand west of the hut. Play it with play/two-logs.play.
+// the decoy that leaves west), seven steps round the hut, gets no carrier until the castle's settler supply makes a settler. The
+// woodcutter's hut at 8,12 stands with its worker, and the logs he cuts wait on his flag until then. Trees stand west of the hut. Play it with play/two-logs.play.
 {
   "size": 1,
   "seed": "1234567812345678",

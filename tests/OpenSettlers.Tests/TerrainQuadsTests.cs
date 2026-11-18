@@ -9,8 +9,8 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class TerrainQuadsTests
 {
-    // A source that draws a 30 x 10 image hung 13 left of and 2 above its anchor for each terrain code except 99, and
-    // draws a road strip of difference 0 only.
+    // A source that draws a 30 x 10 image hung 13 left of and 2 above its anchor for each terrain code except 99, draws a
+    // road strip of difference 0 only, and draws every border post.
     sealed class FakeSource : IGraphicsSource
     {
         readonly Dictionary<int, ObjectImage> _images = [];
@@ -29,6 +29,12 @@ public sealed class TerrainQuadsTests
 
         public ObjectImage? Draw(BuildMarker marker) => null;
 
+        public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
+
+        public ObjectImage? Draw(FlameDraw flame) => null;
+
+        public ObjectImage? Draw(RoadMarker marker) => null;
+
         public ObjectImage? Draw(RoadStrip strip) =>
             strip.Difference == 0
                 ? new ObjectImage
@@ -40,6 +46,18 @@ public sealed class TerrainQuadsTests
                     Rgba = new byte[8 * 5 * 4],
                 }
                 : null;
+
+        // Every border post draws one 6 x 7 image hung 2 left of and 7 above its anchor.
+        readonly ObjectImage _post = new()
+        {
+            Width = 6,
+            Height = 7,
+            OffsetX = -2,
+            OffsetY = -7,
+            Rgba = new byte[6 * 7 * 4],
+        };
+
+        public ObjectImage? Draw(BorderPost post) => _post;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) => null;
 
@@ -141,42 +159,114 @@ public sealed class TerrainQuadsTests
     {
         var layers = new ImageLayers();
         Bands([Triangle(0)], 4, layers);
-        var strips = new[]
-        {
-            new RoadStrip
-            {
-                X = 100,
-                Y = 200,
-                Direction = RoadDirection.East,
-                Difference = 0,
-                Slope = 0,
-                Ground = new Domain.Terrain { Code = 5 },
-            },
-            new RoadStrip
-            {
-                X = 300,
-                Y = 200,
-                Direction = RoadDirection.East,
-                Difference = 5,
-                Slope = 0,
-                Ground = new Domain.Terrain { Code = 5 },
-            },
-        };
+        var map = new Map(MapSize.Offered[0]);
+        map.At(10, 10).Roads = RoadSet.Of(0);
+        // A road the archive has no strip for: a height difference of 5.
+        map.At(20, 10).Roads = RoadSet.Of(0);
+        map.At(20, 10).Height = 5;
 
-        var quads = TerrainQuads.Strips(strips, new FakeSource(), layers);
+        var quads = TerrainQuads.Edges(map, new FakeSource(), layers);
 
+        var strip = RoadDraws.Strip(map, 10, 10, RoadDirection.East);
         Assert.HasCount(1, quads);
         Assert.AreEqual(
             new ObjectQuad
             {
-                X = 101,
-                Y = 197,
+                X = strip.X + 1,
+                Y = strip.Y - 3,
                 Width = 8,
                 Height = 5,
                 Layer = 1,
             },
             quads[0]
         );
+    }
+
+    [TestMethod]
+    public void TheRoadPassWalksTheHalfColumnsWestToEastEachZigzagBeforeItsEastEdges()
+    {
+        var map = new Map(MapSize.Offered[0]);
+        map.At(10, 10).Owner = Owner.Player(0);
+
+        var posts = EdgeTerms.Posts(map).Select(post => (post.Column, post.Row, post.Direction));
+
+        // The node 10,10 lies on the half-column 2 * 10 - 10 = 10. The east edge of 9,10 (half-column 8); the zigzag
+        // east of half-column 9, down the rows: south-east of 9,9, south of 10,10; the zigzag east of half-column 10:
+        // south of 10,9, south-east of 10,10; the east edge of 10,10.
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                (9, 10, RoadDirection.East),
+                (9, 9, RoadDirection.SouthEast),
+                (10, 10, RoadDirection.South),
+                (10, 9, RoadDirection.South),
+                (10, 10, RoadDirection.SouthEast),
+                (10, 10, RoadDirection.East),
+            },
+            posts.ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void OnTheLargestMapTheRoadPassHandsEachEdgeOnce()
+    {
+        var map = OwnersDifferOnEveryEdge();
+        var (width, height) = (map.Size.Width, map.Size.Height);
+
+        var edges = EdgeTerms.Posts(map).Select(post => (post.Column, post.Row, post.Direction)).ToList();
+
+        Assert.HasCount(3 * width * height, edges.Distinct());
+        Assert.HasCount(3 * width * height, edges);
+    }
+
+    [TestMethod]
+    public void OnTheLargestMapFullOfRoadsTheRoadPassHandsAStripForEveryEdge()
+    {
+        // Every edge would carry a post; the road bits take each one's place.
+        var map = OwnersDifferOnEveryEdge();
+        for (var index = 0; index < map.Count; index++)
+        {
+            map.At(index).Roads = RoadSet.Of(0).With(1).With(2);
+        }
+
+        var terms = EdgeTerms.Of(map);
+
+        Assert.HasCount(3 * map.Size.Width * map.Size.Height, terms.OfType<RoadStrip>());
+        Assert.HasCount(terms.Count, terms.OfType<RoadStrip>());
+    }
+
+    // The largest offered map with owners 0 to 3 by column plus twice the row: the east, south-east, and south neighbors
+    // differ by 1, 3, and 2, and the pattern repeats across both seams, so the owners differ on every edge.
+    static Map OwnersDifferOnEveryEdge()
+    {
+        var map = new Map(MapSize.Offered[^1]);
+        for (var row = 0; row < map.Size.Height; row++)
+        {
+            for (var column = 0; column < map.Size.Width; column++)
+            {
+                map.At(column, row).Owner = Owner.Player((column + 2 * row) % 4);
+            }
+        }
+
+        return map;
+    }
+
+    [TestMethod]
+    public void TheRoadPassDrawsEachEdgeAsAStripOrAPostInTheOneWalk()
+    {
+        var map = new Map(MapSize.Offered[0]);
+        map.At(10, 10).Roads = RoadSet.Of(0);
+        // The south neighbor is a player's: the node's east edge is a road, its south edge a border.
+        map.At(10, 11).Owner = Owner.Player(0);
+
+        var quads = TerrainQuads.Edges(map, new FakeSource(), new ImageLayers());
+
+        // The east edge of 9,11; the zigzag east of half-column 8: 9,10 south-east, 10,11 south; the zigzag east of
+        // half-column 9: 10,10 south, 10,11 south-east; the east edge of 10,11; the east strip of 10,10 (half-column 10).
+        CollectionAssert.AreEqual(new[] { 6, 6, 6, 6, 6, 6, 8 }, quads.Select(quad => quad.Width).ToArray());
+        var post = BorderDraws.Post(map, 10, 10, RoadDirection.South)!.Value;
+        Assert.AreEqual(post.X - 2, quads[3].X);
+        Assert.AreEqual(post.Y - 7, quads[3].Y);
     }
 
     [TestMethod]

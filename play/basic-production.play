@@ -8,8 +8,10 @@
 # What it proves and what it cannot. The castle holds 20 first settlers, 5 of them without a job (CastleRoster), and every worker without a
 # tool and every road's carrier takes one. A game's first site also turns one of the five into a settler of another job (a settler of job 3
 # joins the castle's idle ones, seen in the lists), so four are left for workers and carriers; a second large site built at once takes one more.
-# Farm, mill, and baker with their three roads need more than that, so the script plays four fresh games on the one seed, each started by `seed`
-# to another seed and back:
+# The settler supply adds a settler without a job to the castle each period from the castle's placement on, so the castle's idle settlers grow
+# as a game runs. Each chain is still played from the start stock of a game of its own, so its counts start from known values and a check of
+# one chain does not see the goods of another: the script plays four fresh games on the one seed, each started by `seed` to another seed and
+# back:
 #   1. mill and baker: the castle's grain goes over the road to the mill, its flour on to the baker, and bread back (bread 2 -> 6, grain and
 #      flour used up);
 #   2. farm and mill: the farm's grain reaches the mill, and the flour piles up past the 4 the start stock could give (flour 1 -> 6);

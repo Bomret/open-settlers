@@ -258,9 +258,14 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/fisher-catch.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, a fisher's site
   at 18,5 joins it by a road, and the fisher fishes at the generated lake to the east. The script fast-forwards to his cast, to his first
   catch (he carries the fish), and to the fish on his flag, with a shot of each and one of him on the way back.
+- `play/border-posts.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, and the
+  shots show its border posts, poles on land and posts in the lake to the east. It runs with the install and with
+  `--content-set basic`; the script's header holds both run lines.
 - `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
+- `play/road-markers.play` on the game view with seed `1234567812345678` and size 1, under either content set: cropped shots of the road
+  markers at the castle's flag, after a step, after the step back, and none after the road is built.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
   fast-forwarded to the castle's second meat beyond its start stock (`meat >= 27` from a start of 25).
@@ -276,20 +281,29 @@ script alone. Add a layout only where none of them holds the situation.
   bread, farm and mill give flour, butcher and pig farm give meat, and a fisher gives fish. The run lines are in each script's header. The chains
   split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
   are the History Edition's.
+- `play/burning.play` on `layouts/woodcutter.jsonc` and `play/basic-burning.play` on the same layout with `--content-set basic`: the
+  woodcutter's hut is razed with the Remove button, shots show it with its flames twice, then nothing once the burn frees its node.
+  The first shows the original's flames, the second the basic set's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
   the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
   beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.
   The play therefore shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
   the game's ticks run only after the first `shot` that follows a `fast-forward`.
+- `play/castle-growing.play` on the game view with seed `4455544685788642` and size 1, and `play/castle-growing-basic.play` on the
+  basic set with seed `1234567812345634` and size 1: each script places the castle with a click. It fast-forwards to ticks 20, 30, 31, 32, and 45, while
+  the castle grows, and to tick 200, after it stands. A cropped shot of the castle follows each. The shots of ticks 30 to 32 show the castle grow each pass.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
   second road down, so its carrier walks home along the first road, and checks that it enters the castle. The pass with a
   woodcutter walking out is pinned by the golden scenario `head-on-pass-layout` (it puts a finished hut down at tick 401)
   and by `HeadOnPassTests`: a hut a layout stands has its worker inside from tick 0.
+- `layouts/castle-contents.jsonc` and `play/castle-contents.play`: a castle that names its settlers and goods, two carriers and
+  one settler without a job, and two sawmills. The first sawmill takes the settler without a job, and the second finds no settler. It runs on the install and with `--content-set basic`.
 - `layouts/hut-flag.jsonc`, `layouts/hut-on-road.jsonc`, and `layouts/two-logs.jsonc` with `play/hut-flag.play`,
   `play/hut-on-road.play`, and `play/two-logs.play`: a finished hut whose flag the entry puts down, a hut whose flag splits a
-  road, and a woodcutter's flag whose road no carrier works until a decoy road is taken down. `play/first-loop.play` and
+  road, and a woodcutter's flag whose road no carrier works until the castle's settler supply makes a settler: the play run
+  shows in the game view the supply's new settler taking the road ([New settlers](../rules/new-settlers.md#in-the-engine)). `play/first-loop.play` and
   `play/settler-bodies.play` run on `layouts/woodcutter.jsonc`.
 
 ```sh
@@ -310,7 +324,8 @@ applies it to a game. A layout that does not load therefore fails the unit tests
 
 The entries follow, and the game applies them in the file's order:
 
-- `castle`: `{"x","y"}`.
+- `castle`: `{"x","y"}`, optionally with `stock`, the goods it holds by name, and `settlers`, the settlers that wait in it by job name
+  ([The layout rules](../rules/layouts.md#the-castles-goods)).
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
 - `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a

@@ -425,6 +425,36 @@ public sealed class BasicContentSetPlayTests
         Assert.IsTrue(Until(game, LoopCap, () => !fisher.Constructing), "the fisher's site never finished");
     }
 
+    // The settler supply at rate 40, a period of 125 passes, on the loop's map: the castle's first settlers take every sword and
+    // shield of the start stock, so the knight the second try owes is not made and stays owed, and both new settlers are without a job.
+    [TestMethod]
+    public void TheSettlerSupplyMakesSettlersWithoutAJobAndNoKnightOnTheBasicSet()
+    {
+        var tables = new OpenSettlersRuleTables(CheckedIn()).Read();
+        Assert.IsTrue(Seed.TryParse(LoopSeed, out var seed, out var problem), problem);
+        var game = GameFactory.Create(
+            tables,
+            MapGenerator.Generate(tables, seed.ToMapSeed(), MapSize.Offered[0]),
+            settlerSupply: true,
+            settlerRate: SettlerSupply.HighestRate
+        );
+        Do(game, CommandKind.PlaceCastle, 24, 3);
+        var count = game.Settlers.Count;
+
+        for (var pass = 0; pass < 2 * 125 + 1; pass++)
+        {
+            game.Tick();
+        }
+
+        CollectionAssert.AreEqual(
+            new Job[] { new Jobless(), new Jobless() },
+            game.Settlers.Skip(count).Select(settler => settler.Job).ToArray()
+        );
+        Assert.AreEqual(1, game.Supply!.KnightsOwed, "the knight the second try owes stays owed");
+        Assert.AreEqual(0, game.CastleStock.Count(Good.Sword), "the castle stock holds no sword");
+        Assert.AreEqual(0, game.CastleStock.Count(Good.Shield), "the castle stock holds no shield");
+    }
+
     [TestMethod]
     public void FarmAndMillGiveFlourToTheCastle()
     {

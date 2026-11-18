@@ -1,0 +1,167 @@
+using System;
+
+namespace OpenSettlers.Simulation;
+
+/// <summary>
+/// The player's settler supply (<c>docs/rules/new-settlers.md</c>): from the castle's placement on, a timer makes one settler without a
+/// job in the castle for each period that passes, and every few settlers it owes a knight, which it makes where the castle holds a
+/// sword and a shield (<c>Player_MakeSettlers</c>, <c>0x428a75</c>, with <c>Settler_CreateInStorage</c>, <c>0x44333d</c>). The castle is
+/// the one storage, and the player is the one player. All of its arithmetic is 16-bit, as the original's.
+/// </summary>
+public sealed class SettlerSupply
+{
+    /// <summary>The lowest settler rate.</summary>
+    public const int LowestRate = 0;
+
+    /// <summary>The highest settler rate: the free-game bar sets a value from 0 to 40 (<c>0x46919a</c>).</summary>
+    public const int HighestRate = 40;
+
+    // The period is (RateBase - rate) * PeriodUnits clock units (0x42055e).
+    const int RateBase = 60;
+    const int PeriodUnits = 50;
+
+    // Each try adds KnightStep to the knight accumulator, which starts at KnightStart (0x42055e); a carry owes a knight (0x428a75).
+    const ushort KnightStep = 20000;
+    const ushort KnightStart = 0x8000;
+
+    // The knights owed at most (0x428a75).
+    const int MostKnightsOwed = 2;
+
+    // The job of a new knight: the first knight's (0x428a75 sets the job bits of byte 0 to 22).
+    static readonly Job NewKnight = new Knight(0);
+
+    readonly GameClock _clock;
+    readonly CastleStock _stock;
+    readonly SettlerTable _settlers;
+    readonly GameHistory _history;
+
+    /// <summary>A supply at the settler rate <paramref name="rate"/>, 0 to 40; any other rate is refused.</summary>
+    public SettlerSupply(int rate, GameClock clock, CastleStock stock, SettlerTable settlers, GameHistory history)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(rate, LowestRate);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(rate, HighestRate);
+        _clock = clock;
+        _stock = stock;
+        _settlers = settlers;
+        _history = history;
+        Rate = rate;
+        Period = (ushort)((RateBase - rate) * PeriodUnits);
+        Countdown = Period;
+    }
+
+    /// <summary>The settler rate, 0 to 40.</summary>
+    public int Rate { get; }
+
+    /// <summary>The clock units between two settlers (word at <c>+0x122</c> of the player block).</summary>
+    public ushort Period { get; }
+
+    /// <summary>The clock units left of the current period, a wrapped value below zero (word at <c>+0x120</c>).</summary>
+    public ushort Countdown { get; private set; }
+
+    /// <summary>The clock at the supply's last turn, or at the castle's placement (word at <c>+0x11e</c>).</summary>
+    public ushort LastClock { get; private set; }
+
+    /// <summary>The knight accumulator: a carry out of it owes a knight (word at <c>+0x126</c>).</summary>
+    public ushort KnightAccumulator { get; private set; } = KnightStart;
+
+    /// <summary>The knights owed, 0 to 2 (word at <c>+0x10c</c>).</summary>
+    public int KnightsOwed { get; private set; }
+
+    /// <summary>Whether the castle stands, so the supply turns.</summary>
+    public bool Running { get; private set; }
+
+    /// <summary>
+    /// The player's settler cap as last worked out at phase 32 (<c>Player_UpdateSettlerCap</c>, <c>0x42a567</c>); 0 before the first.
+    /// One player's share of the table is the whole table less the floor, so its cap is the table's size.
+    /// </summary>
+    public int Cap { get; private set; }
+
+    /// <summary>Whether the cap lets the supply make settlers (bit 2 of byte 3 of the player block).</summary>
+    public bool MayMake { get; private set; }
+
+    /// <summary>The castle is placed: the supply counts from the clock now (<c>Castle_Place</c> stores it, <c>0x442e4c</c>).</summary>
+    public void Start()
+    {
+        LastClock = _clock.Now;
+        Running = true;
+        // Castle_CreateSettlers lets the supply make settlers before any cap is worked out.
+        MayMake = true;
+    }
+
+    /// <summary>
+    /// The cap at phase 32 of each cycle (<c>Player_UpdateSettlerCaps</c>, <c>0x42a3f1</c>): with fewer free slots in the table than
+    /// players nothing changes; else the player's cap is worked out, and the supply may make settlers while the player holds fewer.
+    /// </summary>
+    public void UpdateCap()
+    {
+        if (_settlers.IsFull)
+        {
+            return;
+        }
+
+        Cap = _settlers.Capacity;
+        MayMake = _settlers.Count < Cap;
+    }
+
+    /// <summary>
+    /// The supply's turn in a pass, after the objects' turn: the clock units since its last turn come off the countdown, and each
+    /// period that has passed makes one settler. A try that makes no knight still passes its period and feeds the accumulator.
+    /// </summary>
+    public void Turn()
+    {
+        if (!Running)
+        {
+            return;
+        }
+
+        var elapsed = (ushort)(_clock.Now - LastClock);
+        LastClock = _clock.Now;
+        var left = Countdown;
+        Countdown = (ushort)(left - elapsed);
+        if (elapsed <= left)
+        {
+            return;
+        }
+
+        bool carried;
+        do
+        {
+            var accumulator = KnightAccumulator;
+            KnightAccumulator = (ushort)(accumulator + KnightStep);
+            if (accumulator + KnightStep > ushort.MaxValue)
+            {
+                KnightsOwed = Math.Min(KnightsOwed + 1, MostKnightsOwed);
+            }
+
+            MakeSettler();
+            var countdown = Countdown;
+            Countdown = (ushort)(countdown + Period);
+            carried = countdown + Period > ushort.MaxValue;
+        } while (!carried);
+    }
+
+    // One try: a settler without a job waits in the castle, on the castle's node, stamped with the clock. With a knight owed and a
+    // sword and a shield in the stock it is made a knight at once and the stock gives up one of each. Where the cap bars it or the
+    // table is full, the try makes nothing and the knight stays owed (Settler_CreateInStorage, 0x44333d).
+    void MakeSettler()
+    {
+        if (!MayMake || _settlers.IsFull)
+        {
+            return;
+        }
+
+        var castle = _stock.Castle!.Value;
+        var settler = new Settler(new Jobless(), 0, castle.X, castle.Y, _clock.Now, new WaitsInCastle());
+        var slot = _settlers.Add(settler);
+        _history.FillSettler(slot);
+        if (KnightsOwed > 0 && _stock.Count(Good.Sword) > 0 && _stock.Count(Good.Shield) > 0)
+        {
+            settler.TakeUp(NewKnight);
+            _stock.Take(Good.Sword);
+            _stock.Take(Good.Shield);
+            KnightsOwed--;
+        }
+
+        _history.RecordSettler(slot, EventType.SettlerMade, Cause.Settlers);
+    }
+}

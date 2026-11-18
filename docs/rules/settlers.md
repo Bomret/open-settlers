@@ -57,7 +57,8 @@ more phases: [Timing](timing.md#rules-that-count-passes)), the flag pass `0x4641
   (`0x42f4f1`), which makes the motion on the screen smooth. The simulation must not depend on the view, so with
   `Game.EveryPassTurns` the engine gives that turn to every settler in a state the view draws, in view or not, after
   the slices of every pass (phase 32 included). Each activity type states whether the view draws it (`Activity.IsDrawn`),
-  so the drawing and this turn read one rule. The other states, the
+  and the turn follows that rule (`Activity.TakesEveryPassTurn`). The castle's settler (state 10) also takes it, though
+  it is not drawn: it stands on the castle's node, so the castle grows each pass as in the original's view. The other states, the
   knights' among them, keep the slice turns alone, so their events and random draws come at the slice's rate. The game view sets it; without it a settler takes a turn only in its slice, as in the
   original's passes without a view, which is what the emulator recordings of the walks hold.
 
@@ -156,8 +157,8 @@ All the walk's arithmetic is in 16 bits, and a timer that runs out wraps into a 
 - **A blocked step:** where the next node holds a settler, the timer is 0x7f, the frame `0x51 + direction`, and the heading
   the direction less 6; at the next turn after the timer the settler tries the same direction again.
 - **Passing:** see [Walking home](#walking-home).
-- **Not ported:** the chain of blocked settlers that ends in a step against the chain ([Walking home](#walking-home)), the
-  castle's own handler (`0x42e7e0`), and the settlers the castle makes later (`0x428a75`).
+- **Not ported:** the chain of blocked settlers that ends in a step against the chain ([Walking home](#walking-home)) and the
+  castle's own handler (`0x42e7e0`). The settlers the castle makes later are in [New settlers](new-settlers.md#in-the-engine).
 
 ## Drawing the walk: leads
 
@@ -423,7 +424,7 @@ reaches them: the scenarios find a node in the first ring), the ring masks of th
 - The second way of the request for a worker (a jobless settler and a tool); the carriers' request has it without the tool
   ([Carriers](carriers.md#the-request)).
 - The states 12 and 25; the states 4, 6, 7, 0x10, 0x11, and 0x12 are in [Woodcutting](woodcutting.md).
-- The castle's handler of type 0x18, the settler creation of `0x428a75`, and the goods part of the flag pass `0x46414d`.
+- The castle's handler of type 0x18 and the goods part of the flag pass `0x46414d`.
 - The count of blocked turns (10 on a flag, 50 elsewhere) and the step against a chain of blocked settlers (`0x439985`): no
   run reaches them.
 - A worker that is outside a hut that is taken down, and the settlers of the castle, the military buildings, and the storage that the

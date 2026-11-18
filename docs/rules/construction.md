@@ -150,7 +150,7 @@ No building asks for job 4. The engine's `Digger` is job 2, `Builder` is job 3, 
 
 ## Drawing a site
 
-**Status:** confirmed from the code of the draw routine for a building under construction (`0x44fa79`). **Emulated:** `site-draws.txt` holds draw runs of the building draw (`0x44e329`) on the forester's site and the sawmill's site through their progress words. `SiteDrawTests` compares the engine's layers with them. The images are drawn through the sprite routines of the platform layer (`0x44da4d`, `Gfx_DrawSpriteGrowing` `0x406350`).
+**Status:** confirmed from the code of the draw routine for a building under construction (`0x44fa79`). **Emulated:** `site-draws.txt` holds draw runs of the building draw (`0x44e329`) on the forester's site, the sawmill's site, and the castle through their progress words. `SiteDrawTests` compares the engine's layers with them. The images are drawn through the sprite routines of the platform layer (`0x44da4d`, `Gfx_DrawSpriteGrowing` `0x406350`).
 
 The routine takes the building's type as its index `k` into two byte tables of object numbers:
 
@@ -168,6 +168,20 @@ A grown sprite shows its bottom rows only. The top of the clip lies `fraction * 
 The engine draws the layers through `SiteStages` under both sources. The History Edition takes the entries of the objects plus 1250 (`ObjectSprites.SiteLayerEntry`). The content set has a scaffold image for the small types (`building/stage-small`) and for the large types (`building/stage-large`).
 
 **Not ported:** the piles of the planks and stones on site. The routine draws a good's sprite `0x44de9a` once for each good on site, 3 pixels apart. The planks and stones come from the fill bytes' high nibbles.
+
+### The castle under construction
+
+**Status:** confirmed from the code of `0x44fee2` and the jump table at `0x44e3aa`. **Emulated:** the `castle-site` run of `site-draws.txt` draws the castle's node from its placement (progress 0) through its growth to passes after it stands. `SiteDrawTests` compares the engine's castle drawing with it.
+
+The building draw `0x44e329` jumps through the table at `0x44e3aa` by byte 4 of the building's item, with its low two bits cleared. That byte holds the type shifted left 2, with bit 7 while the building is under construction. The table holds 8 bytes for each value, so the jump reads it at twice the byte.
+
+- The castle that stands has the byte `0x60`. It reaches the stub `0x44f91d`, which draws object 178 whole, with its shadow.
+- The castle under construction has the byte `0xe0`. It reaches the stub `0x44fd2f`. The stub stores object 178 and the progress word (`+0xc` of the item) as the fraction, and jumps to `0x44fee2`.
+- `0x44fee2` draws the object's shadow whole (the object plus 1500, through `0x406210`). Then it draws the object's sprite (the object plus 1250, entry 1428) through `Gfx_DrawSpriteGrowing` (`0x406350`), grown by the progress word itself. The word is not doubled, as a site's is.
+
+The castle never reaches the common site routine `0x44fa79`. It draws no ground (object 144), no base (object 145), no scaffold, and no piles of goods. A progress of 0 shows the bottom row of the castle, by the grown-sprite rule of `Gfx_DrawSpriteGrowing` in [Drawing a site](#drawing-a-site). The castle's first settler (job 4, state 10, `0x43f17a`) raises the word each turn by the elapsed units times 128. When the word wraps on a pass, the castle stands. The view then draws it whole. The settler stands on the castle's node, so while the castle is shown the view pass `0x42f4f1` gives it a turn every pass: the word rises 1024 a pass (8 units), and the castle grows by 1/64 of its height each pass over 64 passes. Without the view it rises only on the settler's slice turns, 16 or more passes apart.
+
+The engine draws the castle under construction through `SiteStages.CastleParts`: the finished castle's layer grown by the word. `SiteDrawings.Of` takes it for the castle's type. `ObjectDraws` gives the castle its progress word while the castle's building (slot 0) is under construction, and none once it stands or without a game. The game view's turns every pass (`MainPass.EveryPassTurns`) include the castle's settler (`BuildsCastle.TakesEveryPassTurn`), so the castle grows each pass. `CastleGrowthTests` holds that. The History Edition draws entry 1428 and its shadow, and the content set draws `building/castle`, which has no shadow.
 
 **The builder's figure.** His figure handler is stub 3 of `0x43f744`, at `0x43faf4`. It adds `0x500` to the figure byte for a byte below `0x80`. It adds `0x580` for a byte from `0x80`, which are the blows. It requests a sound at some of the work figures through `0x44fe13`. The engine leaves sounds out. The word's high byte picks the row of figure bases ([Settlers](settlers.md#drawing-the-walk-leads)). `RuleTables.Get<BuilderFigureAdds>(new Builder())` holds both adds, read from `0x43fb60` and `0x43fb55`.
 

@@ -80,7 +80,17 @@ public static class StartStock
     /// (<c>0x4692d4</c>) from the free-game seed, scaled to 0 to 40. The original runs it whenever the free-game
     /// screen opens.
     /// </summary>
-    public static int LevelOf(Seed seed)
+    public static int LevelOf(Seed seed) => Setting(seed, 19);
+
+    /// <summary>
+    /// The settler rate of the human player of a free game: the 20th draw of <c>FreeGame_RandomizeOpponents</c> (<c>0x4692d4</c>),
+    /// scaled to 0 to 40 as the level is, which the original stores at <c>+0x37c</c> (<c>docs/rules/new-settlers.md</c>).
+    /// </summary>
+    public static int SettlerRateOf(Seed seed) => Setting(seed, 20);
+
+    // The setting the draw of that number from the free-game seed gives, scaled to 0 to 40. The draws, in order: 4 rounds of 4
+    // for the four opponents' settings, then the pair for player 1 and the pair for player 0, the human's level and rate.
+    static int Setting(Seed seed, int draws)
     {
         var generator = new RandomGenerator
         {
@@ -89,9 +99,7 @@ public static class StartStock
             W2 = (ushort)(seed.W2 ^ 0xc3c3),
         };
 
-        // The draws, in order: 4 rounds of 4 for the four opponents' settings, then the pair for player 1 and the
-        // pair for player 0, whose first draw is the human's level.
-        for (var draw = 1; draw <= 19; draw++)
+        for (var draw = 1; draw <= draws; draw++)
         {
             generator = generator.Step();
         }

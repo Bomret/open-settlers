@@ -12,7 +12,8 @@ namespace OpenSettlers.Import.HistoryEdition;
 /// texture down every <see cref="TerrainGraphics.TextureHeight"/> rows from the top of the mask
 /// (<c>docs/rules/graphics-images.md</c>, "Textured fill"). A term the original has no mask for draws nothing. For the
 /// objects it holds the entry picks and the phase folding of <see cref="ObjectSprites"/>, the shadow mask of each object
-/// sprite, and the surface color of the water ripple; an object code with no sprite draws nothing. For the settlers it
+/// sprite, the surface color of the water ripple, and the image picks of the border posts (<see cref="BorderRules"/>); an
+/// object code with no sprite draws nothing. For the settlers it
 /// holds the figure tables of the exe (<see cref="SettlerFigureTables"/>), the colour and entry picks, the second figure's
 /// shift as an image anchor, and the settler shadow (<see cref="SettlerSprites"/>); a settler term with no image draws nothing.
 /// </summary>
@@ -28,6 +29,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
     readonly SiteDrawings _sites;
     readonly Dictionary<int, RippleImage?> _ripples = [];
     readonly SettlerSprites? _settlers;
+    readonly FlameLists? _flames;
 
     HistoryEditionSource(
         TerrainGraphics terrain,
@@ -36,9 +38,11 @@ public sealed class HistoryEditionSource : IGraphicsSource
         ObjectGraphics? objects,
         string? objectsProblem,
         SettlerSprites? settlers,
-        string? settlersProblem
+        string? settlersProblem,
+        FlameLists? flames
     )
     {
+        _flames = flames;
         _terrain = terrain;
         _roads = roads;
         RoadsProblem = roadsProblem;
@@ -57,7 +61,10 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <summary>Why the road graphics did not load, or null. The source draws no road then and still draws the terrain.</summary>
     public string? RoadsProblem { get; }
 
-    /// <summary>Why the object graphics did not load, or null. The source draws no object then and still draws the terrain.</summary>
+    /// <summary>
+    /// Why the object graphics or the flame lists did not load, or null. The source draws no object, or places no flame,
+    /// then and still draws the terrain.
+    /// </summary>
     public string? ObjectsProblem { get; }
 
     /// <summary>Why the settler graphics did not load, or null. The source draws no settler then and still draws the rest.</summary>
@@ -68,7 +75,10 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <see cref="InvalidDataException"/>, naming the entry and the reason, where the terrain graphics are absent or
     /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/>, unreadable object graphics
     /// <see cref="ObjectsProblem"/>, and unreadable settler graphics <see cref="SettlersProblem"/>, instead. The settlers are
-    /// drawn by the figure tables of the exe's <paramref name="tables"/>; with none the source draws no settler.
+    /// drawn by the figure tables of the exe's <paramref name="tables"/>; with none the source draws no settler. With
+    /// <paramref name="tables"/>, the source also reads the flame lists from the exe; lists it cannot read add their
+    /// reason, after the objects' own where those failed too, to <see cref="ObjectsProblem"/>, and the source places no
+    /// flames then.
     /// </summary>
     public static HistoryEditionSource Load(Install install, RuleTables? tables = null)
     {
@@ -77,15 +87,30 @@ public sealed class HistoryEditionSource : IGraphicsSource
         var objects = Try(() => ObjectGraphics.Load(install), out var objectsProblem);
         string? settlersProblem = null;
         var settlers = tables is null ? null : Try(() => SettlerSprites.Load(install, tables), out settlersProblem);
+        string? flamesProblem = null;
+        var flames = tables is null
+            ? null
+            : Try(() => FlameLists.Read(install.ReadAll(Install.Program)), out flamesProblem);
+        var problems = new List<string>();
+        if (objectsProblem is not null)
+        {
+            problems.Add(objectsProblem);
+        }
+
+        if (flamesProblem is not null)
+        {
+            problems.Add($"no flame lists: {flamesProblem}");
+        }
 
         return new HistoryEditionSource(
             terrain,
             roads,
             roadsProblem,
             objects,
-            objectsProblem,
+            problems.Count == 0 ? null : string.Join("; ", problems),
             settlers,
-            settlersProblem
+            settlersProblem,
+            flames
         );
     }
 
@@ -166,8 +191,25 @@ public sealed class HistoryEditionSource : IGraphicsSource
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => _flames?.Of(type, earlySite) ?? [];
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(FlameDraw flame) =>
+        Usable(_objects?.Sprites.GetValueOrDefault(FlameLists.Entry(flame.Size, flame.Phase)));
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(BorderPost post) => Usable(_objects?.Sprites.GetValueOrDefault(BorderRules.Entry(post)));
+
+    /// <inheritdoc />
     public ObjectImage? Draw(BuildMarker marker) =>
         Usable(_objects?.Sprites.GetValueOrDefault(ObjectSprites.MarkerEntry(marker)));
+
+    /// <inheritdoc />
+    public ObjectImage? Draw(RoadMarker marker) =>
+        ObjectSprites.RoadMarkerEntry(marker) is var entry
+        && entry is >= ObjectSprites.CursorFirstEntry and <= ObjectSprites.CursorLastEntry
+            ? Usable(_objects?.Sprites.GetValueOrDefault(entry))
+            : null;
 
     // What the archive draws for an object sprite entry, made once so that equal entries answer with one instance: the
     // sprite and the shadow mask at its entry plus 250, or null where it has neither.

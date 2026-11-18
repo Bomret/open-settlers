@@ -36,20 +36,38 @@ public sealed record MapObjectDraw : ObjectTerm
 }
 
 /// <summary>
-/// A building, by its type: the castle, a finished building of one of the four types of M4, or a building site. A site carries
-/// the progress word of its building (<c>SiteProgress</c>, null for a finished building), which picks the drawing of its
-/// construction stage: a source draws the stage a site that has not started shows (<c>docs/rules/build-sites.md</c>).
+/// A building, by its type: the castle, a finished building of one of the four types of M4, or a building site. A site and the
+/// castle under construction carry the progress word of their building (<c>SiteProgress</c>, null for a building that stands), which
+/// picks the drawing of the construction stage: a source draws the stage a site that has not started shows
+/// (<c>docs/rules/build-sites.md</c>), and the castle grown by the word (<c>docs/rules/construction.md</c>).
 /// </summary>
 public sealed record BuildingDraw : ObjectTerm
 {
     /// <summary>The building's type.</summary>
     public required BuildingType Type { get; init; }
 
-    /// <summary>The progress word of the site's building, which picks the drawing of its construction stage; null for a finished building.</summary>
+    /// <summary>The progress word of the site's building or of the castle under construction, which picks the drawing of its construction stage; null for a building that stands.</summary>
     public ushort? SiteProgress { get; init; } = null;
 
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) => source.Draw(this);
+}
+
+/// <summary>
+/// One flame over a burning building (<c>CONTEXT.md</c>, "Flame"): its size and its phase, 0 to 7. <c>X</c> and <c>Y</c>
+/// already hold the flame's offset from the building. A source draws the flame with no shadow.
+/// </summary>
+public sealed record FlameDraw : ObjectTerm
+{
+    /// <summary>The flame's size.</summary>
+    public required FlameSize Size { get; init; }
+
+    /// <summary>The flame's phase, 0 to 7.</summary>
+    public required int Phase { get; init; }
+
+    /// <inheritdoc />
+    public override ObjectDrawing? Ask(IGraphicsSource source) =>
+        source.Draw(this) is { } image ? new ObjectDrawing { Image = image, Shadow = null } : null;
 }
 
 /// <summary>A good lying at a place of a flag; <c>X</c> and <c>Y</c> already hold the place's offset from the flag.</summary>
@@ -74,6 +92,23 @@ public sealed record BuildMarkerDraw : ObjectTerm
 
     /// <summary>The marker the node shows.</summary>
     public required BuildMarker Marker { get; init; }
+
+    /// <inheritdoc />
+    public override ObjectDrawing? Ask(IGraphicsSource source) =>
+        source.Draw(Marker) is { } image ? new ObjectDrawing { Image = image, Shadow = null } : null;
+}
+
+/// <summary>
+/// A road marker on a node while a road is drawn (<c>CONTEXT.md</c>, "Road marker"). <c>Column</c> and <c>Row</c> are the
+/// node's, unwrapped as the road's nodes are.
+/// </summary>
+public sealed record RoadMarkerDraw : ObjectTerm
+{
+    /// <summary>The column of the node.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The marker the node shows.</summary>
+    public required RoadMarker Marker { get; init; }
 
     /// <inheritdoc />
     public override ObjectDrawing? Ask(IGraphicsSource source) =>

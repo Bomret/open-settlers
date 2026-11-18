@@ -1406,6 +1406,104 @@
       -12
     ]
   },
+  "road-marker/end": {
+    "image": "road-marker/end.png",
+    "anchor": [
+      -5,
+      -5
+    ]
+  },
+  "road-marker/blocked": {
+    "image": "road-marker/blocked.png",
+    "anchor": [
+      -5,
+      -5
+    ]
+  },
+  "road-marker/way-back": {
+    "image": "road-marker/way-back.png",
+    "anchor": [
+      -6,
+      -5
+    ]
+  },
+  "road-marker/slope/-4": {
+    "image": "road-marker/slope--4.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/-3": {
+    "image": "road-marker/slope--3.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/-2": {
+    "image": "road-marker/slope--2.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/-1": {
+    "image": "road-marker/slope--1.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/0": {
+    "image": "road-marker/slope-0.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/1": {
+    "image": "road-marker/slope-1.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/2": {
+    "image": "road-marker/slope-2.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/3": {
+    "image": "road-marker/slope-3.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/4": {
+    "image": "road-marker/slope-4.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "border/pole": {
+    "image": "border/pole.png",
+    "anchor": [
+      -1,
+      -9
+    ]
+  },
+  "border/water": {
+    "image": "border/water.png",
+    "anchor": [
+      -1,
+      -9
+    ]
+  },
   "settler/carrier/walks": {
     "image": "settler/carrier-walks.png",
     "anchor": [
@@ -1950,6 +2048,172 @@
     "anchor": [
       -7,
       -21
+    ]
+  },
+  "flame/small/0": {
+    "image": "flame/small-0.png",
+    "anchor": [
+      -3,
+      -8
+    ]
+  },
+  "flame/small/1": {
+    "image": "flame/small-1.png",
+    "anchor": [
+      -3,
+      -9
+    ]
+  },
+  "flame/small/2": {
+    "image": "flame/small-2.png",
+    "anchor": [
+      -3,
+      -10
+    ]
+  },
+  "flame/small/3": {
+    "image": "flame/small-3.png",
+    "anchor": [
+      -3,
+      -9
+    ]
+  },
+  "flame/small/4": {
+    "image": "flame/small-4.png",
+    "anchor": [
+      -3,
+      -8
+    ]
+  },
+  "flame/small/5": {
+    "image": "flame/small-5.png",
+    "anchor": [
+      -3,
+      -10
+    ]
+  },
+  "flame/small/6": {
+    "image": "flame/small-6.png",
+    "anchor": [
+      -3,
+      -9
+    ]
+  },
+  "flame/small/7": {
+    "image": "flame/small-7.png",
+    "anchor": [
+      -3,
+      -10
+    ]
+  },
+  "flame/large/0": {
+    "image": "flame/large-0.png",
+    "anchor": [
+      -5,
+      -14
+    ]
+  },
+  "flame/large/1": {
+    "image": "flame/large-1.png",
+    "anchor": [
+      -5,
+      -15
+    ]
+  },
+  "flame/large/2": {
+    "image": "flame/large-2.png",
+    "anchor": [
+      -5,
+      -16
+    ]
+  },
+  "flame/large/3": {
+    "image": "flame/large-3.png",
+    "anchor": [
+      -5,
+      -15
+    ]
+  },
+  "flame/large/4": {
+    "image": "flame/large-4.png",
+    "anchor": [
+      -5,
+      -14
+    ]
+  },
+  "flame/large/5": {
+    "image": "flame/large-5.png",
+    "anchor": [
+      -5,
+      -16
+    ]
+  },
+  "flame/large/6": {
+    "image": "flame/large-6.png",
+    "anchor": [
+      -5,
+      -15
+    ]
+  },
+  "flame/large/7": {
+    "image": "flame/large-7.png",
+    "anchor": [
+      -5,
+      -16
+    ]
+  },
+  "flames/small": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          -6,
+          -12
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          4,
+          -18
+        ]
+      }
+    ]
+  },
+  "flames/large": {
+    "flames": [
+      {
+        "size": "large",
+        "at": [
+          -14,
+          -16
+        ]
+      },
+      {
+        "size": "small",
+        "at": [
+          2,
+          -26
+        ]
+      },
+      {
+        "size": "large",
+        "at": [
+          14,
+          -14
+        ]
+      }
+    ]
+  },
+  "flames/early-site": {
+    "flames": [
+      {
+        "size": "small",
+        "at": [
+          0,
+          -8
+        ]
+      }
     ]
   }
 }

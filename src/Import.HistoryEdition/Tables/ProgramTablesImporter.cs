@@ -767,7 +767,7 @@ static class ProgramTablesImporter
 
     // The bytes at a program address, found through the section that holds it (PE32: e_lfanew at 0x3c, the file
     // header 4 bytes after it, the image base at +28 of the optional header, 40 bytes for each section header).
-    static byte[] Slice(byte[] exe, int address, int count)
+    internal static byte[] Slice(byte[] exe, int address, int count)
     {
         try
         {

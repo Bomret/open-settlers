@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace OpenSettlers.Import;
 
 /// <summary>
@@ -40,6 +42,9 @@ public interface IGraphicsSource
     /// <summary>The image of a road strip, or null where the source draws none.</summary>
     ObjectImage? Draw(RoadStrip strip);
 
+    /// <summary>The image of a border post, or null where the source draws none.</summary>
+    ObjectImage? Draw(BorderPost post);
+
     /// <summary>The image and shadow of a map object, or null where the source draws neither.</summary>
     ObjectDrawing? Draw(MapObjectDraw draw);
 
@@ -63,6 +68,22 @@ public interface IGraphicsSource
     /// (<c>docs/rules/build-sites.md</c>, "The build-site overlay").
     /// </summary>
     ObjectImage? Draw(BuildMarker marker);
+
+    /// <summary>
+    /// The flames of a burning building of <paramref name="type"/>, in the order they are drawn (ADR 0021); empty where the
+    /// source places none. <paramref name="earlySite"/> is true for a building site below 16000 progress; a finished
+    /// building is no early site.
+    /// </summary>
+    IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite);
+
+    /// <summary>The image of a flame, or null where the source draws none. A flame has no shadow.</summary>
+    ObjectImage? Draw(FlameDraw flame);
+
+    /// <summary>
+    /// The image of a road marker, or null where the source draws none. A marker has no shadow: the original draws none
+    /// (<c>docs/rules/roads.md</c>, "The road markers").
+    /// </summary>
+    ObjectImage? Draw(RoadMarker marker);
 
     /// <summary>
     /// The height in map pixels of the tallest image the source draws for an object, 0 where it draws none. A play run's

@@ -115,6 +115,67 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    public void TheCastleUnderConstructionIsDrawnOnceByItsProgressUntilItStands()
+    {
+        var (map, game) = CastleWorld();
+        var castle = game.Buildings[0];
+        Assert.IsTrue(castle.Constructing, "the castle is under construction after its placement");
+
+        BuildingDraw CastleDraw() =>
+            ObjectDraws
+                .Of(map, game.CastleStock.Castle, game.Buildings)
+                .OfType<BuildingDraw>()
+                .Single(draw => draw.Type == BuildingType.Castle);
+
+        Assert.AreEqual(castle.Progress, CastleDraw().SiteProgress, "the placement");
+        while (castle.Constructing && castle.Progress == 0 && game.TickCount < 20_000)
+        {
+            game.Tick();
+        }
+
+        Assert.AreNotEqual((ushort)0, castle.Progress, "the castle's first settler raised the progress word");
+        Assert.AreEqual(castle.Progress, CastleDraw().SiteProgress, "growing");
+        while (castle.Constructing && game.TickCount < 20_000)
+        {
+            game.Tick();
+        }
+
+        Assert.IsFalse(castle.Constructing, "the castle stands");
+        Assert.IsNull(CastleDraw().SiteProgress, "a castle that stands is drawn whole");
+        Assert.IsNull(
+            ObjectDraws.Of(map, game.CastleStock.Castle).OfType<BuildingDraw>().Single().SiteProgress,
+            "without the game's buildings, as in the map view, the castle is drawn whole"
+        );
+    }
+
+    // The view draws the castle under construction by its progress word, so each move of the word and the pass it stands are changes of the
+    // object layer the view must redraw.
+    [TestMethod]
+    public void TheObjectLayerWatchReportsEveryMoveOfTheCastlesProgressAndThePassItStands()
+    {
+        var (_, game) = CastleWorld();
+        var castle = game.Buildings[0];
+        var watch = new ObjectLayerWatch();
+        watch.Changed(game);
+        var moves = 0;
+
+        while (castle.Constructing && game.TickCount < 20_000)
+        {
+            var before = castle.Progress;
+            game.Tick();
+            var changed = watch.Changed(game);
+            if (castle.Progress != before)
+            {
+                moves++;
+                Assert.IsTrue(changed, $"tick {game.TickCount}: progress {before:X4} to {castle.Progress:X4}");
+            }
+        }
+
+        Assert.IsFalse(castle.Constructing, "the castle stands");
+        Assert.IsGreaterThan(1, moves);
+    }
+
+    [TestMethod]
     public void AHutIsDrawnLikeTheCastleAtItsNodeAsAWoodcuttersBuilding()
     {
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
@@ -253,10 +314,7 @@ public sealed class ObjectDrawsTests
                 SiteProgress = 1,
             }
         );
-        Assert.IsTrue(
-            draws.Where(draw => draw.Type == BuildingType.Castle).All(draw => draw.SiteProgress is null),
-            "the castle is no site"
-        );
+        Assert.AreEqual(1, draws.Count(draw => draw.Type == BuildingType.Castle), "the castle is drawn once");
     }
 
     [TestMethod]
@@ -476,7 +534,8 @@ public sealed class ObjectDrawsTests
 
         // Map of the seed 1234,5678,9ABC: the objects of rows 2 to 6 in row-major order, the
         // hut (code 2 at 16,2) and the castle (code 4 at 15,5) among them. Each building follows the last object of its
-        // row, where the next row's first object follows; the flag's good (place 0) precedes the flag.
+        // row, where the next row's first object follows; the flag's good (place 0) precedes the flag. The castle is under construction
+        // at a progress of 0.
         CollectionAssert.AreEqual(
             new ObjectTerm[]
             {
@@ -565,6 +624,7 @@ public sealed class ObjectDrawsTests
                     X = 400,
                     Y = 40,
                     Type = BuildingType.Castle,
+                    SiteProgress = 0,
                 },
                 new MapObjectDraw
                 {
@@ -685,5 +745,242 @@ public sealed class ObjectDrawsTests
                 .ToList(),
             draws
         );
+    }
+
+    // The flames a test source places: two for a woodcutter's hut, one for an early site, none for anything else.
+    static readonly Flame[] HutFlames =
+    [
+        new()
+        {
+            Size = FlameSize.Small,
+            X = -3,
+            Y = -10,
+        },
+        new()
+        {
+            Size = FlameSize.Large,
+            X = 4,
+            Y = -12,
+        },
+    ];
+
+    static readonly Flame[] EarlySiteFlames =
+    [
+        new()
+        {
+            Size = FlameSize.Small,
+            X = 1,
+            Y = -5,
+        },
+    ];
+
+    static IReadOnlyList<Flame> TestFlames(BuildingType type, bool earlySite) =>
+        earlySite ? EarlySiteFlames
+        : type == BuildingType.Woodcutter ? HutFlames
+        : [];
+
+    static Map MadeMap() =>
+        MapGenerator.Generate(
+            TestProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
+
+    // A building on the node that was taken down at the clock 100 and has had no turn since.
+    static Building Burning(BuildingType type, int x, int y, bool constructing = false, ushort progress = 0) =>
+        new(type, x, y, 1, constructing)
+        {
+            IsDemolishing = true,
+            BurnLeft = 0x7ff,
+            Stamp = 100,
+            Progress = progress,
+        };
+
+    static FlameDraw FlameAt(int row, int x, int y, FlameSize size, int phase) =>
+        new()
+        {
+            Row = row,
+            X = x,
+            Y = y,
+            Size = size,
+            Phase = phase,
+        };
+
+    [TestMethod]
+    public void ABurningHutAndABurningEarlySiteAreDrawnEachWithItsFlamesRightAfterIt()
+    {
+        var map = MadeMap();
+        Building[] buildings =
+        [
+            Burning(BuildingType.Woodcutter, 16, 2),
+            Burning(BuildingType.Stonecutter, 20, 2, constructing: true, progress: 1),
+        ];
+        var (hutX, hutY) = Camera.NodePosition(16, 2);
+        hutY -= map.At(16, 2).Height * TerrainTriangles.HeightStep;
+        var (siteX, siteY) = Camera.NodePosition(20, 2);
+        siteY -= map.At(20, 2).Height * TerrainTriangles.HeightStep;
+
+        var draws = ObjectDraws
+            .Of(map, buildings: buildings, clock: 100, flames: TestFlames)
+            .Where(draw => draw is BuildingDraw or FlameDraw)
+            .ToList();
+
+        CollectionAssert.AreEqual(
+            new ObjectTerm[]
+            {
+                new BuildingDraw
+                {
+                    Row = 2,
+                    X = hutX,
+                    Y = hutY,
+                    Type = BuildingType.Woodcutter,
+                },
+                FlameAt(2, hutX - 3, hutY - 10, FlameSize.Small, 0),
+                FlameAt(2, hutX + 4, hutY - 12, FlameSize.Large, 3),
+                new BuildingDraw
+                {
+                    Row = 2,
+                    X = siteX,
+                    Y = siteY,
+                    Type = BuildingType.Stonecutter,
+                    SiteProgress = 1,
+                },
+                FlameAt(2, siteX + 1, siteY - 5, FlameSize.Small, 0),
+            },
+            draws
+        );
+    }
+
+    [TestMethod]
+    [DataRow(100, 0, 3)]
+    [DataRow(108, 1, 4)]
+    [DataRow(116, 2, 5)]
+    [DataRow(156, 7, 2)]
+    public void TheFlamesPhaseFollowsTheCountdownAtTheClockWhileTheStoredCountdownStaysTheSame(
+        int clock,
+        int first,
+        int second
+    )
+    {
+        var hut = Burning(BuildingType.Woodcutter, 16, 2);
+
+        var phases = ObjectDraws
+            .Of(MadeMap(), buildings: [hut], clock: (ushort)clock, flames: TestFlames)
+            .OfType<FlameDraw>()
+            .Select(flame => flame.Phase)
+            .ToList();
+
+        CollectionAssert.AreEqual(new[] { first, second }, phases);
+        Assert.AreEqual((ushort)0x7ff, hut.BurnLeft, "the view writes no countdown");
+        Assert.AreEqual((ushort)100, hut.Stamp, "the view writes no stamp");
+    }
+
+    [TestMethod]
+    public void ABuildingWhoseCountdownHasRunOutIsDrawnWithNeitherItselfNorItsFlames()
+    {
+        Building[] buildings = [Burning(BuildingType.Woodcutter, 16, 2)];
+
+        int Drawn(int clock) =>
+            ObjectDraws
+                .Of(MadeMap(), buildings: buildings, clock: (ushort)clock, flames: TestFlames)
+                .Count(draw => draw is BuildingDraw or FlameDraw);
+
+        Assert.AreEqual(3, Drawn(100 + 0x7ff), "a countdown of 0 still draws");
+        Assert.AreEqual(0, Drawn(100 + 0x800), "a countdown below 0 draws nothing");
+        Assert.AreEqual(
+            0,
+            ObjectDraws
+                .Of(MadeMap(), buildings: [Building.Free()], clock: 100, flames: TestFlames)
+                .Count(draw => draw is BuildingDraw or FlameDraw),
+            "a freed slot draws nothing"
+        );
+    }
+
+    [TestMethod]
+    [DataRow(false, 0, false)]
+    [DataRow(true, 1, true)]
+    [DataRow(true, 15999, true)]
+    [DataRow(true, 16000, false)]
+    public void OnlyASiteBelow16000ProgressTakesTheFlamesOfAnEarlySite(bool constructing, int progress, bool early)
+    {
+        var asked = new List<bool>();
+        IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite)
+        {
+            asked.Add(earlySite);
+
+            return [];
+        }
+
+        ObjectDraws.Of(
+            MadeMap(),
+            buildings: [Burning(BuildingType.Woodcutter, 16, 2, constructing, (ushort)progress)],
+            clock: 100,
+            flames: Flames
+        );
+
+        CollectionAssert.AreEqual(new[] { early }, asked);
+    }
+
+    [TestMethod]
+    public void BuildingTheDrawListOfABurningBuildingLeavesTheGameAsItWas()
+    {
+        // The removal tests' rule tables give the hut's object the class of a building, which the Remove click needs.
+        var map = MadeMap();
+        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
+        game.Tick();
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
+        game.Tick();
+        Huts.PlaceAndTick(game, 16, 2);
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.RemoveBuilding,
+                X = 16,
+                Y = 2,
+            }
+        );
+        game.Tick();
+        game.Tick();
+        Assert.IsTrue(game.Buildings.Any(building => building.IsDemolishing), "the hut burns");
+        var before = game.Digest();
+
+        var draws = ObjectDraws.Of(
+            map,
+            game.CastleStock.Castle,
+            game.Buildings,
+            ObjectDraws.FlagGoodsOf(game),
+            0,
+            game.Clock.Now,
+            TestFlames
+        );
+
+        Assert.IsTrue(draws.OfType<FlameDraw>().Any(), "the flames are drawn");
+        Assert.AreEqual(before, game.Digest());
     }
 }

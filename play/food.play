@@ -1,5 +1,5 @@
 # The six food buildings stand finished on layouts/food.jsonc, each with its flag south-east of it, and the dump names each food good.
-# A building asks for its worker and finds no road, so none walks out. The layout stands the fisher's worker inside his building. The seed draws the start stock level 38, which holds each food good (26 fish, 9 pigs, 25 meat, 44 grain, 9 flour, 25 bread).
+# A building asks for its worker and finds no road, so none walks out. The layout stands the fisher's worker inside his building. The castle's start stock holds one grain and no other food.
 # Run it on the layout with the install; its expect values are the History Edition's (play/basic-production.play runs the food chains
 # on the basic set):
 #   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10
@@ -13,11 +13,11 @@ expect-at 14 13 pig-farm
 expect-at 7 14 mill
 expect-at 12 14 butcher
 expect-count building = 7
-expect fish = 26
-expect pigs = 9
-expect meat = 25
-expect grain = 44
-expect flour = 9
-expect bread = 25
+expect fish = 0
+expect pigs = 0
+expect meat = 0
+expect grain = 1
+expect flour = 0
+expect bread = 0
 dump food
 shot food 10 10 6 6

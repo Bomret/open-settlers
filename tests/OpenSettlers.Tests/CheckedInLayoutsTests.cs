@@ -8,8 +8,9 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// Every layouts/*.jsonc of the repository reads and applies to a game without a refusal. A file that does not load fails
-// the test and names the file and the entry.
+// Every layouts/*.jsonc of the repository reads and applies to a game without a refusal, under the basic content set's rules at
+// the start stock level its seed draws: the conditions a play run loads it in. A file that does not load fails the test and
+// names the file and the entry.
 [TestClass]
 public sealed class CheckedInLayoutsTests
 {
@@ -42,13 +43,15 @@ public sealed class CheckedInLayoutsTests
             return read.Layout.Apply(LayoutSettlersTests.NewGame(read.Layout));
         }
 
-        // The game as the launch builds it: the start stock level the layout's seed draws, and the passes of a played game.
+        // The game as the launch builds it: the start stock level and the settler rate the layout's seed draws, and the passes
+        // of a played game.
         return
             LayoutLoad.Start(
                 read.Layout,
                 tables,
                 read.Layout.BuildMap(),
                 StartStock.LevelOf(read.Layout.Seed),
+                StartStock.SettlerRateOf(read.Layout.Seed),
                 out _,
                 out var message
             ) == 0

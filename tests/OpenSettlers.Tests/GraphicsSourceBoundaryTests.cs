@@ -18,6 +18,7 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/MapView/TerrainTriangles.cs")]
     [DataRow("src/MapView/TerrainQuads.cs")]
     [DataRow("src/MapView/RoadDraws.cs")]
+    [DataRow("src/MapView/BorderDraws.cs")]
     [DataRow("src/MapView/ImageLayers.cs")]
     [DataRow("src/Import/IGraphicsSource.cs")]
     [DataRow("src/MapView/ObjectDraws.cs")]
@@ -25,10 +26,14 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/Import/IWalkSteps.cs")]
     [DataRow("src/Import/GraphicsLoad.cs")]
     [DataRow("src/Import/ObjectTerms.cs")]
+    [DataRow("src/Import/Flame.cs")]
     [DataRow("src/Import/TerrainTriangle.cs")]
     [DataRow("src/Import/RoadStrip.cs")]
+    [DataRow("src/Import/RoadMarker.cs")]
+    [DataRow("src/Import/BorderPost.cs")]
     [DataRow("src/MapView/SettlerFigures.cs")]
     [DataRow("src/MapView/MapPicking.cs")]
+    [DataRow("src/MapView/RoadMarkerDraws.cs")]
     [DataRow("src/MapView/ClickDecision.cs")]
     [DataRow("src/MapView/MapKeys.cs")]
     [DataRow("src/MapView/ShotCrop.cs")]
@@ -306,6 +311,7 @@ public sealed class GraphicsSourceBoundaryTests
             {
                 "TerrainRules",
                 "RoadRules",
+                "BorderRules",
                 "TerrainGraphics",
                 "RoadGraphics",
                 "ObjectSprites",

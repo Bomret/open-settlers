@@ -180,7 +180,7 @@ program has no such bound; a slow pass there gets more elapsed units).
 A pass runs the retry scan and the phase step. It then runs the slice of the flag list, for the carriers'
 requests only ([Carriers](carriers.md#the-flag-pass)), and the slices of the building and settler lists
 ([Settlers](settlers.md#the-pass)). With `Game.EveryPassTurns`, it then gives one more turn to every
-settler in a state the view draws in motion.
+settler in a state the view draws in motion, and to the castle's settler while the castle is built.
 
-The clock starts at 0 and gains 8 a pass. The phase at 0 goes to 1 on the first pass. The players' timers
-are not in the engine yet.
+The clock starts at 0 and gains 8 a pass. The phase at 0 goes to 1 on the first pass. Of the players' timers only the
+settler supply is in the engine, in a game that runs it ([New settlers](new-settlers.md#in-the-engine)).

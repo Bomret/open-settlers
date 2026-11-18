@@ -101,8 +101,11 @@ outside every function of the dump.
 (`LaunchArgs.Stock`), which stands in for the bar of the free-game screen, or else the level the seed draws
 (`MapViewState.StockLevel`). `CommandKind.PlaceCastle`
 with the node in `Command.X` and `Command.Y` places the castle through `BuildSite.Evaluate` and
-`CastlePlacement.Apply`. `Game.CastleStock` holds the result. The game changes the map's layers it was
-given. The placement also adds the castle as building slot 0 and the 20 settlers (`Game.Buildings`, `Game.Settlers`).
+`CastlePlacement.Apply`. `Game.CastleStock` holds the result. A layout's castle can name its goods (`Command.Stock`,
+[Layouts](layouts.md#the-castles-goods)). It then holds those in place of the start stock, an engine **stand-in**. The game changes the map's layers it was
+given. The placement also adds the castle as building slot 0 and the 20 settlers (`Game.Buildings`, `Game.Settlers`). A layout's castle
+can name its settlers (`Command.Settlers`, [Layouts](layouts.md#the-castles-settlers)). It then holds its castle settler and those
+in place of the 20, an engine **stand-in**.
 The digest holds the castle, the stock, the buildings, and the settlers. Departures: the storage item and the
 item tables' other fields, the player's flag bits, and the mission changes are not held.
 
