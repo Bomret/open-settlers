@@ -261,6 +261,8 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
+- `play/road-markers.play` on the game view with seed `1234567812345678` and size 1, under either content set: cropped shots of the road
+  markers at the castle's flag, after a step, after the step back, and none after the road is built.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
   fast-forwarded to the castle's second meat beyond its start stock (`meat >= 27` from a start of 25).
