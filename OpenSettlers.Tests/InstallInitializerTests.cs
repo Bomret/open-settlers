@@ -40,9 +40,16 @@ public sealed class InstallInitializerTests
         [
             .. Directory
                 .EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
-                .Where(project => Path.GetFileNameWithoutExtension(project).EndsWith(".Tests") || Path.GetFileNameWithoutExtension(project).EndsWith(".Testing"))
+                .Where(project =>
+                    Path.GetFileNameWithoutExtension(project).EndsWith(".Tests")
+                    || Path.GetFileNameWithoutExtension(project).EndsWith(".Testing")
+                )
                 .Select(project => Path.GetDirectoryName(project)!)
-                .Where(folder => !Path.GetRelativePath(root, folder).Split(Path.DirectorySeparatorChar).Any(GeneratedFolders.Contains))
+                .Where(folder =>
+                    !Path.GetRelativePath(root, folder)
+                        .Split(Path.DirectorySeparatorChar)
+                        .Any(GeneratedFolders.Contains)
+                )
                 .SelectMany(folder => Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
                 .Select(file => Path.GetRelativePath(root, file))
                 .Where(file => !file.Split(Path.DirectorySeparatorChar).Any(GeneratedFolders.Contains))
@@ -83,9 +90,16 @@ public sealed class InstallInitializerTests
         var root = Path.Combine(Path.GetTempPath(), "install-initializers-" + Guid.NewGuid().ToString("N"));
         try
         {
-            Write(root, Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(Path.GetDirectoryName(path)!) + ".csproj"));
+            Write(
+                root,
+                Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(Path.GetDirectoryName(path)!) + ".csproj")
+            );
             Write(root, path, "class A { static readonly Install Game = TestProgram.OpenInstall(); }");
-            Write(root, "src/Domain/Library.cs", "class B { static readonly Install Game = TestProgram.OpenInstall(); }");
+            Write(
+                root,
+                "src/Domain/Library.cs",
+                "class B { static readonly Install Game = TestProgram.OpenInstall(); }"
+            );
 
             CollectionAssert.AreEqual(new[] { path.Replace('/', Path.DirectorySeparatorChar) + ":1" }, Offenders(root));
         }

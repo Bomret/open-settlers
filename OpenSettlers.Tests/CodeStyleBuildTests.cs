@@ -133,7 +133,10 @@ public sealed class CodeStyleBuildTests
     {
         var root = RootOf();
         var pinned = File.ReadAllText(Path.Combine(root, "global.json"));
-        StringAssert.Matches(pinned, new Regex("\"msbuild-sdks\"\\s*:\\s*\\{[^}]*\"MSTest\\.Sdk\"\\s*:\\s*\"[\\d.]+\""));
+        StringAssert.Matches(
+            pinned,
+            new Regex("\"msbuild-sdks\"\\s*:\\s*\\{[^}]*\"MSTest\\.Sdk\"\\s*:\\s*\"[\\d.]+\"")
+        );
 
         var projects = ConfigFiles(root, file => Path.GetExtension(file) == ".csproj")
             .Select(relative => (relative, document: XDocument.Load(Path.Combine(root, relative))))
