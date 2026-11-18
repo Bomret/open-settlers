@@ -197,21 +197,27 @@ public sealed class WoodcuttingTests
         Assert.IsTrue(watch.Changed(game), "the first look is a change: nothing was drawn yet");
         var objects = TestMaps.Objects(map);
         var goods = Goods(game);
+        var castle = Castle(game);
         var changes = 0;
 
         for (var tick = 0; tick < 6000 && !HoldsLog(game); tick++)
         {
             game.Tick();
             var now = TestMaps.Objects(map);
-            var moved = !now.SequenceEqual(objects) || !Goods(game).SequenceEqual(goods);
+            // The castle under construction is drawn by its progress word, so its moves and the pass it stands change the layer too.
+            var moved = !now.SequenceEqual(objects) || !Goods(game).SequenceEqual(goods) || Castle(game) != castle;
             Assert.AreEqual(moved, watch.Changed(game), $"tick {game.TickCount}");
             changes += moved ? 1 : 0;
             objects = now;
             goods = Goods(game);
+            castle = Castle(game);
         }
 
         Assert.IsGreaterThan(1, changes, "a tree is cut and a log laid");
     }
+
+    static (bool Constructing, ushort Progress) Castle(Game game) =>
+        game.Buildings[0].Constructing ? (true, game.Buildings[0].Progress) : (false, (ushort)0);
 
     [TestMethod]
     public void TheObjectLayerWatchLooksOnlyAfterATickRan()

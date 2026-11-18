@@ -88,6 +88,15 @@ Statement: The engine reaches game data only through import ports. Only the Hist
 Breaks: loudly
 Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks and the rule file reader are internal to the Open Settlers assembly. Its public types are the ones the host builds: `OpenSettlersSource`, `OpenSettlersRuleTables`, and `OpenSettlersWalkSteps`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view, `src/Assets`, and `src/Viewer` compile inside the Godot project, which references both source assemblies, so the compiler does not keep them from those public types. `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
 
+### INV-0015
+
+Class: architecture
+Concepts: Building site, Castle under construction, Graphics source
+Statement: The view draws a building site and the castle under construction from the building's type and its progress word alone. It keeps no timer, counter, or animation state of its own for the growth, so the drawing always shows the simulation's state.
+Breaks: silently
+Check: `SiteStagesTests` and `SiteDrawTests` derive each drawing from a type and a progress word, with no clock and no earlier frame.
+Paths: src/Import/SiteStages.cs, src/MapView/ObjectDraws.cs, src/MapView/ObjectLayerWatch.cs
+
 ### INV-0016
 
 Class: architecture

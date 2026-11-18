@@ -115,6 +115,67 @@ public sealed class ObjectDrawsTests
     }
 
     [TestMethod]
+    public void TheCastleUnderConstructionIsDrawnOnceByItsProgressUntilItStands()
+    {
+        var (map, game) = CastleWorld();
+        var castle = game.Buildings[0];
+        Assert.IsTrue(castle.Constructing, "the castle is under construction after its placement");
+
+        BuildingDraw CastleDraw() =>
+            ObjectDraws
+                .Of(map, game.CastleStock.Castle, game.Buildings)
+                .OfType<BuildingDraw>()
+                .Single(draw => draw.Type == BuildingType.Castle);
+
+        Assert.AreEqual(castle.Progress, CastleDraw().SiteProgress, "the placement");
+        while (castle.Constructing && castle.Progress == 0 && game.TickCount < 20_000)
+        {
+            game.Tick();
+        }
+
+        Assert.AreNotEqual((ushort)0, castle.Progress, "the castle's first settler raised the progress word");
+        Assert.AreEqual(castle.Progress, CastleDraw().SiteProgress, "growing");
+        while (castle.Constructing && game.TickCount < 20_000)
+        {
+            game.Tick();
+        }
+
+        Assert.IsFalse(castle.Constructing, "the castle stands");
+        Assert.IsNull(CastleDraw().SiteProgress, "a castle that stands is drawn whole");
+        Assert.IsNull(
+            ObjectDraws.Of(map, game.CastleStock.Castle).OfType<BuildingDraw>().Single().SiteProgress,
+            "without the game's buildings, as in the map view, the castle is drawn whole"
+        );
+    }
+
+    // The view draws the castle under construction by its progress word, so each move of the word and the pass it stands are changes of the
+    // object layer the view must redraw.
+    [TestMethod]
+    public void TheObjectLayerWatchReportsEveryMoveOfTheCastlesProgressAndThePassItStands()
+    {
+        var (_, game) = CastleWorld();
+        var castle = game.Buildings[0];
+        var watch = new ObjectLayerWatch();
+        watch.Changed(game);
+        var moves = 0;
+
+        while (castle.Constructing && game.TickCount < 20_000)
+        {
+            var before = castle.Progress;
+            game.Tick();
+            var changed = watch.Changed(game);
+            if (castle.Progress != before)
+            {
+                moves++;
+                Assert.IsTrue(changed, $"tick {game.TickCount}: progress {before:X4} to {castle.Progress:X4}");
+            }
+        }
+
+        Assert.IsFalse(castle.Constructing, "the castle stands");
+        Assert.IsGreaterThan(1, moves);
+    }
+
+    [TestMethod]
     public void AHutIsDrawnLikeTheCastleAtItsNodeAsAWoodcuttersBuilding()
     {
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
@@ -243,10 +304,7 @@ public sealed class ObjectDrawsTests
                 SiteProgress = 1,
             }
         );
-        Assert.IsTrue(
-            draws.Where(draw => draw.Type == BuildingType.Castle).All(draw => draw.SiteProgress is null),
-            "the castle is no site"
-        );
+        Assert.AreEqual(1, draws.Count(draw => draw.Type == BuildingType.Castle), "the castle is drawn once");
     }
 
     [TestMethod]
@@ -460,7 +518,8 @@ public sealed class ObjectDrawsTests
 
         // Map of the seed 1234,5678,9ABC: the objects of rows 2 to 6 in row-major order, the
         // hut (code 2 at 16,2) and the castle (code 4 at 15,5) among them. Each building follows the last object of its
-        // row, where the next row's first object follows; the flag's good (place 0) precedes the flag.
+        // row, where the next row's first object follows; the flag's good (place 0) precedes the flag. The castle is under construction
+        // at a progress of 0.
         CollectionAssert.AreEqual(
             new ObjectTerm[]
             {
@@ -549,6 +608,7 @@ public sealed class ObjectDrawsTests
                     X = 400,
                     Y = 40,
                     Type = BuildingType.Castle,
+                    SiteProgress = 0,
                 },
                 new MapObjectDraw
                 {

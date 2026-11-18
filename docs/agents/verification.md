@@ -289,6 +289,9 @@ script alone. Add a layout only where none of them holds the situation.
   beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.
   The play therefore shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
   the game's ticks run only after the first `shot` that follows a `fast-forward`.
+- `play/castle-growing.play` on the game view with seed `4455544685788642` and size 1, and `play/castle-growing-basic.play` on the
+  basic set with seed `1234567812345634` and size 1: each script places the castle with a click. It fast-forwards to ticks 20 and 45, while
+  the castle grows, and to tick 200, after it stands. A cropped shot of the castle follows each.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the

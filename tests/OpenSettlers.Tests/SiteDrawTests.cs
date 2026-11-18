@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -13,7 +14,9 @@ namespace OpenSettlers.Tests;
 // of byte 4, the progress word at 12) and what the draw drew (d=), in order: sh<entry> a shadow, <entry>/<fraction>/x,y a sprite (the
 // fraction -1 for a sprite drawn whole), and good<entry> the sprite of a good on site. The engine's layers for the progress word
 // (SiteStages.Parts), each with its History Edition entry (ObjectSprites.SiteLayerEntry) after its shadow (the mask at the entry plus 250,
-// HistoryEditionSource), must be what the original drew. The piles of the goods on site are not ported and are left out.
+// HistoryEditionSource), must be what the original drew. The piles of the goods on site are not ported and are left out. The castle-site
+// recording draws the castle's node from its placement (progress 0) until after it stands: under construction (bit 7 of byte 4) the engine
+// draws the castle's layers (SiteStages.CastleParts), once it stands the finished castle whole.
 [TestClass]
 public sealed class SiteDrawTests
 {
@@ -24,6 +27,40 @@ public sealed class SiteDrawTests
     [DataRow("sawmill-site")]
     public void TheLayersOfASiteAreTheOnesTheOriginalDraws(string name)
     {
+        foreach (var (pass, type, progress, _, drawn) in Passes(name))
+        {
+            CollectionAssert.AreEqual(
+                drawn,
+                Drawn(type, SiteStages.Parts(progress)),
+                $"{name}, pass {pass}, progress {progress:X4}"
+            );
+        }
+    }
+
+    [TestMethod]
+    public void TheCastleGrowsAsTheOriginalDrawsItAndIsDrawnWholeOnceItStands()
+    {
+        var passes = Passes("castle-site");
+        Assert.IsTrue(passes.Any(p => p.Constructing && p.Progress == 0), "the recording holds the placement");
+        Assert.IsTrue(passes.Any(p => !p.Constructing), "the recording holds a pass after the castle stands");
+
+        foreach (var (pass, type, progress, constructing, drawn) in passes)
+        {
+            Assert.AreEqual(BuildingType.Castle, type);
+            var engine = constructing
+                ? Drawn(type, SiteStages.CastleParts(progress))
+                : Drawn(type, [new SitePart { Layer = SiteLayer.Finished, Fraction = null }]);
+
+            CollectionAssert.AreEqual(drawn, engine, $"castle, pass {pass}, progress {progress:X4}");
+        }
+    }
+
+    // The passes of a recording: the type, the progress word, whether bit 7 of byte 4 marks the building under construction, and the
+    // shadows and sprites the original drew, without the goods and the positions.
+    static List<(string Pass, BuildingType Type, ushort Progress, bool Constructing, List<string> Drawn)> Passes(
+        string name
+    )
+    {
         var lines = File.ReadAllLines(Fixture)
             .SkipWhile(line => !line.StartsWith($"# {name} ", StringComparison.Ordinal))
             .Skip(1)
@@ -32,34 +69,39 @@ public sealed class SiteDrawTests
             .ToList();
         Assert.IsNotEmpty(lines, name);
 
-        foreach (var line in lines)
-        {
-            var fields = line.Split(' ')
-                .Select(field => field.Split('=', 2))
-                .ToDictionary(pair => pair[0], pair => pair[1]);
-            var bytes = Convert.FromHexString(fields["b"]);
-            var type = new BuildingType { Code = (bytes[4] >> 2) & 0x1f };
-            var progress = (ushort)(bytes[12] | bytes[13] << 8);
-            var drawn = fields["d"]
-                .Split(';')
-                .Where(call => !call.StartsWith("good", StringComparison.Ordinal))
-                .Select(call =>
-                    call.StartsWith("sh", StringComparison.Ordinal) ? call : string.Join('/', call.Split('/')[..2])
+        return
+        [
+            .. lines.Select(line =>
+            {
+                var fields = line.Split(' ')
+                    .Select(field => field.Split('=', 2))
+                    .ToDictionary(pair => pair[0], pair => pair[1]);
+                var bytes = Convert.FromHexString(fields["b"]);
+                var drawn = fields["d"]
+                    .Split(';')
+                    .Where(call => !call.StartsWith("good", StringComparison.Ordinal))
+                    .Select(call =>
+                        call.StartsWith("sh", StringComparison.Ordinal) ? call : string.Join('/', call.Split('/')[..2])
+                    );
+
+                return (
+                    fields["pass"],
+                    new BuildingType { Code = (bytes[4] >> 2) & 0x1f },
+                    (ushort)(bytes[12] | bytes[13] << 8),
+                    (bytes[4] & 0x80) != 0,
+                    drawn.ToList()
                 );
-            var engine = SiteStages
-                .Parts(progress)
-                .SelectMany(part =>
-                {
-                    var entry = ObjectSprites.SiteLayerEntry(part.Layer, type)!.Value;
-
-                    return new[] { $"sh{entry + 250}", $"{entry}/{part.Fraction ?? -1}" };
-                });
-
-            CollectionAssert.AreEqual(
-                drawn.ToList(),
-                engine.ToList(),
-                $"{name}, pass {fields["pass"]}, progress {progress:X4}"
-            );
-        }
+            }),
+        ];
     }
+
+    static List<string> Drawn(BuildingType type, IEnumerable<SitePart> parts) =>
+        [
+            .. parts.SelectMany(part =>
+            {
+                var entry = ObjectSprites.SiteLayerEntry(part.Layer, type)!.Value;
+
+                return new[] { $"sh{entry + 250}", $"{entry}/{part.Fraction ?? -1}" };
+            }),
+        ];
 }
