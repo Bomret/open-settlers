@@ -37,7 +37,7 @@ public static class CastleReadout
 
     /// <summary>
     /// The goods the castle holds that the content set's start stock does not list, an added good, each with its count, in the
-    /// catalog's order of stable names. <paramref name="startStockGoods"/> are the goods of one row of the start stock
+    /// catalog's order of stable names. <paramref name="startStockGoods"/> are the goods the rows of the start stock name
     /// (<c>RuleTables.StartStock</c>), which each content set fills with every good it has, zeros included. The rule reads that
     /// content data and no good's name or original code, so the bar of either content set at game start is the nine fields and
     /// nothing more. An added good a set gave a start count would list there and stay out of the bar. A good the stock holds none

@@ -49,7 +49,7 @@ public sealed class CastleReadoutTests
         return stock;
     }
 
-    static IEnumerable<Good> StartGoodsOf(RuleTables tables) => tables.StartStock[0].Keys;
+    static IEnumerable<Good> StartGoodsOf(RuleTables tables) => tables.StartStock.SelectMany(row => row.Keys);
 
     static string RepositoryRoot()
     {
