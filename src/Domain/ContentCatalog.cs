@@ -16,124 +16,80 @@ public sealed class ContentCatalog
     /// <summary>The number of request classes a request word holds: a word is one byte of classes.</summary>
     const int ClassesPerWord = 8;
 
-    readonly Dictionary<string, GoodEntry> _byName;
+    readonly Dictionary<string, GoodEntry> _byName = [];
     readonly Dictionary<string, BuildingEntry> _buildingsByName = [];
     readonly Dictionary<string, JobEntry> _jobsByName = [];
 
     /// <summary>
-    /// Creates the catalog from its goods. Throws an <see cref="ArgumentException"/> that names the entry and builds nothing for a duplicate
-    /// stable name, a duplicate original code, a stable name outside lowercase letters, digits, and hyphens, a transport rank below 1 or
-    /// one that another good holds, and a request class that does not fit its request word (0 to 7).
+    /// Creates the catalog from its entries. Throws an <see cref="ArgumentException"/> that names the entry and builds nothing where two
+    /// entries of one kind share a stable name or an original code, a stable name holds anything other than lowercase letters, digits,
+    /// and hyphens, two building types share a tie rank, a good's transport rank is below 1 or another good holds it, or a good's
+    /// request class does not fit its request word (0 to 7).
     /// </summary>
     /// <param name="goods">The goods, in any order.</param>
-    /// <param name="buildings">
-    /// The building types, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, a
-    /// duplicate tie rank, and a stable name outside lowercase letters, digits, and hyphens.
-    /// </param>
-    /// <param name="jobs">
-    /// The jobs, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, and a stable name
-    /// outside lowercase letters, digits, and hyphens.
-    /// </param>
+    /// <param name="buildings">The building types, in any order.</param>
+    /// <param name="jobs">The jobs, in any order.</param>
     public ContentCatalog(
         IEnumerable<GoodEntry> goods,
         IEnumerable<BuildingEntry>? buildings = null,
         IEnumerable<JobEntry>? jobs = null
     )
     {
-        var orderedJobs = (jobs ?? []).OrderBy(job => job.Name, StringComparer.Ordinal).ToList();
-        Dictionary<int, JobEntry> jobsByCode = [];
-        foreach (var job in orderedJobs)
-        {
-            if (job.Name.Length == 0 || !job.Name.All(IsNameCharacter))
-            {
-                throw Refuse(job, "its stable name holds anything other than lowercase letters, digits, and hyphens");
-            }
+        Jobs = Checked(jobs ?? [], "job", job => job.Name, job => job.OriginalCode, _jobsByName);
 
-            if (!_jobsByName.TryAdd(job.Name, job))
-            {
-                throw Refuse(job, "another job has this stable name");
-            }
-
-            if (job.OriginalCode is { } jobCode && !jobsByCode.TryAdd(jobCode, job))
-            {
-                throw Refuse(job, $"{jobsByCode[jobCode].Name} has this original code, {jobCode}");
-            }
-        }
-
-        Jobs = [.. orderedJobs];
-
-        var orderedBuildings = (buildings ?? []).OrderBy(building => building.Name, StringComparer.Ordinal).ToList();
-        Dictionary<int, BuildingEntry> buildingsByCode = [];
         Dictionary<int, string> buildingsByRank = [];
-        foreach (var building in orderedBuildings)
-        {
-            if (building.Name.Length == 0 || !building.Name.All(IsNameCharacter))
+        Buildings = Checked(
+            buildings ?? [],
+            "building type",
+            building => building.Name,
+            building => building.OriginalCode,
+            _buildingsByName,
+            building =>
             {
-                throw Refuse(
-                    building,
-                    "its stable name holds anything other than lowercase letters, digits, and hyphens"
-                );
+                if (!buildingsByRank.TryAdd(building.TieRank, building.Name))
+                {
+                    throw Refuse(
+                        "building type",
+                        building.Name,
+                        $"{buildingsByRank[building.TieRank]} has this tie rank, {building.TieRank}"
+                    );
+                }
             }
+        );
 
-            if (!_buildingsByName.TryAdd(building.Name, building))
+        Dictionary<int, string> byRank = [];
+        Goods = Checked(
+            goods,
+            "good",
+            good => good.Name,
+            good => good.OriginalCode,
+            _byName,
+            good =>
             {
-                throw Refuse(building, "another building type has this stable name");
+                if (good.TransportRank < 1)
+                {
+                    throw Refuse("good", good.Name, $"its transport rank {good.TransportRank} is below 1");
+                }
+
+                if (!byRank.TryAdd(good.TransportRank, good.Name))
+                {
+                    throw Refuse(
+                        "good",
+                        good.Name,
+                        $"{byRank[good.TransportRank]} has this transport rank, {good.TransportRank}"
+                    );
+                }
+
+                if (good.Request is { } request && request.Class is < 0 or >= ClassesPerWord)
+                {
+                    throw Refuse(
+                        "good",
+                        good.Name,
+                        $"its request class {request.Class} does not fit a request word, which holds the classes 0 to {ClassesPerWord - 1}"
+                    );
+                }
             }
-
-            if (building.OriginalCode is { } buildingCode && !buildingsByCode.TryAdd(buildingCode, building))
-            {
-                throw Refuse(building, $"{buildingsByCode[buildingCode].Name} has this original code, {buildingCode}");
-            }
-
-            if (!buildingsByRank.TryAdd(building.TieRank, building.Name))
-            {
-                throw Refuse(building, $"{buildingsByRank[building.TieRank]} has this tie rank, {building.TieRank}");
-            }
-        }
-
-        Buildings = [.. orderedBuildings];
-
-        var ordered = goods.OrderBy(good => good.Name, StringComparer.Ordinal).ToList();
-        _byName = [];
-        Dictionary<int, GoodEntry> byCode = [];
-        var byRank = new Dictionary<int, string>();
-        foreach (var good in ordered)
-        {
-            if (good.Name.Length == 0 || !good.Name.All(IsNameCharacter))
-            {
-                throw Refuse(good, "its stable name holds anything other than lowercase letters, digits, and hyphens");
-            }
-
-            if (!_byName.TryAdd(good.Name, good))
-            {
-                throw Refuse(good, "another good has this stable name");
-            }
-
-            if (good.OriginalCode is { } code && !byCode.TryAdd(code, good))
-            {
-                throw Refuse(good, $"{byCode[code].Name} has this original code, {code}");
-            }
-
-            if (good.TransportRank < 1)
-            {
-                throw Refuse(good, $"its transport rank {good.TransportRank} is below 1");
-            }
-
-            if (!byRank.TryAdd(good.TransportRank, good.Name))
-            {
-                throw Refuse(good, $"{byRank[good.TransportRank]} has this transport rank, {good.TransportRank}");
-            }
-
-            if (good.Request is { } request && request.Class is < 0 or >= ClassesPerWord)
-            {
-                throw Refuse(
-                    good,
-                    $"its request class {request.Class} does not fit a request word, which holds the classes 0 to {ClassesPerWord - 1}"
-                );
-            }
-        }
-
-        Goods = [.. ordered];
+        );
     }
 
     /// <summary>A catalog with no good.</summary>
@@ -195,13 +151,49 @@ public sealed class ContentCatalog
             $"The good '{good.Name}' is no entry of the content catalog, which holds: {string.Join(", ", Goods.Select(entry => entry.Name))}."
         );
 
+    // The entries of one kind in ordinal order of their names, each added to byName. Refuses, naming the entry, a name outside lowercase
+    // letters, digits, and hyphens, a duplicate name, and a duplicate code, then runs the kind's own check on the entry.
+    static ImmutableArray<T> Checked<T>(
+        IEnumerable<T> entries,
+        string kind,
+        Func<T, string> name,
+        Func<T, int?> code,
+        Dictionary<string, T> byName,
+        Action<T>? check = null
+    )
+    {
+        var ordered = entries.OrderBy(name, StringComparer.Ordinal).ToImmutableArray();
+        Dictionary<int, string> byCode = [];
+        foreach (var entry in ordered)
+        {
+            var entryName = name(entry);
+            if (entryName.Length == 0 || !entryName.All(IsNameCharacter))
+            {
+                throw Refuse(
+                    kind,
+                    entryName,
+                    "its stable name holds anything other than lowercase letters, digits, and hyphens"
+                );
+            }
+
+            if (!byName.TryAdd(entryName, entry))
+            {
+                throw Refuse(kind, entryName, $"another {kind} has this stable name");
+            }
+
+            if (code(entry) is { } value && !byCode.TryAdd(value, entryName))
+            {
+                throw Refuse(kind, entryName, $"{byCode[value]} has this original code, {value}");
+            }
+
+            check?.Invoke(entry);
+        }
+
+        return ordered;
+    }
+
     static bool IsNameCharacter(char character) => character is >= 'a' and <= 'z' or >= '0' and <= '9' or '-';
 
-    static ArgumentException Refuse(GoodEntry good, string reason) =>
-        new($"The good '{good.Name}' is refused: {reason}.");
-
-    static ArgumentException Refuse(JobEntry job, string reason) => new($"The job '{job.Name}' is refused: {reason}.");
-
-    static ArgumentException Refuse(BuildingEntry building, string reason) =>
-        new($"The building type '{building.Name}' is refused: {reason}.");
+    static ArgumentException Refuse(string kind, string name, string reason) =>
+        new($"The {kind} '{name}' is refused: {reason}.");
 }

@@ -98,7 +98,6 @@ public sealed class BuildingCatalogTests
         Assert.AreEqual((int)(Fnv1a.Of("smithy") & 0x7fffff00), word);
         Assert.IsFalse(BuildingWords.HasCode(catalog, smithy));
         Assert.IsTrue(BuildingWords.HasCode(catalog, BuildingType.Farm));
-        BuildingWords.Check(catalog);
     }
 
     [TestMethod]

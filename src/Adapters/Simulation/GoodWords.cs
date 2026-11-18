@@ -47,20 +47,10 @@ public static class GoodWords
         catalog.Goods.Any(entry => entry.OriginalCode is null && WordOf(entry.Name) == word);
 
     /// <summary>
-    /// Throws an <see cref="ArgumentException"/> that names both goods where two goods of the catalog with no original code have one word,
-    /// which the flag word, the carrier's mode, and the snapshot could not tell apart.
-    /// The exception names <paramref name="parameter"/> as the argument at fault: the caller's parameter that holds the catalog.
-    /// </summary>
-    public static void Check(ContentCatalog catalog, string parameter = "catalog") =>
-        CheckCodeless(
-            "goods",
-            catalog.Goods.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
-            parameter
-        );
-
-    /// <summary>
     /// Throws an <see cref="ArgumentException"/> that names both entries (<paramref name="kind"/> says what they are) where two of the
-    /// stable names <paramref name="names"/> of entries with no original code have one exporter word.
+    /// stable names <paramref name="names"/> of entries with no original code have one exporter word, which the words an exporter writes
+    /// could not tell apart. The exception names <paramref name="parameter"/> as the argument at fault: the caller's parameter that holds
+    /// the catalog.
     /// </summary>
     internal static void CheckCodeless(string kind, IEnumerable<string> names, string parameter)
     {

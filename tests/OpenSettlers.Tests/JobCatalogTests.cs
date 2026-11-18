@@ -74,7 +74,6 @@ public sealed class JobCatalogTests
         Assert.AreEqual((int)(Fnv1a.Of("miller") & 0x7fffff00), word);
         Assert.IsTrue(JobWords.HasCode(catalog, new Baker()));
         Assert.IsFalse(JobWords.HasCode(catalog, new Miller()));
-        JobWords.Check(catalog);
     }
 
     [TestMethod]

@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace OpenSettlers.Simulation;
 
 /// <summary>
@@ -31,9 +33,16 @@ public static class GameFactory
         int settlerRate = 0
     )
     {
-        GoodWords.Check(tables.Catalog, nameof(tables));
-        BuildingWords.Check(tables.Catalog, nameof(tables));
-        JobWords.Check(tables.Catalog, nameof(tables));
+        // Two code-less entries of one kind with one word: the flag word, the carrier's mode, the building table's item, a settler's
+        // item, the snapshot, and the digest could not tell them apart.
+        var catalog = tables.Catalog;
+        GoodWords.CheckCodeless("goods", catalog.Goods.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name), nameof(tables));
+        GoodWords.CheckCodeless(
+            "building types",
+            catalog.Buildings.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
+            nameof(tables)
+        );
+        GoodWords.CheckCodeless("jobs", catalog.Jobs.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name), nameof(tables));
         var clock = new GameClock();
         var castle = new CastleStock(tables.Catalog);
         var flags = new FlagTable();
