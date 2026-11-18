@@ -7,10 +7,10 @@
 // 18 bytes of the building (b=, its flag pointer left out) where they changed, the flag's byte 4 and goods bytes (g=) where they changed, the
 // request words of the flag (req=, the bytes 0x42 to 0x45) where they changed, the castle's pig count (pig=) and meat count (meat=) where
 // they changed, and the generator's words (rng=) as they stand. The puts of the command lay the pigs (good 2) or stones (good 10) on the
-// places of a flag by hand. The flags are listed in the order the engine numbers them (by column). The scenario flag-full ends at the pass 1241,
-// the first place the carriers free: the butcher waits at the door with the meat from the pass 1173 while eight stones lie on the flag from
-// the pass 1000. After it the engine's carriers leave the flag's node earlier than the original's, so the next place frees at another pass
-// (the open lead of the carriers' hand-over that docs/rules/milling.md names, not the butcher's). Not production code: no routine of the program is transcribed here, only values the program produced.
+// places of a flag by hand. The flags are listed in the order the engine numbers them (by column). The scenario flag-full runs to the pass
+// 1800: the butcher waits at the door with the meat from the pass 1173 while eight stones lie on the flag from the pass 1000. The stones make
+// the road busy, so it gets a second carrier (docs/rules/carriers.md, "A busy road"); the first place frees at 1241, and the butcher steps
+// out at 1322. Not production code: no routine of the program is transcribed here, only values the program produced.
 # one-pig goods:1:1234,5678,9ABC:30:15,5:15,9;18,6:16,6,00;16,6,2223:15,9,13:2000:0::-1:600,0,2,1
 pass=0 pig=4 meat=6 rng=AEC7,C7E8,B97D
 pass=32 g=41/0000000000000000 req=00FF0000 b=380800003404020000000000000000000000 rng=57DA,9D96,A117
@@ -150,3 +150,13 @@ pass=1140 s3=348CD70038080000A82326FF77000000 rng=3F4F,F695,517B
 pass=1157 s3=348C4F0038080000302426FF77000000 rng=3F4F,F695,517B
 pass=1173 s3=3452000038080000B0240B030000000D rng=3F4F,F695,517B
 pass=1241 g=41/2A2A2A2A2A2A2A00 rng=67E9,6E04,01A5
+pass=1304 g=41/002A2A2A2A2A2A00 rng=67E9,6E04,01A5
+pass=1322 s3=340F4F013C090000582905030000000D rng=67E9,6E04,01A5
+pass=1338 s3=340FCF003C090000D82905030000000D rng=67E9,6E04,01A5
+pass=1355 s3=340F47003C090000602A05030000000D rng=E2CA,5C3E,1C55
+pass=1371 s3=340F00003C090000E02A0D0300000000 rng=235D,9256,BC49
+pass=1388 s3=34267F0138080000682B040077000000 g=C1/032A2A2A2A2A2A00 rng=235D,9256,BC49
+pass=1404 s3=3426FF0038080000E82B040077000000 rng=235D,9256,BC49
+pass=1421 s3=3426770038080000702C260077000000 rng=235D,9256,BC49
+pass=1604 g=C1/03002A2A2A2A2A00 rng=CB4F,7B7A,A95D
+pass=1684 g=C1/0300002A2A2A2A00 rng=1889,E60A,FE42

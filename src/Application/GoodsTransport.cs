@@ -8,6 +8,20 @@ namespace OpenSettlers.Simulation;
 // road is told to fetch it (state 0x42, 0x42ff81, the carrier behaviour's).
 
 /// <summary>
+/// What the turn of a flag's goods hands the road loop (0x46414d): the roads that three or more goods head along (the set the
+/// thermometer at 0x46427c writes to +0x219), and whether seven or more places held a good on a turn that routed them (the
+/// count at +0x24e, which a turn that routes nothing leaves 0).
+/// </summary>
+public readonly record struct GoodsLoad
+{
+    /// <summary>The directions three or more of the flag's goods head.</summary>
+    public required RoadSet Busy { get; init; }
+
+    /// <summary>Whether seven or more places held a good on a turn that routed them.</summary>
+    public required bool Crowded { get; init; }
+}
+
+/// <summary>
 /// The goods on the flags: the put of a good on a place, the turn of a flag's goods that gives each good a destination and the
 /// direction of the road toward it, the transport priority that decides which good a road takes first, and the exchange of
 /// goods between a carrier and the flag it stands on.
@@ -74,23 +88,31 @@ public sealed class GoodsTransport(
     public int TransportPriority(Good good) => movement.Tables.TransportPriority(good);
 
     /// <summary>
-    /// The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). It runs
-    /// when the flag's bit is set: the bit goes out, and each place from the last to the first that holds a good without a
-    /// direction gets a destination, or, with one, a direction.
+    /// The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). The
+    /// goods that head each direction are counted at every turn; the rest runs when the flag's bit is set: the bit goes out,
+    /// the places that hold a good are counted, and each place from the last to the first that holds a good without a
+    /// direction gets a destination, or, with one, a direction. The turn hands the road loop what it counted.
     /// </summary>
-    public void Turn(int flag)
+    public GoodsLoad Turn(int flag)
     {
+        var load = Load(flag);
         if (!flags[flag].NeedsGoodsTurn)
         {
-            return;
+            return new GoodsLoad { Busy = load[2], Crowded = false };
         }
 
         flags[flag].NeedsGoodsTurn = false;
-        var load = Load(flag);
         var places = flags[flag].Places;
+        var held = 0;
         for (var place = 7; place >= 0; place--)
         {
-            if (places[place].IsEmpty || places[place].Way is not null)
+            if (places[place].IsEmpty)
+            {
+                continue;
+            }
+
+            held++;
+            if (places[place].Way is not null)
             {
                 continue;
             }
@@ -104,6 +126,8 @@ public sealed class GoodsTransport(
                 Direct(flag, place, load);
             }
         }
+
+        return new GoodsLoad { Busy = load[2], Crowded = held >= 7 };
     }
 
     // The goods that head each direction, as the four sets the original builds (0x46427c): set k holds the directions that more

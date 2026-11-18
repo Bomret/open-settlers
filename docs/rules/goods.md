@@ -42,9 +42,11 @@ and for the push-out of a waiting good by one of a higher transport priority.
 
 `0x46414d` takes, for each pass in the phases 0 to 31, the flags whose slot divided by 32 is the phase. For a flag in use (the
 bitmap at `+0xa4` of the state) it first builds the load of its directions: for each place with a direction, bit `d` of byte
-`k` of a 4-byte word is set when more than `k` goods head in direction `d` (`0x46427c`, kept at `+0x218` to `+0x21b`). With
-bit 7 of byte 4 set, the turn clears it and goes through the places from the last to the first. A place with a good and no
-direction does one of two things:
+`k` of a 4-byte word is set when more than `k` goods head in direction `d` (`0x46427c`, kept at `+0x218` to `+0x21b`). It
+builds this load at every turn, and sets the count of the flag's goods at `+0x24e` to 0. With bit 7 of byte 4 set, the turn
+clears it and goes through the places from the last to the first, and counts there each place that holds a good: the count
+is the number of goods on the flag on a turn that routes them, and 0 on any other turn. A place with a good and no direction
+does one of two things:
 
 1. **No destination (word 0).** The table at `0x464117` (two bytes for each good: a class and the offset of a request word;
    `0xff` for a class marks a good that goes to storage at once) sends the good to the request search for a log (class 5, word
@@ -80,11 +82,10 @@ direction does one of two things:
    either way, so a good that loses the place keeps its direction and waits on the flag until the exchange lines it up again.
    The word keeps the destination, and the bit stays clear.
 
-The same pass then runs the road loop of [Carriers](carriers.md#the-flag-pass). With goods it also asks for a second carrier:
-a road whose carriers are fewer than the table at `0x462acd` gives for its length class (1, 2, 3, 4, 6, 8, 11, 15 for the
-classes 0 to 7, **inferred** to be the carriers the road wants) and with at least three goods heading that way asks `0x42b455`
-(land) or `0x42b4bc` (water) again; a flag with 7 or more goods clears the road's carrier bit in the status for each road that has
-three goods heading that way. **Not ported:** both, since they need 3 goods at one flag and the walk of a second carrier.
+The same pass then runs the road loop of [Carriers](carriers.md#the-flag-pass), which reads two things this part leaves: byte 2
+of the load (`+0x219`), the roads that three or more goods head along (a **busy road**), and the count at `+0x24e`. A busy road
+asks for another carrier, and a flag whose count is 7 or more loses the carrier bits of its busy roads:
+[Carriers](carriers.md#a-busy-road).
 
 ## The carrier told to fetch
 

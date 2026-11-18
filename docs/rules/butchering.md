@@ -13,8 +13,8 @@ at the start stock level 30, whose castle holds the butcher's knife, so the cast
 [Settlers](settlers.md#the-request)). The verb also runs `0x44579c` with the player setup. The engine matches the butcher after every change of his node,
 state, or work, the building's bytes, the flag's goods and request words, the castle's pig and meat counts, and the generator's words in three games
 (`tests/OpenSettlers.Tests/butcher-walks.txt`): one pig, eight pigs laid at once with a ninth later (the shop takes eight, the ninth goes to the castle), and a
-full flag. The full flag game ends at the pass 1241, the first place the carriers free: after it the engine's carriers leave the flag's node earlier than the
-original's, so the butcher steps out earlier (the open lead of the carriers' hand-over that [Milling](milling.md) names, not the shop's). The removal matches in
+full flag. The full flag game runs to the pass 1800: eight stones on the shop's flag make its road to the castle busy, so the road gets a second carrier
+([Carriers](carriers.md#a-busy-road)), and the butcher steps out with his meat at the pass 1322. The removal matches in
 five games (`butcher-removals.txt`), the first hand-out in one (`butcher-materials.txt`, verb `construct:`), and the figure's adds are read from the program
 and checked against the install (`ProgramTablesTests`).
 

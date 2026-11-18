@@ -183,6 +183,8 @@ static class ConstructionTables
             plankRankBase: plankRankBase,
             millRankBase: MillRankBase,
             diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool },
-            jobData: jobData
+            jobData: jobData,
+            // Made-up carriers a road holds by length class: with none, a busy road would ask for carriers while the castle has any.
+            roadCapacities: [1, 2, 2, 3, 3, 4, 4, 4]
         );
 }

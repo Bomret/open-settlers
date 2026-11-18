@@ -254,7 +254,7 @@ public sealed class FlagGoodsTests
     // in state 3 while the carrier carries a good (its byte 11 is not 0), and else the flag it walks to or what it held last,
     // which the engine keeps in its own numbering and nothing reads: only the first three are compared. The fixture's bytes
     // say which: the state at 10 and the good at 11.
-    static string Masked(string expected, string bytes)
+    internal static string Masked(string expected, string bytes)
     {
         var state = Convert.ToByte(expected[20..22], 16);
         var carrying = state == 3 && Convert.ToByte(expected[22..24], 16) != 0;

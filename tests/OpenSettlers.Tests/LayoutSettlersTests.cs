@@ -72,7 +72,8 @@ public sealed class LayoutSettlersTests
         ushort[]? scanWindows = null,
         byte[]? goodKinds = null,
         IEnumerable<(Job Job, object Data)>? jobData = null,
-        ContentCatalog? catalog = null
+        ContentCatalog? catalog = null,
+        byte[]? roadCapacities = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -94,6 +95,7 @@ public sealed class LayoutSettlersTests
             [.. Enumerable.Repeat(stepTime, RuleTables.StepTimeCount)],
             scanWindows ?? [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
+            roadCapacities: roadCapacities,
             // The goods of the catalog a test gives, or the made-up ones, with building types of the made-up facts of the arguments.
             catalog: new ContentCatalog(
                 (

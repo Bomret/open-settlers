@@ -12,8 +12,8 @@ small (object code 2), and its item holds the pointer to its flag at `+0xe` that
 `0x44579c` with the player setup, so the rank starts from the original's word. The engine matches the miller after every change of his node, state, or stretch,
 the building's bytes, the flag's goods and request words, the castle's grain and flour counts, and the generator's words in three games
 (`tests/OpenSettlers.Tests/mill-walks.txt`): one grain, eight grains laid at once with a ninth later (the mill takes seven, the eighth and ninth go to the castle),
-and a full flag. The full flag game ends at the pass 1588, the first place the carriers free: after it the engine's carriers leave the flag's node earlier than
-the original's, so the miller steps out earlier (**open lead**, the carriers' hand-over, not the mill's). The removal matches in six games (`mill-removals.txt`), the
+and a full flag. The full flag game runs to the pass 1800: eight stones on the mill's flag make its road to the castle busy, so the road gets a second
+carrier ([Carriers](carriers.md#a-busy-road)), and the miller steps out with his flour at the pass 1685. The removal matches in six games (`mill-removals.txt`), the
 first hand-out in one (`mill-materials.txt`, verb `construct:`), and the draw in one recording (`settler-draws.txt`, `miller`).
 
 ## The building and the job

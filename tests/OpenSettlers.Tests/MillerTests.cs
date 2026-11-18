@@ -12,7 +12,8 @@ namespace OpenSettlers.Tests;
 // over the item tables on a game started as the original's game start leaves its tables, with a finished mill (type 15, a small
 // building) at a flag, and the carriers that bring it grain and take its flour to the castle (the whole run is checked). A scenario
 // starts with a "#" line that names its verb command; the lines after it give, for a pass, the 16 bytes of the miller (slot 3, s3=: a
-// settler without a job the castle made the miller) where his node, state, or part of the work changed, the 18 bytes of the building (b=)
+// settler without a job the castle made the miller) where his node, state, or part of the work changed, the 16 bytes of the busy road's
+// second carrier (slot 2, s2=: a settler without a job the castle made a carrier) where listed, the 18 bytes of the building (b=)
 // where they changed, the flag's byte 4 and goods bytes (g=) where they changed, the request words of the flag (req=) where they changed,
 // the castle's grain and flour counts (grain=, flour=) where they changed, and the generator's words (rng=). The engine runs the same
 // commands and must hold the same values at each listed pass.
@@ -25,6 +26,7 @@ public sealed class MillerTests
 {
     const string Fixture = "mill-walks.txt";
     const int WorkerSlot = 3;
+    const int SecondCarrierSlot = 2;
     const int HutSlot = 1;
 
     sealed record Scenario
@@ -210,6 +212,16 @@ public sealed class MillerTests
                     WoodcutterTests.InEngineNumbers(worker, 24, game.Flags.Count),
                     WorkerWalkTests.Hex(game.Settlers[WorkerSlot], width),
                     $"{name}: the miller after pass {pass}"
+                );
+            }
+
+            if (line.TryGetValue("s2", out var carrier))
+            {
+                var expected = WoodcutterTests.InEngineNumbers(carrier, 24, game.Flags.Count);
+                Assert.AreEqual(
+                    FlagGoodsTests.Masked(expected, expected),
+                    FlagGoodsTests.Masked(expected, WorkerWalkTests.Hex(game.Settlers[SecondCarrierSlot], width)),
+                    $"{name}: the busy road's second carrier after pass {pass}"
                 );
             }
 
