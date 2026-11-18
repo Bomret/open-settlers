@@ -73,7 +73,7 @@ public sealed class GameDigest : IGameDigest
 
         foreach (var (entry, count) in entries.Where(e => e.entry.OriginalCode is null && e.count > 0))
         {
-            hash = Mix(Mix(hash, (long)GoodWords.Hash(entry.Name)), count);
+            hash = Mix(Mix(hash, (long)Fnv1a.Of(entry.Name)), count);
         }
     }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -54,7 +55,7 @@ public sealed class StartStockTests
     }
 
     [TestMethod]
-    public void AGoodTheCatalogLacksHasNoPlaceInTheStartStock()
+    public void AStartStockGoodTheCatalogLacksStopsWithAnErrorNamingIt()
     {
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
@@ -62,7 +63,23 @@ public sealed class StartStockTests
             goods: new ContentCatalog([TestCatalog.Entry(7, 1)])
         );
 
-        CollectionAssert.AreEqual(new[] { Good.Log }, StartStock.At(tables, 0).Keys.ToArray());
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
+
+        StringAssert.Contains(error.Message, "is no entry of the content catalog");
+    }
+
+    [TestMethod]
+    public void ADeductionForAGoodNoRowHoldsStopsWithAnErrorNamingIt()
+    {
+        var rows = TestProgram
+            .MadeStartStock()
+            .Select(row => (IReadOnlyDictionary<Good, byte>)row.Where(pair => pair.Key.Name != "plank").ToDictionary())
+            .ToArray();
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, goods: TestCatalog.Of());
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
+
+        StringAssert.Contains(error.Message, "'plank'");
     }
 
     [TestMethod]

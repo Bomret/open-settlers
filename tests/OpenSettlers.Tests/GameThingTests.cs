@@ -137,6 +137,16 @@ public sealed class GameThingTests
     }
 
     [TestMethod]
+    public void ASettlerWhoCarriesAGoodWithNoCodeShowsItsNameAndNoRawModeValue()
+    {
+        var settler = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = TestCatalog.AiToken });
+        var values = Thing.Of(settler, TestCatalog.WithAiToken()).Values.ToList();
+
+        CollectionAssert.Contains(values, ("carrying", "ai-token"));
+        Assert.IsFalse(values.Any(value => value.Item1 == "mode"));
+    }
+
+    [TestMethod]
     public void ASettlerWhoCarriesNothingShowsNoGood()
     {
         var settler = new Settler(new Carrier(), 0, 3, 4, 0, new BuildsCastle());

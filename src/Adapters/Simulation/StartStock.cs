@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -31,9 +32,9 @@ public static class StartStock
     ];
 
     /// <summary>
-    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good of the catalog that the
-    /// rows of the program's table name (a row names the goods of its content set, so a good the catalog lacks has no place in the
-    /// castle). Each count steps from its value in the lower row towards the higher row
+    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good that the rows of
+    /// the program's table name. Throws an <see cref="InvalidOperationException"/> that names the good for a row good the catalog lacks, and
+    /// for a deduction of the castle whose good no row holds. Each count steps from its value in the lower row towards the higher row
     /// (<see cref="RuleTables.StartStock"/>) by the tenths of the level, rounded as the original rounds.
     /// </summary>
     public static IReadOnlyDictionary<Good, int> At(RuleTables tables, int level)
@@ -50,10 +51,7 @@ public static class StartStock
         var stock = new Dictionary<Good, int>();
         foreach (var (good, from) in rows[low])
         {
-            if (tables.Catalog.EntryOf(good) is null)
-            {
-                continue;
-            }
+            tables.Catalog.Require(good);
 
             var difference = (ushort)(rows[high].GetValueOrDefault(good) - from);
             var product = (uint)difference * (uint)weight;
@@ -64,10 +62,14 @@ public static class StartStock
         foreach (var (name, count) in Taken)
         {
             var good = new Good { Name = name };
-            if (stock.TryGetValue(good, out var held))
+            if (!stock.TryGetValue(good, out var held))
             {
-                stock[good] = (ushort)(held - count);
+                throw new InvalidOperationException(
+                    $"The castle's start stock takes {count} of the good '{name}' away, and the start stock rows hold no such good."
+                );
             }
+
+            stock[good] = (ushort)(held - count);
         }
 
         return stock;

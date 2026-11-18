@@ -115,7 +115,7 @@ and cast.
 ## The goods
 
 **Status:** confirmed for the classes, inferred for the names. The names are those the chains, the tool list, and the art give (INV-0006);
-no text of the install names a good. Every good 1 to 26 has an entry in the name table (`NameTable`) with its evidence.
+no text of the install names a good. Every good 1 to 26 is an entry of the content catalog under its stable name (`GoodTables` holds the evidence for the original's codes).
 
 `Good_DestinationClasses` (`0x464117`) gives each good a class and a request word; a good of class `0xff` goes to storage at once. The
 goods 1 to 26 are the 26 steps of `Player_SetTransportPriorities` (`0x445570`).
@@ -176,7 +176,7 @@ at `0x44fcfe` the scaffold's: 186, 177, 184, 177, 187, and 183. A good on a flag
   `Grain`, `Flour`, `Bread`, `Foods`). A new building type goes into each of these lists: `BuildingPlacement.Types`, `Layout.Placement`'s
   `BuildingNames` and its refusal text, `ProgramTablesImporter.WorkerRequestAddresses`, `NameTable`, the build panel in
   `MapViewControl`, `SiteStages.ScaffoldIsLarge`, `ObjectSprites.Objects` (History Edition), and `OpenSettlersSource.FinishedKeys` with
-  the art of `tools/basic-art.py`. The other goods 7 to 26 have `NameTable` entries only.
+  the art of `tools/basic-art.py`. The other goods 7 to 26 are catalog entries only.
 - `CastleStock.FoodCounts`, `PlayFields.Food`, and `CastleReadout.Text` give the counts to the play dump, `expect`, and the castle bar.
-  The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) through `NameTable.GoodName`.
+  The `list` readout names the goods on a flag (`goods`) and the good a settler carries (`carrying`) by their stable names (`good.Name`), with no raw value beside them.
 - The workers of the fisher, farm, mill, pig farm, butcher, and baker run their work cycles ([Fishing](fishing.md), [Farming](farming.md), [Milling](milling.md), [Pig farming](pig-farming.md), [Butchering](butchering.md), [Baking](baking.md)).

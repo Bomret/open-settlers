@@ -24,7 +24,7 @@ public static class GoodWords
 
         var entry = catalog.Require(good);
 
-        return entry.OriginalCode ?? HashWord(entry.Name);
+        return entry.OriginalCode ?? ContentCatalog.WordOf(entry.Name);
     }
 
     /// <summary>
@@ -35,14 +35,4 @@ public static class GoodWords
         good.IsNone || catalog.Require(good).OriginalCode is not null
             ? Of(catalog, good).ToString(CultureInfo.InvariantCulture)
             : good.Name;
-
-    /// <summary>The FNV-1a hash of a stable name as an exporter mixes it into a digest.</summary>
-    public static ulong Hash(string name) => Fnv1a.Of(name);
-
-    static int HashWord(string name)
-    {
-        var word = (int)(Hash(name) & 0x7fffff00);
-
-        return word == 0 ? 0x100 : word;
-    }
 }

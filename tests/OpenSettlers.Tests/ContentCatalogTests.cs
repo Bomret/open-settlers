@@ -72,6 +72,18 @@ public sealed class ContentCatalogTests
         StringAssert.Contains(error.Message, "stable name");
     }
 
+    // Both names share the exporter word: the hash's low 31 bits, low byte cleared (found by search).
+    [TestMethod]
+    public void TwoCodelessGoodsWithOneExporterWordAreRefusedNamingBoth()
+    {
+        var error = Assert.ThrowsExactly<ArgumentException>(() =>
+            new ContentCatalog([Entry("g5258", 1), Entry("g7361", 2)])
+        );
+
+        StringAssert.Contains(error.Message, "g5258");
+        StringAssert.Contains(error.Message, "g7361");
+    }
+
     [TestMethod]
     public void TwoGoodsWithOneOriginalCodeAreRefusedNamingTheGood()
     {
