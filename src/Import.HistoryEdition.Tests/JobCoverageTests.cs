@@ -61,9 +61,6 @@ public sealed class JobCoverageTests
     {
         var problems = Problems(RulesJobs(), Looks(typeof(Digger)));
 
-        CollectionAssert.AreEquivalent(
-            new[] { $"Digger has two looks under {HistoryEdition}" },
-            problems.ToArray()
-        );
+        CollectionAssert.AreEquivalent(new[] { $"Digger has two looks under {HistoryEdition}" }, problems.ToArray());
     }
 }

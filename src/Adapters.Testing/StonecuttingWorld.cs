@@ -25,10 +25,7 @@ public static class StonecuttingWorld
             .. Enumerable
                 .Range(1, 128)
                 .Select(entry =>
-                    (
-                        (HutX + Spiral.Offsets[entry].Dx - 1) & 31,
-                        (HutY + Spiral.Offsets[entry].Dy - 1) & 31
-                    )
+                    ((HutX + Spiral.Offsets[entry].Dx - 1) & 31, (HutY + Spiral.Offsets[entry].Dy - 1) & 31)
                 ),
         ];
 

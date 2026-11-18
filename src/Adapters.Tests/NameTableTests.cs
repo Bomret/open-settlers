@@ -155,10 +155,7 @@ public sealed class NameTableTests
             .Entries.Where(entry => entry.Kind == NameTable.CodeKind.State && !modules.Contains(entry.Code))
             .Select(entry => entry.Code);
 
-        CollectionAssert.AreEquivalent(
-            new[] { 1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a },
-            core.ToList()
-        );
+        CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a }, core.ToList());
     }
 
     [TestMethod]

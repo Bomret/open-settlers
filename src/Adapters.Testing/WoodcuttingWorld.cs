@@ -15,11 +15,7 @@ public static class WoodcuttingWorld
 {
     /// <summary>The 128 nodes around the hut the worker draws from, as the spiral gives them.</summary>
     public static (int X, int Y)[] Reach() =>
-        [
-            .. Enumerable
-                .Range(1, 128)
-                .Select(entry => (16 + Spiral.Offsets[entry].Dx, 2 + Spiral.Offsets[entry].Dy)),
-        ];
+        [.. Enumerable.Range(1, 128).Select(entry => (16 + Spiral.Offsets[entry].Dx, 2 + Spiral.Offsets[entry].Dy))];
 
     /// <summary>
     /// The castle, the flags, the roads, and the hut; a tree stands on every node of the hut's reach where trees is true,
