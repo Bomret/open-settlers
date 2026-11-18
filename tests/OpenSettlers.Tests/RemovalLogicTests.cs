@@ -291,7 +291,8 @@ public sealed class RemovalLogicTests
         var stone = TestCatalog.GoodOf(9);
         var board = TestCatalog.GoodOf(1);
         const int Way = 0;
-        var ranks = new byte[TestCatalog.Names.Length];
+        // The start stock places every good, so each good holds an entry: the others rank low and lay nowhere.
+        var ranks = Enumerable.Range(0, TestCatalog.Names.Length).Select(index => (byte)(20 + index)).ToArray();
         ranks[TestCatalog.CodeOf(Good.Log) - 1] = 5;
         ranks[TestCatalog.CodeOf(stone) - 1] = 9;
         ranks[TestCatalog.CodeOf(board) - 1] = 2;
