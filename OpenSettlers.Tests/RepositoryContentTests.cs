@@ -217,7 +217,11 @@ public sealed class RepositoryContentTests
         }
 
         // Every project of the solution but the Godot project itself is left out of its compile.
-        Assert.AreEqual(solution.Count - 1, projectFolders, "a project of the solution is not left out of the Godot compile");
+        Assert.AreEqual(
+            solution.Count - 1,
+            projectFolders,
+            "a project of the solution is not left out of the Godot compile"
+        );
     }
 
     // The set's files by path relative to the folder, with forward slashes.

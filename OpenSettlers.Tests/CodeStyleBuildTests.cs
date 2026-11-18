@@ -121,10 +121,7 @@ public sealed class CodeStyleBuildTests
             .SelectMany(value => value.Split(';'))
             .ToArray();
 
-        CollectionAssert.IsSubsetOf(
-            new[] { "**/*.Tests/**", "**/*.Testing/**", "src/Testing/**" },
-            removed
-        );
+        CollectionAssert.IsSubsetOf(new[] { "**/*.Tests/**", "**/*.Testing/**", "src/Testing/**" }, removed);
     }
 
     // One test framework version for every test project, set in global.json's msbuild-sdks: no project file pins it.

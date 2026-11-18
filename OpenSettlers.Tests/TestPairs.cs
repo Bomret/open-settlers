@@ -100,6 +100,18 @@ static class TestPairs
             }
         }
 
+        // A build file applies to every project below it, so an assembly name there reaches projects the file never names.
+        foreach (var file in FilesUnder(root, ".props", ".targets"))
+        {
+            if (Elements(XDocument.Load(file), "AssemblyName").Any())
+            {
+                problems.Add(
+                    $"{Path.GetRelativePath(root, file).Replace('\\', '/')} sets AssemblyName in a build file shared by several projects: "
+                        + "set it in the project file of the one project"
+                );
+            }
+        }
+
         var testAssemblies = new HashSet<string>();
         foreach (var library in projects.Values.Where(project => project.IsLibrary))
         {
@@ -280,14 +292,20 @@ static class TestPairs
         RegexOptions.CultureInvariant
     );
 
-    // `using Alias = ...InternalsVisibleToAttribute;`: the attribute is then written under another name.
+    // A using alias for the attribute of a grant: the attribute is then written under another name.
     static readonly Regex AttributeAlias = new(
-        @"\busing\s+\w+\s*=\s*(?:[\w.]*\.)?(?:InternalsVisibleTo|IgnoresAccessChecksTo)(?:Attribute)?\s*;",
+        @"\busing\s+\w+\s*=\s*(?:[\w.:]*[.:])?(?:InternalsVisibleTo|IgnoresAccessChecksTo)(?:Attribute)?\s*;",
         RegexOptions.CultureInvariant
     );
 
     static readonly Regex VisibleToType = new(
-        @"(?:^|\.)InternalsVisibleTo(?:Attribute)?$",
+        // The name is split, so the source scan of this file finds no attribute in the pattern.
+        @"(?:^|\.)InternalsVisible" + "To(?:Attribute)?$",
+        RegexOptions.CultureInvariant
+    );
+
+    static readonly Regex SkipType = new(
+        @"(?:^|\.)IgnoresAccessChecks" + "To(?:Attribute)?$",
         RegexOptions.CultureInvariant
     );
 
@@ -315,7 +333,7 @@ static class TestPairs
             {
                 written = (string?)item.Attribute("_Parameter1") ?? (string?)item.Element("_Parameter1");
             }
-            else if (kind == "ignoresaccesschecksto")
+            else if (kind == "ignoresaccesschecksto" || (kind == "assemblyattribute" && SkipType.IsMatch(include)))
             {
                 yield return (null, $"IgnoresAccessChecksTo {include}");
                 continue;
@@ -389,16 +407,6 @@ static class TestPairs
         var fullRoot = Path.GetFullPath(root);
         foreach (var file in FilesUnder(root, ".cs"))
         {
-            // These two files hold the grants they test as text.
-            if (
-                Path.GetRelativePath(root, file).Replace('\\', '/')
-                is "OpenSettlers.Tests/TestPairs.cs"
-                    or "OpenSettlers.Tests/TestPairTests.cs"
-            )
-            {
-                continue;
-            }
-
             var folder = Path.GetDirectoryName(Path.GetFullPath(file));
             while (folder is not null && !projects.ContainsKey(folder) && folder.Length > fullRoot.Length)
             {
@@ -453,6 +461,13 @@ static class TestPairs
         ];
     }
 
+    // The elements of a project file by name: MSBuild element names are case-insensitive, and a file may declare the MSBuild
+    // namespace, which the local name leaves out.
+    static IEnumerable<XElement> Elements(XDocument document, string name) =>
+        document
+            .Descendants()
+            .Where(item => string.Equals(item.Name.LocalName, name, StringComparison.OrdinalIgnoreCase));
+
     static Project Load(string file, string label, bool shared)
     {
         var folder = Path.GetFullPath(Path.GetDirectoryName(file)!);
@@ -464,12 +479,11 @@ static class TestPairs
             Label = label,
             Shared = shared,
             Assembly =
-                document.Descendants("AssemblyName").Select(item => item.Value.Trim()).LastOrDefault()
+                Elements(document, "AssemblyName").Select(item => item.Value.Trim()).LastOrDefault()
                 ?? Path.GetFileNameWithoutExtension(file),
             References =
             [
-                .. document
-                    .Descendants("ProjectReference")
+                .. Elements(document, "ProjectReference")
                     .Select(item => (string)item.Attribute("Include")!)
                     .Select(include => Path.GetFullPath(Path.Combine(folder, include.Replace('\\', '/'))))
                     .Select(path => Path.GetDirectoryName(path)!),

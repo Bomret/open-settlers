@@ -56,7 +56,7 @@ public sealed class TestPairTests
         public Tree Source(string name, string text)
         {
             Directory.CreateDirectory(Path.Combine(Root, "src", name));
-            File.WriteAllText(Path.Combine(Root, "src", name, "Grant.cs"), text);
+            File.WriteAllText(Path.Combine(Root, "src", name, "Grant.cs"), Unmask(text));
 
             return this;
         }
@@ -76,10 +76,14 @@ public sealed class TestPairTests
         {
             var full = Path.Combine(Root, path);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-            File.WriteAllText(full, text);
+            File.WriteAllText(full, Unmask(text));
 
             return this;
         }
+
+        // The attribute names of a grant of internals are written with a tilde in this file, so the source scan of
+        // TestPairs finds no grant in the fixtures that hold them as text. The files of a tree carry them whole.
+        static string Unmask(string text) => text.Replace("~", "");
 
         public void Dispose() => Directory.Delete(Root, true);
     }
@@ -312,18 +316,18 @@ public sealed class TestPairTests
     }
 
     [TestMethod]
-    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.Viewer\")]")]
-    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisibleToAttribute(\"OpenSettlers.Viewer\")]")]
-    [DataRow("using System.Runtime.CompilerServices;\n[assembly: InternalsVisibleTo(\"OpenSettlers.Viewer\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.Viewer\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisible~ToAttribute(\"OpenSettlers.Viewer\")]")]
+    [DataRow("using System.Runtime.CompilerServices;\n[assembly: InternalsVisible~To(\"OpenSettlers.Viewer\")]")]
     [DataRow(
-        "using System.Runtime.CompilerServices;\n[assembly: InternalsVisibleToAttribute(\"OpenSettlers.Viewer\")]"
+        "using System.Runtime.CompilerServices;\n[assembly: InternalsVisible~ToAttribute(\"OpenSettlers.Viewer\")]"
     )]
     [DataRow(
-        "using System.Runtime.CompilerServices;\n[assembly: InternalsVisibleTo(assemblyName: \"OpenSettlers.Viewer\")]"
+        "using System.Runtime.CompilerServices;\n[assembly: InternalsVisible~To(assemblyName: \"OpenSettlers.Viewer\")]"
     )]
-    [DataRow("using System.Runtime.CompilerServices;\n[assembly: InternalsVisibleTo(@\"OpenSettlers.Viewer\")]")]
+    [DataRow("using System.Runtime.CompilerServices;\n[assembly: InternalsVisible~To(@\"OpenSettlers.Viewer\")]")]
     [DataRow(
-        "using System.Runtime.CompilerServices;\n[assembly: CLSCompliant(false), InternalsVisibleTo(\"OpenSettlers.Viewer, PublicKey=0024\")]"
+        "using System.Runtime.CompilerServices;\n[assembly: CLSCompliant(false), InternalsVisible~To(\"OpenSettlers.Viewer, PublicKey=0024\")]"
     )]
     public void AGrantInASourceFileIsAProblemInEveryFormItIsWritten(string text)
     {
@@ -336,8 +340,8 @@ public sealed class TestPairTests
     }
 
     [TestMethod]
-    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(Names.Viewer)]")]
-    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.\" + \"Viewer\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisible~To(Names.Viewer)]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.\" + \"Viewer\")]")]
     public void AGrantWhoseAssemblyCannotBeReadIsAProblem(string text)
     {
         using var tree = Chain().Source("Domain", text);
@@ -369,7 +373,7 @@ public sealed class TestPairTests
         using var tree = Chain()
             .Source(
                 "Import",
-                "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.Import.Tests\")]"
+                "[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.Import.Tests\")]"
             );
 
         CollectionAssert.AreEqual(Array.Empty<string>(), TestPairs.Problems(tree.Root));
@@ -381,7 +385,7 @@ public sealed class TestPairTests
         using var tree = Chain()
             .Source(
                 "Domain/obj",
-                "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.Viewer\")]"
+                "[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.Viewer\")]"
             );
 
         CollectionAssert.AreEqual(Array.Empty<string>(), TestPairs.Problems(tree.Root));
@@ -392,7 +396,7 @@ public sealed class TestPairTests
     {
         using var tree = Chain()
             .Project("Domain.Testing", ["Domain"], ["OpenSettlers.Domain.Tests"])
-            .Source("Import.Tests", "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"X\")]");
+            .Source("Import.Tests", "[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"X\")]");
 
         var problems = TestPairs.Problems(tree.Root);
 
@@ -405,7 +409,10 @@ public sealed class TestPairTests
     public void AGrantInASourceFolderOfNoProjectIsAProblem()
     {
         using var tree = Chain()
-            .Source("Viewer", "[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.Tests\")]");
+            .Source(
+                "Viewer",
+                "[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.Tests\")]"
+            );
 
         var problems = TestPairs.Problems(tree.Root);
 
@@ -415,8 +422,8 @@ public sealed class TestPairTests
 
     // Reflection reaches internals with no grant when the runtime skips the access check of an assembly.
     [TestMethod]
-    [DataRow("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"OpenSettlers.Domain\")]")]
-    [DataRow("[assembly: IgnoresAccessChecksToAttribute(\"OpenSettlers.Domain\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecks~To(\"OpenSettlers.Domain\")]")]
+    [DataRow("[assembly: IgnoresAccessChecks~ToAttribute(\"OpenSettlers.Domain\")]")]
     public void SkippingTheAccessCheckInASourceFileIsAProblem(string text)
     {
         using var tree = Chain().Source("Import.Tests", text);
@@ -659,8 +666,8 @@ public sealed class TestPairTests
     }
 
     [TestMethod]
-    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.Domain.Tests\")]")]
-    [DataRow("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"OpenSettlers.Domain\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.Domain.Tests\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecks~To(\"OpenSettlers.Domain\")]")]
     public void AGrantInASourceFileOutsideSrcIsAProblem(string text)
     {
         using var tree = Chain().Text("OpenSettlers.Tests/Grant.cs", text);
@@ -674,13 +681,16 @@ public sealed class TestPairTests
     // An alias hides the attribute's name at the place it is used, so the alias itself is the problem.
     [TestMethod]
     [DataRow(
-        "using IVT = System.Runtime.CompilerServices.InternalsVisibleToAttribute;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
+        "using IVT = System.Runtime.CompilerServices.InternalsVisible~ToAttribute;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
     )]
     [DataRow(
-        "using IVT = System.Runtime.CompilerServices.InternalsVisibleTo;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
+        "using IVT = System.Runtime.CompilerServices.InternalsVisible~To;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
     )]
     [DataRow(
-        "using Skip = System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute;\n[assembly: Skip(\"OpenSettlers.Domain\")]"
+        "using Skip = System.Runtime.CompilerServices.IgnoresAccessChecks~ToAttribute;\n[assembly: Skip(\"OpenSettlers.Domain\")]"
+    )]
+    [DataRow(
+        "using IVT = global::System.Runtime.CompilerServices.InternalsVisible~ToAttribute;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
     )]
     public void AGrantThroughAUsingAliasIsAProblem(string text)
     {
@@ -717,6 +727,99 @@ public sealed class TestPairTests
                 "Domain",
                 grants: ["OpenSettlers.Domain.Tests"],
                 extra: "<ItemGroup><ignoresAccessChecksTo Include=\"OpenSettlers.Import\" /></ItemGroup>"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "IgnoresAccessChecksTo");
+    }
+
+    // The scan reads the files of OpenSettlers.Tests like any others: a real grant in TestPairs.cs or TestPairTests.cs is
+    // a problem too.
+    [TestMethod]
+    [DataRow("OpenSettlers.Tests/TestPairs.cs")]
+    [DataRow("OpenSettlers.Tests/TestPairTests.cs")]
+    public void AGrantInTheSourceOfThisScanIsAProblem(string path)
+    {
+        using var tree = Chain()
+            .Text(
+                path,
+                "[assembly: System.Runtime.CompilerServices.InternalsVisible~To(\"OpenSettlers.Domain.Tests\")]"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "OpenSettlers.Tests");
+    }
+
+    // MSBuild element names are case-insensitive, and a project file may declare the old MSBuild namespace.
+    [TestMethod]
+    public void AProjectReferenceWithAnotherCaseIsReadToo()
+    {
+        using var tree = Chain()
+            .Project(
+                "Domain.Tests",
+                ["Domain", "Testing", "Domain.Testing"],
+                assembly: "OpenSettlers.Domain.Tests",
+                extra: "<ItemGroup><projectReference Include=\"../Import/OpenSettlers.Import.csproj\" /></ItemGroup>"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "Import");
+    }
+
+    [TestMethod]
+    [DataRow("<ItemGroup><ProjectReference Include=\"../Import/OpenSettlers.Import.csproj\" /></ItemGroup>", "Import")]
+    [DataRow(
+        "<PropertyGroup><AssemblyName>OpenSettlers.Import.Tests</AssemblyName></PropertyGroup>",
+        "OpenSettlers.Import.Tests"
+    )]
+    public void AProjectFileInTheMSBuildNamespaceIsReadToo(string body, string named)
+    {
+        using var tree = Chain()
+            .Text(
+                "src/Domain.Tests/OpenSettlers.Domain.Tests.csproj",
+                "<Project xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\" Sdk=\"Microsoft.NET.Sdk\">"
+                    + "<ItemGroup><ProjectReference Include=\"../Domain/OpenSettlers.Domain.csproj\" />"
+                    + "<ProjectReference Include=\"../Testing/OpenSettlers.Testing.csproj\" /></ItemGroup>"
+                    + body
+                    + "</Project>"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.IsTrue(problems.Any(problem => problem.Contains(named)), string.Join("\n", problems));
+    }
+
+    // An AssemblyName in a build file applies to every project below it, so no build file may set one.
+    [TestMethod]
+    [DataRow("src/Domain.Testing/Directory.Build.props", "OpenSettlers.Domain.Tests")]
+    [DataRow("Directory.Build.props", "OpenSettlers.Anything")]
+    [DataRow("src/Directory.Build.targets", "OpenSettlers.Anything")]
+    public void AnAssemblyNameInASharedBuildFileIsAProblem(string path, string name)
+    {
+        using var tree = Chain().Build(path, $"<PropertyGroup><AssemblyName>{name}</AssemblyName></PropertyGroup>");
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.IsTrue(
+            problems.Any(problem => problem.Contains(Path.GetFileName(path)) && problem.Contains("AssemblyName")),
+            string.Join("\n", problems)
+        );
+    }
+
+    [TestMethod]
+    public void AnAssemblyAttributeItemSkippingTheAccessCheckIsAProblem()
+    {
+        using var tree = Chain()
+            .Project(
+                "Domain",
+                grants: ["OpenSettlers.Domain.Tests"],
+                extra: "<ItemGroup><AssemblyAttribute Include=\"System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute\"><_Parameter1>OpenSettlers.Import</_Parameter1></AssemblyAttribute></ItemGroup>"
             );
 
         var problems = TestPairs.Problems(tree.Root);
