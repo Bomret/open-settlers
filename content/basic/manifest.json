@@ -1448,6 +1448,104 @@
       -12
     ]
   },
+  "road-marker/end": {
+    "image": "road-marker/end.png",
+    "anchor": [
+      -5,
+      -5
+    ]
+  },
+  "road-marker/blocked": {
+    "image": "road-marker/blocked.png",
+    "anchor": [
+      -5,
+      -5
+    ]
+  },
+  "road-marker/way-back": {
+    "image": "road-marker/way-back.png",
+    "anchor": [
+      -6,
+      -5
+    ]
+  },
+  "road-marker/slope/-4": {
+    "image": "road-marker/slope--4.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/-3": {
+    "image": "road-marker/slope--3.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/-2": {
+    "image": "road-marker/slope--2.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/-1": {
+    "image": "road-marker/slope--1.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/0": {
+    "image": "road-marker/slope-0.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/1": {
+    "image": "road-marker/slope-1.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/2": {
+    "image": "road-marker/slope-2.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/3": {
+    "image": "road-marker/slope-3.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "road-marker/slope/4": {
+    "image": "road-marker/slope-4.png",
+    "anchor": [
+      -7,
+      -6
+    ]
+  },
+  "border/pole": {
+    "image": "border/pole.png",
+    "anchor": [
+      -1,
+      -9
+    ]
+  },
+  "border/water": {
+    "image": "border/water.png",
+    "anchor": [
+      -1,
+      -9
+    ]
+  },
   "settler/carrier/walks": {
     "image": "settler/carrier-walks.png",
     "anchor": [

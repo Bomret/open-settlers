@@ -7,7 +7,7 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A player's action that the simulation takes at a given tick. <c>Kind</c> names the action; its codes belong to
 /// the slices that add actions. <c>X</c> and <c>Y</c> are the tile the action aims at. Two commands are equal when
-/// their fields and their <c>Directions</c>, element by element, are equal.
+/// their fields, their <c>Directions</c>, their <c>Stock</c>, and their <c>Settlers</c>, element by element, are equal.
 /// </summary>
 public readonly record struct Command : IEquatable<Command>
 {
@@ -35,6 +35,20 @@ public readonly record struct Command : IEquatable<Command>
     /// </summary>
     public BuildingType? Building { get; init; }
 
+    /// <summary>
+    /// The goods the castle a <see cref="CommandKind.PlaceCastle"/> places holds in place of its start stock, one count for each of the
+    /// <see cref="RuleTables.Goods"/> goods; null for the start stock and for every other action. Only a layout's castle names it
+    /// (<c>docs/rules/layouts.md</c>), an engine stand-in.
+    /// </summary>
+    public IReadOnlyList<int>? Stock { get; init; }
+
+    /// <summary>
+    /// The settlers that wait in the castle a <see cref="CommandKind.PlaceCastle"/> places in place of its 20 first settlers, after its
+    /// castle settler, in order; null for the 20 first settlers and for every other action. Only a layout's castle names them
+    /// (<c>docs/rules/layouts.md</c>), an engine stand-in.
+    /// </summary>
+    public IReadOnlyList<Job>? Settlers { get; init; }
+
     /// <inheritdoc/>
     public bool Equals(Command other) =>
         Tick == other.Tick
@@ -43,7 +57,10 @@ public readonly record struct Command : IEquatable<Command>
         && X == other.X
         && Y == other.Y
         && Building == other.Building
-        && (Directions ?? []).SequenceEqual(other.Directions ?? []);
+        && (Directions ?? []).SequenceEqual(other.Directions ?? [])
+        && (Stock ?? []).SequenceEqual(other.Stock ?? [])
+        && (Settlers is null) == (other.Settlers is null)
+        && (Settlers ?? []).SequenceEqual(other.Settlers ?? []);
 
     /// <inheritdoc/>
     public override int GetHashCode()

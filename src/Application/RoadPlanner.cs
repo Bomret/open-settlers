@@ -19,4 +19,12 @@ public sealed class RoadPlanner(RuleTables tables, Map map, CastleStock castle)
         castle.Castle is null
             ? (RoadStatus.Refused, null)
             : RoadBuilding.Walk(tables, map, x, y, directions, keep: true);
+
+    /// <summary>
+    /// The road cursor's verdict of each of the six directions at the end of the road the directions draw from the flag on
+    /// the node (<see cref="RoadBuilding.Verdicts"/>); <see cref="Check"/> stays the click's judgment. Every direction is
+    /// blocked before the castle stands.
+    /// </summary>
+    public IReadOnlyList<RoadCursorVerdict> Verdicts(int x, int y, IReadOnlyList<int> directions) =>
+        castle.Castle is null ? new RoadCursorVerdict[6] : RoadBuilding.Verdicts(tables, map, x, y, directions);
 }

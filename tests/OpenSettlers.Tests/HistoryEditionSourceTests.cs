@@ -842,14 +842,16 @@ public sealed class HistoryEditionSourceTests
     public void EachBuildMarkerDrawsItsOwnSpriteAndNoShadow()
     {
         // Entries 367 to 370 are the flag, mine, small, and large markers (docs/rules/build-sites.md, "The build-site
-        // overlay"). Each has a shadow mask at its entry plus 250 here, which the original never draws for them.
+        // overlay"). The large marker has a shadow mask at its entry plus 250 here, which the original never draws for it;
+        // the entries 617 to 619 hold border posts.
         using var fake = ObjectFake(payloads =>
         {
             for (var entry = 367; entry <= 370; entry++)
             {
                 payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 360), 2);
-                payloads[entry + 250] = ObjectGraphicsTests.ShadowMask();
             }
+
+            payloads[370 + 250] = ObjectGraphicsTests.ShadowMask();
         });
         var source = Open(fake);
 
@@ -858,6 +860,106 @@ public sealed class HistoryEditionSourceTests
 
         CollectionAssert.AreEqual(new[] { 7, 8, 9, 10 }, offsets);
         Assert.AreSame(source.Draw(BuildMarker.Mine), source.Draw(BuildMarker.Mine));
+    }
+
+    // The road cursor draws its word plus 320: the end mark 352, the blocked mark 364, the way-back mark 365, and the slope
+    // 359 plus the height difference, with no bound, so 5 draws the blocked image and -5 draws 354 (docs/rules/roads.md, "The
+    // road markers"). Each fake sprite's horizontal offset is its entry less 340.
+    [TestMethod]
+    [DataRow(RoadMarkerKind.End, 0, 352)]
+    [DataRow(RoadMarkerKind.Blocked, 0, 364)]
+    [DataRow(RoadMarkerKind.WayBack, 0, 365)]
+    [DataRow(RoadMarkerKind.Slope, -5, 354)]
+    [DataRow(RoadMarkerKind.Slope, -4, 355)]
+    [DataRow(RoadMarkerKind.Slope, 0, 359)]
+    [DataRow(RoadMarkerKind.Slope, 4, 363)]
+    [DataRow(RoadMarkerKind.Slope, 5, 364)]
+    public void EachRoadMarkerDrawsTheOriginalsSpriteAndNoShadow(RoadMarkerKind kind, int difference, int entry)
+    {
+        using var fake = ObjectFake(payloads =>
+        {
+            for (var each = 352; each <= 365; each++)
+            {
+                payloads[each] = ObjectGraphicsTests.Square((short)(each - 340), 2);
+            }
+        });
+        var source = Open(fake);
+        var marker = new RoadMarker { Kind = kind, Difference = difference };
+
+        Assert.AreEqual(entry - 340, source.Draw(marker)!.OffsetX);
+        Assert.AreSame(source.Draw(marker), source.Draw(marker));
+    }
+
+    // A difference whose entry lies outside the archive's sprites (321 to 372) draws nothing, even where the archive holds an
+    // entry there, as does an entry the archive leaves out (366).
+    [TestMethod]
+    [DataRow(7)]
+    [DataRow(14)]
+    [DataRow(-31)]
+    public void ARoadMarkerOutsideThePresentSpritesDrawsNothing(int difference)
+    {
+        using var fake = ObjectFake(payloads => payloads[373] = ObjectGraphicsTests.Square(1, 1));
+
+        Assert.IsNull(Open(fake).Draw(new RoadMarker { Kind = RoadMarkerKind.Slope, Difference = difference }));
+    }
+
+    static BorderPost Post(int slope, int ground) =>
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Direction = RoadDirection.East,
+            Slope = slope,
+            Ground = new Terrain { Code = ground },
+        };
+
+    [TestMethod]
+    [DataRow(2, 5, 610)]
+    [DataRow(1, 5, 611)]
+    [DataRow(-8, 5, 611)]
+    [DataRow(-9, 5, 612)]
+    [DataRow(2, 4, 610)]
+    [DataRow(2, 10, 610)]
+    [DataRow(2, 11, 613)]
+    [DataRow(-8, 14, 614)]
+    [DataRow(-9, 15, 618)]
+    [DataRow(30, 3, 619)]
+    [DataRow(-30, 0, 619)]
+    public void ABorderPostTakesTheImageOfItsSlopeBandRaisedByItsGroundOrTheWaterPost(int slope, int ground, int entry)
+    {
+        // The bands of 0x428389, 0x42846d, and 0x428528 (docs/rules/roads.md, "How a border is drawn").
+        Assert.AreEqual(entry, BorderRules.Entry(Post(slope, ground)));
+    }
+
+    [TestMethod]
+    public void EachBorderPostDrawsItsArchiveSpriteAndTheSameInstanceForEqualPicks()
+    {
+        // Entries 610 to 619 each hang by their own offset across.
+        using var fake = ObjectFake(payloads =>
+        {
+            for (var entry = 610; entry <= 619; entry++)
+            {
+                payloads[entry] = ObjectGraphicsTests.Square((short)(entry - 600), 0);
+            }
+        });
+        var source = Open(fake);
+
+        Assert.AreEqual(11, source.Draw(Post(0, 5))!.OffsetX);
+        Assert.AreEqual(19, source.Draw(Post(5, 2))!.OffsetX);
+        Assert.AreEqual(15, source.Draw(Post(-20, 12))!.OffsetX);
+        Assert.AreSame(source.Draw(Post(0, 5)), source.Draw(Post(-3, 6)));
+    }
+
+    [TestMethod]
+    public void ABorderPostTheArchiveLeavesOutDrawsNothingAndNoneWithoutObjectGraphics()
+    {
+        using var objects = ObjectFake();
+        using var none = Fake();
+
+        Assert.IsNull(Open(objects).Draw(Post(0, 5)));
+        Assert.IsNull(Open(none).Draw(Post(0, 5)));
     }
 
     [TestMethod]

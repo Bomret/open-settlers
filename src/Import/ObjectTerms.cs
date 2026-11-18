@@ -82,6 +82,23 @@ public sealed record BuildMarkerDraw : ObjectTerm
 }
 
 /// <summary>
+/// A road marker on a node while a road is drawn (<c>CONTEXT.md</c>, "Road marker"). <c>Column</c> and <c>Row</c> are the
+/// node's, unwrapped as the road's nodes are.
+/// </summary>
+public sealed record RoadMarkerDraw : ObjectTerm
+{
+    /// <summary>The column of the node.</summary>
+    public required int Column { get; init; }
+
+    /// <summary>The marker the node shows.</summary>
+    public required RoadMarker Marker { get; init; }
+
+    /// <inheritdoc />
+    public override ObjectDrawing? Ask(IGraphicsSource source) =>
+        source.Draw(Marker) is { } image ? new ObjectDrawing { Image = image, Shadow = null } : null;
+}
+
+/// <summary>
 /// The ripple of a tile with a water triangle at an animation step. <c>Tile</c> is the tile's record index (row times
 /// width plus column), which varies the ripple from tile to tile.
 /// </summary>

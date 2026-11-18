@@ -125,6 +125,9 @@ public partial class MapViewControl(
     readonly ImageLayers _markerLayers = new();
     ShaderMaterial? _markerMaterial;
     int _markerImages;
+    readonly ImageLayers _roadMarkerLayers = new();
+    ShaderMaterial? _roadMarkerMaterial;
+    int _roadMarkerImages;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     string? _graphicsProblem;
     string? _objectsProblem;
@@ -774,7 +777,9 @@ public partial class MapViewControl(
     }
 
     // The road being drawn as a line over the nodes it passes, in every copy of the map: a stand-in, where the original
-    // draws the road's strips into the map as it is drawn.
+    // draws the road's strips into the map as it is drawn. Over the line, the road markers of its end and the end's six
+    // neighbors (docs/rules/roads.md, "The road markers"). Redraw runs this too, so a change of the game around the end
+    // reaches the markers.
     void DrawPreview()
     {
         foreach (var child in _preview.GetChildren())
@@ -806,6 +811,36 @@ public partial class MapViewControl(
                 Position = new Vector2(x, y),
             };
             _preview.AddChild(line);
+        }
+
+        var markerMesh = RoadMarkerMesh();
+        var markerMaterial = markerMesh is null
+            ? null
+            : LayerMaterial(
+                _roadMarkerLayers,
+                "Objects",
+                "the road markers",
+                ref _roadMarkerMaterial,
+                ref _roadMarkerImages
+            );
+        if (markerMaterial is null)
+        {
+            return;
+        }
+
+        // The road markers paint over the build markers and the road line of every copy.
+        foreach (var (x, y) in _camera.Copies())
+        {
+            _preview.AddChild(
+                new MeshInstance2D
+                {
+                    Mesh = markerMesh,
+                    Material = markerMaterial,
+                    Position = new Vector2(x, y),
+                    ZAsRelative = false,
+                    ZIndex = 4,
+                }
+            );
         }
     }
 
@@ -897,7 +932,8 @@ public partial class MapViewControl(
                 copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = surface });
             }
 
-            // The roads are strips over the terrain of the whole map and under the objects.
+            // The roads are strips over the terrain of the whole map and under the objects; the border posts are drawn with
+            // them, so the objects cover the posts too.
             if (roadMesh is not null)
             {
                 copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = surface });
@@ -1044,7 +1080,23 @@ public partial class MapViewControl(
             return null;
         }
 
-        var quads = ObjectQuads.Flat(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+        return MarkerMesh(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+    }
+
+    // One mesh of the road markers of the road being drawn; null where none is drawn or the source draws none.
+    ArrayMesh? RoadMarkerMesh() =>
+        _game is null || _drawing is null || _source is null
+            ? null
+            : MarkerMesh(RoadMarkerDraws.Of(_game, _drawing), _source, _roadMarkerLayers);
+
+    // One flat mesh of marker draws, each image in its layer; null where the source draws none of them.
+    ArrayMesh? MarkerMesh(
+        System.Collections.Generic.IReadOnlyList<ObjectTerm> draws,
+        IGraphicsSource source,
+        ImageLayers layers
+    )
+    {
+        var quads = ObjectQuads.Flat(draws, source, layers);
 
         return quads.Count == 0
             ? null
@@ -1055,10 +1107,10 @@ public partial class MapViewControl(
     ShaderMaterial? SettlerMaterial() =>
         LayerMaterial(_settlerLayers, "Objects", "the settlers", ref _settlerMaterial, ref _settlerImages);
 
-    // One mesh of every road strip of the map, or null where there is none or the source draws none.
+    // One mesh of every road strip and border post of the map, or null where there is none or the source draws none.
     ArrayMesh? BuildRoadMesh(IGraphicsSource source, Map map)
     {
-        var quads = TerrainQuads.Strips(RoadDraws.Of(map), source, _layers);
+        var quads = TerrainQuads.Edges(map, source, _layers);
 
         return quads.Count == 0
             ? null
