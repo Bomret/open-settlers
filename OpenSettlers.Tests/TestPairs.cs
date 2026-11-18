@@ -122,6 +122,35 @@ static class TestPairs
             }
         }
 
+        // A library and the Godot host ship, so a reference to a test or helper project would ship test code. The
+        // repository's own test project, outside src, is a test project.
+        foreach (
+            var project in projects
+                .Values.Where(project => project.IsLibrary)
+                .Concat(
+                    outside.Where(project =>
+                        !Path.GetFileName(project.Folder).EndsWith(".Tests", StringComparison.Ordinal)
+                    )
+                )
+        )
+        {
+            foreach (var reference in project.References)
+            {
+                var name = Path.GetFileName(reference);
+                if (
+                    name.EndsWith(".Tests", StringComparison.Ordinal)
+                    || name.EndsWith(".Testing", StringComparison.Ordinal)
+                    || projects.GetValueOrDefault(reference)?.Shared == true
+                )
+                {
+                    problems.Add(
+                        $"{project.Label} references {name}: a library and the Godot host reference no test or helper project, "
+                            + "which would ship test code"
+                    );
+                }
+            }
+        }
+
         foreach (
             var project in projects.Values.Where(project => project.IsTests || (project.IsHelper && !project.Shared))
         )

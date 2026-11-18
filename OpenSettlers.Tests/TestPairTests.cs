@@ -242,6 +242,59 @@ public sealed class TestPairTests
         StringAssert.Contains(problems[0], "Host");
     }
 
+    // A library ships, so a reference to test helpers or tests would pull them into production.
+    [TestMethod]
+    [DataRow("Adapters.Testing")]
+    [DataRow("Testing")]
+    [DataRow("Adapters.Tests")]
+    public void ALibraryReferencingATestOrHelperProjectIsAProblem(string reference)
+    {
+        using var tree = new Tree()
+            .Project("Testing")
+            .Project("Adapters", [reference], ["OpenSettlers.Adapters.Tests"])
+            .Project("Adapters.Testing", ["Adapters"])
+            .Project(
+                "Adapters.Tests",
+                ["Adapters", "Testing", "Adapters.Testing"],
+                assembly: "OpenSettlers.Adapters.Tests"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.IsTrue(
+            problems.Any(problem => problem.StartsWith("Adapters ") && problem.Contains(reference)),
+            string.Join("\n", problems)
+        );
+    }
+
+    [TestMethod]
+    [DataRow("src/Testing/OpenSettlers.Testing.csproj", "Testing")]
+    [DataRow("src/Domain.Testing/OpenSettlers.Domain.Testing.csproj", "Domain.Testing")]
+    [DataRow("src/Domain.Tests/OpenSettlers.Domain.Tests.csproj", "Domain.Tests")]
+    public void TheGodotHostReferencingATestOrHelperProjectIsAProblem(string include, string reference)
+    {
+        using var tree = Chain()
+            .Build("OpenSettlers.csproj", $"<ItemGroup><ProjectReference Include=\"{include}\" /></ItemGroup>");
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.StartsWith(problems[0], "OpenSettlers.csproj ");
+        StringAssert.Contains(problems[0], reference);
+    }
+
+    [TestMethod]
+    public void TheRepositoryTestProjectReferencingTheSharedHelpersIsNoProblem()
+    {
+        using var tree = Chain()
+            .Build(
+                "OpenSettlers.Tests/OpenSettlers.Tests.csproj",
+                "<ItemGroup><ProjectReference Include=\"../src/Testing/OpenSettlers.Testing.csproj\" /></ItemGroup>"
+            );
+
+        CollectionAssert.AreEqual(Array.Empty<string>(), TestPairs.Problems(tree.Root));
+    }
+
     [TestMethod]
     public void TheSharedHelpersReferencingALibraryIsAProblem()
     {
