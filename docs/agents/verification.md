@@ -290,8 +290,8 @@ script alone. Add a layout only where none of them holds the situation.
   second road down, so its carrier walks home along the first road, and checks that it enters the castle. The pass with a
   woodcutter walking out is pinned by the golden scenario `head-on-pass-layout` (it puts a finished hut down at tick 401)
   and by `HeadOnPassTests`: a hut a layout stands has its worker inside from tick 0.
-- `layouts/castle-contents.jsonc` and `play/castle-contents.play`: a castle that names its settlers and goods, one settler without a job
-  among them, and two sawmills; the first takes him and the second finds no settler. It runs on the install and with `--content-set basic`.
+- `layouts/castle-contents.jsonc` and `play/castle-contents.play`: a castle that names its settlers and goods, two carriers and
+  one settler without a job, and two sawmills. The first sawmill takes the settler without a job, and the second finds no settler. It runs on the install and with `--content-set basic`.
 - `layouts/hut-flag.jsonc`, `layouts/hut-on-road.jsonc`, and `layouts/two-logs.jsonc` with `play/hut-flag.play`,
   `play/hut-on-road.play`, and `play/two-logs.play`: a finished hut whose flag the entry puts down, a hut whose flag splits a
   road, and a woodcutter's flag whose road no carrier works until the castle's settler supply makes a settler: the play run

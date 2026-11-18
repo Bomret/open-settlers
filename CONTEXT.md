@@ -80,8 +80,8 @@ commands, and settlers and goods in entry states.
 _Avoid_: scenario, save, fixture
 
 **Castle contents**
-The goods and settlers the castle holds when it is placed: the start stock and the 20 first settlers of the
-original, or in their place the goods and settlers a layout names.
+The goods and settlers the castle holds when it is placed. By default these are the goods and the 20 settlers the original's castle
+starts with, as `docs/rules/castle.md` records. A layout can name goods and settlers in their place.
 _Avoid_: castle inventory, start roster
 
 **Graphics source**
