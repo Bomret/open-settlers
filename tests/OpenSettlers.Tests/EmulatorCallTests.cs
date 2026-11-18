@@ -98,6 +98,15 @@ public sealed class EmulatorCallTests
     }
 
     [TestMethod]
+    public void ACommandThatEndsWithoutALineCountsAsEnded()
+    {
+        var run = Call(["peek:0:0"], Ended(1));
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        Assert.AreEqual("", run.Stdout);
+    }
+
+    [TestMethod]
     public void ALaterCommandThatThrowsFailsTheCallAndIsNamed()
     {
         var run = Call(
