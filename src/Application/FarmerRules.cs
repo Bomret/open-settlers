@@ -31,6 +31,16 @@ public sealed class FarmerRules(JobParts parts) : JobRules<Farmer>(parts)
     /// <inheritdoc />
     public override Cause Cause => Cause.Farming;
 
+    /// <summary>The farmer's search: spiral entries 7 to 38, a field he may harvest, or a node with no object he may sow.</summary>
+    public override JobSearch Search { get; } =
+        new()
+        {
+            First = 7,
+            Count = 32,
+            Accepts = (map, x, y) =>
+                map.At(x, y).Object is { Exists: true } standing ? standing.IsHarvestable : CanSow(map, x, y),
+        };
+
     /// <summary>Registers the behaviour of the farmer's search and his work on a node.</summary>
     public override void Register(ActivityRegistry registry)
     {
@@ -49,14 +59,14 @@ public sealed class FarmerRules(JobParts parts) : JobRules<Farmer>(parts)
     }
 
     // The object code of the node at the offset from (x, y), where the original reads "large building" for the codes 3 and 4.
-    bool BuildingAt(int x, int y, int dx, int dy) => Map.At(x + dx, y + dy).Object.Code is 3 or 4;
+    static bool BuildingAt(Map map, int x, int y, int dx, int dy) => map.At(x + dx, y + dy).Object.Code is 3 or 4;
 
     // A node he sows (0x433bb4 to 0x433d6b): no object, no road, lowland on both triangles of its tile, no large building on the six
     // nodes around it, and meadow on the triangles around it: the lower triangle of the tile west of it, both of the tile north-west
     // of it, and the upper triangle of the tile north of it.
-    bool CanSow(int x, int y)
+    static bool CanSow(Map map, int x, int y)
     {
-        ref var node = ref Map.At(x, y);
+        ref var node = ref map.At(x, y);
         if (node.Object.Exists || !node.Roads.IsEmpty || node.Upper != Terrain.Lowland || node.Lower != Terrain.Lowland)
         {
             return false;
@@ -64,16 +74,16 @@ public sealed class FarmerRules(JobParts parts) : JobRules<Farmer>(parts)
 
         foreach (var (dx, dy) in Direction.Steps)
         {
-            if (BuildingAt(x, y, dx, dy))
+            if (BuildingAt(map, x, y, dx, dy))
             {
                 return false;
             }
         }
 
-        return Map.At(x - 1, y).Lower == Terrain.Lowland
-            && Map.At(x - 1, y - 1).Upper == Terrain.Lowland
-            && Map.At(x - 1, y - 1).Lower == Terrain.Lowland
-            && Map.At(x, y - 1).Upper == Terrain.Lowland;
+        return map.At(x - 1, y).Lower == Terrain.Lowland
+            && map.At(x - 1, y - 1).Upper == Terrain.Lowland
+            && map.At(x - 1, y - 1).Lower == Terrain.Lowland
+            && map.At(x, y - 1).Upper == Terrain.Lowland;
     }
 
     // State 0x21, the farmer's search (0x433b35). When its timer has run out he draws a node of the spiral around the farm, entries 7 to
@@ -99,12 +109,10 @@ public sealed class FarmerRules(JobParts parts) : JobRules<Farmer>(parts)
 
         while (true)
         {
-            var entry = (((_draws.Draw() & 0x7c) + 0x1c) >> 2);
+            var entry = Search.Entry(_draws.Draw());
             var (dx, dy) = Spiral.Offsets[entry];
-            var x = (settler.X + dx) & (Map.Size.Width - 1);
-            var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            var standing = Map.At(x, y).Object;
-            if (standing.Exists ? standing.IsHarvestable : CanSow(x, y))
+            var (x, y) = JobSearch.NodeAt(Map, entry, settler.X, settler.Y);
+            if (Search.Accepts(Map, x, y))
             {
                 // The vector to the node is taken from the flag the first step reaches: one less each way.
                 var way = new Trip

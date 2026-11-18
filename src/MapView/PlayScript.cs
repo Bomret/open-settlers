@@ -191,10 +191,10 @@ public sealed record ExpectStep : PlayStep, IPlayCondition
     /// <summary>A name of <see cref="PlayFields"/>.</summary>
     public required string Field { get; init; }
 
-    /// <summary>One of <c>&lt;</c>, <c>&lt;=</c>, <c>=</c>, <c>&gt;=</c>, <c>&gt;</c>; the seed takes only <c>=</c>.</summary>
+    /// <summary>One of <c>&lt;</c>, <c>&lt;=</c>, <c>=</c>, <c>&gt;=</c>, <c>&gt;</c>; the seed and the digest take only <c>=</c>.</summary>
     public required string Op { get; init; }
 
-    /// <summary>The value as written: a number, or the seed's words joined by single spaces.</summary>
+    /// <summary>The value as written: a number, the seed's words joined by single spaces, or the digest's hex digits.</summary>
     public required string Value { get; init; }
 
     /// <inheritdoc/>
@@ -807,7 +807,7 @@ public sealed class PlayScript
         {
             return (
                 null,
-                $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.All.Concat(PlayFields.Game))}, {PlayFields.FlagGoods}<column>,<row>"
+                $"unknown field '{args[0]}', use {string.Join(", ", PlayFields.All.Concat(PlayFields.Game).Append(PlayFields.Digest))}, {PlayFields.FlagGoods}<column>,<row>"
             );
         }
 

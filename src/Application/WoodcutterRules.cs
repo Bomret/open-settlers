@@ -29,6 +29,15 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     /// <inheritdoc />
     public override Cause Cause => Cause.Woodcutting;
 
+    /// <summary>The woodcutter's search: spiral entries 1 to 128, a node a tree stands on.</summary>
+    public override JobSearch Search { get; } =
+        new()
+        {
+            First = 1,
+            Count = 128,
+            Accepts = (map, x, y) => map.At(x, y).Object.Kind == MapObjectKind.Tree,
+        };
+
     /// <summary>Registers the behaviour of the woodcutter's search and cut.</summary>
     public override void Register(ActivityRegistry registry)
     {
@@ -66,11 +75,10 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
 
         while (true)
         {
-            var entry = ((_draws.Draw() & 0x1fc) + 4) >> 2;
+            var entry = Search.Entry(_draws.Draw());
             var (dx, dy) = Spiral.Offsets[entry];
-            var x = (settler.X + dx) & (Map.Size.Width - 1);
-            var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            if (Map.At(x, y).Object.Kind == MapObjectKind.Tree)
+            var (x, y) = JobSearch.NodeAt(Map, entry, settler.X, settler.Y);
+            if (Search.Accepts(Map, x, y))
             {
                 // The vector to the tree is taken from the flag the first step reaches: one less each way. The way back is
                 // the same vector turned round.

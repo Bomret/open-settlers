@@ -59,7 +59,7 @@ public sealed class HutWork(
     /// </summary>
     public void RegisterModule(JobRules rules) => _modules.Add(rules.JobType, rules);
 
-    JobRules? RulesOf(Job job) => _modules.TryGetValue(job.GetType(), out var rules) ? rules : null;
+    internal JobRules? RulesOf(Job job) => _modules.TryGetValue(job.GetType(), out var rules) ? rules : null;
 
     /// <summary>
     /// The arrival at the end of a free walk of a job whose module overrides none: the generic arrival home where the job arrives home

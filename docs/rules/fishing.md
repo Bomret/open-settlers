@@ -123,7 +123,7 @@ The bytes other than `0x80`, `0x87`, `0x88`, and `0x8f` also ask for a sound (`0
 
 ## In the engine
 
-`src/Application/FisherRules.cs`, the rules module of the fisher (`JobRules<Fisher>`), holds `Start`, `SearchWater`, `Arrive`, and `Fish`. The shared states are `HutWork`'s: the door, the step out, the free walk, and the entry into the building. `HutWork.ObjectPass` moves the lake details.
+`src/Application/FisherRules.cs`, the rules module of the fisher (`JobRules<Fisher>`), holds `Search`, `Start`, `SearchWater`, `Arrive`, and `Fish`. The shared states are `HutWork`'s: the door, the step out, the free walk, and the entry into the building. `HutWork.ObjectPass` moves the lake details.
 
 The fisher's work is the activities `LooksForWater`, `StepsOntoFlag`, `WalksFree`, `Fishes`, `EntersBuilding`, and `Door`. A free walk out to the node has the purpose `ToWater`, and the way back has `BackToHut`, whose `Carrying` is the catch. The events are `search-water` and `fish`, with the cause `fishing`. The lake detail is the `LakeDetail` of the node.
 

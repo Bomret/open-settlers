@@ -187,6 +187,29 @@ public sealed class PlayStateTests
         StringAssert.EndsWith(dump, $"bread=6\ndigest={game.Digest():x16}\n");
     }
 
+    [TestMethod]
+    public void A_digest_expect_compares_the_games_digest_as_sixteen_hex_digits()
+    {
+        var game = GameFactory.Create(TestProgram.Made(), new Map(MapSize.Offered[0]));
+        var state = GameState with { Game = game };
+        var digest = game.Digest().ToString("x16", System.Globalization.CultureInfo.InvariantCulture);
+
+        Assert.IsNull(state.Check(Expect("digest", "=", digest)));
+        Assert.AreEqual(
+            $"expect digest = 0000000000000000 failed: actual {digest}",
+            state.Check(Expect("digest", "=", "0000000000000000"))
+        );
+    }
+
+    [TestMethod]
+    public void A_digest_expect_in_the_map_view_is_a_problem()
+    {
+        Assert.AreEqual(
+            "expect digest: the map view has no digest, use --game-view",
+            State.Check(Expect("digest", "=", "0000000000000000"))
+        );
+    }
+
     static readonly PlayState FlagState = GameState with
     {
         FlagGoods = new System.Collections.Generic.Dictionary<(int X, int Y), int> { [(27, 5)] = 2, [(3, 1)] = 1 },

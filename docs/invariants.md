@@ -105,3 +105,12 @@ Statement: The map view reads the game and never writes it. A value the view sho
 Breaks: silently
 Check: `ObjectDrawsTests` builds the draw list of a game with a burning building and compares `Game.Digest()` before and after.
 Paths: src/MapView/**
+
+### INV-0017
+
+Class: architecture
+Concepts: Job search, Work area, Work-area overlay
+Statement: A gatherer's search range and target test exist once, in its job rules' job search. The worker's search draws from that range and tests with that test, and the work-area overlay reads the same declaration. No view keeps its own range, offset list, or target test of a job.
+Breaks: silently
+Check: `JobSearchTests` pins each gatherer's range against the draw mask of its loop. It pins its target test against the nodes its worker accepts. `GoldenTests` and the gatherer tests (`WoodcuttingTests`, `StonecuttingTests`, `ForestryTests`, `FisherTests`, `FarmerTests`) keep the searches' outcomes. `WorkAreaDrawsTests` checks that the overlay's marks equal the job search's spiral entries around each building. It also checks that no file under `src/MapView/` or `src/Viewer/` names the spiral. Reviewers check that no such file names a spiral entry bound or a target condition.
+Paths: src/Application/*Rules.cs, src/MapView/**

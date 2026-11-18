@@ -172,11 +172,17 @@ read from the registers the decompile shows); an open lead.
 `ObjectPass`. At the door a settler entering a storage goes first. Then the start routine of the module of the settler's job runs.
 At the end of a free walk the module's `Arrive` runs. At each turn of the walk, before its steps, the module's `WalkTurn` runs.
 The cause of an event is the layout's or the walk home's. The module's `Cause` comes after them.
-`src/Application/WoodcutterRules.cs`, the rules module of the woodcutter (`JobRules<Woodcutter>`), holds `Start`, `SearchTree`, `Arrive`,
+`src/Application/WoodcutterRules.cs`, the rules module of the woodcutter (`JobRules<Woodcutter>`), holds `Search`, `Start`, `SearchTree`, `Arrive`,
 and `Cut`. `MainPass` runs `HutWork.ObjectPass` once each pass, before the modules' `Pass` hooks. The stonecutter, forester, and fisher have rules modules of their
 own (`StonecutterRules`, `ForesterRules`, `FisherRules`). A job with no module starts nothing and records as the settlers' rules.
 They are built from the settlers' movement, the tables, and a random generator port (`IRandomDraws`). The woodcutter, stonecutter, and
 forester modules declare `CanStandInHut`. A layout stands a worker only in their huts.
+The woodcutter's, stonecutter's, forester's, fisher's, and farmer's modules each declare their `Search`, a `JobSearch`
+(`src/Application/JobSearch.cs`, INV-0017): the first entry and the count of the spiral entries the search draws from, and the target
+test. The count is a power of two, and `JobSearch` refuses any other. The search loop maps each draw onto that range through
+`JobSearch.Entry`, which keeps the original's mask. It finds the entry's node around the worker through `JobSearch.NodeAt`. It tests the
+node with `JobSearch.Accepts`. `Game.SearchOf` answers the job search of a building type through the worker that `RuleTables.WorkerOf`
+names. The work-area overlay of the game view reads the same declaration ([Controls](../controls.md#work-areas)).
 `Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is type 2.
 
 The woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree`, `Cuts`, `EntersBuilding`, and `Door`. A
