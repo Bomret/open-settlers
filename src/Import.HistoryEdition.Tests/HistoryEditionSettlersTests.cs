@@ -10,7 +10,14 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class HistoryEditionSettlersTests
 {
-    sealed record Kit(SettlerFigureTables Tables, HistoryEditionSource Source, StepOffsets Steps);
+    sealed record Kit
+    {
+        public required SettlerFigureTables Tables { get; init; }
+
+        public required HistoryEditionSource Source { get; init; }
+
+        public required StepOffsets Steps { get; init; }
+    }
 
     static Kit Load()
     {
@@ -19,11 +26,12 @@ public sealed class HistoryEditionSettlersTests
         var archive = Formats.ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
         var sequences = archive.Data(archive[2]).ToArray();
 
-        return new Kit(
-            SettlerFigureTables.From(tables, sequences),
-            HistoryEditionSource.Load(install, tables),
-            new StepOffsets(sequences)
-        );
+        return new Kit
+        {
+            Tables = SettlerFigureTables.From(tables, sequences),
+            Source = HistoryEditionSource.Load(install, tables),
+            Steps = new StepOffsets(sequences),
+        };
     }
 
     static Map Map() => new(MapSize.Offered[0]);

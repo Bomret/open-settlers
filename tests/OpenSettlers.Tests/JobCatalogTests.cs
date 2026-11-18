@@ -6,8 +6,10 @@ namespace OpenSettlers.Tests;
 
 // The digest of a codeless job's waiting settler (ADR 0020). It reads the adapters' digest (GameDigest) of a game whose castle list it
 // empties through the castle roster (CastleRoster.ClearWaiting), which is internal to the application: no test pair reaches both, and
-// no public operation empties the castle's list and changes nothing else the digest reads. The rest of the class is in
-// src/MapView.Tests.
+// no public operation empties the castle's list and changes nothing else the digest reads. Two layouts whose castles name different
+// settlers (a woodcutter or none, or two counts of them) differ in the settler table as well, and GameDigest mixes each settler's job
+// word (JobWords.Of, in MixSettlers) before the castle's list: their digests differ whether or not the list is mixed by name, so
+// that comparison cannot fail on the list alone. The rest of the class is in src/MapView.Tests.
 [TestClass]
 public sealed class JobCatalogTests
 {

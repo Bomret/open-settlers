@@ -161,7 +161,7 @@ public sealed class JobCatalogTests
 
     // The digest of a codeless job's waiting settler stays in tests/OpenSettlers.Tests: it reads the adapters' digest of a game whose
     // castle list it empties through the castle roster, which is internal to the application, and no public route empties the list
-    // alone.
+    // alone (a castle that names other settlers changes the settler table's job words the digest mixes as well).
 
     [TestMethod]
     public void ARuleThatMeetsAJobTheCatalogLacksStopsWithAnErrorNamingIt()
