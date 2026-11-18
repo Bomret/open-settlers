@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -146,16 +147,16 @@ public sealed class ExchangeTests
     }
 
     [TestMethod]
-    public void AGoodWithNoTransportPriorityIsNeverLinedUp()
+    public void AGoodTheCatalogLacksStopsTheExchangeWithAnErrorNamingIt()
     {
         var (bench, goods) = WithFlag(Ranks(log: 0, ninth: 0, board: 0));
         LayDirected(goods, 1, Log);
         LayDirected(goods, 6, Ninth);
         goods.WaitForRoad(0, Way, 6);
 
-        Exchange(goods, Carrier(bench, 0, null));
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => Exchange(goods, Carrier(bench, 0, null)));
 
-        Assert.IsNull(bench.Flags[0].Side(Way).WaitingPlace, "no good waits for the road");
+        StringAssert.Contains(error.Message, "log");
     }
 
     [TestMethod]

@@ -77,6 +77,16 @@ static class TestCatalog
     /// <summary>The catalog of <see cref="Of"/> with its defaults: what an exporter reads a made-up game's goods from.</summary>
     public static readonly ContentCatalog Default = Of();
 
+    /// <summary>
+    /// The 26 goods with the facts a game read for a good its tables did not know before every good was an entry: storage at once, the
+    /// low fill byte for the way and the handover, and no count against resource 1. The made-up tables of the emulated and golden
+    /// scenarios (<see cref="TestProgram.Made()"/>, <c>LayoutSettlersTests.MadeTables</c>) play on it, so their digests stay.
+    /// </summary>
+    public static ContentCatalog StandIn() =>
+        new(
+            Of().Goods.Select(entry => entry with { HandoverCounter = FillCounter.Low, CountsAgainstResource1 = false })
+        );
+
     /// <summary>A good that only a made-up catalog data entry gives: it has no original code.</summary>
     public static readonly Good AiToken = new() { Name = "ai-token" };
 

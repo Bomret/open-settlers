@@ -41,7 +41,8 @@ public sealed class CarrierEventsTests
                 TestProgram.MadeStartStock(),
                 [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
                 [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-                [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)]
+                [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+                goods: TestCatalog.StandIn()
             ),
             map
         );

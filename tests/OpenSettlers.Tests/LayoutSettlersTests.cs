@@ -97,7 +97,12 @@ public sealed class LayoutSettlersTests
             walkRows: rows,
             buildingSizes: buildingSizes,
             buildingNeeds: buildingNeeds,
-            goods: catalog ?? TestCatalog.Of(transportPriorities, goodClasses, goodKinds ?? KindsOf(goodClasses)),
+            goods: catalog
+                ?? (
+                    transportPriorities is null && goodClasses is null && goodKinds is null
+                        ? TestCatalog.StandIn()
+                        : TestCatalog.Of(transportPriorities, goodClasses, goodKinds ?? KindsOf(goodClasses))
+                ),
             distribution: distribution,
             plankRankBase: plankRankBase,
             millRankBase: millRankBase,

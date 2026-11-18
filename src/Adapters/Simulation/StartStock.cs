@@ -31,8 +31,9 @@ public static class StartStock
     ];
 
     /// <summary>
-    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good the rows of the
-    /// program's table name. Each count steps from its value in the lower row towards the higher row
+    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good of the catalog that the
+    /// rows of the program's table name (a row names the goods of its content set, so a good the catalog lacks has no place in the
+    /// castle). Each count steps from its value in the lower row towards the higher row
     /// (<see cref="RuleTables.StartStock"/>) by the tenths of the level, rounded as the original rounds.
     /// </summary>
     public static IReadOnlyDictionary<Good, int> At(RuleTables tables, int level)
@@ -49,6 +50,11 @@ public static class StartStock
         var stock = new Dictionary<Good, int>();
         foreach (var (good, from) in rows[low])
         {
+            if (tables.Catalog.EntryOf(good) is null)
+            {
+                continue;
+            }
+
             var difference = (ushort)(rows[high].GetValueOrDefault(good) - from);
             var product = (uint)difference * (uint)weight;
             var rounded = (product & 0xffff) > 0x7fff ? 1 : 0;
