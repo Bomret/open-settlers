@@ -86,7 +86,7 @@ public sealed record Thing
                 ("frame", settler.Frame.ToString(CultureInfo.InvariantCulture)),
                 ("timer", settler.Timer.ToString(CultureInfo.InvariantCulture)),
                 ("stamp", raw.Stamp.ToString(CultureInfo.InvariantCulture)),
-                .. CarriedGood(settler),
+                .. CarriedGood(settler, catalog),
             ],
             Name = SettlerName(settler),
         };
@@ -203,16 +203,17 @@ public sealed record Thing
         return goods.Length == 0 ? [] : [("goods", string.Join(",", goods))];
     }
 
-    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load or handing it over, the settler who steps out
-    // with a good or puts it down).
-    static (string, string)[] CarriedGood(Settler settler) =>
-        Load(settler) is { } good ? [("carrying", GoodText(good))] : [];
+    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load, the settler who steps out
+    // with a good or puts it down). A carrier handing a good over shows it only where the good has no original code, since his raw mode
+    // word is then left out (INV-0006); for an original good the mode word shows it, as before.
+    static (string, string)[] CarriedGood(Settler settler, ContentCatalog catalog) =>
+        Load(settler, catalog) is { } good ? [("carrying", GoodText(good))] : [];
 
-    static Good? Load(Settler settler) =>
+    static Good? Load(Settler settler, ContentCatalog catalog) =>
         settler.Activity switch
         {
             WalksRoad { Load: { Good.IsNone: false } load } => load.Good,
-            HandsOver { Load: { Good.IsNone: false } load } => load.Good,
+            HandsOver { Load: { Good.IsNone: false } load } when catalog.Require(load.Good).OriginalCode is null => load.Good,
             StepsOutWithGood { Good.IsNone: false } stepping => stepping.Good,
             PutsDownGood { Good.IsNone: false } putting => putting.Good,
             _ => null,

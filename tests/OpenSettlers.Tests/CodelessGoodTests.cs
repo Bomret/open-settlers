@@ -139,6 +139,21 @@ public sealed class CodelessGoodTests
         StringAssert.Contains(error.Message, "g7361");
     }
 
+    [TestMethod]
+    public void CreatingAGameOverTwoCodeLessGoodsWithOneExporterWordIsRefusedNamingBothAndTheTablesParameter()
+    {
+        var layout = Layout.Read(LayoutTests.Text(extra: CastleOnly), "t.jsonc").Layout!;
+        var tables = LayoutSettlersTests.MadeTables(
+            catalog: new ContentCatalog([CodelessEntry("g5258", 1), CodelessEntry("g7361", 2)])
+        );
+
+        var error = Assert.ThrowsExactly<ArgumentException>(() => GameFactory.Create(tables, layout.BuildMap()));
+
+        StringAssert.Contains(error.Message, "g5258");
+        StringAssert.Contains(error.Message, "g7361");
+        Assert.AreEqual("tables", error.ParamName);
+    }
+
     static GoodEntry CodelessEntry(string name, int rank) =>
         new()
         {

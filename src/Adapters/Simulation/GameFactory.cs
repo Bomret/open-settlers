@@ -26,9 +26,9 @@ public static class GameFactory
         bool handsOutGoods = false
     )
     {
-        GoodWords.Check(tables.Catalog);
-        BuildingWords.Check(tables.Catalog);
-        JobWords.Check(tables.Catalog);
+        GoodWords.Check(tables.Catalog, nameof(tables));
+        BuildingWords.Check(tables.Catalog, nameof(tables));
+        JobWords.Check(tables.Catalog, nameof(tables));
         var clock = new GameClock();
         var castle = new CastleStock(tables.Catalog);
         var flags = new FlagTable();

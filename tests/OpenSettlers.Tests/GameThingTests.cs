@@ -169,6 +169,28 @@ public sealed class GameThingTests
     }
 
     [TestMethod]
+    public void ACarrierWhoHandsOverAnOriginalGoodShowsItsRawModeValueAndNoName()
+    {
+        var load = new Load { Good = Good.Log, Destination = null };
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            3,
+            4,
+            0,
+            new HandsOver
+            {
+                Load = load,
+                Heading = new Heading { Value = 0 },
+            }
+        );
+        var values = Thing.Of(settler, TestCatalog.Default).Values.ToList();
+
+        Assert.IsTrue(values.Any(value => value.Item1 == "mode"));
+        Assert.IsFalse(values.Any(value => value.Item1 == "carrying"));
+    }
+
+    [TestMethod]
     public void ASettlerWhoseResidueHoldsTheWordOfAGoodWithNoCodeShowsNoRawModeValue()
     {
         var catalog = TestCatalog.WithAiToken();

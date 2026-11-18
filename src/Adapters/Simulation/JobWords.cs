@@ -37,11 +37,12 @@ public static class JobWords
     /// <summary>
     /// Throws an <see cref="ArgumentException"/> that names both jobs where two jobs of the catalog with no original code have one word,
     /// which a settler's item and the digest could not tell apart.
+    /// The exception names <paramref name="parameter"/> as the argument at fault: the caller's parameter that holds the catalog.
     /// </summary>
-    public static void Check(ContentCatalog catalog) =>
+    public static void Check(ContentCatalog catalog, string parameter = "catalog") =>
         GoodWords.CheckCodeless(
             "jobs",
             catalog.Jobs.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
-            nameof(catalog)
+            parameter
         );
 }
