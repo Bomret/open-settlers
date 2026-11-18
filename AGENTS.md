@@ -35,7 +35,8 @@ interface that returns dedicated types, never a format type.
 Each library has a test project beside it, `src/<Name>.Tests/`, and only that project sees the library's internals
 (ADR 0019, INV-0012, INV-0013). `src/Testing/` and `src/<Name>.Testing/` hold the test helpers, and
 `OpenSettlers.Tests/` beside the Godot project holds the tests of the repository itself. `src/Viewer/` has no test
-project. A new Godot-free folder of the Godot project becomes a library with a test project, or its code is untested.
+project. A new Godot-free folder of the Godot project becomes a library with a test project, or its code is untested. A new test goes in the project of the lowest library that reaches every type it uses
+(`docs/agents/verification.md`, "Where a new test goes").
 
 ## Game install
 

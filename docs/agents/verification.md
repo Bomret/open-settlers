@@ -69,6 +69,24 @@ instance for a test, which then reports inconclusive.
 `InstallInitializerTests` fails naming the file and line of every static initializer and static constructor that
 reaches one of them. Its header comment lists the forms of reach the check catches and the ones it misses.
 
+## Where a new test goes
+
+A test lives in the test project of the lowest library that reaches, through its own references, every type the
+test uses (ADR 0019). For a library `src/<Name>/`, that project is `src/<Name>.Tests/`. A test of what no library
+holds goes in `OpenSettlers.Tests/`: the code-style build, the tools, the content set, the test category filters,
+and the layout of the test projects.
+
+- **Helpers.** A helper that names no library type goes in `src/Testing/`. A helper that names a library's types
+  goes in `src/<Name>.Testing/` beside that library. A helper project holds no tests.
+- **References.** A test project references its library and the helper projects of that library and of every library
+  it references. It references no other library, so a test that needs one belongs in a higher library's test
+  project.
+- **Internals.** A test sees the internals of its own library only. A type that another library or its tests use is
+  public (INV-0012, INV-0013).
+- **Namespace.** Every test class has the namespace `OpenSettlers.Tests`, whichever project holds it.
+- **A new library** gets its test project at once. `TestPairTests` fails on a library with no sibling `.Tests`
+  project and on a project that reaches beyond its allowed references.
+
 ## Run one test class
 
 Every test project has its own folder (`src/<Name>.Tests/`, and `OpenSettlers.Tests/` for the repository's own tests), and
