@@ -122,16 +122,16 @@ building site.
 _Avoid_: work radius, range, catchment
 
 **Work-area overlay**
-The marks the game view draws while its Work areas button is on: one tint mark on every node that lies in the work area
-of at least one of its player's gatherer buildings or building sites, and, while a gatherer's build button is pressed,
-a reach marker on every node where that building fits. It is drawn by the view as plain shapes, not through the graphics
-source, and it changes nothing in the game.
+The marks the game view draws while its Work areas button is on. One tint mark lies on every node in the work area of at
+least one of its player's gatherer buildings or building sites. While a gatherer's build button is pressed, a reach marker
+lies on every node where that building fits. The view draws it as plain shapes, not through the graphics source. It
+changes nothing in the game.
 _Avoid_: range overlay, heat map
 
 **Reach marker**
-The mark of the work-area overlay on a node where the gatherer building of the pressed build button fits: a filled disc
-where its target test accepts at least one node of the work area that building would have there, a ring where it accepts
-none.
+The mark of the work-area overlay on a node where the gatherer building of the pressed build button fits. A filled disc
+shows where its target test accepts at least one node of the work area that building would have there. A ring shows where
+it accepts none.
 _Avoid_: in-range marker, resource marker
 
 **Content set**

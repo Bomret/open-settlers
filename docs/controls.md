@@ -127,21 +127,24 @@ off. It turns off again when a new seed or size starts a new game. The original 
 Pressing Work areas leaves the other buttons as they are, Build help included. Pressing another button leaves Work areas as it
 is. Work areas changes nothing in the game.
 
-While it is on, every node in the work area of one of your woodcutter's, stonecutter's, forester's, fisher's, or farm buildings
-shows a translucent yellow tint. A building site counts as its building. A node in two work areas shows one tint. The tint covers
-the nodes the worker draws from when he looks for a target: the 128 nodes nearest a woodcutter's, stonecutter's, or forester's
-hut, the 64 nearest a fisher's, and the 7th to the 38th nearest a farm, across the map's edge where the search crosses it. The
-castle, the other buildings, and a building taken down and burning show no area. The tint draws over the trees and figures and
-under the build markers. It follows every change of the game in the frame that shows it. The map view has no Work areas button.
+While it is on, a node in the work area of one of your gatherer buildings shows a translucent yellow tint. The gatherer
+buildings are the woodcutter's, stonecutter's, forester's, fisher's, and farm. A building site counts as its building. The
+overlay draws one tint mark per node, so a node in two work areas shows one tint. The tint covers the nodes the worker draws
+from when he looks for a target. That is the 128 nodes nearest a woodcutter's, stonecutter's, or forester's hut, the 64
+nearest a fisher's, and the 7th to the 38th nearest a farm. The nodes lie across the map's edge where the search crosses it.
+The castle, the other buildings, and a building taken down and burning show no area. The tint draws over the trees and
+figures and under the build markers. It follows every change of the game in the frame that shows it. The map view has no
+Work areas button.
 
-While Work areas is on and the Woodcutter, Stonecutter, Forester, Fisher, or Farm button is pressed, every node where that building
-fits shows a reach marker. A building fits where Build help would show its marker: the large-building marker for the farm, the
-small- or large-building marker for the others. A filled green disc means the worker would find a target from there: a tree, a
-node beside a stone heap, ground he may plant on, a free node at a shore, or a field he may harvest or sow. A red ring means he
-would find none. The marker judges the ground as it stands, before the building, its flag, and its road exist, so a target the
-building's own site would cover still counts. The markers show whether Build help is on or off, and draw over its markers. Before
-the castle stands, no gatherer fits, so no marker shows. Another build button, or none, shows no reach marker. The markers change
-with the pressed button and follow every change of the game in the frame that shows it.
+While Work areas is on, the Woodcutter, Stonecutter, Forester, Fisher, or Farm button can be pressed. Then every node where
+that building fits shows a reach marker. A building fits where Build help would show its marker: the large-building marker
+for the farm, the small- or large-building marker for the others. A filled green disc means the worker would find a target
+from there: a tree, a node beside a stone heap, ground he may plant on, a free node at a shore, or a field he may harvest
+or sow. A red ring means he would find none. The marker judges the ground as it stands, before the building, its flag, and
+its road exist. So a target that the building's own site would cover still counts. The reach markers show with Build help on
+or off. They draw over Build help's markers. Before the castle stands, no gatherer fits, so no marker shows. Another build
+button, or none, shows no reach marker. The markers change with the pressed button and follow every change of the game in
+the frame that shows it.
 
 ### Speed
 
