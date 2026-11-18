@@ -60,6 +60,22 @@ public sealed class NeedsTests
         CollectionAssert.AreEqual(Categories("TestCategory!="), constant.Groups[1].Value.Split('&').Order().ToArray());
     }
 
+    // Every test project of the solution runs (ADR 0019). A project with no test of the selected categories makes the
+    // test host exit 8, which the run tolerates.
+    [TestMethod]
+    [DataRow("test")]
+    [DataRow("\"test:integration\"")]
+    [DataRow("check")]
+    public void ATestCommandRunsEveryTestProjectOfTheSolutionAndToleratesAProjectWithoutTests(string task)
+    {
+        var section = MiseToml().Split($"[tasks.{task}]")[1].Split("\n[")[0];
+        var command = section.Split('\n').Single(line => line.Contains("dotnet test"));
+
+        StringAssert.Contains(command, "dotnet test --solution OpenSettlers.slnx ");
+        StringAssert.Contains(command, " --ignore-exit-code 8");
+        Assert.DoesNotContain("--project", command);
+    }
+
     [TestMethod]
     public void TheIntegrationFilterSelectsExactlyTheCategoriesOfNeeds()
     {

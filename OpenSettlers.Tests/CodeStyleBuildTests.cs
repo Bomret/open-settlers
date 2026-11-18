@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -70,18 +71,84 @@ public sealed class CodeStyleBuildTests
     }
 
     // docs/agents/CODING.md, "Document": every source project generates a documentation file, so the compiler reports the
-    // doc-comment diagnostics. The test project alone is left out.
+    // doc-comment diagnostics. Test projects (*.Tests) and helper projects (*.Testing) are left out, by the pattern of
+    // the project name, so a new one needs no change to the rule. MSBuild evaluates the rule for stand-in projects.
     [TestMethod]
-    public void EverySourceProjectGeneratesADocumentationFile()
+    [DataRow("OpenSettlers.Domain", "true")]
+    [DataRow("OpenSettlers.Import.HistoryEdition", "true")]
+    [DataRow("OpenSettlers.Tests", "false")]
+    [DataRow("OpenSettlers.Domain.Tests", "false")]
+    [DataRow("OpenSettlers.Testing", "false")]
+    [DataRow("OpenSettlers.Domain.Testing", "false")]
+    public void OnlySourceProjectsGenerateADocumentationFile(string project, string expected)
     {
-        var settings = XDocument
-            .Load(Path.Combine(RootOf(), "Directory.Build.props"))
-            .Descendants("PropertyGroup")
-            .Elements("GenerateDocumentationFile")
-            .Select(e => $"{e.Attribute("Condition")?.Value} => {e.Value.Trim()}")
+        var folder = Path.Combine(Path.GetTempPath(), "doc-file-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            File.Copy(Path.Combine(RootOf(), "Directory.Build.props"), Path.Combine(folder, "Directory.Build.props"));
+            var file = Path.Combine(folder, project + ".csproj");
+            File.WriteAllText(file, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+
+            var info = new ProcessStartInfo("dotnet", ["msbuild", file, "-getProperty:GenerateDocumentationFile"])
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            using var process = Process.Start(info)!;
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
+
+            Assert.AreEqual(0, process.ExitCode, stdout.Result + stderr.Result);
+            Assert.AreEqual(expected, stdout.Result.Trim());
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    // The Godot project compiles every .cs file of its folder but those its Compile Remove names, so the test projects
+    // and the helper projects are named by pattern, wherever they sit.
+    [TestMethod]
+    public void TheGodotProjectLeavesOutEveryTestAndHelperProjectByPattern()
+    {
+        var removed = XDocument
+            .Load(Path.Combine(RootOf(), "OpenSettlers.csproj"))
+            .Descendants("Compile")
+            .Select(e => e.Attribute("Remove")?.Value ?? "")
+            .SelectMany(value => value.Split(';'))
             .ToArray();
 
-        CollectionAssert.AreEqual(new[] { "'$(MSBuildProjectName)' != 'OpenSettlers.Tests' => true" }, settings);
+        CollectionAssert.IsSubsetOf(
+            new[] { "**/*.Tests/**", "**/*.Testing/**", "src/Testing/**", "OpenSettlers.Tests/**" },
+            removed
+        );
+    }
+
+    // One test framework version for every test project, set in global.json's msbuild-sdks: no project file pins it.
+    [TestMethod]
+    public void EveryTestProjectTakesTheMsTestSdkVersionFromGlobalJson()
+    {
+        var root = RootOf();
+        var pinned = File.ReadAllText(Path.Combine(root, "global.json"));
+        StringAssert.Matches(
+            pinned,
+            new Regex("\"msbuild-sdks\"\\s*:\\s*\\{[^}]*\"MSTest\\.Sdk\"\\s*:\\s*\"[\\d.]+\"")
+        );
+
+        var projects = ConfigFiles(root, file => Path.GetExtension(file) == ".csproj")
+            .Select(relative => (relative, document: XDocument.Load(Path.Combine(root, relative))))
+            .Where(project => project.document.Root!.Attribute("Sdk")?.Value.StartsWith("MSTest.Sdk") == true)
+            .ToArray();
+        var versioned = projects
+            .Where(project => project.document.Root!.Attribute("Sdk")!.Value != "MSTest.Sdk")
+            .Select(project => project.relative)
+            .ToArray();
+
+        Assert.IsNotEmpty(projects);
+        Assert.IsEmpty(versioned, string.Join(Environment.NewLine, versioned));
     }
 
     // A NoWarn that names a build-enforced rule or a doc-comment diagnostic switches it off for a whole project.

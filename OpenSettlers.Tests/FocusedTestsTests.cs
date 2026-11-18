@@ -41,9 +41,9 @@ public sealed class FocusedTestsTests
         File.WriteAllText(full, text);
     }
 
-    void Test(string name, string body) =>
+    void Test(string name, string body, string project = "tests/OpenSettlers.Tests") =>
         Write(
-            $"tests/OpenSettlers.Tests/{name}.cs",
+            $"{project}/{name}.cs",
             $"namespace OpenSettlers.Tests;\n[TestClass]\npublic sealed class {name}\n{{\n    void Case() {{ {body} }}\n}}\n"
         );
 
@@ -162,12 +162,94 @@ public sealed class FocusedTestsTests
         StringAssert.StartsWith(run.Stderr, "usage: ");
     }
 
+    // Every test project of the repository takes part in the selection: a *.Tests folder at the root, under tests/, under
+    // src/, or under a folder of src/.
+    [TestMethod]
+    [DataRow("OpenSettlers.Tests")]
+    [DataRow("src/Domain.Tests")]
+    [DataRow("src/Import/Import.Tests")]
+    public void AChangedTestFileOfAnotherTestProjectSelectsItsClass(string project)
+    {
+        Test("ElsewhereTests", "new Hut();", project);
+
+        CollectionAssert.AreEqual(Classes("ElsewhereTests"), List($"{project}/ElsewhereTests.cs"));
+        CollectionAssert.AreEqual(Classes("ElsewhereTests", "HelperTests", "HutTests"), List("src/Domain/Hut.cs"));
+    }
+
+    [TestMethod]
+    public void AHelperProjectFileNamingATypeSelectsTheClassesNamingTheHelper()
+    {
+        Write("src/Testing/OpenSettlers.Testing.csproj", "<Project />");
+        Write("src/Testing/Rigs.cs", "namespace OpenSettlers.Testing;\npublic static class Rigs { Hut A; }\n");
+        Test("RigTests", "Rigs.A;");
+
+        CollectionAssert.AreEqual(Classes("HelperTests", "HutTests", "RigTests"), List("src/Domain/Hut.cs"));
+    }
+
+    [TestMethod]
+    public void ClassesWithAProjectNameOnlyTheClassesOfThatProject()
+    {
+        Test("ElsewhereTests", "new Hut();", "OpenSettlers.Tests");
+        var run = Run("--classes", "OpenSettlers.Tests");
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        Assert.AreEqual("OpenSettlers.Tests.ElsewhereTests\n", run.Stdout);
+    }
+
+    // Run with a stand-in dotnet that prints its arguments: a selection runs each test project that holds a selected
+    // class, and the whole suite runs the solution. A filter that selects no test of a project is no failure.
+    ToolRun RunWithStandInDotnet(params string[] arguments)
+    {
+        var bin = PythonTool.StandIn(Path.Combine(_folder, "bin"), "dotnet", "echo \"dotnet $*\"\n");
+
+        return PythonTool.RunOnPath(
+            _folder,
+            [PythonTool.InRepo("tools", "focused-tests.py"), .. arguments],
+            [bin, "/bin", "/usr/bin"],
+            null
+        );
+    }
+
+    [TestMethod]
+    public void ASelectionRunsEachTestProjectHoldingASelectedClass()
+    {
+        Test("ElsewhereTests", "new Hut();", "OpenSettlers.Tests");
+        var run = RunWithStandInDotnet("src/Domain/HutSite.cs", "OpenSettlers.Tests/ElsewhereTests.cs");
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "dotnet test --project OpenSettlers.Tests --filter "
+                    + "(ClassName=OpenSettlers.Tests.ElsewhereTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
+                "dotnet test --project tests/OpenSettlers.Tests --filter "
+                    + "(ClassName=OpenSettlers.Tests.HutSiteTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
+            },
+            run.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        );
+    }
+
+    [TestMethod]
+    public void TheWholeSuiteRunsTheSolution()
+    {
+        var run = RunWithStandInDotnet("mise.toml");
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        Assert.AreEqual(
+            "dotnet test --solution OpenSettlers.slnx --filter TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8\n",
+            run.Stdout
+        );
+    }
+
     // The selector run on this repository knows exactly the test classes of this assembly, by the names the test
     // host matches (ClassName=<Type.FullName>).
     [TestMethod]
     public void TheSelectorKnowsExactlyTheTestClassesOfTheAssembly()
     {
-        var run = PythonTool.Run(PythonTool.RepoRoot(), [PythonTool.InRepo("tools", "focused-tests.py"), "--classes"]);
+        var run = PythonTool.Run(
+            PythonTool.RepoRoot(),
+            [PythonTool.InRepo("tools", "focused-tests.py"), "--classes", "OpenSettlers.Tests"]
+        );
         Assert.AreEqual(0, run.Exit, run.Stderr);
         var expected = typeof(FocusedTestsTests)
             .Assembly.GetTypes()

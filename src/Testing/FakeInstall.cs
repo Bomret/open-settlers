@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Testing;
 
 /// <summary>An install built in a temporary folder, with the files a test puts in it. Delete it on dispose.</summary>
 public sealed class FakeInstall : IDisposable

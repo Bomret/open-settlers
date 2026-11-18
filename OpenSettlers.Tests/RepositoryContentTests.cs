@@ -177,8 +177,27 @@ public sealed class RepositoryContentTests
             .Select(project => (string?)project.Attribute("Path"))
             .ToHashSet();
 
+        // A pattern such as **/*.Tests names every project folder whose name ends the way it does.
+        var everyProject = Files(root)
+            .Where(file => file.EndsWith(".csproj", StringComparison.Ordinal))
+            .Select(file => Path.GetRelativePath(root, Path.GetDirectoryName(file)!).Replace('\\', '/'))
+            .ToList();
+        var folders = removed
+            .SelectMany(pattern =>
+                pattern.Contains('*')
+                    ? everyProject.Where(folder => folder.EndsWith(pattern.Split('*')[^1], StringComparison.Ordinal))
+                    : [pattern]
+            )
+            .Distinct()
+            .ToList();
+        // A folder inside another listed one is ignored and built with it.
+        folders =
+        [
+            .. folders.Where(folder => !folders.Any(outer => folder.StartsWith(outer + "/", StringComparison.Ordinal))),
+        ];
+
         var projectFolders = 0;
-        foreach (var folder in removed)
+        foreach (var folder in folders)
         {
             var projects = Files(Path.Combine(root, folder))
                 .Where(file => file.EndsWith(".csproj", StringComparison.Ordinal))
@@ -197,8 +216,9 @@ public sealed class RepositoryContentTests
             }
         }
 
-        // The layer libraries, the two sources, the ports, the map view, the launch code, the assets, the generator, and the tests.
-        Assert.AreEqual(11, projectFolders);
+        // The layer libraries, the two sources, the ports, the map view, the launch code, the assets, the generator, the
+        // shared test helpers, the tests, and the root test project.
+        Assert.AreEqual(13, projectFolders);
     }
 
     // The set's files by path relative to the folder, with forward slashes.

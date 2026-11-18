@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Testing;
 
 /// <summary>
 /// A case-sensitive file system for a test class: a new folder in the temp folder on Linux, on macOS a small

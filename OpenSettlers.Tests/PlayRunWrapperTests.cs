@@ -602,6 +602,26 @@ public class PlayRunWrapperTests
         Assert.AreEqual(1, Calls);
     }
 
+    // A test project (*.Tests) and a helper project (*.Testing, and src/Testing) is no input of a run, wherever it sits
+    // under src/: adding a file to it and editing that file both reuse the stored run.
+    [TestMethod]
+    [DataRow("src/Domain.Tests/GameTests.cs")]
+    [DataRow("src/Import/Import.Tests/ReaderTests.cs")]
+    [DataRow("src/Testing/Needs.cs")]
+    [DataRow("src/Domain.Testing/Fake.cs")]
+    [DataRow("src/Import/Import.Testing/Fake.cs")]
+    public void AnEditInATestOrHelperProjectReuses(string path)
+    {
+        Run(Args);
+        Write(path, "added");
+        Run(Args);
+        Write(path, "edited");
+
+        Run(Args);
+
+        Assert.AreEqual(1, Calls);
+    }
+
     [TestMethod]
     public void FreshStartsGodotOnAHitAndReplacesTheEntry()
     {
