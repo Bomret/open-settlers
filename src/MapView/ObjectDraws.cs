@@ -119,7 +119,7 @@ public static class ObjectDraws
         foreach (var hut in buildings?.Where(building => BuildingPlacement.Types.Contains(building.Type)) ?? [])
         {
             // A building that was taken down burns (docs/rules/removal.md). Its countdown runs down with the clock between
-            // its turns, so the view derives it anew for each frame and writes no game state (INV-0015). Once the countdown
+            // its turns, so the view derives it anew for each frame and writes no game state (INV-0016). Once the countdown
             // has run out, neither the building nor its flames are drawn.
             var countdown = hut.IsDemolishing ? hut.BurnLeft - (ushort)(clock - hut.Stamp) : 0;
             if (countdown < 0)

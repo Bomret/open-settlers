@@ -149,7 +149,7 @@ The branch does this, in order:
 - **The countdown.** It reads the game clock at state `+0x206` and stores it in the word at 14. It takes the clock since the old word
   off the countdown, as the building pass does. Where that borrows, it sets the countdown to 0 and draws neither the building nor its
   flames. The draw thus writes the countdown and the stamp back into the building every frame the building is on screen.
-  **Not ported:** the engine's view derives the countdown at the clock and writes nothing (INV-0015). The burn's own pass keeps the
+  **Not ported:** the engine's view derives the countdown at the clock and writes nothing (INV-0016). The burn's own pass keeps the
   count off screen.
 - **The building.** It draws the building as usual through `Building_DrawByType` (`0x44e385`, called at `0x44dfc2`), the tail of
   `Building_Draw` that dispatches by the type, a site's stage included.
@@ -265,7 +265,7 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 - Departures: the engine's flag slot 0 is the castle's flag, so the original's test of a waiting settler's target (state 1) is left out ([Goods at a flag](goods.md) states the dummy); a carrier that waits has the
   flag's slot in the target where the original keeps a pointer, so the bytes of a settler in state `0x19` that was one are masked in the test.
 - The drawing: the stand-in button "Remove" in `MapViewControl`. A building that burns is drawn with its flames over it until its
-  countdown runs out (`ObjectDraws.Of`, ADR 0021); the view derives the countdown at the game's clock and writes no game state (INV-0015).
+  countdown runs out (`ObjectDraws.Of`, ADR 0021); the view derives the countdown at the game's clock and writes no game state (INV-0016).
   The History Edition source reads the flame lists (`FlameLists`, `src/Import.HistoryEdition/`); the basic set places flames of its own
   making. Tests: `ObjectDrawsTests` (the draw list, the phase, the digest) and `FlameListsTests` (the lists from a program built in code).
 - Tests: `RemovalTests` (the verb's games and classes, `removals.txt`) and `RemovalLogicTests` (the engine's own logic, made-up tables);
