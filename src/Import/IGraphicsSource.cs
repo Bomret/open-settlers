@@ -40,6 +40,9 @@ public interface IGraphicsSource
     /// <summary>The image of a road strip, or null where the source draws none.</summary>
     ObjectImage? Draw(RoadStrip strip);
 
+    /// <summary>The image of a border post, or null where the source draws none.</summary>
+    ObjectImage? Draw(BorderPost post);
+
     /// <summary>The image and shadow of a map object, or null where the source draws neither.</summary>
     ObjectDrawing? Draw(MapObjectDraw draw);
 
