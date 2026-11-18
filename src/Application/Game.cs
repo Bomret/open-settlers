@@ -9,7 +9,8 @@ namespace OpenSettlers.Simulation;
 /// at a tick applied in a total order so that the order of <see cref="Enqueue"/> calls does not change the game (INV-0002).
 /// The game only applies commands, runs the tick in the original's order, and builds the digest: each kind of command has its
 /// handler, the tick is the main pass, the digest is the port's, and everything else a caller reaches is a read-only part.
-/// The behaviours that change the game are internal, reached only by the assemblies that build and drive it.
+/// The behaviours that change the game are internal. The digest reads the game's state as values, a layout's setup is a set of
+/// operations of the game, and the removal is a query.
 /// </summary>
 /// <remarks>
 /// A game of <paramref name="parts"/>, at tick 0 with no command queued and no castle. Throws
@@ -79,16 +80,17 @@ public sealed class Game(GameParts parts)
     /// <summary>The settler supply's values, or null in a game that does not run it.</summary>
     public SupplyState? SupplyState =>
         _parts.Supply is { } supply
-            ? new SupplyState(
-                supply.Period,
-                supply.Countdown,
-                supply.LastClock,
-                supply.KnightAccumulator,
-                supply.KnightsOwed,
-                supply.Running,
-                supply.Cap,
-                supply.MayMake
-            )
+            ? new SupplyState
+            {
+                Period = supply.Period,
+                Countdown = supply.Countdown,
+                LastClock = supply.LastClock,
+                KnightAccumulator = supply.KnightAccumulator,
+                KnightsOwed = supply.KnightsOwed,
+                Running = supply.Running,
+                Cap = supply.Cap,
+                MayMake = supply.MayMake,
+            }
             : null;
 
     /// <summary>The commands applied so far, in the order they were applied.</summary>
