@@ -272,7 +272,7 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x4279d4` | `Render_TriangleVariantsUpper` | Data: 81 bytes, by height-difference index, the texture variant (a multiple of 4, `0xff` none) of an upper triangle. | confirmed | game |
 | `0x427b38` | `Render_TriangleVariantsLower` | Data: the same 81 bytes for a lower triangle. | confirmed | game |
 | `0x427b89` | `Render_TerrainTextures` | Data: 128 bytes, 8 for each terrain code, the texture number minus 260 by variant. | confirmed | game |
-| `0x44e114` | `Gfx_SpriteLists` | Data: 25 inline sprite lists in the code band, entries 0 or 8, read by the site `0x44e0d1`. | inferred | game |
+| `0x44e114` | `Gfx_SpriteLists` | Data: the flame lists of a burning building, inline in the code band: 25 word offsets from the data's start, one list per building type. Each list holds 3-byte flames: a size byte 0 or 8, then a signed x and y. A byte of `0x80` or more ends a list. Types 7 and 8 share a list. Read by the burning branch of `Building_Draw`, drawn at `0x44e0d1`. | confirmed | game |
 | `0x44f225` | `Gfx_BuildingPairTable` | Data: 128 byte pairs inline in the code band (up to `0x44f325`); first bytes 162 to 173, read with an even index by the eight sites from `0x44ee56`. | confirmed | game |
 | `0x44fd16` | `Gfx_ObjectNumberTable` | Data: inline byte table in the code band of object numbers (152 to 193) for the shadow path through `0x44fcd0` to `0x44ff2a`; sibling of the table at `0x44fcfe`. | confirmed | game |
 | `0x44d87d` | `Render_WaitingCarrierPhases` | Data: in the code band, 16 words, the phase of a waiting carrier's figure by the tile record's address. | confirmed | game |
@@ -300,7 +300,7 @@ Sites:
 - `0x44da9e`, `0x44dac8`: forms the shadow entry (index plus 1500), then the sprite entry (index plus 1250) (in `Gfx_DrawObjectSprite`).
 - `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d`: call `Gfx_DrawSpriteBase320` with an object byte masked to 0 to 31, entries 320 to 351 (in `Render_DrawFlag`).
 - `0x44de86`: draws raw image 870 plus a tile index through `Gfx_DrawSprite` (in `0x44de56`).
-- `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a sprite-list entry (0 or 8, from the 25 inline lists at `0x44e114`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in code after `Gfx_DrawSpriteBase320` and before `0x44e329` that no Ghidra function covers; the containing routine's entry was not established (REA rizin unavailable).
+- `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a flame's size byte (0 or 8, from the lists at `Gfx_SpriteLists`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in the burning branch (`0x44dedc` to `0x44e113`) of `Building_Draw` (`0x44e329`), which jumps there at `0x44e37f` ([Removal](removal.md#the-burning-draw)).
 - `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`), in `Gfx_DrawGrowingWithShadow` (`0x44fee2`).
 - `0x45006a`: stores shadow entry 4 for the call to `Gfx_DrawShadow` at `0x45007d`; `0x450128` to `0x45014c`: adds a word of the table `Settler_FigureOffsets` to both entry fields (in `Gfx_DrawSettlerRecords`).
 - `0x450ada` (in `0x450a8f`): calls `Gfx_DrawSpriteBase320` with a run-time list word; not bounded. The routine is called from `Render_DrawViewLayers`.
@@ -324,6 +324,8 @@ Sites:
 | `0x44d3ae` | `Render_DrawViewRows` | Walks the rows of one view two at a time and runs `Render_DrawRowTiles` for each. | confirmed | game | Called by `Render_DrawMapView`. See [Map objects](map-objects.md). |
 | `0x44d77e` | `Render_AddWaitingCarrier` | Appends a draw record (the low two bits of record B byte 1, the figure word, x, y) to the list at `Render_WaitingCarriers` for a tile whose record B byte 1 has bit 7 set. Where bit 6 of the tile's record A byte 0 is set, the figure word is `0x203` and the position the tile's (x the column counter times 8, y the row position less 4 times the height). Otherwise it takes a phase word from `Render_WaitingCarrierPhases` by bits 2 to 5 of the tile record's address (`0x44d832`), adds the clock (`+0x206`), shifts right 2, masks with `0xfe`, and takes that byte offset in `Render_WaitingCarrierFigures` as the figure word (`0x44d85d`). It then adds the two signed bytes of `Render_WaitingCarrierOffsets` at twice the low six bits of record A byte 0 to the position (`0x44d9b2`). | confirmed | game | Called at `0x44d5ef` by `Render_DrawRowTiles`. [Carriers](carriers.md#drawing). |
 | `0x44d5b4` | `Render_DrawRowTiles` | Draws the tiles of one row from west to east. For each tile it first reads byte 1 of record B (at the state's `+0x36` from the tile's record) and calls `Render_AddWaitingCarrier` where bit 7 is set (`0x44d5ef`). Then, for the object code in byte 3 of record A: no sprite for 0, other routines for 1 to 7, the animated or still sprite through `Gfx_DrawObjectSprite` from 8 on. It starts the list at `Render_WaitingCarriers` and ends it with `0xffff`. | confirmed | game | Called by `Render_DrawViewRows`. See [Map objects](map-objects.md). |
+| `0x44e329` | `Building_Draw` | Draws the building of a tile. A building marked as taken down (status bit 5) jumps at `0x44e37f` to the burning branch at `0x44dedc`: the sound `0x54` request, the countdown taken down by the clock and written back with the stamp (nothing drawn where it borrows), the building through `Building_DrawByType` (`0x44dfc2`), then its flames from `Gfx_SpriteLists` (`0x44e0d1`). Any other building is drawn by its type through the jump table at `0x44e3aa`. | confirmed | game | Called by `Render_DrawRowTiles`. [Removal](removal.md#the-burning-draw). |
+| `0x44e385` | `Building_DrawByType` | The tail of `Building_Draw` that draws a building by its type byte (with the construction bit) through the jump table at `0x44e3aa`. | confirmed | game | Called at `0x44dfc2` by the burning branch of `Building_Draw`. |
 | `0x450a35` | `Render_DrawViewOverlay` | Runs `Render_DrawViewLayers` for the first view and then for the second (the view records that the game state block's `+0x78` and `+0x7c` name). | confirmed | game | Called by `Main_Loop` in a game. |
 | `0x41f86b` | `View_Setup` | Sets up a view record at the start of a game: clears byte 0 and byte 1, then sets byte 0 bit 4 and byte 1 bits 1 and 2, names the player block (`+0x82`), and points the build-marker buffer (`+0xda`) at a buffer of the game state block (`+0x100`). The build-site overlay starts off. | confirmed | game | Called by `0x41f7b9`. |
 | `0x427133` | `Render_RedrawViewBase` | Unless view byte 0 bit 0 is set, redraws the base of one view (`0x427360`, `0x427375`, `0x427507`, `Render_DrawRoadsAndBorders`) and clears view byte 0 bit 7, so the next frame judges the build markers again. | inferred | game | Called by `Input_ApplyPointerMotion`. |
@@ -739,7 +741,7 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 
 Sites:
 
-- `0x44e329` draws a building by byte 4 of its item through the jump table at `0x44e3aa`. The castle that stands
+- `Building_Draw` (`0x44e329`) draws a building by byte 4 of its item through the jump table at `0x44e3aa`. The castle that stands
   (`0x60`) reaches `Gfx_DrawCastle` (`0x44f91d`) and the castle under construction (`0xe0`) reaches
   `Gfx_DrawCastleGrowing` (`0x44fd2f`); both draw object 178, entry 1428 ([the castle under construction](construction.md#the-castle-under-construction)).
 - `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
@@ -1414,7 +1416,9 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
 | `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
-| `0x44e114` | `Gfx_SpriteLists` | inferred | Graphics images |
+| `0x44e114` | `Gfx_SpriteLists` | confirmed | Graphics images |
+| `0x44e329` | `Building_Draw` | confirmed | Views, panels, and drawing |
+| `0x44e385` | `Building_DrawByType` | confirmed | Views, panels, and drawing |
 | `0x44e3aa` | `Building_DrawJumpTable` | confirmed | Simulation |
 | `0x44ed02` | `Gfx_DrawFarm` | confirmed | Simulation |
 | `0x44f225` | `Gfx_BuildingPairTable` | confirmed | Graphics images |
@@ -1590,7 +1594,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 408 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 360 confirmed, 67 inferred, 47 unknown.
+Coverage: the index names 410 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 363 confirmed, 66 inferred, 47 unknown.
 <!-- coverage:end -->
 
 Open anchors:

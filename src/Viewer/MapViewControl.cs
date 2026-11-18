@@ -1027,7 +1027,11 @@ public partial class MapViewControl(
                 _game?.CastleStock.Castle,
                 _game?.Buildings,
                 _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
-                _frameCounter
+                _frameCounter,
+                // The game's current clock, never the frame counter, which lags it by one update.
+                _game?.Clock.Now
+                    ?? 0,
+                _source.Flames
             ),
             settlers,
             _source,

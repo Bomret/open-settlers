@@ -713,6 +713,41 @@ public sealed class HistoryEditionSourceTests
         );
     }
 
+    // The install's program holds a flame list for every type the game can take down and for an early site, and its archive the
+    // flames' sprites (docs/rules/removal.md, "The burning draw").
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheInstallGivesEveryBuildingTheGameCanTakeDownItsFlamesAndTheirSprites()
+    {
+        var source = HistoryEditionSource.Load(TestProgram.OpenInstall(), TestProgram.Tables());
+
+        Assert.IsNull(source.ObjectsProblem);
+        foreach (
+            var (type, earlySite) in BuildingPlacement
+                .Types.Select(type => (type, false))
+                .Append((BuildingType.Woodcutter, true))
+        )
+        {
+            var flames = source.Flames(type, earlySite);
+            Assert.IsNotEmpty(flames, $"{type} early site {earlySite}");
+            foreach (var flame in flames)
+            {
+                Assert.IsNotNull(
+                    source.Draw(
+                        new FlameDraw
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Size = flame.Size,
+                            Phase = 7,
+                        }
+                    )
+                );
+            }
+        }
+    }
+
     // The castle under construction (0x44fd2f, 0x44fee2): the finished castle's sprite grown by the progress word itself over its whole shadow;
     // once it stands, the castle whole.
     [TestMethod]
@@ -1047,6 +1082,36 @@ public sealed class HistoryEditionSourceTests
         StringAssert.Contains(source.ObjectsProblem!, "entry 1260");
         Assert.IsNull(source.Draw(Object(8)));
         Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
+    }
+
+    // A program whose flame lists' header points past its image: list 3 starts at 0x7000.
+    static byte[] BadFlameListsProgram() =>
+        FlameListsTests.Executable(exe =>
+        {
+            FlameListsTests.Lists(exe);
+            BitConverter.GetBytes((short)0x7000).CopyTo(exe, FlameListsTests.At(FlameLists.Address) + 2 * 3);
+        });
+
+    [TestMethod]
+    public void UnreadableFlameListsPlaceNoFlamesAndNameTheProblem()
+    {
+        using var fake = ObjectFake().Put(Install.Program, BadFlameListsProgram());
+
+        var source = OpenWithSettlers(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "flame lists");
+        Assert.IsEmpty(source.Flames(BuildingType.Woodcutter, earlySite: false));
+    }
+
+    [TestMethod]
+    public void UnreadableFlameListsStayNamedWhereTheObjectsFailToo()
+    {
+        using var fake = Fake().Put(Install.Program, BadFlameListsProgram());
+
+        var source = OpenWithSettlers(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "no object sprite");
+        StringAssert.Contains(source.ObjectsProblem!, "flame lists");
     }
 
     // The settlers: tables whose row 0 holds the figure base 100 and the second base 50 and whose offsets are all 0, so a

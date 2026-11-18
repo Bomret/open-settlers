@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace OpenSettlers.Import;
 
 /// <summary>
@@ -66,6 +68,16 @@ public interface IGraphicsSource
     /// (<c>docs/rules/build-sites.md</c>, "The build-site overlay").
     /// </summary>
     ObjectImage? Draw(BuildMarker marker);
+
+    /// <summary>
+    /// The flames of a burning building of <paramref name="type"/>, in the order they are drawn (ADR 0021); empty where the
+    /// source places none. <paramref name="earlySite"/> is true for a building site below 16000 progress; a finished
+    /// building is no early site.
+    /// </summary>
+    IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite);
+
+    /// <summary>The image of a flame, or null where the source draws none. A flame has no shadow.</summary>
+    ObjectImage? Draw(FlameDraw flame);
 
     /// <summary>
     /// The image of a road marker, or null where the source draws none. A marker has no shadow: the original draws none

@@ -391,9 +391,9 @@ public sealed class RemovalLogicTests
     }
 
     // The view: the goods of the flags that were taken down are not drawn (their slots hold the bytes they had), and a hut that
-    // burns is not drawn.
+    // burns is drawn until the burn frees its slot.
     [TestMethod]
-    public void TheViewDrawsNeitherAFreeFlagsGoodsNorAHutThatBurns()
+    public void TheViewDrawsNoFreeFlagsGoodsAndAHutThatBurnsUntilItsSlotIsFree()
     {
         var game = World();
         foreach (var (x, y) in new[] { (13, 4), (13, 7), (14, 8) })
@@ -410,11 +410,18 @@ public sealed class RemovalLogicTests
 
         int Huts() =>
             OpenSettlers
-                .MapView.ObjectDraws.Of(game.Map, game.CastleStock.Castle, game.Buildings)
+                .MapView.ObjectDraws.Of(game.Map, game.CastleStock.Castle, game.Buildings, clock: game.Clock.Now)
                 .OfType<OpenSettlers.Import.BuildingDraw>()
                 .Count(draw => draw.Type == BuildingType.Woodcutter);
         Assert.AreEqual(1, Huts());
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
+        Assert.AreEqual(1, Huts(), "the hut burns");
+        for (var tick = 0; tick < 2000 && game.Buildings.Any(building => building.IsDemolishing); tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsFalse(game.Buildings.Any(building => building.IsDemolishing), "the burn freed the slot");
         Assert.AreEqual(0, Huts());
     }
 

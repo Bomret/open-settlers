@@ -15,7 +15,7 @@ public sealed record GraphicsLoad
     /// <summary>Why the road graphics did not load, or null.</summary>
     public string? RoadsProblem { get; init; }
 
-    /// <summary>Why the object graphics did not load, or null.</summary>
+    /// <summary>Why the object graphics or the flames of a burning building did not load, or null.</summary>
     public string? ObjectsProblem { get; init; }
 
     /// <summary>Why the settler graphics did not load, or null.</summary>

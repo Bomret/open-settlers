@@ -46,6 +46,10 @@ public sealed class ObjectQuadsTests
 
         public ObjectImage? Draw(BuildMarker marker) => null;
 
+        public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
+
+        public ObjectImage? Draw(FlameDraw flame) => null;
+
         public ObjectImage? Draw(RoadMarker marker) => null;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) =>
@@ -211,6 +215,10 @@ public sealed class ObjectQuadsTests
         public ObjectImage? Draw(BorderPost post) => null;
 
         public ObjectImage? Draw(BuildMarker marker) => null;
+
+        public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
+
+        public ObjectImage? Draw(FlameDraw flame) => null;
 
         public ObjectImage? Draw(RoadMarker marker) => null;
 

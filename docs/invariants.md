@@ -96,3 +96,12 @@ Statement: The view draws a building site and the castle under construction from
 Breaks: silently
 Check: `SiteStagesTests` and `SiteDrawTests` derive each drawing from a type and a progress word, with no clock and no earlier frame.
 Paths: src/Import/SiteStages.cs, src/MapView/ObjectDraws.cs, src/MapView/ObjectLayerWatch.cs
+
+### INV-0016
+
+Class: architecture
+Concepts: Draw term, Simulation
+Statement: The map view reads the game and never writes it. A value the view shows that the original's draw routines write back into the game state, such as the countdown of a burning building, is derived anew for each frame and never stored. A game drawn on screen and the same game not drawn give the same digest.
+Breaks: silently
+Check: `ObjectDrawsTests` builds the draw list of a game with a burning building and compares `Game.Digest()` before and after.
+Paths: src/MapView/**

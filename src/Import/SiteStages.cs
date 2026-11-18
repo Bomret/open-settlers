@@ -41,8 +41,8 @@ public static class SiteStages
     /// <summary>
     /// The size of the scaffold the site of <paramref name="type"/> grows (the table at <c>0x44fcfe</c>): large for the types whose size
     /// is large (the sawmill, the farm, the butcher, the pig farm, the baker), small for the huts (the woodcutter's, stonecutter's, forester's,
-    /// fisher's, and mill's), and null for a type the view draws none for. The open-settlers source picks the scaffold's art by this
-    /// rule; the History Edition source reads the object of each type from the table.
+    /// fisher's, and mill's), and null for a type the view draws none for. The open-settlers source picks the scaffold's art, and the flames of a
+    /// burning finished building, by this rule; the History Edition source reads the object of each type from the table.
     /// </summary>
     public static bool? ScaffoldIsLarge(BuildingType type) =>
         type == BuildingType.Sawmill

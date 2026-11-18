@@ -92,7 +92,8 @@ building site has no worker. The site shows as the original draws a site that ha
 ### Remove
 
 A click takes down what stands on the node: a flag, a building, or the road through the node. The castle and its
-flag cannot be taken down.
+flag cannot be taken down. A building or a building site that is taken down burns: it stays drawn with flames over it until
+the burn frees its node.
 
 ### Build help
 

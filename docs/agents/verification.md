@@ -281,6 +281,9 @@ script alone. Add a layout only where none of them holds the situation.
   bread, farm and mill give flour, butcher and pig farm give meat, and a fisher gives fish. The run lines are in each script's header. The chains
   split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
   are the History Edition's.
+- `play/burning.play` on `layouts/woodcutter.jsonc` and `play/basic-burning.play` on the same layout with `--content-set basic`: the
+  woodcutter's hut is razed with the Remove button, shots show it with its flames twice, then nothing once the burn frees its node.
+  The first shows the original's flames, the second the basic set's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
   the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
   beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.

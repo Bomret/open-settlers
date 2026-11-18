@@ -97,6 +97,11 @@ settler, a road, a border post, a build marker, or a road marker, with the data 
 animation step. A draw term never holds an entry number (INV-0010).
 _Avoid_: sprite ID, entry, frame number
 
+**Flame**
+One image of the fire drawn over a burning building: small or large, at an offset from the building, at a phase of 0
+to 7. The graphics source gives a building's flames, and the burn's countdown gives their phase (ADR 0021).
+_Avoid_: fire sprite, burn mark
+
 **Build-site overlay**
 The markers the game view draws on every visible node of its player's territory, or before the castle stands, of every
 castle site, to show what may be put there: a

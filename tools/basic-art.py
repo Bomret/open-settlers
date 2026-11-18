@@ -4,8 +4,9 @@
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
 buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, the border posts
-(a pole on land and a post in water), and one pose per job and kind of activity for the
-settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
+(a pole on land and a post in water), one pose per job and kind of activity for the
+settlers, and a flame per size and phase, all drawn here from nothing but numbers. The flames of a small and of a large building that burns,
+and of an early site, stand at places of the project's own choosing, read from nothing (ADR 0021). It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
 
@@ -513,6 +514,32 @@ def marker(kind):
     return c, (-(c.width // 2), -(c.height - 1))
 
 
+FLAME_OUTER = (240, 120, 30)
+FLAME_INNER = (250, 220, 80)
+
+
+def flame(size, phase):
+    """A flame standing with its foot on its place: a tongue of orange around a yellow core, small or large. Its height
+    rises and falls with the phase, so the flames flicker."""
+    width, height = (6, 9) if size == "small" else (10, 15)
+    lift = (0, 1, 2, 1, 0, 2, 1, 2)[phase]
+    height += lift
+    c = Canvas(width, height)
+    c.triangle((width // 2, 0), height - 1, width // 2, FLAME_OUTER)
+    c.triangle((width // 2, height // 3), height - 1, width // 4, FLAME_INNER)
+    return c, (-(width // 2), -(height - 1))
+
+
+# The flames of a burning building as (size, x, y) from its node: two over a small building, three over a large one, and one
+# over a site below 16000 progress. OpenSettlersSource gives each building type the small or the large list by the size of its
+# scaffold. The places are the project's own.
+FLAMES = {
+    "small": [("small", -6, -12), ("large", 4, -18)],
+    "large": [("large", -14, -16), ("small", 2, -26), ("large", 14, -14)],
+    "early-site": [("small", 0, -8)],
+}
+
+
 def road_marker(kind, difference=0):
     """A road marker, centred on its node: a ring for the end of the road, a red cross for a blocked neighbour, a hooked
     arrow pointing back for the way back, and for a slope a box filled up to a line that rises or falls by the height
@@ -688,6 +715,11 @@ def main():
         for kind in KINDS:
             load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else FISH if job == "fisher" else WOOD
             add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
+    for size in ("small", "large"):
+        for phase in range(8):
+            add(f"flame/{size}/{phase}", f"flame/{size}-{phase}.png", flame(size, phase))
+    for name, flames in FLAMES.items():
+        manifest[f"flames/{name}"] = {"flames": [{"size": size, "at": [x, y]} for size, x, y in flames]}
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")

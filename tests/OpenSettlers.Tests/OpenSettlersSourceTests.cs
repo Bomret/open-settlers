@@ -26,6 +26,11 @@ public sealed class OpenSettlersSourceTests
                 Entries[key] = Entry("a.png", "0, 0");
             }
 
+            foreach (var key in FlamesKeys)
+            {
+                Entries[key] = Flames("small, 0, 0");
+            }
+
             Png("a.png", "2x2:9");
         }
 
@@ -47,6 +52,17 @@ public sealed class OpenSettlersSourceTests
 
         public static string Entry(string image, string anchor) =>
             $$"""{ "image": "{{image}}", "anchor": [{{anchor}}] }""";
+
+        // A flame placement entry from flames written as "size, x, y".
+        public static string Flames(params string[] flames) =>
+            "{ \"flames\": ["
+            + string.Join(
+                ", ",
+                flames
+                    .Select(flame => flame.Split(", "))
+                    .Select(part => $$"""{ "size": "{{part[0]}}", "at": [{{part[1]}}, {{part[2]}}] }""")
+            )
+            + "] }";
 
         public OpenSettlersSource Load()
         {
@@ -129,6 +145,11 @@ public sealed class OpenSettlersSourceTests
             .Concat(Enumerable.Range(-4, 9).Select(difference => $"road-marker/slope/{difference}"))
             .Concat(["border/pole", "border/water"])
             .Concat(
+                from size in new[] { "small", "large" }
+                from phase in Enumerable.Range(0, 8)
+                select $"flame/{size}/{phase}"
+            )
+            .Concat(
                 from job in new[]
                 {
                     "carrier",
@@ -148,6 +169,8 @@ public sealed class OpenSettlersSourceTests
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
+
+    static readonly string[] FlamesKeys = ["flames/small", "flames/large", "flames/early-site"];
 
     static TerrainTriangle Triangle(int code, bool upper) =>
         new()
@@ -345,6 +368,154 @@ public sealed class OpenSettlersSourceTests
         folder.Entries.Remove(key);
 
         Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    [DataRow("flames/small")]
+    [DataRow("flames/large")]
+    [DataRow("flames/early-site")]
+    [DataRow("flame/small/0")]
+    [DataRow("flame/large/7")]
+    public void AManifestWithoutAFlameEntryIsRefusedNamingIt(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    [DataRow("{ \"flames\": 3 }")]
+    [DataRow("{ \"flames\": [{ \"size\": \"small\", \"at\": [1] }] }")]
+    [DataRow("{ \"flames\": [{ \"size\": \"huge\", \"at\": [1, 2] }] }")]
+    public void AMalformedFlamePlacementIsRefusedNamingItsKey(string value)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/large"] = value;
+
+        Refuses(folder, "manifest.json", "flames/large");
+    }
+
+    [TestMethod]
+    public void ASmallBuildingsFlamesAreTheSmallPlacementsInOrderAndAnEarlySiteTakesTheEarlySitesWhateverItsType()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/small"] = ContentFolder.Flames("small, -3, -10", "large, 4, -12");
+        folder.Entries["flames/early-site"] = ContentFolder.Flames("large, 1, -5");
+
+        var source = folder.Load();
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Small,
+                    X = -3,
+                    Y = -10,
+                },
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 4,
+                    Y = -12,
+                },
+            },
+            source.Flames(BuildingType.Woodcutter, earlySite: false).ToArray()
+        );
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 1,
+                    Y = -5,
+                },
+            },
+            source.Flames(BuildingType.Mill, earlySite: true).ToArray()
+        );
+        Assert.IsEmpty(source.Flames(BuildingType.Castle, earlySite: false));
+    }
+
+    [TestMethod]
+    public void ALargeBuildingsFlamesAreTheLargePlacements()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/large"] = ContentFolder.Flames("large, 2, -20");
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 2,
+                    Y = -20,
+                },
+            },
+            folder.Load().Flames(BuildingType.Sawmill, earlySite: false).ToArray()
+        );
+    }
+
+    [TestMethod]
+    [DataRow(FlameSize.Small, 0, "flame/small/0")]
+    [DataRow(FlameSize.Small, 5, "flame/small/5")]
+    [DataRow(FlameSize.Large, 7, "flame/large/7")]
+    public void EachFlameDrawsTheImageOfItsSizeAndPhase(FlameSize size, int phase, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries[key] = ContentFolder.Entry("f.png", "-2, -8");
+        folder.Png("f.png", "4x9:7");
+
+        var image = folder
+            .Load()
+            .Draw(
+                new FlameDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Size = size,
+                    Phase = phase,
+                }
+            )!;
+
+        Assert.AreEqual((4, 9, -2, -8), (image.Width, image.Height, image.OffsetX, image.OffsetY));
+    }
+
+    [TestMethod]
+    public void TheCheckedInContentSetGivesFlamesForEveryBuildingTheGameCanTakeDownAndForAnEarlySite()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
+
+        foreach (
+            var (type, earlySite) in BuildingPlacement
+                .Types.Select(type => (type, false))
+                .Append((BuildingType.Woodcutter, true))
+        )
+        {
+            var flames = source.Flames(type, earlySite);
+            Assert.IsNotEmpty(flames, $"{type} early site {earlySite}");
+            foreach (var flame in flames)
+            {
+                for (var phase = 0; phase < 8; phase++)
+                {
+                    Assert.IsNotNull(
+                        source.Draw(
+                            new FlameDraw
+                            {
+                                Row = 0,
+                                X = 0,
+                                Y = 0,
+                                Size = flame.Size,
+                                Phase = phase,
+                            }
+                        )
+                    );
+                }
+            }
+        }
     }
 
     [TestMethod]
