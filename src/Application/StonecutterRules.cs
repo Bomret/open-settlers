@@ -70,6 +70,15 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     /// <inheritdoc />
     public override Cause Cause => Cause.Stonecutting;
 
+    /// <summary>The stonecutter's search: spiral entries 1 to 128, a node with no lake mark and a stone heap north-west of it.</summary>
+    public override JobSearch Search { get; } =
+        new()
+        {
+            First = 1,
+            Count = 128,
+            Accepts = (map, x, y) => !map.At(x, y).LakeMark && StoneHeaps.At(map, HeapOf(map, x, y)),
+        };
+
     /// <summary>Registers the behaviour of the stonecutter's search and cut.</summary>
     public override void Register(ActivityRegistry registry)
     {
@@ -102,11 +111,11 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     }
 
     // The node a heap stands on for a stonecutter at the node (x, y).
-    int HeapOf(int x, int y)
+    static int HeapOf(Map map, int x, int y)
     {
         var (dx, dy) = Direction.Steps[StoneHeaps.Direction];
 
-        return Map.Index((x + dx) & (Map.Size.Width - 1), (y + dy) & (Map.Size.Height - 1));
+        return map.Index((x + dx) & (map.Size.Width - 1), (y + dy) & (map.Size.Height - 1));
     }
 
     // State 0x15, the stonecutter's search (0x435b17). When its timer has run out he draws a node of the spiral around the
@@ -132,11 +141,11 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
 
         while (true)
         {
-            var entry = ((_draws.Draw() & 0x1fc) + 4) >> 2;
+            var entry = Search.Entry(_draws.Draw());
             var (dx, dy) = Spiral.Offsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            if (!Map.At(x, y).LakeMark && StoneHeaps.At(Map, HeapOf(x, y)))
+            if (Search.Accepts(Map, x, y))
             {
                 // The vector to the node beside the heap is taken from the flag the first step reaches: one less each way.
                 var way = new Trip

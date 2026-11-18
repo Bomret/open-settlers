@@ -143,6 +143,14 @@ public sealed class Game(GameParts parts)
     public RoadPlanner RoadPlanner => _parts.RoadPlanner;
 
     /// <summary>
+    /// The job search of the worker of a building of <paramref name="type"/>: the job the rule tables name as its worker
+    /// (<see cref="RuleTables.WorkerOf"/>), then that job's rules (<see cref="JobRules.Search"/>). Null for a type with no worker, the
+    /// castle included, and for a type whose worker's job declares no search. It reads the game and changes nothing.
+    /// </summary>
+    public JobSearch? SearchOf(BuildingType type) =>
+        Tables.WorkerOf(type) is { } request ? _parts.Hut.RulesOf(request.Job)?.Search : null;
+
+    /// <summary>
     /// Queues a command for its tick. Throws <see cref="ArgumentOutOfRangeException"/> when that tick has run. A command equal
     /// to one already queued is the same command and queues once.
     /// </summary>

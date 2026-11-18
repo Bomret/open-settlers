@@ -27,6 +27,12 @@ public abstract class JobRules
     public virtual Cause Cause => Cause.Settlers;
 
     /// <summary>
+    /// The search the job's worker runs from his building: its range of spiral entries and its target test (INV-0017). Default: none,
+    /// for a job whose worker searches no area.
+    /// </summary>
+    public virtual JobSearch? Search => null;
+
+    /// <summary>
     /// The request a building site makes for a worker of this job at <paramref name="stage"/>, read from <paramref name="tables"/>, or
     /// null where the job is not the worker of that stage. <see cref="SitePass"/> asks the castle for the one non-null answer of the
     /// modules and refuses a stage two modules answer. Default: null for every stage.

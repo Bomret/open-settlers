@@ -31,6 +31,16 @@ public sealed class FisherRules(JobParts parts) : JobRules<Fisher>(parts)
     /// <inheritdoc />
     public override Cause Cause => Cause.Fishing;
 
+    /// <summary>The fisher's search: spiral entries 1 to 64, a node at a shore with no object and no road.</summary>
+    public override JobSearch Search { get; } =
+        new()
+        {
+            First = 1,
+            Count = 64,
+            Accepts = (map, x, y) =>
+                !map.At(x, y).Object.Exists && map.At(x, y).Roads.IsEmpty && IsShore(map, x, y) != 0,
+        };
+
     /// <summary>Registers the behaviour of the fisher's search and cast.</summary>
     public override void Register(ActivityRegistry registry)
     {
@@ -68,11 +78,11 @@ public sealed class FisherRules(JobParts parts) : JobRules<Fisher>(parts)
 
         while (true)
         {
-            var entry = ((_draws.Draw() & 0xfc) + 4) >> 2;
+            var entry = Search.Entry(_draws.Draw());
             var (dx, dy) = Spiral.Offsets[entry];
             var x = (settler.X + dx) & (Map.Size.Width - 1);
             var y = (settler.Y + dy) & (Map.Size.Height - 1);
-            if (!Map.At(x, y).Object.Exists && Map.At(x, y).Roads.IsEmpty && IsShore(x, y) != 0)
+            if (Search.Accepts(Map, x, y))
             {
                 // The vector to the node is taken from the flag the first step reaches: one less each way. The way back is the
                 // same vector turned round.
@@ -98,14 +108,14 @@ public sealed class FisherRules(JobParts parts) : JobRules<Fisher>(parts)
     // What the node at (x, y) is as a shore: the frame of the cast that fits it, 0 for none. The east cast (0x84) fits a node whose
     // lower triangle is water and whose north-west neighbour's upper triangle is not (0x434022); the west cast (0x83) one whose west
     // neighbour's lower triangle is water and whose north neighbour's upper triangle is not (0x434056). The first that fits wins.
-    int IsShore(int x, int y)
+    static int IsShore(Map map, int x, int y)
     {
-        if (Map.At(x, y).Lower.IsWater && !Map.At(x - 1, y - 1).Upper.IsWater)
+        if (map.At(x, y).Lower.IsWater && !map.At(x - 1, y - 1).Upper.IsWater)
         {
             return EastCast;
         }
 
-        return Map.At(x - 1, y).Lower.IsWater && !Map.At(x, y - 1).Upper.IsWater ? WestCast : 0;
+        return map.At(x - 1, y).Lower.IsWater && !map.At(x, y - 1).Upper.IsWater ? WestCast : 0;
     }
 
     /// <summary>
@@ -136,7 +146,7 @@ public sealed class FisherRules(JobParts parts) : JobRules<Fisher>(parts)
             return;
         }
 
-        var cast = Map.At(settler.X, settler.Y).Roads.IsEmpty ? IsShore(settler.X, settler.Y) : 0;
+        var cast = Map.At(settler.X, settler.Y).Roads.IsEmpty ? IsShore(Map, settler.X, settler.Y) : 0;
         if (cast != 0)
         {
             settler.Activity = new Fishes
