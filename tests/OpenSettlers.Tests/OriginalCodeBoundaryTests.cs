@@ -106,8 +106,8 @@ public sealed class OriginalCodeBoundaryTests
         ),
         new(
             @"^src/Domain/ContentCatalog\.cs$",
-            @"^if \((good|building|job)\.OriginalCode is \{ \} \w+ && !\w+\.TryAdd\(\w+, (good|building|job)\)\)$",
-            "the catalog constructor refuses two entries with one original code; it validates the table, no rule branches on a code"
+            @"^(Jobs = Checked\(jobs \?\? \[\], ""job"", job => job\.Name, job => job\.OriginalCode, _jobsByName\);|building => building\.OriginalCode,|good => good\.OriginalCode,)$",
+            "the catalog constructor hands each kind's original code to the check that refuses two entries with one code; it validates the table, no rule branches on a code"
         ),
     ];
 
