@@ -196,14 +196,7 @@ public sealed class CommandQueueTests
             TestCatalog.Default.Goods,
             TestCatalog
                 .Buildings()
-                .Append(
-                    TestCatalog.Buildings().First() with
-                    {
-                        Name = tannery.Name,
-                        OriginalCode = null,
-                        TieRank = 3,
-                    }
-                ),
+                .Append(TestCatalog.Buildings().First() with { Name = tannery.Name, OriginalCode = null, TieRank = 3 }),
             TestCatalog.Jobs()
         );
         var forward = new CommandQueue(catalog);

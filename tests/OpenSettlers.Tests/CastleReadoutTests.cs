@@ -145,10 +145,11 @@ public sealed class CastleReadoutTests
     {
         var rows = TestProgram
             .MadeStartStock()
-            .Select((row, at) =>
-                at == 1
-                    ? (IReadOnlyDictionary<Good, byte>)row.Append(new(TestCatalog.AiToken, 3)).ToDictionary()
-                    : row
+            .Select(
+                (row, at) =>
+                    at == 1
+                        ? (IReadOnlyDictionary<Good, byte>)row.Append(new(TestCatalog.AiToken, 3)).ToDictionary()
+                        : row
             )
             .ToArray();
         var stock = Holding(TestCatalog.WithAiToken(), TestCatalog.Names, 1);
