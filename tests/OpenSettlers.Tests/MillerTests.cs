@@ -169,7 +169,7 @@ public sealed class MillerTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Mill.Code, hut[2], "the fixture's building is a mill");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Mill), hut[2], "the fixture's building is a mill");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Mill),
             "the fixture's building has its site"

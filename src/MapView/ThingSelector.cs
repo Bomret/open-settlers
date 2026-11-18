@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
@@ -22,6 +24,26 @@ public sealed record ThingSelector
     static readonly string[] Kinds = [Thing.ObjectKind, "settler", "building", "flag", "road"];
 
     const string RawPrefix = "object:0x";
+
+    // The stable names of the building types the engine names (BuildingType): a script is read before a game and its catalog exist.
+    static readonly HashSet<string> BuildingNames =
+    [
+        .. new[]
+        {
+            BuildingType.Castle,
+            BuildingType.Woodcutter,
+            BuildingType.Stonecutter,
+            BuildingType.Forester,
+            BuildingType.Sawmill,
+            BuildingType.Fisher,
+            BuildingType.Farm,
+            BuildingType.Butcher,
+            BuildingType.PigFarm,
+            BuildingType.Mill,
+            BuildingType.Baker,
+            BuildingType.Storehouse,
+        }.Select(type => type.Name),
+    ];
 
     /// <summary>Reads <paramref name="text"/>; the selector, or the problem when it is no kind, name, or raw code.</summary>
     public static (ThingSelector? Selector, string? Problem) Parse(string text)
@@ -48,7 +70,7 @@ public sealed record ThingSelector
             return (new ThingSelector { Text = text, RawCode = code }, null);
         }
 
-        return Array.IndexOf(Kinds, text) >= 0 || NameTable.IsName(text)
+        return Array.IndexOf(Kinds, text) >= 0 || NameTable.IsName(text) || BuildingNames.Contains(text)
             ? (
                 new ThingSelector
                 {

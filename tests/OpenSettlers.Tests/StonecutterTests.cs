@@ -175,7 +175,11 @@ public sealed class StonecutterTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Stonecutter.Code, hut[2], "the fixture's building is a stonecutter's");
+        Assert.AreEqual(
+            TestCatalog.CodeOf(BuildingType.Stonecutter),
+            hut[2],
+            "the fixture's building is a stonecutter's"
+        );
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Stonecutter),
             "the fixture's building has its site"

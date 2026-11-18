@@ -23,7 +23,7 @@ public sealed class ObjectSpritesTests
         int scaffold
     )
     {
-        var type = new OpenSettlers.Domain.BuildingType { Code = code };
+        var type = TestCatalog.BuildingOf(code);
 
         Assert.AreEqual(1250 + finished, ObjectSprites.FinishedEntry(type));
         Assert.AreEqual(1250 + scaffold, ObjectSprites.StageEntry(type));

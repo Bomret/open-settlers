@@ -174,7 +174,7 @@ public sealed class PigFarmerTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.PigFarm.Code, hut[2], "the fixture's building is a pig farm");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.PigFarm), hut[2], "the fixture's building is a pig farm");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.PigFarm),
             "the fixture's building has its site"

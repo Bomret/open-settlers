@@ -30,8 +30,9 @@ public static class GoodWords
         return entry.OriginalCode ?? WordOf(entry.Name);
     }
 
-    // The word of a good with no original code, as the class summary states it.
-    static int WordOf(string name)
+    // The word of a good with no original code, as the class summary states it. The building types use the same word
+    // (BuildingWords): its low byte is clear, so it holds neither the constructing bit 0x20 nor an original code.
+    internal static int WordOf(string name)
     {
         var word = (int)(Fnv1a.Of(name) & 0x7fffff00);
 

@@ -217,7 +217,7 @@ public sealed class GoodsTransport(
     {
         if (destination is { } flag)
         {
-            buildings?.CountOneLess(flag, movement.Tables.FillCounterOf(good));
+            buildings?.CountOneLess(flag, movement.Tables.FillCounterOf(good), movement.Tables);
         }
     }
 

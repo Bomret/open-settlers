@@ -77,5 +77,5 @@
     {"x": 18, "y": 10, "code": 8}
   ],
   "castle": {"x": 10, "y": 10},
-  "buildings": [{"type": "woodcutter", "x": 13, "y": 10}]
+  "buildings": [{"type": "woodcutter-hut","x": 13, "y": 10}]
 }

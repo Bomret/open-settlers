@@ -88,5 +88,5 @@
     {"x": 11, "y": 9, "directions": [2, 2]},
     {"x": 9, "y": 13, "directions": [2, 3, 4, 5, 5, 0, 0]}
   ],
-  "buildings": [{"type": "woodcutter", "x": 8, "y": 12}]
+  "buildings": [{"type": "woodcutter-hut","x": 8, "y": 12}]
 }

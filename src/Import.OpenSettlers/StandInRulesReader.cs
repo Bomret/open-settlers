@@ -110,6 +110,12 @@ static class StandInRulesReader
         ["large"] = BuildingSize.Large,
     };
 
+    static readonly IReadOnlyDictionary<string, bool> SecondFigureTerms = new Dictionary<string, bool>
+    {
+        ["second-figure"] = true,
+        ["one-figure"] = false,
+    };
+
     static readonly IReadOnlyDictionary<string, bool> MaterialTerms = new Dictionary<string, bool>
     {
         ["plank"] = false,
@@ -167,7 +173,7 @@ static class StandInRulesReader
 
     // The building types the buildings file names, with the name each has there.
     static IEnumerable<(BuildingType Type, string Name)> Named() =>
-        OpenSettlersSource.FinishedKeys.Select(finished => (finished.Type, finished.Key["building/".Length..]));
+        OpenSettlersSource.FinishedKeys.Select(finished => (finished.Type, finished.Type.Name));
 
     // The root of a rule file, which the walk steps file shares with the rule files.
     internal static RuleNode Open(string folder, string file)
@@ -342,7 +348,8 @@ static class StandInRulesReader
         var result = new Dictionary<BuildingType, StandInBuilding>();
         foreach (var (type, name) in Named().Where(entry => entry.Type != BuildingType.Castle))
         {
-            var fields = entries[name].Fields(["size", "needs", "door", "materials", "blows"], ["worker"]);
+            var fields = entries[name]
+                .Fields(["size", "needs", "door", "materials", "blows", "secondFigure"], ["worker"]);
             var needs = fields["needs"].Fields(["planks", "stones"]);
             var blows = fields["blows"].Fields(["firstHalf", "secondHalf"]);
             var (standing, constructing) = Door(fields["door"]);
@@ -360,6 +367,7 @@ static class StandInRulesReader
                 FirstHalfBlows = blows["firstHalf"].Int(1, 0x8000),
                 SecondHalfBlows = blows["secondHalf"].Int(1, 0x8000),
                 Worker = fields.TryGetValue("worker", out var worker) ? Worker(worker) : null,
+                SecondFigure = fields["secondFigure"].Term(SecondFigureTerms, "second figure"),
             };
         }
 

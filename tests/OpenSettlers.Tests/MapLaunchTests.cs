@@ -299,7 +299,7 @@ public sealed class MapLaunchTests
     public void ALayoutEntryTheBasicRulesRefuseExitsFourWithTheLayoutsProblem()
     {
         var text = LayoutTests.Text(
-            extra: "\"castle\":{\"x\":15,\"y\":10},\"buildings\":[{\"type\":\"woodcutter\",\"x\":15,\"y\":10}]"
+            extra: "\"castle\":{\"x\":15,\"y\":10},\"buildings\":[{\"type\":\"woodcutter-hut\",\"x\":15,\"y\":10}]"
         );
         var read = Layout.Read(text, "refused.jsonc");
         Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));

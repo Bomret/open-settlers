@@ -76,18 +76,18 @@ static class ObjectSprites
 
     // The object of the scaffold of each type's site, from the table at 0x44fcfe (the emulator's peek of it prints one byte for each type 0 to
     // 0x17), and of its finished building, from the table at 0x44fd16: the types of the huts and the sawmill, then the six food types.
-    static readonly Dictionary<int, (int Scaffold, int Finished)> Objects = new()
+    static readonly Dictionary<BuildingType, (int Scaffold, int Finished)> Objects = new()
     {
-        [BuildingType.Woodcutter.Code] = (186, 168),
-        [BuildingType.Stonecutter.Code] = (186, 169),
-        [BuildingType.Forester.Code] = (186, 170),
-        [BuildingType.Sawmill.Code] = (181, 160),
-        [BuildingType.Fisher.Code] = (186, 167),
-        [BuildingType.Farm.Code] = (177, 154),
-        [BuildingType.Butcher.Code] = (184, 156),
-        [BuildingType.PigFarm.Code] = (177, 155),
-        [BuildingType.Mill.Code] = (187, 188),
-        [BuildingType.Baker.Code] = (183, 162),
+        [BuildingType.Woodcutter] = (186, 168),
+        [BuildingType.Stonecutter] = (186, 169),
+        [BuildingType.Forester] = (186, 170),
+        [BuildingType.Sawmill] = (181, 160),
+        [BuildingType.Fisher] = (186, 167),
+        [BuildingType.Farm] = (177, 154),
+        [BuildingType.Butcher] = (184, 156),
+        [BuildingType.PigFarm] = (177, 155),
+        [BuildingType.Mill] = (187, 188),
+        [BuildingType.Baker] = (183, 162),
     };
 
     /// <summary>
@@ -105,7 +105,7 @@ static class ObjectSprites
 
     /// <summary>The sprite entry of the scaffold of the site of <paramref name="type"/>, or null for a type the view draws none for.</summary>
     public static int? StageEntry(BuildingType type) =>
-        Objects.TryGetValue(type.Code, out var objects) ? FirstEntry + objects.Scaffold : null;
+        Objects.TryGetValue(type, out var objects) ? FirstEntry + objects.Scaffold : null;
 
     /// <summary>The sprite entry of a layer of the site of <paramref name="type"/> (<see cref="SiteStages"/>), or null for none.</summary>
     public static int? SiteLayerEntry(SiteLayer layer, BuildingType type) =>
@@ -122,7 +122,7 @@ static class ObjectSprites
     /// </summary>
     public static int? FinishedEntry(BuildingType type) =>
         type == BuildingType.Castle ? CastleEntry
-        : Objects.TryGetValue(type.Code, out var objects) ? FirstEntry + objects.Finished
+        : Objects.TryGetValue(type, out var objects) ? FirstEntry + objects.Finished
         : null;
 
     /// <summary>The entry of the sprite of good 0; a good lying on a flag draws entry 320 plus the good (<c>0x44de9a</c>).</summary>

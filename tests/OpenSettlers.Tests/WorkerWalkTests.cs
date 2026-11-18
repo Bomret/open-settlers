@@ -87,7 +87,10 @@ public sealed class WorkerWalkTests
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((b.Y * 2 * width + b.X) * 4));
-        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(b) << 2), (byte)BuildingEncoder.Status(b)]);
+        bytes.AddRange([
+            (byte)(BuildingEncoder.TypeIndex(b, TestCatalog.Default) << 2),
+            (byte)BuildingEncoder.Status(b),
+        ]);
         bytes.AddRange(BitConverter.GetBytes((ushort)b.Flag));
         bytes.AddRange([0, 0]);
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(b)));

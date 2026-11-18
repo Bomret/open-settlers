@@ -280,7 +280,7 @@ public sealed class BasicContentSetPlayTests
         Chain(
             folder,
             stockLevel: 0,
-            buildings: [("fisher", 18, 10)],
+            buildings: [("fisher-hut", 18, 10)],
             roads: [CastleEast],
             lake: true,
             good: Good.Fish,

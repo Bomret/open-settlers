@@ -169,7 +169,7 @@ public sealed class SawmillerTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Sawmill.Code, hut[2], "the fixture's building is a sawmill");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Sawmill), hut[2], "the fixture's building is a sawmill");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Sawmill),
             "the fixture's building has its site"

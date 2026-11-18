@@ -27,10 +27,10 @@ public sealed class RemovalLogicTests
             classes,
             TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             roadCapacities: [.. Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount)],
-            goods: TestCatalog.Of(transportPriorities, kinds: kinds)
+            goods: TestCatalog.Of(transportPriorities, kinds: kinds, buildings: TestCatalog.Buildings(door: 8)),
+            noBuildingDoor: 8
         );
     }
 

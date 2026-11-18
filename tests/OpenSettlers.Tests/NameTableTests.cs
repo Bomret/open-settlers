@@ -16,8 +16,6 @@ public sealed class NameTableTests
         Assert.AreEqual("felled-tree", names.ObjectName(0x5d));
         Assert.AreEqual("stump", names.ObjectName(0x53));
         Assert.AreEqual("flag", names.ObjectName(1));
-        Assert.AreEqual("castle", NameTable.BuildingName(BuildingType.Castle.Code));
-        Assert.AreEqual("storehouse", NameTable.BuildingName(0xa));
         Assert.AreEqual("carrier", NameTable.JobName(Carrier.Number));
         Assert.AreEqual("digger", NameTable.JobName(Digger.Number));
         Assert.AreEqual("digs", NameTable.StateName(8));
@@ -89,27 +87,15 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
-    public void TheFoodBuildingsHaveNamesWithEvidence()
+    public void TheNameTableHoldsNoBuildingType()
     {
-        // The numbers are the program's: a type 0xd handler asks for the job whose tool is good 19, the butcher's knife.
-        CollectionAssert.AreEqual(
-            new[] { "fisher-hut", "farm", "butcher", "pig-farm", "mill", "baker" },
-            new[] { 1, 0xc, 0xd, 0xe, 0xf, 0x10 }.Select(NameTable.BuildingName).ToArray()
-        );
-        CollectionAssert.AreEqual(
-            new[] { 1, 0xc, 0xd, 0xe, 0xf, 0x10 },
-            new[]
-            {
-                BuildingType.Fisher,
-                BuildingType.Farm,
-                BuildingType.Butcher,
-                BuildingType.PigFarm,
-                BuildingType.Mill,
-                BuildingType.Baker,
-            }
-                .Select(type => type.Code)
-                .ToArray()
-        );
+        // A building type takes its name from its catalog entry (ADR 0020), whose name cites its evidence (BuildingTablesTests).
+        foreach (var entry in NameTable.Entries)
+        {
+            Assert.AreNotEqual("castle", entry.Name);
+            Assert.AreNotEqual("woodcutter-hut", entry.Name);
+            Assert.AreNotEqual("storehouse", entry.Name);
+        }
     }
 
     [TestMethod]
@@ -131,7 +117,6 @@ public sealed class NameTableTests
         Assert.IsNull(NameTable.StateName(0x43));
         Assert.IsNull(Table().ObjectName(5));
         Assert.IsNull(NameTable.JobName(99));
-        Assert.IsNull(NameTable.BuildingName(99));
     }
 
     [TestMethod]

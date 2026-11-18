@@ -19,10 +19,9 @@ public sealed class ThingHistoryRemovalTests
             classes,
             TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: TestProgram.MadeWorkers(),
-            goods: TestCatalog.StandIn()
+            goods: TestCatalog.WithDoors(TestProgram.MadeWorkers()),
+            noBuildingDoor: 8
         );
     }
 

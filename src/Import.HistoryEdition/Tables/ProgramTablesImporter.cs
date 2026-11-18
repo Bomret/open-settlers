@@ -381,7 +381,6 @@ static class ProgramTablesImporter
             [.. classes.Select(code => new ObjectClass { Value = code })],
             startStock,
             [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => BitConverter.ToUInt16(steps, 2 * i))],
-            Slice(exe, DoorSpeedAddress, RuleTables.DoorSpeedCount),
             [.. Enumerable.Range(0, RuleTables.ScanWindowCount).Select(i => BitConverter.ToUInt16(windows, 2 * i))],
             Words(Slice(exe, FigureBaseAddress, 4 * RuleTables.FigureBaseRowCount)),
             Words(Slice(exe, FigureOffsetAddress, 1024)),
@@ -392,18 +391,25 @@ static class ProgramTablesImporter
             Words(Slice(exe, IdlePhaseAddress, 2 * RuleTables.IdlePhaseCount)),
             Words(Slice(exe, IdleFigureAddress, 2 * RuleTables.IdleFigureCount)),
             [.. Slice(exe, IdleOffsetAddress, RuleTables.IdleOffsetCount).Select(offset => (sbyte)offset)],
-            Slice(exe, BuildingSizeAddress, RuleTables.BuildingTypeCount),
-            Slice(exe, BuildingNeedsAddress, 2 * RuleTables.BuildingTypeCount),
             [.. DistributionAddresses.Select(address => DistributionOrder(exe, address))],
             PlankRankBase(exe),
             MillRankBase(exe),
-            Workers(exe),
-            [.. Words(Slice(exe, MaterialOrderAddress, 2 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
-            [.. Words(Slice(exe, BlowStepAddress, 4 * RuleTables.BuildingTypeCount)).Select(word => (ushort)word)],
             JobData(exe, modules),
-            Catalog(exe)
+            Catalog(exe),
+            // The door of a place with no building is the first byte of the door table, which no type's entry holds.
+            DoorSpeedBytes(exe)[0]
         );
     }
+
+    /// <summary>The door speed table as the program holds it: one byte for each building type and for each type with the constructing bit (<see cref="DoorSpeedAddress"/>).</summary>
+    internal static byte[] DoorSpeedBytes(byte[] exe) => Slice(exe, DoorSpeedAddress, BuildingTables.DoorSlots);
+
+    /// <summary>The size table as the program holds it: one byte for each building type 0 to 0x17 (<see cref="BuildingSizeAddress"/>).</summary>
+    internal static byte[] BuildingSizeBytes(byte[] exe) => Slice(exe, BuildingSizeAddress, BuildingTables.TableTypes);
+
+    /// <summary>The needs table as the program holds it: the planks and the stones of each building type 0 to 0x17 (<see cref="BuildingNeedsAddress"/>).</summary>
+    internal static byte[] BuildingNeedsBytes(byte[] exe) =>
+        Slice(exe, BuildingNeedsAddress, 2 * BuildingTables.TableTypes);
 
     /// <summary>The number of goods the good class table and the good kind table cover (good numbers are 5 bits).</summary>
     internal const int GoodSlots = 32;
@@ -414,14 +420,16 @@ static class ProgramTablesImporter
     /// <summary>The good class table as the program holds it, decoded: the request of each of the 32 good numbers, null for storage at once.</summary>
     internal static GoodClass?[] GoodClassTable(byte[] exe) => GoodClasses(Slice(exe, GoodClassAddress, 2 * GoodSlots));
 
-    // The catalog of the original's 26 goods: each with its code, its name and evidence (GoodTables), its request from the class table, its
-    // counter from the kind table, its rank from the routine of the transport priorities, and the two rules the program holds as
-    // comparisons of the good's code (the handover's counter, resource 1).
+    // The catalog of the original's 26 goods and 12 building types. A good has its code, its name and evidence (GoodTables), its request
+    // from the class table, its counter from the kind table, its rank from the routine of the transport priorities, and the two rules the
+    // program holds as comparisons of the good's code (the handover's counter, resource 1). A building type has its code, name, and
+    // evidence (BuildingTables) and the facts of its tables (Buildings).
     internal static ContentCatalog Catalog(byte[] exe)
     {
         var classes = GoodClassTable(exe);
         var kinds = GoodKindBytes(exe);
         var ranks = TransportPriorityRanks(exe);
+        var buildings = Buildings(exe);
         try
         {
             return new ContentCatalog(
@@ -440,13 +448,63 @@ static class ProgramTablesImporter
                     HandoverCounter = GoodTables.HandoverCounter(good.Code),
                     CountsAgainstResource1 = GoodTables.CountsAgainstResource1(good.Code),
                     TransportRank = ranks[good.Code - 1],
-                })
+                }),
+                buildings
             );
         }
         catch (ArgumentException e)
         {
-            throw new InvalidDataException($"Siedler1.exe holds no goods as expected: {e.Message}", e);
+            throw new InvalidDataException(
+                $"Siedler1.exe holds no goods and building types as expected: {e.Message}",
+                e
+            );
         }
+    }
+
+    // The 12 building types with the facts of the program's tables: the size (0x42d307), the needs (0x449f18), the two door speeds
+    // (0x43c92b), the worker (the handlers, 0x42cd1d), the order of materials (0x43f0ba), and the two blow steps (0x43f0fa). The castle is
+    // in none of the size, needs, order, and blow tables (they hold the types 0 to 0x17): it is a mine with no needs, no worker, no
+    // materials, and no blows.
+    static List<BuildingEntry> Buildings(byte[] exe)
+    {
+        var doors = DoorSpeedBytes(exe);
+        var sizes = BuildingSizeBytes(exe);
+        var needs = BuildingNeedsBytes(exe);
+        var orders = Words(Slice(exe, MaterialOrderAddress, 2 * BuildingTables.TableTypes));
+        var blows = Words(Slice(exe, BlowStepAddress, 4 * BuildingTables.TableTypes));
+        var workers = WorkerRequestAddresses.ToDictionary(
+            request => BuildingTables.CodeOf(request.Type),
+            request => WorkerRequest(exe, request.Address)
+        );
+
+        return
+        [
+            .. BuildingTables.All.Select(type =>
+            {
+                var tabled = BuildingTables.HasTableEntry(type.Code);
+
+                return new BuildingEntry
+                {
+                    Name = type.Name,
+                    NameEvidence = type.Evidence,
+                    OriginalCode = type.Code,
+                    Size = tabled && sizes[type.Code] is 1 or 2 ? (BuildingSize)sizes[type.Code] : BuildingSize.Mine,
+                    Needs = tabled
+                        ? new BuildingNeeds { Planks = needs[2 * type.Code], Stones = needs[2 * type.Code + 1] }
+                        : new BuildingNeeds { Planks = 0, Stones = 0 },
+                    StandingDoor = doors[type.Code],
+                    ConstructingDoor = doors[type.Code | BuildingTables.ConstructingBit],
+                    Worker = workers.GetValueOrDefault(type.Code),
+                    Stones = tabled
+                        ? [.. Enumerable.Range(0, 16).Select(turn => (((ushort)orders[type.Code] >> turn) & 1) != 0)]
+                        : [],
+                    EarlyBlowStep = tabled ? (ushort)blows[2 * type.Code] : (ushort)0,
+                    LateBlowStep = tabled ? (ushort)blows[2 * type.Code + 1] : (ushort)0,
+                    SecondFigure = BuildingTables.TakesSecondFigure(type.Code),
+                    IsStorage = BuildingTables.IsStorage(type.Code),
+                };
+            }),
+        ];
     }
 
     // What each job owns, read by its tables module (JobTablesRegistry, written by the generator from the modules). The draw routine
@@ -500,19 +558,8 @@ static class ProgramTablesImporter
         Expect(exe, stub, [0xe9, .. BitConverter.GetBytes(handler - (stub + 5))], what);
     }
 
-    // The worker each of the four types asks for, from the instructions of its handler.
-    static WorkerRequest?[] Workers(byte[] exe)
-    {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        foreach (var (type, address) in WorkerRequestAddresses)
-        {
-            workers[type.Code] = WorkerRequest(exe, address);
-        }
-
-        return workers;
-    }
-
-    // A request for a worker: mov eax, job; mov [edi], eax; mov eax, tool; mov [edi+0x18], eax. The tool word halved is the good.
+    // A request for a worker: mov eax, job; mov [edi], eax; mov eax, tool; mov [edi+0x18], eax. The tool word halved is the good. A job
+    // the jobs' tables modules do not name, and a tool with no entry among the goods, refuse the program.
     internal static WorkerRequest WorkerRequest(byte[] exe, int address)
     {
         var code = Slice(exe, address, 15);
@@ -528,7 +575,15 @@ static class ProgramTablesImporter
             );
         }
 
-        return new WorkerRequest { Job = Job.Of(code[1]), Tool = ToolGood(BitConverter.ToInt32(code, 8), address) };
+        int number = code[1];
+        if (!JobTablesRegistry.JobNames.Any(job => job.Code == number))
+        {
+            throw new InvalidDataException(
+                $"Siedler1.exe holds no request for a worker at 0x{address:x}: the job {number} has no entry among the jobs."
+            );
+        }
+
+        return new WorkerRequest { Job = Job.Of(number), Tool = ToolGood(BitConverter.ToInt32(code, 8), address) };
     }
 
     // The good a tool word names: twice the good's number, 0 for no tool. A tool with no entry in the goods refuses the program.

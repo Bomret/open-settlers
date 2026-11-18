@@ -6,9 +6,10 @@ using System.Linq;
 namespace OpenSettlers.Domain;
 
 /// <summary>
-/// The engine's list of the goods a game knows, one <see cref="GoodEntry"/> each (ADR 0020). A content set's source builds it, and
-/// <see cref="RuleTables"/> holds it. It orders its goods by stable name, ordinal, whatever order the source gives them in, so a game plays
-/// the same on every run (INV-0002). "No good" is never an entry.
+/// The engine's list of the goods and building types a game knows, one <see cref="GoodEntry"/> or <see cref="BuildingEntry"/> each
+/// (ADR 0020). A content set's source builds it, and <see cref="RuleTables"/> holds it. It orders its entries of each kind by stable name,
+/// ordinal, whatever order the source gives them in, so a game plays the same on every run (INV-0002). "No good" and "no building" are
+/// never entries.
 /// </summary>
 public sealed class ContentCatalog
 {
@@ -16,6 +17,7 @@ public sealed class ContentCatalog
     const int ClassesPerWord = 8;
 
     readonly Dictionary<string, GoodEntry> _byName;
+    readonly Dictionary<string, BuildingEntry> _buildingsByName = [];
 
     /// <summary>
     /// Creates the catalog from its goods. Throws an <see cref="ArgumentException"/> that names the entry and builds nothing for a duplicate
@@ -23,8 +25,37 @@ public sealed class ContentCatalog
     /// one that another good holds, and a request class that does not fit its request word (0 to 7).
     /// </summary>
     /// <param name="goods">The goods, in any order.</param>
-    public ContentCatalog(IEnumerable<GoodEntry> goods)
+    /// <param name="buildings">
+    /// The building types, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, and a
+    /// stable name outside lowercase letters, digits, and hyphens.
+    /// </param>
+    public ContentCatalog(IEnumerable<GoodEntry> goods, IEnumerable<BuildingEntry>? buildings = null)
     {
+        var orderedBuildings = (buildings ?? []).OrderBy(building => building.Name, StringComparer.Ordinal).ToList();
+        Dictionary<int, BuildingEntry> buildingsByCode = [];
+        foreach (var building in orderedBuildings)
+        {
+            if (building.Name.Length == 0 || !building.Name.All(IsNameCharacter))
+            {
+                throw Refuse(
+                    building,
+                    "its stable name holds anything other than lowercase letters, digits, and hyphens"
+                );
+            }
+
+            if (!_buildingsByName.TryAdd(building.Name, building))
+            {
+                throw Refuse(building, "another building type has this stable name");
+            }
+
+            if (building.OriginalCode is { } buildingCode && !buildingsByCode.TryAdd(buildingCode, building))
+            {
+                throw Refuse(building, $"{buildingsByCode[buildingCode].Name} has this original code, {buildingCode}");
+            }
+        }
+
+        Buildings = [.. orderedBuildings];
+
         var ordered = goods.OrderBy(good => good.Name, StringComparer.Ordinal).ToList();
         _byName = [];
         Dictionary<int, GoodEntry> byCode = [];
@@ -74,6 +105,25 @@ public sealed class ContentCatalog
     /// <summary>The goods in ordinal order of their stable names.</summary>
     public ImmutableArray<GoodEntry> Goods { get; }
 
+    /// <summary>The building types in ordinal order of their stable names.</summary>
+    public ImmutableArray<BuildingEntry> Buildings { get; }
+
+    /// <summary>
+    /// The entry of <paramref name="type"/>, the one with its stable name; null for the type of no building and for a type the catalog lacks.
+    /// </summary>
+    public BuildingEntry? EntryOf(BuildingType type) =>
+        type.IsNone ? null : _buildingsByName.GetValueOrDefault(type.Name);
+
+    /// <summary>
+    /// The entry of <paramref name="type"/>. Throws an <see cref="InvalidOperationException"/> that names the type where the catalog lacks
+    /// it: a rule that meets a building type its game's catalog lacks stops there. The type of no building is no entry and throws too.
+    /// </summary>
+    public BuildingEntry Require(BuildingType type) =>
+        EntryOf(type)
+        ?? throw new InvalidOperationException(
+            $"The building type '{type.Name}' is no entry of the content catalog, which holds: {string.Join(", ", Buildings.Select(entry => entry.Name))}."
+        );
+
     /// <summary>
     /// The entry of <paramref name="good"/>, the one with its stable name; null for no good and for a good the catalog lacks.
     /// </summary>
@@ -93,4 +143,7 @@ public sealed class ContentCatalog
 
     static ArgumentException Refuse(GoodEntry good, string reason) =>
         new($"The good '{good.Name}' is refused: {reason}.");
+
+    static ArgumentException Refuse(BuildingEntry building, string reason) =>
+        new($"The building type '{building.Name}' is refused: {reason}.");
 }

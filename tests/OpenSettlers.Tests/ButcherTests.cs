@@ -170,7 +170,7 @@ public sealed class ButcherTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Butcher.Code, hut[2], "the fixture's building is a butcher's shop");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Butcher), hut[2], "the fixture's building is a butcher's shop");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Butcher),
             "the fixture's building has its site"

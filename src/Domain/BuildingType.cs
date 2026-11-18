@@ -1,87 +1,84 @@
+using System;
+
 namespace OpenSettlers.Domain;
 
-/// <summary>A building's type, by the number the original gives it (bits 2 to 6 of byte 4 of the building's item).</summary>
+/// <summary>
+/// A kind of building (<c>docs/rules/build-sites.md</c>): the entry of the <see cref="ContentCatalog"/> that its <see cref="Name"/> names
+/// (ADR 0020). The stable name is the type's whole identity: equality, hashing, and text go by it. The facts of a type are the entry's,
+/// read through <see cref="RuleTables"/>; the original's number of a type is an attribute of the entry that only the History Edition
+/// importer and the exporters read. The type of a slot that holds no building is <see cref="None"/>, which has no name and is never an entry.
+/// </summary>
 public readonly record struct BuildingType
 {
-    /// <summary>The type's number; -1 is the type of a slot that holds no building.</summary>
-    public required int Code { get; init; }
+    readonly string? _name;
+
+    /// <summary>The type's stable name (<c>woodcutter-hut</c>); empty for the type of a slot that holds no building.</summary>
+    public string Name
+    {
+        get => _name ?? "";
+        init => _name = value;
+    }
+
+    /// <summary>Whether <paramref name="other"/> is the type with this stable name.</summary>
+    public bool Equals(BuildingType other) => string.Equals(Name, other.Name, StringComparison.Ordinal);
+
+    /// <summary>A hash of the stable name that is the same on every run.</summary>
+    public override int GetHashCode() => (int)Fnv1a.Of(Name);
+
+    /// <summary>Whether this is the type of a slot that holds no building.</summary>
+    public bool IsNone => Name.Length == 0;
+
+    /// <summary>The castle, a storage with a door of its own, built from no needs.</summary>
+    public static BuildingType Castle => new() { Name = "castle" };
 
     /// <summary>
-    /// The castle. Its type byte holds 0xe0 while the castle is built, the type 0x38 of the table of door speeds, and 0x60
-    /// when it stands.
+    /// The woodcutter's hut: its handler asks for the job of the woodcutter, whose work is to cut trees
+    /// (<c>docs/rules/woodcutting.md</c>).
     /// </summary>
-    public static BuildingType Castle => new() { Code = 0x18 };
+    public static BuildingType Woodcutter => new() { Name = "woodcutter-hut" };
+
+    /// <summary>The stonecutter's hut, a small building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name.</summary>
+    public static BuildingType Stonecutter => new() { Name = "stonecutter-hut" };
+
+    /// <summary>The forester's hut, a small building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name.</summary>
+    public static BuildingType Forester => new() { Name = "forester-hut" };
+
+    /// <summary>The sawmill, a large building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name.</summary>
+    public static BuildingType Sawmill => new() { Name = "sawmill" };
 
     /// <summary>
-    /// The woodcutter's hut: the handler of the type 2 (<c>0x42d945</c>) asks for the job of the woodcutter, whose work is to cut
-    /// trees (<c>docs/rules/woodcutting.md</c>), and its sprite is the object 0xa8 (<c>0x44e63b</c>). The type 1 asks for a
-    /// job whose work looks for a free node by the water.
+    /// The fisher's hut, a small building (<c>docs/rules/food-buildings.md</c>): its worker's walk ends by the water with the put of
+    /// fish.
     /// </summary>
-    public static BuildingType Woodcutter => new() { Code = 2 };
+    public static BuildingType Fisher => new() { Name = "fisher-hut" };
+
+    /// <summary>The farm, a large building: its worker's walk ends with the put of grain (<c>docs/rules/food-buildings.md</c>).</summary>
+    public static BuildingType Farm => new() { Name = "farm" };
+
+    /// <summary>The butcher, a large building: its job takes in pigs and puts meat (<c>docs/rules/food-buildings.md</c>).</summary>
+    public static BuildingType Butcher => new() { Name = "butcher" };
 
     /// <summary>
-    /// The stonecutter's hut, a small building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name: the
-    /// handler of the type 4 (<c>0x42d987</c>) asks for the job 7 with the tool of the stock word 0x2e (good 23); a later slice confirms the name
-    /// from the goods the job puts down.
+    /// The pig farm, a large building and the farm's twin in size, materials, and scaffold: its job takes in grain and puts pigs
+    /// (<c>docs/rules/food-buildings.md</c>).
     /// </summary>
-    public static BuildingType Stonecutter => new() { Code = 4 };
+    public static BuildingType PigFarm => new() { Name = "pig-farm" };
 
     /// <summary>
-    /// The forester's hut, a small building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name: the
-    /// handler of the type 9 (<c>0x42d9c9</c>) asks for the job 8 with no tool; a later slice confirms the name from the
-    /// activity the job runs.
+    /// The mill, a small building that the History Edition draws as a windmill: its job takes in grain and puts flour
+    /// (<c>docs/rules/food-buildings.md</c>).
     /// </summary>
-    public static BuildingType Forester => new() { Code = 9 };
+    public static BuildingType Mill => new() { Name = "mill" };
 
-    /// <summary>
-    /// The sawmill, a large building (<c>docs/rules/build-sites.md</c>, "The four types"). **Inferred** name: the handler of
-    /// the type 0x11 (<c>0x42da0b</c>) asks for the job 6 with the tool of the stock word 0x2c (good 22); a later slice confirms the name from
-    /// the goods the job puts down.
-    /// </summary>
-    public static BuildingType Sawmill => new() { Code = 0x11 };
-
-    /// <summary>
-    /// The fisher's hut, a small building (<c>docs/rules/food-buildings.md</c>). Its handler (<c>0x42e0b8</c>) asks for job 11 with the
-    /// tool of the stock word 0x24 (good 18), and job 11's walk ends by the water with the put of good 1 (fish, <c>0x43837f</c>).
-    /// </summary>
-    public static BuildingType Fisher => new() { Code = 1 };
-
-    /// <summary>
-    /// The farm, a large building: the handler of the type 0xc (<c>0x42e25e</c>) asks for job 14 with the tool of the stock word 0x28
-    /// (good 20), and job 14's walk ends with the put of good 4 (grain, <c>0x43847d</c>).
-    /// </summary>
-    public static BuildingType Farm => new() { Code = 0xc };
-
-    /// <summary>
-    /// The butcher, a large building: the handler of the type 0xd (<c>0x42e1b3</c>) asks for job 13 with the tool of the stock word 0x26
-    /// (good 19, the butcher's knife); the job takes in good 2 (pig) and puts good 3 (meat, <c>0x4333a5</c>).
-    /// </summary>
-    public static BuildingType Butcher => new() { Code = 0xd };
-
-    /// <summary>
-    /// The pig farm, a large building and the farm's twin in size, materials, and scaffold: the handler of the type 0xe (<c>0x42e0fa</c>)
-    /// asks for job 12 with no tool; the job takes in good 4 (grain) and puts good 2 (pig, <c>0x433577</c>).
-    /// </summary>
-    public static BuildingType PigFarm => new() { Code = 0xe };
-
-    /// <summary>
-    /// The mill, a small building that the History Edition draws as a windmill: the handler of the type 0xf (<c>0x42e2a0</c>) asks for
-    /// job 15 with no tool; the job takes in good 4 (grain) and puts good 5 (flour, <c>0x433a1e</c>).
-    /// </summary>
-    public static BuildingType Mill => new() { Code = 0xf };
-
-    /// <summary>
-    /// The baker, a large building: the handler of the type 0x10 (<c>0x42e37e</c>) asks for job 16 with no tool; the job takes in
-    /// good 5 (flour) and puts good 6 (bread, <c>0x43384f</c>).
-    /// </summary>
-    public static BuildingType Baker => new() { Code = 0x10 };
+    /// <summary>The baker, a large building: its job takes in flour and puts bread (<c>docs/rules/food-buildings.md</c>).</summary>
+    public static BuildingType Baker => new() { Name = "baker" };
 
     /// <summary>The storehouse: a storage like the castle (<c>docs/rules/removal.md</c>).</summary>
-    public static BuildingType Storehouse => new() { Code = 0xa };
+    public static BuildingType Storehouse => new() { Name = "storehouse" };
 
     /// <summary>The type of a slot no building holds.</summary>
-    public static BuildingType None => new() { Code = -1 };
+    public static BuildingType None => default;
 
     /// <inheritdoc />
-    public override string ToString() => Code.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    public override string ToString() => Name;
 }

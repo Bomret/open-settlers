@@ -94,7 +94,7 @@ public sealed class GameDigest : IGameDigest
 
             if (command.Building is { } type)
             {
-                applied = Mix(applied, type.Code);
+                applied = Mix(applied, BuildingWords.Of(game.Tables.Catalog, type));
             }
         }
 
@@ -134,7 +134,7 @@ public sealed class GameDigest : IGameDigest
             foreach (
                 var value in new[]
                 {
-                    BuildingEncoder.TypeIndex(building),
+                    BuildingEncoder.TypeIndex(building, game.Tables.Catalog),
                     building.X,
                     building.Y,
                     building.Flag,

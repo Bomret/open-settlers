@@ -20,9 +20,9 @@ public sealed class CarrierTests
             classes,
             TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            goods: TestCatalog.StandIn()
+            goods: TestCatalog.WithDoors(),
+            noBuildingDoor: 8
         );
     }
 

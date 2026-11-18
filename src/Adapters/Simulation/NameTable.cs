@@ -4,11 +4,11 @@ using System.Linq;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// Open Settlers' names for the original's bare codes: map object codes, settler jobs, settler states, and building
-/// types (ADR 0010, INV-0006). Each entry cites its evidence beside it. A code with no entry has no name and shows its
-/// raw value. A name several codes share (<c>tree</c>) resolves to all of them through <see cref="CodesNamed"/>. The
-/// object names read the class table the engine loaded (<see cref="RuleTables"/>): <c>stone</c> names a code the
-/// docs call a stone only where that table says class 2. The job, state, and building names need no table and are
+/// Open Settlers' names for the original's bare codes: map object codes, settler jobs, and settler states (ADR 0010, INV-0006). The
+/// goods and building types are entries of the content catalog, which name themselves (ADR 0020). Each entry cites its evidence
+/// beside it. A code with no entry has no name and shows its raw value. A name several codes share (<c>tree</c>) resolves to all of
+/// them through <see cref="CodesNamed"/>. The object names read the class table the engine loaded (<see cref="RuleTables"/>):
+/// <c>stone</c> names a code the docs call a stone only where that table says class 2. The job and state names need no table and are
 /// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules of the History
 /// Edition source through <see cref="JobTableNames"/>, the one type of that source this assembly names (INV-0011); the
 /// states that belong to no one job are stated here.
@@ -34,7 +34,6 @@ public sealed class NameTable(RuleTables tables)
         Object,
         Job,
         State,
-        Building,
     }
 
     /// <summary>One entry: the code, its name, and the evidence for the name.</summary>
@@ -81,9 +80,6 @@ public sealed class NameTable(RuleTables tables)
     /// <summary>The name of the settler state, or null where the table has none.</summary>
     public static string? StateName(int state) => Find(CodeKind.State, state);
 
-    /// <summary>The name of the building type, or null where the table has none.</summary>
-    public static string? BuildingName(int type) => Find(CodeKind.Building, type);
-
     /// <summary>The object codes the name stands for, in ascending order; empty for an unknown name.</summary>
     public IEnumerable<int> CodesNamed(string name) =>
         Entries
@@ -91,7 +87,7 @@ public sealed class NameTable(RuleTables tables)
             .Select(entry => entry.Code)
             .Where(code => ObjectName((byte)code) == name);
 
-    /// <summary>Whether the table names an object, job, state, or building type <paramref name="name"/>.</summary>
+    /// <summary>Whether the table names an object, job, or state <paramref name="name"/>.</summary>
     public static bool IsName(string name) => Entries.Any(entry => entry.Name == name);
 
     /// <summary>Whether the table names an object code <paramref name="name"/>.</summary>
@@ -204,69 +200,6 @@ public sealed class NameTable(RuleTables tables)
         AddOne(CodeKind.State, 0x1c, "claims-node-home", StateEvidence);
         AddOne(CodeKind.State, 0x42, "waits-at-flag", StateEvidence);
         AddOne(CodeKind.State, 0x4a, "leaves-site", StateEvidence);
-
-        AddOne(CodeKind.Building, BuildingType.Castle.Code, "castle", "BuildingType.Castle");
-        AddOne(CodeKind.Building, BuildingType.Woodcutter.Code, "woodcutter-hut", "BuildingType.Woodcutter");
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Stonecutter.Code,
-            "stonecutter-hut",
-            "BuildingType.Stonecutter; handler 0x42d987 asks for job 7 (tool stock word 0x2e, good 23), whose work puts the stone (good 10) on the flag (0x438182); size and needs 0x42d307, 0x449f18; docs/rules/build-sites.md, docs/rules/stonecutting.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Forester.Code,
-            "forester-hut",
-            "BuildingType.Forester; handler 0x42d9c9 asks for job 8 (no tool), whose work plants the saplings 0x67 and 0x68 (0x4389bf); size and needs 0x42d307, 0x449f18; docs/rules/build-sites.md, docs/rules/forestry.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Sawmill.Code,
-            "sawmill",
-            "BuildingType.Sawmill; handler 0x42da0b asks for job 6 (tool stock word 0x2c, good 22), whose work turns the logs it takes in into planks (good 8, 0x43c6aa); large, needs 3 planks and 2 stones (0x42d307, 0x449f18); docs/rules/build-sites.md, docs/rules/sawmilling.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Fisher.Code,
-            "fisher-hut",
-            "BuildingType.Fisher; handler 0x42e0b8 asks for job 11 (tool stock word 0x24, good 18), whose walk ends by the water with the put of fish (good 1, 0x43837f); small, needs 2 planks (0x42d307, 0x449f18); docs/rules/food-buildings.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Farm.Code,
-            "farm",
-            "BuildingType.Farm; handler 0x42e25e asks for job 14 (tool stock word 0x28, good 20), whose walk ends with the put of grain (good 4, 0x43847d); large, needs 4 planks and 1 stone (0x42d307, 0x449f18); docs/rules/food-buildings.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Butcher.Code,
-            "butcher",
-            "BuildingType.Butcher; handler 0x42e1b3 asks for job 13 (tool stock word 0x26, good 19, the butcher's knife of the install's manual), whose start asks for a pig (class 3, 0x43d249) and whose work puts meat (good 3, 0x4333a5); large, needs 2 planks and 1 stone (0x42d307, 0x449f18); docs/rules/food-buildings.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.PigFarm.Code,
-            "pig-farm",
-            "BuildingType.PigFarm; handler 0x42e0fa asks for job 12 (no tool), whose start asks for grain (class 4, 0x43d1e1) and whose work puts a pig (good 2, 0x433577); large with the scaffold, size, needs, and order of the farm (0x42d307, 0x449f18, 0x44fcfe); docs/rules/food-buildings.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Mill.Code,
-            "mill",
-            "BuildingType.Mill; handler 0x42e2a0 asks for job 15 (no tool), whose start asks for grain (class 4, 0x43d3b0) and whose work puts flour (good 5, 0x433a1e); small, needs 3 planks and 1 stone (0x42d307, 0x449f18), drawn as a windmill (object 188, 0x44fd16); docs/rules/food-buildings.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Baker.Code,
-            "baker",
-            "BuildingType.Baker; handler 0x42e37e asks for job 16 (no tool), whose start asks for flour (class 5, 0x43d44c) and whose work puts bread (good 6, 0x43384f); large, needs 2 planks and 1 stone (0x42d307, 0x449f18); docs/rules/food-buildings.md"
-        );
-        AddOne(
-            CodeKind.Building,
-            BuildingType.Storehouse.Code,
-            "storehouse",
-            "BuildingType.Storehouse; Game.Removal storage types: the castle and type 0xa"
-        );
 
         return entries;
     }
