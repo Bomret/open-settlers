@@ -2,9 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
 using OpenSettlers.Formats;
-using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
 
@@ -31,7 +29,7 @@ public sealed class EntryMapTests
     static List<Asset> List<T>(FakeInstall fake)
         where T : ArchiveEntryKind, new()
     {
-        LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", fake.Root], null), out var install, out _);
+        Install.TryOpen(fake.Root, out var install, out _);
         var all = AssetKind.Discover().OfType<ArchiveEntryKind>().ToList();
 
         return [.. new T().Enumerate(install!, all)];

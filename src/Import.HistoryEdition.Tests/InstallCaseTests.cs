@@ -1,8 +1,6 @@
 using System.IO;
 using System.Runtime.Versioning;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
-using OpenSettlers.Launch;
 
 namespace OpenSettlers.Tests;
 
@@ -20,10 +18,7 @@ public sealed class InstallCaseTests
 
     static Install Open(CaseSensitiveFolder folder)
     {
-        Assert.IsTrue(
-            LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out var install, out var problem),
-            problem
-        );
+        Assert.IsTrue(Install.TryOpen(folder.Root, out var install, out var problem), problem);
         return install!;
     }
 
@@ -32,13 +27,10 @@ public sealed class InstallCaseTests
     {
         using var folder = _volume!.NewFolder().Put("siedler2.exe", [1]);
 
-        var opened = LaunchInstall.TryOpen(LaunchArgs.Parse(["--game", folder.Root], null), out _, out var problem);
+        var opened = Install.TryOpen(folder.Root, out _, out var problem);
 
         Assert.IsFalse(opened);
-        Assert.AreEqual(
-            $"no Siedler1.exe in {folder.Root}, so it is not an install ({LaunchInstall.HowToGive})",
-            problem
-        );
+        Assert.AreEqual($"no Siedler1.exe in {folder.Root}, so it is not an install", problem);
     }
 
     [TestMethod]

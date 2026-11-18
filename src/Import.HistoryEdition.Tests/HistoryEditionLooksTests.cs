@@ -1,8 +1,6 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
-using OpenSettlers.MapView;
-using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 

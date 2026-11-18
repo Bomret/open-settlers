@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
-using OpenSettlers.MapView;
 using static OpenSettlers.Testing.GraphicEntries;
 using static OpenSettlers.Tests.ObjectPayloads;
 

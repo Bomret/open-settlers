@@ -81,7 +81,15 @@ public sealed class GraphicsSourceBoundaryTests
         foreach (var file in Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
-            if (relative.Contains("/obj/") || relative.Contains("/bin/"))
+            // The test and helper projects (src/*.Tests, src/*.Testing, src/Testing) hold the tests of these reads, not the reads.
+            var library = relative.Split('/')[1];
+            if (
+                relative.Contains("/obj/")
+                || relative.Contains("/bin/")
+                || library is "Testing"
+                || library.EndsWith(".Tests", StringComparison.Ordinal)
+                || library.EndsWith(".Testing", StringComparison.Ordinal)
+            )
             {
                 continue;
             }
