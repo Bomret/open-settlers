@@ -40,11 +40,10 @@
 - Code style in the build: the root `.editorconfig` sets the code-style rules that `docs/agents/CODING.md` ("What the
   build enforces") lists, each at warning severity. It sets no formatting rule. `Directory.Build.props` sets
   `EnforceCodeStyleInBuild` beside `TreatWarningsAsErrors`. It also sets `GenerateDocumentationFile` for every project
-  except the test project. A violation fails every build of the project that holds it: `mise run check`,
+  except the test projects (`*.Tests`) and helper projects (`*.Testing`). A violation fails every build of the project that holds it: `mise run check`,
   `mise run build`, a plain `dotnet build`, a play run, and the Godot editor's build.
-  The test project compiles `src/Launch`, `src/Assets`, and `src/MapView` without a documentation file.
-  A doc-comment diagnostic in these folders therefore fails the build of `OpenSettlers.csproj`. It does not fail the
-  build of the test project.
+  A doc-comment diagnostic in a library is reported by the build of the library's own project, which generates a
+  documentation file. The build of a test project reports none.
   The analyzers ship with the .NET SDK. The rules follow the SDK version that `global.json` and `mise.toml` pin, and a
   new SDK can report new findings. No other linter is wired.
 - A code-style finding prints as `<file>(<line>,<column>): error <rule ID>: <message>`. Fix it by hand, or apply the

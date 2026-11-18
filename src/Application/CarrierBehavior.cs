@@ -100,10 +100,8 @@ public sealed class CarrierBehavior(
         var to = flags[road.ToSlot].Side(road.ToDirection);
         from.SetLength(length, carrierOnTheWay: false);
         to.SetLength(length, carrierOnTheWay: false);
-        from.FarDirection = road.ToDirection;
-        to.FarDirection = road.FromDirection;
-        from.WaitingPlace = null;
-        to.WaitingPlace = null;
+        from.TakeRoad(road.ToDirection);
+        to.TakeRoad(road.FromDirection);
     }
 
     /// <summary>
@@ -129,7 +127,7 @@ public sealed class CarrierBehavior(
         for (var i = 0; i < window; i++)
         {
             var had = flags[FlagCursor].CarrierRequestFailed;
-            flags[FlagCursor].CarrierRequestFailed = false;
+            flags[FlagCursor].ClearCarrierRetry();
             if (had)
             {
                 history.RecordFlag(FlagCursor, EventType.ClearFlagRetryBits, Cause.Carriers);
@@ -213,9 +211,9 @@ public sealed class CarrierBehavior(
             failed != flag.CarrierRequestFailed
             || holders.Any(side => !side.HoldsCarrier)
             || lost.Any(side => side.HoldsCarrier);
-        flag.CarrierRequestFailed = failed;
-        holders.ForEach(side => side.HoldsCarrier = true);
-        lost.ForEach(side => side.HoldsCarrier = false);
+        flag.RecordCarrierRequest(failed);
+        holders.ForEach(side => side.HoldCarrier());
+        lost.ForEach(side => side.ClearCarrierHold());
         if (changed)
         {
             history.RecordFlag(slot, EventType.VisitFlag, Cause.Carriers);
@@ -250,8 +248,8 @@ public sealed class CarrierBehavior(
             }
         );
         roster.WorkerSent();
-        flags[slot].Side(direction).CarrierOnTheWay = true;
-        flags[far].Side(farDirection).CarrierOnTheWay = true;
+        flags[slot].Side(direction).ExpectCarrier();
+        flags[far].Side(farDirection).ExpectCarrier();
         var id = history.SettlerId(carrier);
         history.EndCarry(carrier);
         var cause = Cause.Carriers;
@@ -359,8 +357,8 @@ public sealed class CarrierBehavior(
             Direction = waitDirection,
             Approach = Heading.Facing(waitDirection).Retried,
         };
-        CountCarrier(startSide);
-        CountCarrier(farSide);
+        startSide.CarrierEnters();
+        farSide.CarrierEnters();
         history.RecordSettler(slot, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(waitFlag).ToString());
         history.RecordFlag(start, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(far).ToString());
         history.RecordFlag(far, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(start).ToString());
@@ -382,21 +380,14 @@ public sealed class CarrierBehavior(
         }
 
         var (far, farDirection) = RoadNetwork.FarEnd(road, flag, direction);
-        CountCarrier(flags[far].Side(farDirection));
-        CountCarrier(flags[flag].Side(direction));
+        flags[far].Side(farDirection).CarrierEnters();
+        flags[flag].Side(direction).CarrierEnters();
         movement.Become(settler, new WalksRoad { Load = null, Heading = Heading.Facing(direction) });
         var id = history.SettlerId(slot);
         history.RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, history.FlagId(flag).ToString());
         history.RecordFlag(flag, EventType.EnterRoad, Cause.Carriers, id.ToString());
         history.RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
-    }
-
-    // A carrier has entered a road: no carrier is on the way to it any more and it holds one more.
-    static void CountCarrier(FlagSide side)
-    {
-        side.CarrierOnTheWay = false;
-        side.Carriers++;
     }
 
     // State 3, a carrier on its road (0x43ad78 and the step routines of 0x43b508): when its timer has run out it steps along
@@ -496,8 +487,8 @@ public sealed class CarrierBehavior(
             settler.Activity = walks with { Heading = approach, Waits = waits };
             if (waits >= 4)
             {
-                side.Carriers--;
-                flags[far].Side(farDirection).Carriers--;
+                side.CarrierLeaves();
+                flags[far].Side(farDirection).CarrierLeaves();
                 settler.Activity = walks with { Heading = approach, Waits = 0, Marked = true };
                 var id = history.SettlerId(slot);
                 history.RecordFlag(flag, EventType.Wait, Cause.Carriers, id.ToString());

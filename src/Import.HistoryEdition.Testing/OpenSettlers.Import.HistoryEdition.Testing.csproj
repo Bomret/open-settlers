@@ -1,0 +1,11 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- The helpers of the tests that name the History Edition source. It references the source and the helpers of the
+         ports, and holds no test (INV-0012). -->
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
+    <ProjectReference Include="../Import.Testing/OpenSettlers.Import.Testing.csproj" />
+  </ItemGroup>
+</Project>

@@ -61,7 +61,7 @@ timer 0, state `0x19`, and the mode 0 (the boatman, job 1, takes `0x1a`: not por
 **Emulated:** the games `road-with-log` (a carrier that waits next to the flag, at the pass 785 of the chain game; it goes home
 through the states `0x44`, `0x19`, `0x10`, and 2 with the mode `0xfe`) and `road-waiting` match the settlers' 16 bytes, the flag
 items, and the map bytes after the click and after every pass until the carriers reach the castle's flag
-(`tests/OpenSettlers.Tests/removals.txt`). **Not run (inferred):** a carrier on the road that carries a good at the click (the
+(`src/Adapters.Tests/removals.txt`). **Not run (inferred):** a carrier on the road that carries a good at the click (the
 code that counts it lost is read, and the counting back is shared with the other routines below, whose cases the games reach);
 the settler in state 2 with the mode `0xff` or a road direction (a worker or carrier on its way to the road).
 

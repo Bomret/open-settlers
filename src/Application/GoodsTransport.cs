@@ -42,14 +42,14 @@ public sealed class GoodsTransport(
     /// <summary>
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
     /// lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
+    /// <c>GameSetup.LayGood</c> in <c>src/Adapters.Testing/GameSetup.cs</c> repeats these writes for the adapters' tests; a
+    /// change to one changes the other.
     /// </summary>
     public void LayGood(int flag, int place, Good good, int? destination = null, int? way = null)
     {
         var laid = flags[flag].Places[place];
-        laid.Good = good;
-        laid.Destination = destination;
-        laid.Way = way;
-        flags[flag].NeedsGoodsTurn = true;
+        laid.Lay(good, destination, way);
+        flags[flag].MarkGoodsTurnDue();
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public sealed class GoodsTransport(
     }
 
     /// <summary>The good on a place waits for the road that leaves the flag in a direction.</summary>
-    public void WaitForRoad(int flag, int way, int place) => flags[flag].Side(way).WaitingPlace = place;
+    public void WaitForRoad(int flag, int way, int place) => flags[flag].Side(way).Wait(place);
 
     /// <summary>
     /// The transport priority of a good (a byte of the table in the player's block, +good - 0x55 from the pointer +0x64 + 4 *
@@ -101,7 +101,7 @@ public sealed class GoodsTransport(
             return new GoodsLoad { Busy = load[2], Crowded = false };
         }
 
-        flags[flag].NeedsGoodsTurn = false;
+        flags[flag].ClearGoodsTurn();
         var places = flags[flag].Places;
         var held = 0;
         for (var place = 7; place >= 0; place--)
@@ -172,8 +172,8 @@ public sealed class GoodsTransport(
         )
         {
             Serve(asking, goodClass.Word, good);
-            flags[flag].Places[place].Destination = asking;
-            flags[flag].NeedsGoodsTurn = true;
+            flags[flag].Places[place].SendTo(asking);
+            flags[flag].MarkGoodsTurnDue();
 
             return;
         }
@@ -181,8 +181,8 @@ public sealed class GoodsTransport(
         var found = StorageSearch(flag);
         if (found >= 0)
         {
-            flags[flag].NeedsGoodsTurn = true;
-            flags[flag].Places[place].Destination = found;
+            flags[flag].MarkGoodsTurnDue();
+            flags[flag].Places[place].SendTo(found);
 
             return;
         }
@@ -194,7 +194,7 @@ public sealed class GoodsTransport(
         var roadsWithCarrier = CarrierRoads(flag);
         if (roadsWithCarrier.IsEmpty)
         {
-            flags[flag].NeedsGoodsTurn = true;
+            flags[flag].MarkGoodsTurnDue();
 
             return;
         }
@@ -211,7 +211,7 @@ public sealed class GoodsTransport(
                 WaitForRoad(flag, way, place);
             }
 
-            flags[flag].Places[place].Way = way;
+            flags[flag].Places[place].Direct(way);
 
             return;
         }
@@ -222,9 +222,7 @@ public sealed class GoodsTransport(
     // the good is counted back from where it is lost (ReleaseRequest, Removal) and the byte its delivery counts in (the carrier's handover).
     void Serve(int asking, RequestWord word, Good good)
     {
-        var request = flags[asking].RequestOf(word);
-        flags[asking]
-            .SetRequest(word, request with { Rank = (request.Rank & 1) != 0 ? (byte)(request.Rank >> 1) : (byte)0 });
+        flags[asking].ServeRequest(word);
         var counter = movement.Tables.FillCounterOf(good);
         if (counter != FillCounter.None && buildings?.OfFlag(asking) is { } building)
         {
@@ -344,7 +342,7 @@ public sealed class GoodsTransport(
 
         if (queue.Count == 0)
         {
-            flags[flag].NeedsGoodsTurn = true;
+            flags[flag].MarkGoodsTurnDue();
 
             return;
         }
@@ -381,8 +379,8 @@ public sealed class GoodsTransport(
         {
             // The destination cannot be reached: the good gives it up (0x462ca4 releases a request, and a storage counts none).
             ReleaseRequest(good.Good, good.Destination);
-            good.Destination = null;
-            flags[flag].NeedsGoodsTurn = true;
+            good.SendTo(null);
+            flags[flag].MarkGoodsTurnDue();
 
             return;
         }
@@ -398,10 +396,10 @@ public sealed class GoodsTransport(
         }
         else if (TransportPriority(flags[flag].Places[waiting].Good) < TransportPriority(good.Good))
         {
-            side.WaitingPlace = place;
+            side.Wait(place);
         }
 
-        good.Way = way;
+        good.Direct(way);
     }
 
     /// <summary>
@@ -425,12 +423,10 @@ public sealed class GoodsTransport(
             changed = true;
             if (walks.Load is { } carried)
             {
-                flags[flag].NeedsGoodsTurn = true;
+                flags[flag].MarkGoodsTurnDue();
                 var good = place.Good;
                 var destination = place.Destination;
-                place.Good = carried.Good;
-                place.Way = null;
-                place.Destination = carried.Destination;
+                place.Replace(carried.Good, carried.Destination);
                 walks = walks with
                 {
                     Load = new Load { Good = good, Destination = destination },
@@ -446,12 +442,11 @@ public sealed class GoodsTransport(
                     Waits = 0,
                     Marked = false,
                 };
-                place.Good = Good.None;
-                place.Way = null;
+                place.Clear();
             }
 
             took = walks.Load?.Good ?? Good.None;
-            side.WaitingPlace = null;
+            side.Wait(null);
             var best = 0;
             var found = -1;
             for (var i = 0; i < places.Count; i++)
@@ -473,11 +468,9 @@ public sealed class GoodsTransport(
             var empty = flags[flag].FirstEmptyPlace();
             if (empty >= 0)
             {
-                flags[flag].NeedsGoodsTurn = true;
-                places[empty].Good = carried.Good;
-                places[empty].Way = null;
+                flags[flag].MarkGoodsTurnDue();
+                places[empty].Replace(carried.Good, carried.Destination);
                 walks = walks with { Load = null };
-                places[empty].Destination = carried.Destination;
                 changed = true;
             }
         }

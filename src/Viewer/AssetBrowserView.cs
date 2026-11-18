@@ -116,7 +116,7 @@ public partial class AssetBrowserView : Control
 
     // AssetBrowserState propagates a programming error, and a Godot callback exception only reaches the log, so the
     // view catches it like RunCheck does and returns the text to show in its place.
-    string? Guard(Action action) => CrashText.Guard(action, () => CrashText.Subject(_state), line => GD.PrintErr(line));
+    string? Guard(Action action) => CrashText.Guard(action, () => _state.CrashSubject, line => GD.PrintErr(line));
 
     static Label Wrapped(string text) =>
         new()

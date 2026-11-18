@@ -1,0 +1,17 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <RootNamespace>OpenSettlers.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="OpenSettlers.Testing" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The generator tests parse sources and run the generators through the compiler API. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Testing/OpenSettlers.Testing.csproj" />
+    <!-- The tests drive the generators as an assembly; no compilation of this project runs them. -->
+    <ProjectReference Include="../Generators/OpenSettlers.Generators.csproj" />
+  </ItemGroup>
+</Project>

@@ -59,7 +59,7 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
         if (_movement.Tables.ClassOfGood(Good.Log) is { } asked)
         {
             var flag = _flags[mill.Flag];
-            flag.SetRequest(asked.Word, flag.RequestOf(asked.Word) with { Rank = rank });
+            flag.RankRequest(asked.Word, rank);
         }
     }
 
@@ -78,12 +78,12 @@ public sealed class SawmillerRules(JobParts parts) : JobRules<Sawmiller>(parts)
             var flag = _flags[mill.Flag];
             foreach (var word in new[] { RequestWord.First, RequestWord.Second })
             {
-                flag.SetRequest(word, flag.RequestOf(word) with { Asks = null });
+                flag.ClearAsk(word);
             }
 
             if (_movement.Tables.ClassOfGood(Good.Log) is { } asked)
             {
-                flag.SetRequest(asked.Word, new Request { Asks = asked, Rank = 0 });
+                flag.AskFor(asked.Word, asked);
             }
         }
 

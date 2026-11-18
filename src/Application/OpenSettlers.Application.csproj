@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <!-- The adapters, the game, and the tests read the internal members of the game's parts. -->
-    <InternalsVisibleTo Include="OpenSettlers.Adapters" />
-    <InternalsVisibleTo Include="OpenSettlers" />
-    <InternalsVisibleTo Include="OpenSettlers.Tests" />
+    <!-- The tests read the internal members of the game's parts. -->
+    <InternalsVisibleTo Include="OpenSettlers.Application.Tests" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Domain" />

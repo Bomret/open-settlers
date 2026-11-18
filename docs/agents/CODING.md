@@ -57,7 +57,7 @@ The build enforces the rule for the source projects: the game project, the layer
 - A public or protected type or member without a doc comment (CS1591).
 - A doc comment that is malformed or whose reference does not resolve (CS1570, CS1572, CS1573, CS1574, CS1587, CS1734, CS0419).
 
-The test project does not generate a documentation file. Its documentation stays with review.
+Test projects (`*.Tests`) and helper projects (`*.Testing`) do not generate a documentation file. Their documentation stays with review.
 
 ### Godot `.uid` files
 
@@ -73,7 +73,7 @@ Generate the `.uid` file of a new script or shader with `mise exec -- <godot> --
 
 ### What the build enforces
 
-The root `.editorconfig` turns the rules in this table into build errors. Each has its own `dotnet_diagnostic.<ID>.severity = warning` line. `Directory.Build.props` sets `EnforceCodeStyleInBuild` and `TreatWarningsAsErrors`. A violation of a table rule fails the build of every project, the test project included. The error names the file, line, and rule ID.
+The root `.editorconfig` turns the rules in this table into build errors. Each has its own `dotnet_diagnostic.<ID>.severity = warning` line. `Directory.Build.props` sets `EnforceCodeStyleInBuild` and `TreatWarningsAsErrors`. A violation of a table rule fails the build of every project, the test projects included. The error names the file, line, and rule ID.
 
 | Rule | ID |
 |------|----|
@@ -94,7 +94,7 @@ The documentation rule ("Document") is not in the table. The compiler's doc-comm
 - An MSBuild file switches off `EnforceCodeStyleInBuild`, `TreatWarningsAsErrors`, or `GenerateDocumentationFile`.
 - A `NoWarn` names one of the IDs.
 
-These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, composition over inheritance, and the documentation of the test project. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
+These rules stay with review: records and their positional-record rule (`PositionalRecordTests` checks the latter in the unit tests), member order, blank lines, composition over inheritance, and the documentation of the test and helper projects. The `.editorconfig` sets no formatting rule: CSharpier owns formatting.
 
 ### Member ordering
 
@@ -168,5 +168,5 @@ Two exemptions stay positional:
 - **The job generator project** (`src/Generators`). It targets netstandard2.0, because Roslyn loads a generator into the compiler, and netstandard2.0 lacks the attributes that `required` members need.
 - **`Knight` and `UnportedJob`.** The generated `Job.Of` builds both from a number through their constructors, and `UnportedJob.Code` overrides the abstract get-only `Job.Code`, which an init property cannot override.
 
-`PositionalRecordTests` enforces the rule: it parses every C# file under `src/` and `tests/` and fails on a positional record outside the two exemptions. A record inside a string literal, such as a generator test's fixture source, is no declaration and is not checked.
+`PositionalRecordTests` enforces the rule: it parses every C# file under `src/` and `OpenSettlers.Tests/` and fails on a positional record outside the two exemptions. A record inside a string literal, such as a generator test's fixture source, is no declaration and is not checked.
 

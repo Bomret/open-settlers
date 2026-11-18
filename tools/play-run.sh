@@ -7,8 +7,9 @@
 # --game-view runs the game view with --seed and --size; --layout runs the game view on the layout file and
 # implies --game-view (a layout holds its own seed and size, so --layout with --seed or --size exits 2, and so
 # does a missing layout file or an empty layout value). The input hash covers the mode, the layout's path and
-# content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/, the
-# project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the content set (history-edition when none is given), the
+# content, the content and path of every tracked or untracked, not ignored file under src/, scenes/ and content/ except
+# those of test projects (*.Tests), helper projects (*.Testing), and src/Testing/ (a change to a test or a test
+# helper alone keeps a stored run valid), the project files (project.godot, OpenSettlers.csproj, global.json, Directory.Build.props), the play script, the seed, the size, the content set (history-edition when none is given), the
 # fps, the Godot version and the SIEDLER_DIR path (not on the basic set). --content-set takes basic or history-edition, once. A result is stored in
 # play-out/.cache/<hash>/ only for exit status 0 or 1. Each call past the argument checks appends one line to
 # play-out/runs.log; the line names the mode (map or game-view), the layout, and the content set. Bad arguments exit 2 and leave no trace.
@@ -217,7 +218,10 @@ export LC_ALL=C
 hash=$(
   {
     list=$(mktemp)
-    git ls-files --cached --others --exclude-standard -- src scenes content | sort -u | while IFS= read -r f; do
+    # The pathspecs leave out the test projects (*.Tests), the helper projects (*.Testing), and src/Testing: no run
+    # executes them, so a change to one keeps the stored result.
+    git ls-files --cached --others --exclude-standard -- src scenes content \
+      ':(exclude,glob)**/*.Tests/**' ':(exclude,glob)**/*.Testing/**' ':(exclude)src/Testing' | sort -u | while IFS= read -r f; do
       [ -f "$f" ] && printf '%s\n' "$f"
     done >"$list"
     [ -s "$list" ] && git hash-object --stdin-paths <"$list" | paste -d ' ' "$list" -

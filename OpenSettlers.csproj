@@ -5,8 +5,8 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The layer libraries (Domain, Import, Import.HistoryEdition, Import.OpenSettlers, Application, Adapters) are their own projects, and so is the job generator, which runs in the compiler. -->
-    <Compile Remove="tools/**;tests/**;src/Domain/**;src/Import/**;src/Import.HistoryEdition/**;src/Import.OpenSettlers/**;src/Application/**;src/Adapters/**;src/Generators/**" />
+    <!-- The libraries (Domain, Import, Import.HistoryEdition, Import.OpenSettlers, Application, Adapters, MapView, Launch, Assets) are their own projects, and so is the job generator, which runs in the compiler. Only src/Viewer holds Godot code. -->
+    <Compile Remove="tools/**;**/*.Tests/**;**/*.Testing/**;src/Testing/**;src/Domain/**;src/Import/**;src/Import.HistoryEdition/**;src/Import.OpenSettlers/**;src/Application/**;src/Adapters/**;src/MapView/**;src/Launch/**;src/Assets/**;src/Generators/**" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Import" />
@@ -18,6 +18,9 @@
     <ProjectReference Include="src/Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
     <ProjectReference Include="src/Application/OpenSettlers.Application.csproj" />
     <ProjectReference Include="src/Adapters/OpenSettlers.Adapters.csproj" />
+    <ProjectReference Include="src/MapView/OpenSettlers.MapView.csproj" />
+    <ProjectReference Include="src/Launch/OpenSettlers.Launch.csproj" />
+    <ProjectReference Include="src/Assets/OpenSettlers.Assets.csproj" />
     <ProjectReference
       Include="src/Generators/OpenSettlers.Generators.csproj"
       OutputItemType="Analyzer"

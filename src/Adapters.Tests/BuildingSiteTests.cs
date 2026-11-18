@@ -1,0 +1,427 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Simulation;
+
+namespace OpenSettlers.Tests;
+
+// The placing of a building site by the command PlaceBuilding, on made-up tables (no install): every object class is 0
+// except that of the flag, code 1, which is 3; the woodcutter, stonecutter, and forester are small and the sawmill is
+// large, with the needs 2/0, 2/0, 2/0, and 3/2 the made tables below hold. The values the original writes are in
+// BuildingSitePlacementTests. The map of the seed 1234,5678,9ABC has its castle at 15,5 with its flag at 16,6.
+[TestClass]
+public sealed class BuildingSiteTests
+{
+    static readonly BuildingType[] Types =
+    [
+        BuildingType.Woodcutter,
+        BuildingType.Stonecutter,
+        BuildingType.Forester,
+        BuildingType.Sawmill,
+    ];
+
+    // The six food buildings by the number the original gives each type, with the size and the needs of the made tables: a type's
+    // planks are its number modulo 4 plus 1 and its stones its number modulo 3, so no two types share both.
+    static readonly (int Code, bool Large)[] Food =
+    [
+        (1, false),
+        (0xc, true),
+        (0xd, true),
+        (0xe, true),
+        (0xf, false),
+        (0x10, true),
+    ];
+
+    static RuleTables Made()
+    {
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var sizes = new byte[TestCatalog.BuildingSlots];
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        foreach (var type in Types)
+        {
+            var code = TestCatalog.CodeOf(type);
+            sizes[code] = (byte)(type == BuildingType.Sawmill ? 2 : 1);
+            needs[2 * code] = (byte)(type == BuildingType.Sawmill ? 3 : 2);
+            needs[2 * code + 1] = (byte)(type == BuildingType.Sawmill ? 2 : 0);
+        }
+
+        foreach (var (code, large) in Food)
+        {
+            sizes[code] = (byte)(large ? 2 : 1);
+            needs[2 * code] = (byte)(code % 4 + 1);
+            needs[2 * code + 1] = (byte)(code % 3);
+        }
+
+        return new RuleTables(
+            classes,
+            MadeProgram.MadeStartStock(),
+            jobData: MadeProgram.MadeJobData(),
+            catalog: TestCatalog.StandIn(
+                TestCatalog.Buildings(sizes: sizes, needs: needs, workers: MadeProgram.MadeWorkers())
+            )
+        );
+    }
+
+    static Game World()
+    {
+        var map = MapGenerator.Generate(
+            MadeProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
+        var game = GameFactory.Create(Made(), map);
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
+        game.Tick();
+
+        return game;
+    }
+
+    static bool Place(Game game, BuildingType? type, int x, int y)
+    {
+        var revision = game.Revision;
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceBuilding,
+                X = x,
+                Y = y,
+                Building = type,
+            }
+        );
+        game.Tick();
+
+        return game.Revision != revision;
+    }
+
+    // A node of the castle's land that the evaluator gives the site value and the node state 7 (nothing on or around its
+    // south-east node), the first in row-major order.
+    static (int X, int Y, BuildSiteResult Site) Find(Game game, int site)
+    {
+        for (var y = 0; y < game.Map.Size.Height - 1; y++)
+        {
+            for (var x = 0; x < game.Map.Size.Width - 1; x++)
+            {
+                var result = BuildSite.Evaluate(game.Tables, game.Map, x, y, 0, hasCastle: true);
+                if (result.Node == 7 && result.Site == site)
+                {
+                    return (x, y, result);
+                }
+            }
+        }
+
+        throw new AssertFailedException($"the map holds no free node of the site {site}");
+    }
+
+    [TestMethod]
+    [DataRow(2, 2, 0)]
+    [DataRow(4, 2, 0)]
+    [DataRow(9, 2, 0)]
+    [DataRow(0x11, 3, 2)]
+    public void EachOfTheFourTypesIsPlacedAsABuildingSiteOfItsNeeds(int code, int planks, int stones)
+    {
+        var type = TestCatalog.BuildingOf(code);
+        var game = World();
+        var (x, y, site) = Find(game, 4);
+
+        Assert.IsTrue(Place(game, type, x, y));
+
+        var placed = game.Buildings[1];
+        Assert.AreEqual(type, placed.Type);
+        Assert.IsTrue(placed.Constructing, "a placed building is a building site, never a finished building");
+        Assert.AreEqual(planks, placed.Site?.Planks);
+        Assert.AreEqual(stones, placed.Site?.Stones);
+        Assert.AreEqual(site.Height, placed.Site?.TargetHeight);
+        Assert.IsFalse(placed.WorkerInside || placed.WorkerOnTheWay);
+    }
+
+    [TestMethod]
+    public void EachFoodTypeIsPlacedAsABuildingSiteOfItsSizeAndNeeds()
+    {
+        foreach (var (code, large) in Food)
+        {
+            var game = World();
+            var (x, y, site) = Find(game, 4);
+
+            Assert.IsTrue(Place(game, TestCatalog.BuildingOf(code), x, y), $"type {code:x}");
+
+            var placed = game.Buildings[1];
+            Assert.AreEqual(TestCatalog.BuildingOf(code), placed.Type);
+            Assert.IsTrue(placed.Constructing, $"type {code:x} is a building site");
+            Assert.AreEqual(code % 4 + 1, placed.Site?.Planks, $"type {code:x} planks");
+            Assert.AreEqual(code % 3, placed.Site?.Stones, $"type {code:x} stones");
+            Assert.AreEqual(site.Height, placed.Site?.TargetHeight);
+            Assert.AreEqual(
+                large ? 0 : 1,
+                placed.Progress,
+                $"type {code:x}: a large site waits for its ground, a small one starts"
+            );
+            Assert.AreEqual(large ? 3 : 2, game.Map.At(x, y).Object.Code, $"type {code:x} object code by size");
+        }
+    }
+
+    [TestMethod]
+    public void AFoodTypeOnASiteOfASmallBuildingIsPlacedOnlyWhereItsSizeFits()
+    {
+        foreach (var (code, large) in Food)
+        {
+            var game = World();
+            var (x, y, _) = Find(game, 3);
+
+            Assert.AreEqual(!large, Place(game, TestCatalog.BuildingOf(code), x, y), $"type {code:x} on a site of 3");
+        }
+    }
+
+    // The pass of the building table gives a finished building to the handler of its type (0x42cd1d), which asks for its worker; a
+    // building under construction goes to the construction's own handler (0x42d55f), which asks for a builder. Both ask the castle
+    // through a road to their flag: with none, the request finds no worker and sets the request-failed bit.
+    [TestMethod]
+    public void AWoodcutterSiteAsksForItsBuilderAsAFinishedHutAsksForItsWorker()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        Place(game, BuildingType.Woodcutter, x, y);
+        var (hutX, hutY, _) = Find(game, 4);
+        Assert.IsTrue(game.PlaceFinishedBuilding(BuildingType.Woodcutter, hutX, hutY));
+
+        for (var tick = 0; tick < 300; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsTrue(game.Buildings[2].RequestFailed, "a finished hut with no road to it asked and found no worker");
+        Assert.IsTrue(game.Buildings[1].RequestFailed, "a building site with no road to it asked and found no builder");
+        Assert.IsFalse(game.Buildings[1].WorkerOnTheWay);
+    }
+
+    [TestMethod]
+    public void ASmallSiteStartsWithProgress1AndALargeOneWith0()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        Place(game, BuildingType.Sawmill, x, y);
+        var (smallX, smallY, _) = Find(game, 4);
+
+        Place(game, BuildingType.Woodcutter, smallX, smallY);
+
+        Assert.AreEqual(0, game.Buildings[1].Progress);
+        Assert.AreEqual(1, game.Buildings[2].Progress);
+    }
+
+    [TestMethod]
+    public void ASmallSiteTakesTheObjectCode2AndALargeSiteTheObjectCode3()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        Place(game, BuildingType.Sawmill, x, y);
+        var (smallX, smallY, _) = Find(game, 4);
+
+        Place(game, BuildingType.Forester, smallX, smallY);
+
+        Assert.AreEqual(3, game.Map.At(x, y).Object.Code);
+        Assert.AreEqual(2, game.Map.At(smallX, smallY).Object.Code);
+    }
+
+    [TestMethod]
+    public void TheSiteBringsItsFlagSouthEastOfIt()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+
+        Place(game, BuildingType.Stonecutter, x, y);
+
+        var flag = game.Flags[game.Buildings[1].Flag];
+        Assert.AreEqual((x + 1, y + 1), (flag.X, flag.Y));
+    }
+
+    // The node state 5 is a flag with no building standing south-east of the node: the building takes that flag, as the
+    // original's Building_Place does, and puts no second flag down.
+    [TestMethod]
+    public void ALargeSiteOnANodeWhoseSouthEastNodeHoldsAFlagTakesThatFlag()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 4);
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = x + 1,
+                Y = y + 1,
+            }
+        );
+        game.Tick();
+        var flags = game.Flags.Count;
+        Assert.AreEqual(5, BuildSite.Evaluate(game.Tables, game.Map, x, y, 0, hasCastle: true).Node);
+
+        Assert.IsTrue(Place(game, BuildingType.Sawmill, x, y));
+
+        Assert.AreEqual(flags, game.Flags.Count);
+        var flag = game.Flags[game.Buildings[1].Flag];
+        Assert.AreEqual((x + 1, y + 1), (flag.X, flag.Y));
+    }
+
+    [TestMethod]
+    public void ASmallBuildingTakesASiteOf3()
+    {
+        var game = World();
+        var (x, y, _) = Find(game, 3);
+
+        Assert.IsTrue(Place(game, BuildingType.Woodcutter, x, y));
+        Assert.AreEqual(0, game.Buildings[1].Site?.TargetHeight, "the evaluator leaves the height at 0 for the site 3");
+    }
+
+    [TestMethod]
+    public void ALargeTypeOnASiteOfASmallBuildingChangesNoState()
+    {
+        var refused = World();
+        var control = World();
+        var (x, y, _) = Find(refused, 3);
+
+        var placed = Place(refused, BuildingType.Sawmill, x, y);
+        control.Tick();
+
+        Assert.IsFalse(placed);
+        Assert.AreEqual(1, refused.Buildings.Count);
+        Assert.AreEqual(control.Digest(), refused.Digest());
+        Assert.AreEqual(0, refused.History.Events.All.Count(e => e.Type == EventType.PlaceBuilding));
+    }
+
+    [TestMethod]
+    public void ASiteOnAnOccupiedNodeChangesNoState()
+    {
+        var game = World();
+        var control = World();
+        var (x, y, _) = Find(game, 4);
+        Place(game, BuildingType.Woodcutter, x, y);
+        Place(control, BuildingType.Woodcutter, x, y);
+
+        var placed = Place(game, BuildingType.Forester, x, y);
+        control.Tick();
+
+        Assert.IsFalse(placed);
+        Assert.AreEqual(2, game.Buildings.Count);
+        Assert.AreEqual(control.Digest(), game.Digest());
+    }
+
+    [TestMethod]
+    public void ASiteOnANodeNobodyOwnsChangesNoState()
+    {
+        var refused = World();
+        var control = World();
+
+        // The far corner of the map lies outside the castle's land.
+        var placed = Place(refused, BuildingType.Woodcutter, 2, 2);
+        control.Tick();
+
+        Assert.IsFalse(placed);
+        Assert.AreEqual(control.Digest(), refused.Digest());
+    }
+
+    [TestMethod]
+    public void ASiteWithNoRoomForItsFlagChangesNoState()
+    {
+        var refused = World();
+        var control = World();
+
+        // The castle's flag stands south-east of the castle: no building fits on the node next to it.
+        var placed = Place(refused, BuildingType.Woodcutter, 16, 5);
+        control.Tick();
+
+        Assert.IsFalse(placed);
+        Assert.AreEqual(control.Digest(), refused.Digest());
+    }
+
+    [TestMethod]
+    public void ACommandWithNoTypeOrATypeNoSliceBuildsChangesNoState()
+    {
+        var game = World();
+        var control = World();
+        var (x, y, _) = Find(game, 4);
+
+        Assert.IsFalse(Place(game, null, x, y));
+        Assert.IsFalse(Place(game, BuildingType.Storehouse, x, y));
+        Assert.IsFalse(Place(game, BuildingType.Castle, x, y));
+        control.Tick();
+        control.Tick();
+        control.Tick();
+
+        Assert.AreEqual(1, game.Buildings.Count);
+        Assert.AreEqual(control.Digest(), game.Digest());
+    }
+
+    [TestMethod]
+    public void TwoCommandsThatDifferInTheTypeAreTwoCommands()
+    {
+        var wood = new Command
+        {
+            Tick = 1,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = 3,
+            Y = 4,
+            Building = BuildingType.Woodcutter,
+        };
+        var stone = wood with { Building = BuildingType.Stonecutter };
+
+        Assert.AreNotEqual(wood, stone);
+        Assert.AreEqual(wood, wood with { });
+        Assert.AreEqual(wood.GetHashCode(), (wood with { }).GetHashCode());
+    }
+
+    [TestMethod]
+    public void ASiteIsPartOfTheDigest()
+    {
+        var wood = World();
+        var stone = World();
+        var (x, y, _) = Find(wood, 4);
+
+        Place(wood, BuildingType.Woodcutter, x, y);
+        Place(stone, BuildingType.Sawmill, x, y);
+
+        Assert.AreNotEqual(wood.Digest(), stone.Digest());
+    }
+
+    [TestMethod]
+    public void TwoPlacementsAtOneNodeGiveTheSameDigestInEitherOrderOfEnqueue()
+    {
+        var forward = World();
+        var backward = World();
+        var (x, y, _) = Find(forward, 4);
+        var woodcutter = new Command
+        {
+            Tick = forward.TickCount,
+            Player = 0,
+            Kind = CommandKind.PlaceBuilding,
+            X = x,
+            Y = y,
+            Building = BuildingType.Woodcutter,
+        };
+        var sawmill = woodcutter with { Building = BuildingType.Sawmill };
+
+        forward.Enqueue(woodcutter);
+        forward.Enqueue(sawmill);
+        backward.Enqueue(sawmill);
+        backward.Enqueue(woodcutter);
+        forward.Tick();
+        backward.Tick();
+
+        Assert.AreEqual(forward.Digest(), backward.Digest());
+    }
+}

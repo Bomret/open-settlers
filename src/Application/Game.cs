@@ -10,7 +10,8 @@ namespace OpenSettlers.Simulation;
 /// The game only applies commands, runs the tick in the original's order, and builds the digest: each kind of command has its
 /// handler, the tick is the main pass, the digest is the port's, and everything else a caller reaches is a read-only part or a
 /// read-only query (<see cref="SearchOf"/>).
-/// The behaviours that change the game are internal, reached only by the assemblies that build and drive it.
+/// The behaviours that change the game are internal. The digest reads the game's state as values, a layout's setup is a set of
+/// operations of the game, and the removal is a query.
 /// </summary>
 /// <remarks>
 /// A game of <paramref name="parts"/>, at tick 0 with no command queued and no castle. Throws
@@ -24,13 +25,11 @@ public sealed class Game(GameParts parts)
 
     readonly GameParts _parts = parts;
     readonly List<Command> _applied = [];
+    IReadOnlyList<Command>? _appliedView;
 
     /// <summary>The handler of each kind of command.</summary>
     internal IReadOnlyDictionary<int, ICommandHandler> Handlers { get; } =
         parts.Handlers.ToDictionary(handler => handler.Kind);
-
-    /// <summary>The commands applied so far, in the order they were applied.</summary>
-    internal IReadOnlyList<Command> Applied => _applied;
 
     /// <summary>
     /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it changes: a
@@ -77,6 +76,49 @@ public sealed class Game(GameParts parts)
     /// <summary>The settler supply, or null in a game that does not run it.</summary>
     internal SettlerSupply? Supply => _parts.Supply;
 
+    /// <summary>The settler supply's values, or null in a game that does not run it.</summary>
+    public SupplyState? SupplyState =>
+        _parts.Supply is { } supply
+            ? new SupplyState
+            {
+                Period = supply.Period,
+                Countdown = supply.Countdown,
+                LastClock = supply.LastClock,
+                KnightAccumulator = supply.KnightAccumulator,
+                KnightsOwed = supply.KnightsOwed,
+                Running = supply.Running,
+                Cap = supply.Cap,
+                MayMake = supply.MayMake,
+            }
+            : null;
+
+    /// <summary>The commands applied so far, in the order they were applied.</summary>
+    public IReadOnlyList<Command> AppliedCommands => _appliedView ??= _applied.AsReadOnly();
+
+    /// <summary>The index of the flag the carriers' flag pass scans next.</summary>
+    public int CarrierFlagCursor => _parts.Carriers.FlagCursor;
+
+    /// <summary>The state of the game's random generator.</summary>
+    public RandomGenerator RandomState => _parts.Draws.Generator;
+
+    /// <summary>The state the huts' workers share for the map's object pass.</summary>
+    public (ushort Stamp, ushort Timer, int X, int Y, ushort Decay) HutPassState => _parts.Hut.ObjectPassState;
+
+    /// <summary>The phase the main pass is in.</summary>
+    public int PassPhase => _parts.Pass.Phase;
+
+    /// <summary>The index of the building the main pass scans next.</summary>
+    public int PassScanCursor => _parts.Pass.ScanCursor;
+
+    /// <summary>The number of the castle's settlers that are leaving it.</summary>
+    public int CastleLeavingCount => _parts.Roster.LeavingCount;
+
+    /// <summary>The slot of the settler that waits in the castle for <paramref name="job"/>, or 0 where none waits.</summary>
+    public int CastleWaitingSlot(Job job) => _parts.Roster.Waiting(job);
+
+    /// <summary>The occupied places of the shared ground, each as the index of the node and the slot of its settler.</summary>
+    public IReadOnlyList<(int Index, int Slot)> OccupiedMovementSlots => [.. _parts.Movement.Occupied];
+
     /// <summary>The causes the rules give their events.</summary>
     internal Causes Causes => _parts.Causes;
 
@@ -119,7 +161,7 @@ public sealed class Game(GameParts parts)
     /// building. Stand-in: the placement is logged among the commands applied, as the placement command it replaces, with no type,
     /// so the digests the layouts and scenarios of M3 gave stay.
     /// </summary>
-    internal bool PlaceFinishedBuilding(BuildingType type, int x, int y)
+    public bool PlaceFinishedBuilding(BuildingType type, int x, int y)
     {
         if (!_parts.Placement.PlaceFinished(type, x, y))
         {
@@ -139,6 +181,39 @@ public sealed class Game(GameParts parts)
 
         return true;
     }
+
+    /// <summary>
+    /// Stands the worker of the finished hut of <paramref name="type"/> on the node inside it, as a layout's finished-building
+    /// entry does where the type's job lets its settler stand in the hut (<see cref="WalkBehavior.StandsWorker"/>). Returns why it
+    /// refused, or null where the worker stands or the type's worker does not stand in a hut.
+    /// </summary>
+    public string? StandWorkerInFinishedHut(BuildingType type, int x, int y) =>
+        _parts.Walks.StandsWorker(type) ? _parts.Walks.StandWorkerInHut(x, y) : null;
+
+    /// <summary>
+    /// Places the carrier of the road that leaves the flag on the node in the direction, as a layout's settler entry does
+    /// (<see cref="CarrierBehavior.PlaceCarrierOnRoad"/>). Returns why it refused, or null.
+    /// </summary>
+    public string? PlaceCarrierOnRoad(int x, int y, int direction) =>
+        _parts.Carriers.PlaceCarrierOnRoad(x, y, direction);
+
+    /// <summary>
+    /// Puts a good on a place of the flag on the node, as a layout's good entry does (<see cref="GoodsTransport.PlaceGood"/>).
+    /// Returns why it refused, or null.
+    /// </summary>
+    public string? PlaceGood(int x, int y, int place, Good good) => _parts.Goods.PlaceGood(x, y, place, good);
+
+    /// <summary>
+    /// Sets or clears the layout mode: while it is set, the rules give their events the cause layout (<see cref="Causes.InLayout"/>).
+    /// The caller that sets it clears it again, also where a step of its setup throws.
+    /// </summary>
+    public void SetLayoutMode(bool inLayout) => _parts.Causes.InLayout = inLayout;
+
+    /// <summary>
+    /// The command that removes what stands on the node, by the class of the click (<see cref="CommandKind"/>), or null where
+    /// nothing there can be removed.
+    /// </summary>
+    public int? RemovalCommandAt(int x, int y) => _parts.Removal.CommandAt(x, y);
 
     /// <summary>The check of the road the player draws.</summary>
     public RoadPlanner RoadPlanner => _parts.RoadPlanner;
@@ -168,11 +243,11 @@ public sealed class Game(GameParts parts)
     /// <summary>The FNV-1a 64-bit fingerprint of the game state the ticks have produced (a command still queued is no part of it).</summary>
     public ulong Digest() => _parts.Digest.Of(this);
 
-    // The layout seam: applies the commands due at this tick and nothing else, with no pass and no tick advance. The layout
-    // loader places its things at tick 0 through it, and the tests that compare a command's own effect with the emulator's
-    // (the verbs of castle, flag, and road run no pass) apply a command without the pass that moves the map's lake details and
-    // the settlers. A game that is played runs only Tick.
-    internal void ApplyCommands()
+    /// <summary>
+    /// The layout seam: applies the commands due at this tick and nothing else, with no pass and no tick advance. The layout
+    /// loader places its things at tick 0 through it. A game that is played runs only <see cref="Tick"/>.
+    /// </summary>
+    public void ApplyCommands()
     {
         while (_parts.Queue.TryTakeDue(TickCount, out var command))
         {

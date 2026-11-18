@@ -32,9 +32,13 @@ interface that returns dedicated types, never a format type.
 - The map view, `src/Assets/`, the domain, and the application name no source type. The launch code and the asset
   browser build a source.
 
-`tests/OpenSettlers.Tests/` references all six assemblies and the job generator, and compiles `src/Launch/`,
-`src/Assets/`, and `src/MapView/` directly. `src/Viewer/` is not compiled into it. A new Godot-free folder of the
-Godot project goes into that list, or its code is untested.
+Each library has a test project beside it, `src/<Name>.Tests/`, and only that project sees the library's internals
+(ADR 0019, INV-0012, INV-0013). `src/Testing/` and `src/<Name>.Testing/` hold the test helpers, and
+`OpenSettlers.Tests/` beside the Godot project holds the tests of the repository itself. `src/Viewer/` has no test
+project. A new Godot-free folder of the Godot project becomes a library with a test project, or its code is untested.
+
+A new test goes in the project of the lowest library that reaches every type it uses
+(`docs/agents/verification.md`, "Where a new test goes").
 
 ## Game install
 

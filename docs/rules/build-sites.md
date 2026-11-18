@@ -20,7 +20,7 @@ itself, its six neighbors (east, south-east, south, west, north-west, north), th
 and the 18 of the third. The routine at `0x41f6a5` turns the spiral table into the offsets of those nodes once
 at the start of a game. **Emulated:** the harness (`site:N:S0,S1,S2`) ran the evaluator on every node of nine
 maps, the sizes 1 to 3 for three seeds each, and the engine's results match on every node
-(`tests/OpenSettlers.Tests/build-sites.txt`). The command `castle:N:S0,S1,S2:L:x,y:sites` places a castle and
+(`src/Adapters.Tests/build-sites.txt`). The command `castle:N:S0,S1,S2:L:x,y:sites` places a castle and
 runs the evaluator again on every node for the player who now owns territory; five such maps match as well
 (`castle-sites.txt`). The nodes of the castle and of its flag are left out of both comparisons, because their
 objects take the flag and building branch that the engine does not hold.

@@ -9,7 +9,7 @@ routine names are in the [Program index](program-index.md#simulation).
 
 **Emulated.** The harness verb `construct:` (`tools/GhidraDump/emulate.py`) runs two finished buildings at once with the phase routine
 `0x42965c`, as the verbs of the other food notes do for one. The buildings are a pig farm (type 14) at the flag 15,9 and a mill (type 15)
-at the flag 18,6. Two fixtures in `tests/OpenSettlers.Tests/` hold the result:
+at the flag 18,6. Two fixtures in `src/Adapters.Tests/` hold the result:
 
 - `grain-split.txt` is the castle's stock of five grains handed out while both buildings ask. The engine matches the request words of
   both flags, the fill bytes of both buildings, the castle's grain count, and the generator.

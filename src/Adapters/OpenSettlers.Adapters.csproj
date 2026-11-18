@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <!-- The simulation's internal members, such as Map.Index, are read by the game and the tests. -->
-    <InternalsVisibleTo Include="OpenSettlers" />
-    <InternalsVisibleTo Include="OpenSettlers.Tests" />
+    <!-- The tests read the simulation's internal members, such as Map.Index. -->
+    <InternalsVisibleTo Include="OpenSettlers.Adapters.Tests" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Domain" />

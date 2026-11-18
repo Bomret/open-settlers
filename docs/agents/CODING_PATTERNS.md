@@ -5,7 +5,7 @@ Target audience: LLMs working in this repo. The folder layout is in `README.md` 
 ## Namespace
 
 `OpenSettlers.<Folder>`, one namespace per folder of `src/`. For example, `OpenSettlers.Formats`. Tests use
-`OpenSettlers.Tests`. The layers are the exception: `src/Domain/` is `OpenSettlers.Domain`, and both
+`OpenSettlers.Tests`, in every test project. The layers are the exception: `src/Domain/` is `OpenSettlers.Domain`, and both
 `src/Application/` and `src/Adapters/Simulation/` are `OpenSettlers.Simulation`. Two source folders are exceptions
 too (ADR 0017): `src/Import.HistoryEdition/Formats/` is `OpenSettlers.Formats`, and `src/Import.OpenSettlers/` is
 `OpenSettlers.Import.ContentSet`, because `OpenSettlers.Import.OpenSettlers` would shadow the root namespace inside
@@ -78,8 +78,8 @@ files, layer by layer:
 A job without a module of some kind builds and keeps the shared defaults. The carrier's, the castle roster's, and the walk
 home's rules stay hand-wired core. The domain, application, and adapter generators do not find test doubles in the test assembly. They write a
 registry only into the compilation that declares their base type. A test proves those generators on fixture jobs
-compiled through `CSharpGeneratorDriver` (`FixtureJobTests`). The test project compiles the map view's sources with the
-looks generator. A look declared in the test assembly therefore enters the test compilation's look registries.
+compiled through `CSharpGeneratorDriver` (`FixtureJobTests`). A look declared in a test assembly that runs the looks generator over library sources
+therefore enters that test compilation's look registries.
 
 A malformed module fails the build with a message that names the class:
 
@@ -103,10 +103,9 @@ and a test builds a `RuleTables` or a flag table by hand instead of importing th
 
 ## Godot boundary
 
-Keep logic that needs no engine in Godot-free folders of `src/`. The test project compiles the source files
-of those folders directly (a `<Compile Include>` per folder in `OpenSettlers.Tests.csproj`), so the tests
-run without Godot. A `using Godot` in such a folder breaks the test build. The three layer assemblies are
-projects the test project references, and they use the plain .NET SDK with no Godot type.
+Keep logic that needs no engine in Godot-free folders of `src/`. Each such folder is a library with its own project and
+test project (`src/<Name>/`, `src/<Name>.Tests/`), so the tests run without Godot. A `using Godot` in such a folder
+breaks the test build. The libraries use the plain .NET SDK with no Godot type.
 
 - When Godot-free code needs an engine service, pass it in as a delegate.
 - Only the folders that build scenes or views reference Godot.

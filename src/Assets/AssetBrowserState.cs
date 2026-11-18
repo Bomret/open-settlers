@@ -32,6 +32,11 @@ public sealed class AssetBrowserState
     /// <summary>The selected kind's name; null when there are no kinds.</summary>
     public string? SelectedKind { get; private set; }
 
+    /// <summary>
+    /// The subject a crash names: the selected asset's file, else the selected kind, else null.
+    /// </summary>
+    public string? CrashSubject => SelectedAsset?.File ?? SelectedKind;
+
     /// <summary>The assets of the selected kind in the kind's order; empty when it lists none or could not list them.</summary>
     public IReadOnlyList<Asset> Assets { get; private set; } = [];
 

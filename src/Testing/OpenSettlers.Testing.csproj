@@ -1,0 +1,7 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- The helpers shared by every test project. It references no library of the engine (INV-0012) and holds no test:
+         a filtered run of the solution finds none in it and exits 8, which the mise tasks accept. -->
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+</Project>
