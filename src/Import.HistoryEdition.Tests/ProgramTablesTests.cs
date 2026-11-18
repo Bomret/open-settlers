@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
