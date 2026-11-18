@@ -28,6 +28,13 @@ public abstract record Activity
     public virtual bool IsDrawn => false;
 
     /// <summary>
+    /// Whether a settler in this activity takes one more turn every pass where the game gives the settlers in view their turns
+    /// (<c>MainPass.EveryPassTurns</c>): every activity the view draws, and the castle's settler, whose turns grow the castle
+    /// under construction (<see cref="BuildsCastle"/>).
+    /// </summary>
+    public virtual bool TakesEveryPassTurn => IsDrawn;
+
+    /// <summary>
     /// Whether this is one of the activities the play script's <c>fast-forward &lt;job&gt; carrying</c> waits for: a carrier on its
     /// road with a good in its hands, a settler on its free walk back to its hut with the good it took, or the sawmiller with his
     /// plank in the sawmill's door and on the step out of it. The activities where a settler hands a good over or puts it down are
@@ -357,6 +364,12 @@ public sealed record BuildsCastle : Activity
 {
     /// <inheritdoc />
     public override int Code => 0xa;
+
+    /// <summary>
+    /// The settler stands on the castle's node, which the original's view pass (<c>0x42f4f1</c>) scans while the castle is shown, so
+    /// each pass its turn grows the castle by the pass's units times 128 (<c>docs/rules/construction.md</c>). It is not drawn.
+    /// </summary>
+    public override bool TakesEveryPassTurn => true;
 }
 
 /// <summary>State 12: the settler has finished standing by at the castle. The original's next steps are not ported.</summary>
