@@ -272,8 +272,24 @@ public sealed class RepositoryContentTests
         Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(RepositoryRoot(), searchPath: ""));
     }
 
+    // An extracted archive, or a checkout git refuses as unsafe, is no git work tree.
+    [TestMethod]
+    public void TheUidCheckReportsInconclusiveOutsideAGitWorkTree()
+    {
+        var folder = Directory.CreateTempSubdirectory("no-work-tree-").FullName;
+        try
+        {
+            Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(folder));
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
     // The repository's tracked files by repository-relative path, from git ls-files with every GIT_* variable of the host
-    // removed. Reports inconclusive where git is not on searchPath (the host's path where null).
+    // removed. Reports inconclusive where git is not on searchPath (the host's path where null) or root is not in a git work
+    // tree.
     static List<string> TrackedFiles(string root, string? searchPath = null)
     {
         var git = PythonTool.Locate(searchPath, "git");
@@ -282,28 +298,16 @@ public sealed class RepositoryContentTests
             Assert.Inconclusive("git is not on the path");
         }
 
-        var info = new System.Diagnostics.ProcessStartInfo(git)
+        var inside = PythonTool.Git(git, root, "rev-parse", "--is-inside-work-tree");
+        if (inside.Exit != 0 || inside.Stdout.Trim() != "true")
         {
-            WorkingDirectory = root,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        info.ArgumentList.Add("ls-files");
-        info.ArgumentList.Add("-z");
-        foreach (
-            var name in info.Environment.Keys.Where(key => key.StartsWith("GIT_", StringComparison.Ordinal)).ToList()
-        )
-        {
-            info.Environment.Remove(name);
+            Assert.Inconclusive($"{root} is not a git work tree: {inside.Stderr.Trim()}");
         }
 
-        using var process = System.Diagnostics.Process.Start(info)!;
-        var stderr = process.StandardError.ReadToEndAsync();
-        var listing = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-        Assert.AreEqual(0, process.ExitCode, $"git ls-files: {stderr.Result}");
+        var listing = PythonTool.Git(git, root, "ls-files", "-z");
+        Assert.AreEqual(0, listing.Exit, $"git ls-files: {listing.Stderr}");
 
-        return [.. listing.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
+        return [.. listing.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
     }
 
     // Godot skips a file or folder whose name starts with a dot, at any depth, every folder at any depth below a .gdignore, and
