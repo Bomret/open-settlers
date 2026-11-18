@@ -219,11 +219,19 @@ public sealed class SettlerFiguresTests
     static List<SettlerDraw> Terms(IEnumerable<Settler> settlers, ushort clock = 0, Map? map = null) =>
         SettlerTerms.Of(Steps, map ?? Blank(), settlers, clock);
 
-    static List<SettlerPick> Picks(SettlerFigureTables tables, IEnumerable<Settler> settlers, ushort clock = 0, Map? map = null) =>
-        SettlerTerms.Picks(tables, Terms(settlers, clock, map));
+    static List<SettlerPick> Picks(
+        SettlerFigureTables tables,
+        IEnumerable<Settler> settlers,
+        ushort clock = 0,
+        Map? map = null
+    ) => SettlerTerms.Picks(tables, Terms(settlers, clock, map));
 
-    static int[] Entries(SettlerFigureTables tables, IEnumerable<Settler> settlers, ushort clock = 0, Map? map = null) =>
-        SettlerTerms.Entries(tables, Terms(settlers, clock, map));
+    static int[] Entries(
+        SettlerFigureTables tables,
+        IEnumerable<Settler> settlers,
+        ushort clock = 0,
+        Map? map = null
+    ) => SettlerTerms.Entries(tables, Terms(settlers, clock, map));
 
     // A job draws its figure through its handler (0x43f744 plus 8 for each job); a job the engine holds no handler for, such as the
     // castle's own settler or a settler without a job, draws nothing, even where it walks.
@@ -475,10 +483,7 @@ public sealed class SettlerFiguresTests
 
         var walk = Entries(tables, [Miller(7, ActivityOf(2))]);
         var grinds = Entries(tables, [Miller(8, new Grinds { Phase = 1 })]);
-        var carries = Entries(
-            tables,
-            [Miller(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Flour } })]
-        );
+        var carries = Entries(tables, [Miller(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Flour } })]);
 
         // Figure byte 3 in the row 0x1d (base 1700) for the walk and in the row 0x1e (base 1800) for the step with the flour, figure byte
         // 0x81 in the work state: the word 0x1f80 + 0x81 = 0x2001, the row 0x20 (base 2000) and the offset 1. Waiting for grain, or
@@ -498,10 +503,7 @@ public sealed class SettlerFiguresTests
 
         var walk = Entries(tables, [Baker(7, ActivityOf(2))]);
         var bakes = Entries(tables, [Baker(8, new Bakes { Phase = 1 })]);
-        var carries = Entries(
-            tables,
-            [Baker(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Bread } })]
-        );
+        var carries = Entries(tables, [Baker(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Bread } })]);
 
         // Figure byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22 (base 2200) for the step with the bread, figure byte
         // 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400) and the offset 1. Waiting for flour, or
@@ -520,10 +522,7 @@ public sealed class SettlerFiguresTests
 
         var walk = Entries(tables, [Butcher(7, ActivityOf(2))]);
         var works = Entries(tables, [Butcher(8, new Butchers { Working = true })]);
-        var carries = Entries(
-            tables,
-            [Butcher(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Meat } })]
-        );
+        var carries = Entries(tables, [Butcher(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Meat } })]);
 
         // The same figure bytes as the miller's, in the butcher's rows: byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22
         // (base 2200) for the step with the meat, byte 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400).
@@ -541,10 +540,7 @@ public sealed class SettlerFiguresTests
 
         var walk = Entries(tables, [PigFarmer(7, ActivityOf(2))]);
         var works = Entries(tables, [PigFarmer(8, new TendsPigs { Phase = 1 })]);
-        var carries = Entries(
-            tables,
-            [PigFarmer(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Pig } })]
-        );
+        var carries = Entries(tables, [PigFarmer(7, new WaitsOutStep { Then = new PutsDownGood { Good = Good.Pig } })]);
 
         // Figure byte 3 in the row 0x21 (base 2100) for the walk and in the row 0x22 (base 2200) for the step with the pig, figure byte
         // 0x81 in the work state: the word 0x2380 + 0x81 = 0x2401, the row 0x24 (base 2400) and the offset 1. He is drawn in each
@@ -579,8 +575,8 @@ public sealed class SettlerFiguresTests
     {
         // A term of a frame the sequences hold nothing for: the tables pick none, whatever the part.
         var tables = Tables();
-        var terms = new[] { SettlerPart.Figure, SettlerPart.Overlay, SettlerPart.SecondFigure }.Select(part =>
-            new SettlerDraw
+        var terms = new[] { SettlerPart.Figure, SettlerPart.Overlay, SettlerPart.SecondFigure }.Select(
+            part => new SettlerDraw
             {
                 Row = 0,
                 X = 0,
