@@ -1038,6 +1038,7 @@ public sealed class HistoryEditionSourceTests
 
         var source = OpenWithSettlers(fake);
 
+        StringAssert.Contains(source.ObjectsProblem!, "no object sprite");
         StringAssert.Contains(source.ObjectsProblem!, "flame lists");
     }
 
