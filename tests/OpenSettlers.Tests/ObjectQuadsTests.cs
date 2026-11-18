@@ -49,6 +49,7 @@ public sealed class ObjectQuadsTests
         public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
 
         public ObjectImage? Draw(FlameDraw flame) => null;
+        public ObjectImage? Draw(RoadMarker marker) => null;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) =>
             draw.Object == MapObject.Flag ? new ObjectDrawing { Image = Flag, Shadow = FlagShadow } : null;
@@ -217,6 +218,7 @@ public sealed class ObjectQuadsTests
         public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
 
         public ObjectImage? Draw(FlameDraw flame) => null;
+        public ObjectImage? Draw(RoadMarker marker) => null;
 
         public ObjectDrawing? Draw(MapObjectDraw draw) => answer;
 

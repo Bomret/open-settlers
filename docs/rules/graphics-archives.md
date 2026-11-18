@@ -147,13 +147,14 @@ The call sites of `0x44de9a` and the entries they reach (the number is the value
 | `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d` | the counter shifted right by 3 and masked to 0 to 3, plus 4 times the object byte 5 masked to 0 to 3, plus 182 | 502 to 517 |
 | `0x44e6c5` | the object byte 9 plus 174; the site runs only for a byte of 1 or more (the test at `0x44e653`) | 495 to 749; the byte is not masked (inferred) |
 | `0x450f2f` | a byte of the object that the EDI block's `+0x30` pointer names, at offset `0x101`: 47, or the byte plus 46 (a byte of 5 counts as 4) | 367 and up; the byte is not bounded here |
-| `0x450ada`, `0x450fc5` | a word of a list that the game fills at run time (read through the EDI block's `+0x20` pointer at `+0x1aa` and `+0xa4`) | not bounded here |
+| `0x450fc5` | a word of the road cursor's list at view `+0xa4` ([Roads](roads.md#the-road-markers)): 32 or 33, 44, 45, or 39 plus a difference of two 5-bit heights | 352, 353, 364, 365, and 328 to 390, of which 355 to 363 for a difference up to 4 either way |
+| `0x450ada` | a word of a list that the game fills at run time (read through the EDI block's `+0x20` pointer at `+0x1aa`) | not bounded here |
 
 Entries 502 to 517 are reached by two routes (the object byte 9 of `0x44e6c5` and the four counter sites). Entry 494
 would need an object byte of 0, which `0x44e6c5` skips, and no other route shown hands it over. The claim of 495 to
 521 as sprites is **inferred** at its upper end: the unmasked byte could name any value up to 749. The archives hold
 no entry in 522 to 599 and hold entries in 600 to 749, so the byte could also name a present entry from 600 on. What remains unreached is 494, 3900 to 3994, and 3999. The open routes are the
-three callers `0x450f2f`, `0x450ada`, and `0x450fc5`, whose writers were not followed, so the status stays inferred.
+two callers `0x450f2f` and `0x450ada`, whose writers were not followed, so the status stays inferred.
 
 ## Corrupt archives
 

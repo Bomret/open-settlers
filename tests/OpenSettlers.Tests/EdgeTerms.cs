@@ -31,6 +31,7 @@ static class EdgeTerms
         public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
 
         public ObjectImage? Draw(FlameDraw flame) => null;
+        public ObjectImage? Draw(RoadMarker marker) => null;
 
         public ObjectImage? Draw(RoadStrip strip)
         {

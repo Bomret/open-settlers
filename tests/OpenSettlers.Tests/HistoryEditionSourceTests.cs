@@ -866,6 +866,47 @@ public sealed class HistoryEditionSourceTests
         Assert.AreSame(source.Draw(BuildMarker.Mine), source.Draw(BuildMarker.Mine));
     }
 
+    // The road cursor draws its word plus 320: the end mark 352, the blocked mark 364, the way-back mark 365, and the slope
+    // 359 plus the height difference, with no bound, so 5 draws the blocked image and -5 draws 354 (docs/rules/roads.md, "The
+    // road markers"). Each fake sprite's horizontal offset is its entry less 340.
+    [TestMethod]
+    [DataRow(RoadMarkerKind.End, 0, 352)]
+    [DataRow(RoadMarkerKind.Blocked, 0, 364)]
+    [DataRow(RoadMarkerKind.WayBack, 0, 365)]
+    [DataRow(RoadMarkerKind.Slope, -5, 354)]
+    [DataRow(RoadMarkerKind.Slope, -4, 355)]
+    [DataRow(RoadMarkerKind.Slope, 0, 359)]
+    [DataRow(RoadMarkerKind.Slope, 4, 363)]
+    [DataRow(RoadMarkerKind.Slope, 5, 364)]
+    public void EachRoadMarkerDrawsTheOriginalsSpriteAndNoShadow(RoadMarkerKind kind, int difference, int entry)
+    {
+        using var fake = ObjectFake(payloads =>
+        {
+            for (var each = 352; each <= 365; each++)
+            {
+                payloads[each] = ObjectGraphicsTests.Square((short)(each - 340), 2);
+            }
+        });
+        var source = Open(fake);
+        var marker = new RoadMarker { Kind = kind, Difference = difference };
+
+        Assert.AreEqual(entry - 340, source.Draw(marker)!.OffsetX);
+        Assert.AreSame(source.Draw(marker), source.Draw(marker));
+    }
+
+    // A difference whose entry lies outside the archive's sprites (321 to 372) draws nothing, even where the archive holds an
+    // entry there, as does an entry the archive leaves out (366).
+    [TestMethod]
+    [DataRow(7)]
+    [DataRow(14)]
+    [DataRow(-31)]
+    public void ARoadMarkerOutsideThePresentSpritesDrawsNothing(int difference)
+    {
+        using var fake = ObjectFake(payloads => payloads[373] = ObjectGraphicsTests.Square(1, 1));
+
+        Assert.IsNull(Open(fake).Draw(new RoadMarker { Kind = RoadMarkerKind.Slope, Difference = difference }));
+    }
+
     static BorderPost Post(int slope, int ground) =>
         new()
         {

@@ -133,9 +133,10 @@ public sealed class CastleRoster(
 
     /// <summary>
     /// The castle's building and its 20 first settlers (0x442f0c with 0x44333d): all in the castle, in state 1 but the first,
-    /// which stands by while the castle is built. Their time stamp is the clock of the placement.
+    /// which stands by while the castle is built. Their time stamp is the clock of the placement. With <paramref name="named"/> the
+    /// castle settler is followed by those settlers in their order instead (a layout's castle, <see cref="Command.Settlers"/>).
     /// </summary>
-    public void CreateCastleSettlers(int x, int y)
+    public void CreateCastleSettlers(int x, int y, IReadOnlyList<Job>? named = null)
     {
         // The castle's status 0x50: the worker is inside, and the bit 4 has no recovered meaning.
         buildings.Add(
@@ -148,7 +149,7 @@ public sealed class CastleRoster(
             }
         );
         history.FillBuilding(0);
-        foreach (var job in CastleJobs)
+        foreach (var job in named is null ? CastleJobs : [new CastleSettler(), .. named])
         {
             settlers.Add(
                 new Settler(job, 0, x, y, clock.Now, job is CastleSettler ? new BuildsCastle() : new WaitsInCastle())

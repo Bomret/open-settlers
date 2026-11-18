@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace OpenSettlers.Simulation;
@@ -13,6 +14,22 @@ public enum RoadStatus
 
     /// <summary>The last step reached a flag and the road was accepted.</summary>
     Complete,
+}
+
+/// <summary>
+/// The road cursor's verdict of one direction at the end of a road being drawn (<see cref="RoadBuilding.Verdicts"/>,
+/// <c>CONTEXT.md</c> "Road marker").
+/// </summary>
+public enum RoadCursorVerdict
+{
+    /// <summary>The cursor refuses the step: the blocked mark.</summary>
+    Blocked,
+
+    /// <summary>The step goes back along the road's last step: the way-back mark.</summary>
+    WayBack,
+
+    /// <summary>The cursor allows the step: the slope mark.</summary>
+    Open,
 }
 
 /// <summary>
@@ -44,7 +61,8 @@ public static class RoadBuilding
         int startX,
         int startY,
         IReadOnlyList<int> directions,
-        bool keep
+        bool keep,
+        Action<int, int, int>? atEnd = null
     )
     {
         var start = map.Index(startX, startY);
@@ -154,9 +172,54 @@ public static class RoadBuilding
             return (status, road);
         }
 
+        // The road still being drawn stands in the map here, as it does while the original's cursor update runs.
+        if (status == RoadStatus.Open)
+        {
+            atEnd?.Invoke(cursor.X, cursor.Y, steps.Count);
+        }
+
         Revert();
 
         return (status, status == RoadStatus.Complete ? road : null);
+    }
+
+    /// <summary>
+    /// The road cursor's verdict of each of the six directions at the end of the road that starts at the flag on the node
+    /// and takes the given directions, as the original's cursor update (<c>0x44b6ce</c>) judges them with the road's bits
+    /// in the map: blocked where it refuses the step, the way back where a road begun goes back along its last step, and
+    /// open otherwise. The judgment is <see cref="Allowed"/>, the click's own. The road's bits are taken back after, so
+    /// the map is left as it was. A start or a step the click refuses, or a road that reached a flag, leaves every
+    /// direction blocked.
+    /// </summary>
+    internal static IReadOnlyList<RoadCursorVerdict> Verdicts(
+        RuleTables tables,
+        Map map,
+        int startX,
+        int startY,
+        IReadOnlyList<int> directions
+    )
+    {
+        var verdicts = new RoadCursorVerdict[6];
+        Walk(
+            tables,
+            map,
+            startX,
+            startY,
+            directions,
+            keep: false,
+            (x, y, length) =>
+            {
+                for (var direction = 0; direction < 6; direction++)
+                {
+                    verdicts[direction] =
+                        !Allowed(tables, map, x, y, length, direction) ? RoadCursorVerdict.Blocked
+                        : length != 0 && map.At(x, y).Roads.Has(direction) ? RoadCursorVerdict.WayBack
+                        : RoadCursorVerdict.Open;
+                }
+            }
+        );
+
+        return verdicts;
     }
 
     // The directions the original's cursor update (0x44b6ce) leaves allowed at the road's end: the node in that
