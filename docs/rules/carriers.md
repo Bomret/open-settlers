@@ -148,6 +148,14 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   the removal marks while it hands a good over (state 0xe) is the exception. The second half of the handover
   (`Settler_DeliverGood`, `0x43c4ea`) reads byte 15 not 0 as its own mark and sets it to 0. The carrier then goes on along its
   road in state 3, with no walk to a storage. Confirmed, read from the code.
+- **A join past the length class.** Where taking a flag down joins two roads that hold more settlers than the new road's class
+  holds, `Flag_TakeDown` (`0x462153`) marks the settlers past that number from the start of its lists. A carrier that waits
+  takes state 0x44, and every other settler takes byte 15 `0xff`, a carrier that hands a good over (state 0xe) included
+  ([Removal](removal.md#taking-a-flag-down)). The road bytes count only the settlers it keeps. A marked carrier in state 0xe
+  loses its mark to the handover, as above, and works on along the joined road. The road then holds one carrier more than
+  its bytes count. Its carriers' turns at the end of the road read that count: with one carrier counted, each of the two
+  takes state 0x42 as a road's only carrier does, and no fourth empty turn releases either. **Inferred:** read from the code
+  of both routines; no emulated game joins a road past its class (`RemovalLogicTests`, made-up tables).
 - **State 0x42** (`0x42ff81`): the item does not change while no good waits to go along the carrier's road (in over 20 turns of the
   emulator, 350 passes). With a good at either end of the road the carrier is told to fetch it and takes state 3 again:
   [Goods at a flag](goods.md#the-carrier-told-to-fetch).
@@ -202,10 +210,6 @@ node is the middle of the road.
 - Which flags' carriers a flag pass of a player with a computer opponent sees: the phase count (33) is inferred.
 - A carrier released from a busy road whose road is taken down before it reaches a flag: the removal's gather skips a marked
   carrier, and what the original does with it is not recovered.
-- A joined road with more settlers than its length class holds (the join of [Removal](removal.md#taking-a-flag-down),
-  **inferred**): a carrier that the removal marks while it hands a good over keeps working the joined road (state 0xe, above).
-  The counts of both ends leave it out. Its turns next to a flag then see fewer than two carriers, so no fourth empty turn
-  releases it. The road holds one carrier more than it counts. Not confirmed by a run and not handled by the engine.
 - What a carrier that walked home does in the castle after it enters: in `drain` it comes out and goes in again every 82 passes
   (states 4, 0x19, 0x10, 2), which no rule note covers yet.
 
