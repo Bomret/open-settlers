@@ -37,14 +37,17 @@ public sealed record Knight(int Level) : Job
     /// <summary>The number of the last knight's job.</summary>
     public const int LastNumber = 26;
 
-    /// <summary>The level: 0 for the first knight. A level whose number is no knight's is refused.</summary>
+    /// <summary>The level of the last knight; the level attributes above name each level up to it.</summary>
+    public const int LastLevel = 4;
+
+    /// <summary>The level: 0 for the first knight. A level above <see cref="LastLevel"/> is refused.</summary>
     public int Level { get; } =
-        Level is >= 0 and <= LastNumber - Number
+        Level is >= 0 and <= LastLevel
             ? Level
             : throw new ArgumentException($"The level {Level} is no knight's.", nameof(Level));
 
     /// <summary>Whether a knight of a higher level exists, so that this one may be promoted.</summary>
-    public bool CanBePromoted => Level < LastNumber - Number;
+    public bool CanBePromoted => Level < LastLevel;
 
     /// <summary>The knight of the next level; throws for the last level.</summary>
     public Knight Promoted => new(Level + 1);
