@@ -24,13 +24,11 @@ public sealed class Game(GameParts parts)
 
     readonly GameParts _parts = parts;
     readonly List<Command> _applied = [];
+    IReadOnlyList<Command>? _appliedView;
 
     /// <summary>The handler of each kind of command.</summary>
     internal IReadOnlyDictionary<int, ICommandHandler> Handlers { get; } =
         parts.Handlers.ToDictionary(handler => handler.Kind);
-
-    /// <summary>The commands applied so far, in the order they were applied.</summary>
-    internal IReadOnlyList<Command> Applied => _applied;
 
     /// <summary>
     /// The number of commands applied so far. A view that draws the flags, roads, and buildings redraws when it changes: a
@@ -94,7 +92,7 @@ public sealed class Game(GameParts parts)
             : null;
 
     /// <summary>The commands applied so far, in the order they were applied.</summary>
-    public IReadOnlyList<Command> AppliedCommands => _applied;
+    public IReadOnlyList<Command> AppliedCommands => _appliedView ??= _applied.AsReadOnly();
 
     /// <summary>The index of the flag the carriers' flag pass scans next.</summary>
     public int CarrierFlagCursor => _parts.Carriers.FlagCursor;

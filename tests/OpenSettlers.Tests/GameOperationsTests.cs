@@ -49,30 +49,30 @@ public sealed class GameOperationsTests
     }
 
     [TestMethod]
-    public void TheDigestValuesEqualWhatTheBehaviorsHoldAtEveryTick()
+    public void TheDigestValuesMoveWithTheTicksAndTheAppliedCommandsAreReadOnly()
     {
+        // Each value is a pass-through of a behavior's state, and the golden digests (GoldenTests) pin that state; this
+        // test pins that the values are live, so a getter that returned a constant or a stale copy fails.
         var game = Built();
+        var random = new System.Collections.Generic.HashSet<RandomGenerator> { game.RandomState };
+        var phases = new System.Collections.Generic.HashSet<int> { game.PassPhase };
         var occupied = false;
 
         for (var tick = 0; tick < 300; tick++)
         {
             game.Tick();
 
-            Assert.AreEqual(game.Carriers.FlagCursor, game.CarrierFlagCursor);
-            CollectionAssert.AreEqual(game.Applied.ToList(), game.AppliedCommands.ToList());
-            Assert.AreEqual(game.Draws.Generator, game.RandomState);
-            Assert.AreEqual(game.Hut.ObjectPassState, game.HutPassState);
-            Assert.AreEqual(game.Pass.Phase, game.PassPhase);
-            Assert.AreEqual(game.Pass.ScanCursor, game.PassScanCursor);
-            Assert.AreEqual(game.Roster.LeavingCount, game.CastleLeavingCount);
-            CollectionAssert.AreEqual(game.Roster.WaitingList.ToList(), game.CastleWaitingList.ToList());
-            CollectionAssert.AreEqual(game.Movement.Occupied.ToList(), game.OccupiedMovementSlots.ToList());
+            random.Add(game.RandomState);
+            phases.Add(game.PassPhase);
             occupied |= game.OccupiedMovementSlots.Count > 0;
         }
 
+        Assert.IsTrue(random.Count > 1, "the generator draws in the passes");
+        Assert.IsTrue(phases.Count > 1, "the main pass runs through its phases");
         Assert.IsTrue(occupied, "the walkers occupy slots at some tick, so the list is not trivially empty");
-
+        Assert.AreEqual(game.Revision, game.AppliedCommands.Count);
         Assert.IsTrue(game.AppliedCommands.Count > 0);
+        Assert.IsNotInstanceOfType<System.Collections.Generic.List<Command>>(game.AppliedCommands);
     }
 
     [TestMethod]
