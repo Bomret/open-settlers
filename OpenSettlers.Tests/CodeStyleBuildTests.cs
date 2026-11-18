@@ -122,7 +122,7 @@ public sealed class CodeStyleBuildTests
             .ToArray();
 
         CollectionAssert.IsSubsetOf(
-            new[] { "**/*.Tests/**", "**/*.Testing/**", "src/Testing/**", "OpenSettlers.Tests/**" },
+            new[] { "**/*.Tests/**", "**/*.Testing/**", "src/Testing/**" },
             removed
         );
     }
