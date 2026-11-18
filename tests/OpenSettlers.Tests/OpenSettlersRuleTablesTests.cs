@@ -140,6 +140,31 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.AreEqual("knight-level-3", tables.Catalog.Require(new Knight(3)).Name);
     }
 
+    // The order the History Edition's codes give the same types (fisher-hut 1, woodcutter-hut 2, ... sawmill 0x11, castle 0x18).
+    [TestMethod]
+    public void TheBasicSetsTieRanksOrderItsBuildingTypesAsTheHistoryEditionOrdersThem()
+    {
+        var tables = Checked();
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "fisher-hut",
+                "woodcutter-hut",
+                "stonecutter-hut",
+                "forester-hut",
+                "farm",
+                "butcher",
+                "pig-farm",
+                "mill",
+                "baker",
+                "sawmill",
+                "castle",
+            },
+            tables.Catalog.Buildings.OrderBy(entry => entry.TieRank).Select(entry => entry.Name).ToArray()
+        );
+    }
+
     [TestMethod]
     public void AJobNameThatIsNoJobOfTheEngineIsRefusedWithTheNamesItKnows()
     {

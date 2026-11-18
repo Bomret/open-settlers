@@ -11,11 +11,13 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuildingCatalogTests
 {
-    static BuildingEntry Entry(string name, int? code = null) =>
+    // The tie rank is the code, or the hash of the name for a type with none, where the test gives no rank.
+    static BuildingEntry Entry(string name, int? code = null, int? rank = null) =>
         new()
         {
             Name = name,
             OriginalCode = code,
+            TieRank = rank ?? code ?? (int)Fnv1a.Of(name),
             Size = BuildingSize.Small,
             Needs = new BuildingNeeds { Planks = 1, Stones = 0 },
             StandingDoor = 8,
@@ -57,6 +59,16 @@ public sealed class BuildingCatalogTests
         StringAssert.Contains(code.Message, "mill");
         StringAssert.Contains(code.Message, "original code");
         StringAssert.Contains(bad.Message, "Pig Farm");
+    }
+
+    [TestMethod]
+    public void TheCatalogRefusesTwoTypesWithOneTieRankNamingBoth()
+    {
+        var error = Assert.ThrowsExactly<ArgumentException>(() =>
+            new ContentCatalog([], [Entry("smithy", rank: 3), Entry("mint", rank: 3)])
+        );
+
+        Assert.AreEqual("The building type 'smithy' is refused: mint has this tie rank, 3.", error.Message);
     }
 
     [TestMethod]
@@ -104,9 +116,10 @@ public sealed class BuildingCatalogTests
     }
 
     [TestMethod]
-    public void TwoCommandsOfOneTickThatDifferOnlyByBuildingComeInTheOrderOfTheirStableNames()
+    public void TwoCommandsOfOneTickThatDifferOnlyByBuildingComeInTheOrderOfTheirTieRanks()
     {
-        // By code the woodcutter's hut (2) came before the baker (0x10); by name the baker comes first.
+        // The woodcutter's hut ranks 2 and the baker 0x10, as their codes in the original: the woodcutter's hut comes first, though the
+        // baker's stable name comes first.
         Command Place(BuildingType? type) =>
             new()
             {
@@ -117,7 +130,7 @@ public sealed class BuildingCatalogTests
                 Y = 4,
                 Building = type,
             };
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         queue.Add(Place(BuildingType.Woodcutter), 0);
         queue.Add(Place(BuildingType.Baker), 0);
         queue.Add(Place(null), 0);
@@ -128,7 +141,7 @@ public sealed class BuildingCatalogTests
             taken.Add(command.Building);
         }
 
-        CollectionAssert.AreEqual(new BuildingType?[] { null, BuildingType.Baker, BuildingType.Woodcutter }, taken);
+        CollectionAssert.AreEqual(new BuildingType?[] { null, BuildingType.Woodcutter, BuildingType.Baker }, taken);
     }
 
     // A game on the made-up tables with a layout that stands a finished woodcutter's hut. With codeless, no building type of the catalog

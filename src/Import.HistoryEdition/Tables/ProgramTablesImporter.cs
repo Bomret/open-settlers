@@ -503,6 +503,8 @@ static class ProgramTablesImporter
                     Name = type.Name,
                     NameEvidence = type.Evidence,
                     OriginalCode = type.Code,
+                    // Two commands of one tick that differ only in the type come in the order of the original's codes.
+                    TieRank = type.Code,
                     Size = tabled && sizes[type.Code] is 1 or 2 ? (BuildingSize)sizes[type.Code] : BuildingSize.Mine,
                     Needs = tabled
                         ? new BuildingNeeds { Planks = needs[2 * type.Code], Stones = needs[2 * type.Code + 1] }

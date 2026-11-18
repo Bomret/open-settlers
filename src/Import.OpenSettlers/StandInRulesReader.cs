@@ -137,7 +137,7 @@ static class StandInRulesReader
         var buildings = Open(folder, OpenSettlersRuleTables.BuildingsFile).Fields(["buildings"]);
         var jobs = Open(folder, OpenSettlersRuleTables.JobsFile).Fields(["names", "jobs"]);
         var ranks = goods["ranks"].Fields(["plank", "mill"]);
-        var (buildingRules, castleDoor) = Buildings(buildings["buildings"]);
+        var (buildingRules, castleDoor, castleTieRank) = Buildings(buildings["buildings"]);
         var jobData = jobs["jobs"].Fields(["builder", "digger", "pig-farmer"]);
         var pig = jobData["pig-farmer"].Fields(["rankBase", "growth"]);
 
@@ -165,6 +165,7 @@ static class StandInRulesReader
             MillRank = (byte)ranks["mill"].Int(1, 255),
             Buildings = buildingRules,
             CastleDoor = castleDoor,
+            CastleTieRank = castleTieRank,
             BuilderTool = Tool(jobData["builder"].Fields(["tool"])["tool"]),
             DiggerTool = Tool(jobData["digger"].Fields(["tool"])["tool"]),
             Jobs = JobsNamed(jobs["names"]),
@@ -363,16 +364,17 @@ static class StandInRulesReader
 
     static (
         IReadOnlyDictionary<BuildingType, StandInBuilding> Rules,
-        (byte Standing, byte Constructing) CastleDoor
+        (byte Standing, byte Constructing) CastleDoor,
+        int CastleTieRank
     ) Buildings(RuleNode node)
     {
         var entries = node.Fields(Named().Select(entry => entry.Name));
-        var castleDoor = Door(entries["castle"].Fields(["door"])["door"]);
+        var castle = entries["castle"].Fields(["door", "tieRank"]);
         var result = new Dictionary<BuildingType, StandInBuilding>();
         foreach (var (type, name) in Named().Where(entry => entry.Type != BuildingType.Castle))
         {
             var fields = entries[name]
-                .Fields(["size", "needs", "door", "materials", "blows", "secondFigure"], ["worker"]);
+                .Fields(["size", "needs", "door", "materials", "blows", "secondFigure", "tieRank"], ["worker"]);
             var needs = fields["needs"].Fields(["planks", "stones"]);
             var blows = fields["blows"].Fields(["firstHalf", "secondHalf"]);
             var (standing, constructing) = Door(fields["door"]);
@@ -391,10 +393,11 @@ static class StandInRulesReader
                 SecondHalfBlows = blows["secondHalf"].Int(1, 0x8000),
                 Worker = fields.TryGetValue("worker", out var worker) ? Worker(worker) : null,
                 SecondFigure = fields["secondFigure"].Term(SecondFigureTerms, "second figure"),
+                TieRank = fields["tieRank"].Int(1, 255),
             };
         }
 
-        return (result, castleDoor);
+        return (result, Door(castle["door"]), castle["tieRank"].Int(1, 255));
     }
 
     static (byte Standing, byte Constructing) Door(RuleNode node)

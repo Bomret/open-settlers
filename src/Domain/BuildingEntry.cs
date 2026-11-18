@@ -20,6 +20,13 @@ public sealed record BuildingEntry
     /// <summary>The number the original gives the type; null for an entry the original lacks. The History Edition importer and the exporters read it.</summary>
     public int? OriginalCode { get; init; }
 
+    /// <summary>
+    /// The rank that breaks a tie between two building types, the lower first: two commands of one tick that differ only in the type they
+    /// place come in its order. No other type of the catalog holds it. The History Edition importer gives a type its original code, the
+    /// order of the original; a set of its own states it in its data.
+    /// </summary>
+    public required int TieRank { get; init; }
+
     /// <summary>How much room the type takes (the size table at <c>0x42d307</c>).</summary>
     public required BuildingSize Size { get; init; }
 

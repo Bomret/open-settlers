@@ -162,6 +162,7 @@ static class TestCatalog
             {
                 Name = entry.Type.Name,
                 OriginalCode = entry.Code,
+                TieRank = entry.Code,
                 Size = size is 1 or 2 ? (BuildingSize)size : BuildingSize.Mine,
                 Needs =
                     tabled && needs is not null

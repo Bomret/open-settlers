@@ -10,7 +10,19 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public sealed class CommandQueue
 {
-    readonly SortedSet<Command> _queue = new(Comparer<Command>.Create(Compare));
+    readonly ContentCatalog _catalog;
+    readonly SortedSet<Command> _queue;
+
+    /// <summary>
+    /// Creates an empty queue whose commands that differ only in the building type they place come in the order of the types'
+    /// <see cref="BuildingEntry.TieRank"/> in <paramref name="catalog"/>. Comparing such a command with a type the catalog lacks throws
+    /// an <see cref="InvalidOperationException"/> that names the type.
+    /// </summary>
+    public CommandQueue(ContentCatalog catalog)
+    {
+        _catalog = catalog;
+        _queue = new(Comparer<Command>.Create(Compare));
+    }
 
     /// <summary>The number of commands waiting.</summary>
     public int Count => _queue.Count;
@@ -49,18 +61,18 @@ public sealed class CommandQueue
         return false;
     }
 
-    static int Compare(Command a, Command b)
+    int Compare(Command a, Command b)
     {
         var order = (a.Tick, a.Player, a.Kind, a.X, a.Y).CompareTo((b.Tick, b.Player, b.Kind, b.X, b.Y));
 
-        // A command with no building comes before one with a building; buildings go by their stable name, ordinal.
+        // A command with no building comes before one with a building; buildings go by their tie rank, the lower first.
         if (order == 0 && (a.Building is null) != (b.Building is null))
         {
             order = a.Building is null ? -1 : 1;
         }
-        else if (order == 0 && a.Building is { } typeA && b.Building is { } typeB)
+        else if (order == 0 && a.Building is { } typeA && b.Building is { } typeB && typeA != typeB)
         {
-            order = string.CompareOrdinal(typeA.Name, typeB.Name);
+            order = _catalog.Require(typeA).TieRank.CompareTo(_catalog.Require(typeB).TieRank);
         }
 
         // The directions of a road, compared one by one, the shorter first where one is the start of the other.

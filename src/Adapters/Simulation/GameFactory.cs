@@ -202,7 +202,7 @@ public static class GameFactory
                 Hut = hut,
                 Placement = placement,
                 RoadPlanner = planner,
-                Queue = new CommandQueue(),
+                Queue = new CommandQueue(tables.Catalog),
                 Handlers =
                 [
                     new PlaceCastleHandler(

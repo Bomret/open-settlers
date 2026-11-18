@@ -27,8 +27,8 @@ public sealed class ContentCatalog
     /// </summary>
     /// <param name="goods">The goods, in any order.</param>
     /// <param name="buildings">
-    /// The building types, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, and a
-    /// stable name outside lowercase letters, digits, and hyphens.
+    /// The building types, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, a
+    /// duplicate tie rank, and a stable name outside lowercase letters, digits, and hyphens.
     /// </param>
     /// <param name="jobs">
     /// The jobs, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, and a stable name
@@ -64,6 +64,7 @@ public sealed class ContentCatalog
 
         var orderedBuildings = (buildings ?? []).OrderBy(building => building.Name, StringComparer.Ordinal).ToList();
         Dictionary<int, BuildingEntry> buildingsByCode = [];
+        Dictionary<int, string> buildingsByRank = [];
         foreach (var building in orderedBuildings)
         {
             if (building.Name.Length == 0 || !building.Name.All(IsNameCharacter))
@@ -82,6 +83,11 @@ public sealed class ContentCatalog
             if (building.OriginalCode is { } buildingCode && !buildingsByCode.TryAdd(buildingCode, building))
             {
                 throw Refuse(building, $"{buildingsByCode[buildingCode].Name} has this original code, {buildingCode}");
+            }
+
+            if (!buildingsByRank.TryAdd(building.TieRank, building.Name))
+            {
+                throw Refuse(building, $"{buildingsByRank[building.TieRank]} has this tie rank, {building.TieRank}");
             }
         }
 

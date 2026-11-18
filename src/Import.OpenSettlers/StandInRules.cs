@@ -60,6 +60,9 @@ sealed record StandInBuilding
 
     /// <summary>Whether the builder of the site takes a second figure.</summary>
     public required bool SecondFigure { get; init; }
+
+    /// <summary>The rank that breaks a tie between two building types, the lower first, 1 to 255.</summary>
+    public required int TieRank { get; init; }
 }
 
 /// <summary>
@@ -108,6 +111,9 @@ sealed record StandInRules
     /// <summary>The door speeds of the castle: standing, then constructing.</summary>
     public required (byte Standing, byte Constructing) CastleDoor { get; init; }
 
+    /// <summary>The castle's rank that breaks a tie between two building types, 1 to 255.</summary>
+    public required int CastleTieRank { get; init; }
+
     /// <summary>The tool a builder is made with.</summary>
     public required Good BuilderTool { get; init; }
 
@@ -141,6 +147,7 @@ sealed record StandInRules
         var castle = new BuildingEntry
         {
             Name = BuildingType.Castle.Name,
+            TieRank = CastleTieRank,
             Size = BuildingSize.Mine,
             Needs = new BuildingNeeds { Planks = 0, Stones = 0 },
             StandingDoor = CastleDoor.Standing,
@@ -154,6 +161,7 @@ sealed record StandInRules
             .Select(entry => new BuildingEntry
             {
                 Name = entry.Key.Name,
+                TieRank = entry.Value.TieRank,
                 Size = entry.Value.Size,
                 Needs = entry.Value.Needs,
                 StandingDoor = entry.Value.StandingDoor,

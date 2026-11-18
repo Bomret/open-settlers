@@ -21,7 +21,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void ACommandForATickThatHasRunIsRefused()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
 
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => queue.Add(At(2), tickCount: 3));
     }
@@ -29,7 +29,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void ACommandForTheCurrentTickIsQueued()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         queue.Add(At(3), tickCount: 3);
 
         Assert.IsTrue(queue.TryTakeDue(3, out var command));
@@ -39,7 +39,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void ACommandForALaterTickIsNotDue()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         queue.Add(At(5), tickCount: 0);
 
         Assert.IsFalse(queue.TryTakeDue(4, out _));
@@ -48,7 +48,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void TheCommandsOfOneTickComeInTheirTotalOrderWhateverTheOrderTheyWereAdded()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         queue.Add(At(1, x: 9), 0);
         queue.Add(At(1, x: 2, player: 1), 0);
         queue.Add(At(1, x: 5), 0);
@@ -65,7 +65,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void ACommandEqualToOneAlreadyQueuedQueuesOnce()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         queue.Add(At(1), 0);
         queue.Add(At(1), 0);
 
@@ -76,7 +76,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void TheDirectionsOfARoadCompareOneByOneThenByLength()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         var longer = new Command
         {
             Tick = 1,
@@ -120,7 +120,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void ACallerChangingTheDirectionsOfAQueuedCommandChangesNothing()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         var directions = new[] { 1, 2 };
         queue.Add(
             new Command
@@ -157,21 +157,29 @@ public sealed class CommandQueueTests
         return command;
     }
 
+    // The made-up catalog ranks each type by its original code, as the History Edition importer does: the woodcutter's hut (2) and the
+    // stonecutter's hut (4) come before the forester's hut (9) and the sawmill (0x11), against the order of their stable names.
     [TestMethod]
-    public void TwoPlacementsThatDifferInTheBuildingAreBothKeptInTheSameOrderWhicheverIsAddedFirst()
+    public void TwoPlacementsThatDifferInTheBuildingAreBothKeptInTheOrderOfTheirTieRanksWhicheverIsAddedFirst()
     {
-        var woodcutter = Place(BuildingType.Woodcutter);
-        var sawmill = Place(BuildingType.Sawmill);
-        var forward = new CommandQueue();
-        forward.Add(woodcutter, 0);
-        forward.Add(sawmill, 0);
-        var backward = new CommandQueue();
-        backward.Add(sawmill, 0);
-        backward.Add(woodcutter, 0);
+        foreach (var (first, second) in new[]
+        {
+            (BuildingType.Woodcutter, BuildingType.Sawmill),
+            (BuildingType.Stonecutter, BuildingType.Forester),
+        })
+        {
+            var forward = new CommandQueue(TestCatalog.Default);
+            forward.Add(Place(first), 0);
+            forward.Add(Place(second), 0);
+            var backward = new CommandQueue(TestCatalog.Default);
+            backward.Add(Place(second), 0);
+            backward.Add(Place(first), 0);
 
-        Assert.AreEqual(2, forward.Count);
-        Assert.AreEqual(2, backward.Count);
-        Assert.AreEqual(Taken(forward), Taken(backward));
+            Assert.AreEqual(2, forward.Count);
+            Assert.AreEqual(2, backward.Count);
+            Assert.AreEqual(Place(first), Taken(forward), $"{first} before {second}");
+            Assert.AreEqual(Place(first), Taken(backward), $"{first} before {second}, added last");
+        }
     }
 
     [TestMethod]
@@ -179,10 +187,10 @@ public sealed class CommandQueueTests
     {
         var none = Place(null);
         var built = Place(BuildingType.Woodcutter);
-        var forward = new CommandQueue();
+        var forward = new CommandQueue(TestCatalog.Default);
         forward.Add(none, 0);
         forward.Add(built, 0);
-        var backward = new CommandQueue();
+        var backward = new CommandQueue(TestCatalog.Default);
         backward.Add(built, 0);
         backward.Add(none, 0);
 
@@ -194,7 +202,7 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void AnExactRepeatOfAPlacementQueuesOnce()
     {
-        var queue = new CommandQueue();
+        var queue = new CommandQueue(TestCatalog.Default);
         queue.Add(Place(BuildingType.Sawmill), 0);
         queue.Add(Place(BuildingType.Sawmill), 0);
 
