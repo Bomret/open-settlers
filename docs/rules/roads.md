@@ -385,7 +385,14 @@ game, a node at a time, and sends one command where the road reaches a flag; Esc
 again cancels. `RoadDraws` gives a draw term for each strip (direction, height difference, slope, ground), the History Edition
 source answers it through `RoadRules` and `RoadGraphics` (no image where the difference is over 4), and the control draws
 the strips over the terrain in every copy of the map;
-the road being drawn is a white line. Departures: the length class, the second bit byte at `+5`, and the items'
+the road being drawn is a white line. `RoadPlanner.Verdicts` gives the road cursor's verdict of each direction at the
+road's end (`RoadBuilding.Verdicts`, the same `Allowed` the click uses, with the road's bits in the map and taken back
+after). `RoadMarkerDraws` (`src/MapView/RoadMarkerDraws.cs`) turns the verdicts into the road markers: the end mark and a
+`RoadMarker` term for each neighbor (blocked, way back, or the slope of the height difference), at the unwrapped node raised
+by its height. The control draws them above the build markers and the white line in every copy of the map, again after
+each click and each change of the game it draws. The History Edition source answers a road marker with the entries of
+"The road markers" above, and the basic set with its own images for the end, blocked, and way-back marks and the slopes
+from -4 to 4. The engine updates the markers on a change of the game, where the original waits for the next click. Departures: the length class, the second bit byte at `+5`, and the items'
 pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`). Also left out are the `+0x37e` option, the
 second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)), the step back at the start, the sounds, and the
 pixel alignment of the strips. Directions after the road reached a flag are refused.

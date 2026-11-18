@@ -122,6 +122,9 @@ public partial class MapViewControl(
     readonly ImageLayers _markerLayers = new();
     ShaderMaterial? _markerMaterial;
     int _markerImages;
+    readonly ImageLayers _roadMarkerLayers = new();
+    ShaderMaterial? _roadMarkerMaterial;
+    int _roadMarkerImages;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     string? _graphicsProblem;
     string? _objectsProblem;
@@ -769,7 +772,9 @@ public partial class MapViewControl(
     }
 
     // The road being drawn as a line over the nodes it passes, in every copy of the map: a stand-in, where the original
-    // draws the road's strips into the map as it is drawn.
+    // draws the road's strips into the map as it is drawn. Over the line, the road markers of its end and the end's six
+    // neighbors (docs/rules/roads.md, "The road markers"). Redraw runs this too, so a change of the game around the end
+    // reaches the markers.
     void DrawPreview()
     {
         foreach (var child in _preview.GetChildren())
@@ -801,6 +806,36 @@ public partial class MapViewControl(
                 Position = new Vector2(x, y),
             };
             _preview.AddChild(line);
+        }
+
+        var markerMesh = RoadMarkerMesh();
+        var markerMaterial = markerMesh is null
+            ? null
+            : LayerMaterial(
+                _roadMarkerLayers,
+                "Objects",
+                "the road markers",
+                ref _roadMarkerMaterial,
+                ref _roadMarkerImages
+            );
+        if (markerMaterial is null)
+        {
+            return;
+        }
+
+        // The road markers paint over the build markers and the road line of every copy.
+        foreach (var (x, y) in _camera.Copies())
+        {
+            _preview.AddChild(
+                new MeshInstance2D
+                {
+                    Mesh = markerMesh,
+                    Material = markerMaterial,
+                    Position = new Vector2(x, y),
+                    ZAsRelative = false,
+                    ZIndex = 4,
+                }
+            );
         }
     }
 
@@ -1040,6 +1075,21 @@ public partial class MapViewControl(
         }
 
         var quads = ObjectQuads.Flat(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+
+        return quads.Count == 0
+            ? null
+            : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
+    }
+
+    // One mesh of the road markers of the road being drawn; null where none is drawn or the source draws none.
+    ArrayMesh? RoadMarkerMesh()
+    {
+        if (_game is null || _drawing is null || _source is null)
+        {
+            return null;
+        }
+
+        var quads = ObjectQuads.Flat(RoadMarkerDraws.Of(_game, _drawing), _source, _roadMarkerLayers);
 
         return quads.Count == 0
             ? null

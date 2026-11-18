@@ -30,6 +30,7 @@ public sealed class GraphicsSourceBoundaryTests
     [DataRow("src/Import/RoadMarker.cs")]
     [DataRow("src/MapView/SettlerFigures.cs")]
     [DataRow("src/MapView/MapPicking.cs")]
+    [DataRow("src/MapView/RoadMarkerDraws.cs")]
     [DataRow("src/MapView/ClickDecision.cs")]
     [DataRow("src/MapView/MapKeys.cs")]
     [DataRow("src/MapView/ShotCrop.cs")]
