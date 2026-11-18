@@ -58,7 +58,6 @@ public readonly record struct Command : IEquatable<Command>
         && Y == other.Y
         && Building == other.Building
         && (Directions ?? []).SequenceEqual(other.Directions ?? [])
-        && (Stock is null) == (other.Stock is null)
         && (Stock ?? []).SequenceEqual(other.Stock ?? [])
         && (Settlers is null) == (other.Settlers is null)
         && (Settlers ?? []).SequenceEqual(other.Settlers ?? []);
@@ -70,16 +69,6 @@ public readonly record struct Command : IEquatable<Command>
         foreach (var direction in Directions ?? [])
         {
             hash = HashCode.Combine(hash, direction);
-        }
-
-        foreach (var count in Stock ?? [])
-        {
-            hash = HashCode.Combine(hash, count);
-        }
-
-        foreach (var job in Settlers ?? [])
-        {
-            hash = HashCode.Combine(hash, job);
         }
 
         return hash;
