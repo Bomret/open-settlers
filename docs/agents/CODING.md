@@ -61,7 +61,11 @@ The test project does not generate a documentation file. Its documentation stays
 
 ### Godot `.uid` files
 
-A new script or shader in a Godot-scanned folder (`src/Assets/`, `src/Launch/`, `src/MapView/`, `src/Viewer/`) gets a `.uid` file from the Godot editor. Generate it with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
+Godot writes a `.uid` file beside each script and shader in a folder it scans. A script or shader is a file that ends in `.cs`, `.gd`, `.gdshader`, or `.gdshaderinc`. Scenes, resources, and imported assets carry their UID elsewhere and get no `.uid` file. Godot scans every folder of the repository except hidden folders, whose names start with a dot, and every folder at any depth below a `.gdignore`.
+
+Generate the `.uid` file of a new script or shader with `mise exec -- <godot> --headless --import --path .`, where `<godot>` is the `GODOT` name in `mise.toml` for the platform, and commit it with the source. Delete the `.uid` file with its source. A new folder of C# sources outside the Godot assembly (`<Compile Remove>` in `OpenSettlers.csproj`) gets a `.gdignore`.
+
+`RepositoryContentTests.EachScriptAndShaderGodotScansKeepsItsUid` reads the tracked files with `git ls-files` and holds this rule. It fails and names each file for a script or shader in a scanned folder without its `.uid` file, for a `.uid` file beside no source, and for a `.uid` file in a folder Godot skips. Names match by exact case. Without git on the path, it reports inconclusive.
 
 ## C# Style
 
