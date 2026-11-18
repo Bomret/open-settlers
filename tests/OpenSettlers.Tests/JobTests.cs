@@ -159,6 +159,20 @@ public sealed class JobTests
     }
 
     [TestMethod]
+    public void AKnightCanBePromotedBelowItsLastLevelAndTheLastLevelMatchesTheNumbersTheLookupKnows()
+    {
+        for (var level = 0; level < 4; level++)
+        {
+            Assert.IsTrue(new Knight(level).CanBePromoted, $"level {level}");
+        }
+
+        var last = Knight.LastLevel;
+        Assert.IsFalse(new Knight(last).CanBePromoted);
+        Assert.AreEqual(Job.Of(Knight.LastNumber), new Knight(last));
+        Assert.ThrowsExactly<ArgumentException>(() => new Knight(last + 1));
+    }
+
+    [TestMethod]
     public void AKnightRefusesALevelThatIsNotOneOfItsNumbers()
     {
         foreach (var level in new[] { -22, -17, -1, 5, 100 })

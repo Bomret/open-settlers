@@ -92,8 +92,8 @@ Check: the format readers, the asset kinds, the graphics readers and figure tabl
 
 Class: architecture
 Concepts: Content catalog, Catalog entry, Original code, Domain, Rule
-Statement: No rule of the domain or the application reads or branches on an original code. Goods, building types, and jobs are identified by their stable names, and the facts the rules read come from their catalog entries. Only the History Edition importer and the exporters read an original code (ADR 0020).
+Statement: No rule of the domain or the application reads or branches on an original code. Goods, building types, and jobs are identified by their stable names, and the facts the rules read come from their catalog entries. Only the History Edition importer and the exporters read an original code (ADR 0020). One exception stands: `UnportedJob.ArrivesHomeGenerically` reads the job's number, because an unported job has no catalog entry and no stable name. It is a stand-in that pins the table at 0x437dfb and retires when the job is ported.
 Breaks: silently
-Check: a repository test scans `src/Domain` and `src/Application` for reads of an original code, with planted violations as positive controls. Reviewers check that a new fact of an original entry is read from its table into the entry, not derived from its code.
+Check: `OriginalCodeBoundaryTests` (`tests/OpenSettlers.Tests/OriginalCodeBoundaryTests.cs`) parses `src/Domain` and `src/Application` for reads of an original code (the code members, the job lookup, and the job number names), with planted violations as positive controls. Reviewers check that a new fact of an original entry is read from its table into the entry, not derived from its code.
 Symbols: CatalogEntry.OriginalCode, Job.Of
 Paths: src/Domain/**, src/Application/**
