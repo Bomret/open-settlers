@@ -28,9 +28,10 @@ public sealed class SettlerFigures(IWalkSteps steps, FigureTables figures)
 
     static readonly SettlerPart[] Parts = [SettlerPart.Figure, SettlerPart.Overlay, SettlerPart.SecondFigure];
 
-    // The settlers that are drawn are those in an activity that says so (Activity.IsDrawn), the same ones that take the turns of
-    // every pass: among them those that walk the roads (state 2), wait out a step (5), walk along a road as a carrier does (3), hand
-    // a good over (0xe), step through a door (4), walk free (0x10), cut (0x11), or search for a flag home (0x19). **Confirmed**
+    // The settlers that are drawn are those in an activity that says so (Activity.IsDrawn); each of them takes the turn of every
+    // pass (Activity.TakesEveryPassTurn), as the castle's settler does, which is not drawn. The drawn settlers include those
+    // that walk the roads (state 2), wait out a step (5), walk along a road as a carrier does (3), hand a good over (0xe), step
+    // through a door (4), walk free (0x10), cut (0x11), or search for a flag home (0x19). **Confirmed**
     // (draw run, settler-draws.txt): a carrier that waits next to a flag (state 0x42) is not drawn at all: the carrier's figure
     // handler (0x43f8ae) returns at once for it. **Confirmed** the same way: a carrier whose road was taken down or joined and
     // that waits for its turn to go home (states 0x44 and 0x45, docs/rules/removal.md) is not drawn either, nor is a settler

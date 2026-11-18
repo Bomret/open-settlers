@@ -57,7 +57,8 @@ more phases: [Timing](timing.md#rules-that-count-passes)), the flag pass `0x4641
   (`0x42f4f1`), which makes the motion on the screen smooth. The simulation must not depend on the view, so with
   `Game.EveryPassTurns` the engine gives that turn to every settler in a state the view draws, in view or not, after
   the slices of every pass (phase 32 included). Each activity type states whether the view draws it (`Activity.IsDrawn`),
-  so the drawing and this turn read one rule. The other states, the
+  and the turn follows that rule (`Activity.TakesEveryPassTurn`). The castle's settler (state 10) also takes it, though
+  it is not drawn: it stands on the castle's node, so the castle grows each pass as in the original's view. The other states, the
   knights' among them, keep the slice turns alone, so their events and random draws come at the slice's rate. The game view sets it; without it a settler takes a turn only in its slice, as in the
   original's passes without a view, which is what the emulator recordings of the walks hold.
 
