@@ -197,8 +197,8 @@ public sealed class RepositoryContentTests
             }
         }
 
-        // The layer libraries, the two sources, the ports, the generator, and the tests.
-        Assert.AreEqual(8, projectFolders);
+        // The layer libraries, the two sources, the ports, the map view, the launch code, the assets, the generator, and the tests.
+        Assert.AreEqual(11, projectFolders);
     }
 
     // The set's files by path relative to the folder, with forward slashes.
