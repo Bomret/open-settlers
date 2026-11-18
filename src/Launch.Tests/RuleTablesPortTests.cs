@@ -23,7 +23,8 @@ public sealed class RuleTablesPortTests
     public void AnInstallWhoseProgramIsNoPeFileIsRefusedWithTheImportersText()
     {
         using var fake = new FakeInstall();
-        var expected = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import([1, 2, 3]));
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
+        var expected = Assert.ThrowsExactly<InvalidDataException>(new HistoryEditionRuleTables(install).Read);
 
         var port = LaunchInstall.RuleTables(LaunchArgs.Parse(["--game", fake.Root], null), "project");
 
@@ -34,8 +35,10 @@ public sealed class RuleTablesPortTests
     [TestMethod]
     public void AnInstallWithNoProgramFailsTheReadWithAnIoException()
     {
-        using var fake = new FakeInstall(withProgram: false);
-        var install = new Install { Root = fake.Root };
+        using var fake = new FakeInstall();
+        Assert.IsTrue(Install.TryOpen(fake.Root, out var install, out _));
+        // The program is gone after the install opened.
+        File.Delete(Path.Combine(fake.Root, "Siedler1.exe"));
 
         Assert.ThrowsExactly<FileNotFoundException>(new HistoryEditionRuleTables(install).Read);
     }

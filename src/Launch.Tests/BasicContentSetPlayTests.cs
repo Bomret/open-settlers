@@ -455,7 +455,7 @@ public sealed class BasicContentSetPlayTests
             new Job[] { new Jobless(), new Jobless() },
             game.Settlers.Skip(count).Select(settler => settler.Job).ToArray()
         );
-        Assert.AreEqual(1, game.Supply!.KnightsOwed, "the knight the second try owes stays owed");
+        Assert.AreEqual(1, game.SupplyState!.KnightsOwed, "the knight the second try owes stays owed");
         Assert.AreEqual(0, game.CastleStock.Count(Good.Sword), "the castle stock holds no sword");
         Assert.AreEqual(0, game.CastleStock.Count(Good.Shield), "the castle stock holds no shield");
     }
