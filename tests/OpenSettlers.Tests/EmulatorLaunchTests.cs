@@ -79,4 +79,18 @@ public sealed class EmulatorLaunchTests
                 .ToArray()
         );
     }
+
+    // A command of one verb after a command of another: construct runs the phase routine 0x42965c at the last phase of each
+    // cycle, and supply does not. The supply game prints the recording's generator words at pass 375 only where it runs
+    // without the phase routine, which draws from the generator.
+    [TestMethod]
+    public void ACommandAfterACommandOfAnotherVerbRunsWithItsOwnVerbsSettingsOnly()
+    {
+        var lines = Emulate($"construct:1:{Seed}:0:18,20::::0:1:c@18,20", $"supply:1:{Seed}:0:18,20:0:376");
+
+        CollectionAssert.AreEqual(
+            Recorded(376),
+            lines.Where(line => line.StartsWith("EMU supply ")).Select(Unlabelled).ToArray()
+        );
+    }
 }

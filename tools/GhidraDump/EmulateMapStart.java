@@ -208,9 +208,7 @@ public class EmulateMapStart extends GhidraScript {
             String rest = command.substring(colon + 1);
             emu = new EmulatorHelper(currentProgram);
             try {
-                castleOffAt = -1; // no verb inherits the castle-off part of an earlier one (see withoutCastleOff)
-                settlerSupply = false;
-                passesRun = 0;
+                defaultSettings();
                 switch (name) {
                     case "rng" -> rng(rest);
                     case "steps" -> steps(rest);
@@ -267,6 +265,22 @@ public class EmulateMapStart extends GhidraScript {
                 emu.dispose();
             }
         }
+    }
+
+    /**
+     * Sets every per-command setting to its default, so a command's verb alone decides its settings and no command takes a
+     * setting of an earlier command of the launch (INV-0018). A field a verb sets for its run belongs here.
+     */
+    protected void defaultSettings() {
+        reserveFlagZero = false;
+        defaultPriorities = false;
+        reserveBuildingZero = false;
+        phaseRoutine = false;
+        settlerSupply = false;
+        supplyRate = 0;
+        objectPass = false;
+        castleOffAt = -1;
+        passesRun = 0;
     }
 
     private void prepare() throws Exception {
