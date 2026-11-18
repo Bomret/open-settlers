@@ -119,6 +119,37 @@ public sealed class BorderDrawsTests
     }
 
     [TestMethod]
+    public void AfterTheCastlePlacementThePostsLieOnThePairsBetweenTheTerritoryAndTheRest()
+    {
+        // A layout of a flat map places the castle at 20,20, as the territory it takes is the application's placement.
+        var map = LaidGame.Laid("\"castle\": {\"x\": 20, \"y\": 20}").Map;
+
+        var expected = new List<(int, int, RoadDirection)>();
+        (int Dx, int Dy)[] steps = [(1, 0), (1, 1), (0, 1)];
+        for (var row = 0; row < map.Size.Height; row++)
+        {
+            for (var column = 0; column < map.Size.Width; column++)
+            {
+                for (var direction = 0; direction < 3; direction++)
+                {
+                    var (dx, dy) = steps[direction];
+                    if (map.At(column, row).Owner != map.At(column + dx, row + dy).Owner)
+                    {
+                        expected.Add((column, row, (RoadDirection)direction));
+                    }
+                }
+            }
+        }
+
+        var edges = Edges(map);
+
+        Assert.IsNotEmpty(expected);
+        CollectionAssert.AreEquivalent(expected, edges);
+        // The castle-to-flag road lies inside the territory.
+        Assert.DoesNotContain((20, 20, RoadDirection.SouthEast), edges);
+    }
+
+    [TestMethod]
     public void APostHasTheSlopeAndGroundOfTheRoadStripOfItsEdge()
     {
         var map = Blank();

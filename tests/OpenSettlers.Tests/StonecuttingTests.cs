@@ -1,7 +1,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
-using static OpenSettlers.Tests.StonecuttingWorld;
+using static OpenSettlers.Adapters.Testing.StonecuttingWorld;
 
 namespace OpenSettlers.Tests;
 

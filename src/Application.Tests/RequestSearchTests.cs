@@ -176,8 +176,8 @@ public sealed class RequestSearchTests
         Assert.AreEqual(1, near.FillLow);
 
         // The road to the site loses its carrier: the next turn cannot reach the destination and releases the request.
-        bench.Flags[1].Side(East).HoldsCarrier = false;
-        bench.Flags[2].Side(West).HoldsCarrier = false;
+        bench.Flags[1].Side(East).ClearCarrierHold();
+        bench.Flags[2].Side(West).ClearCarrierHold();
         Turn(goods, 1);
 
         Assert.IsNull(bench.Flags[1].Places[0].Destination);

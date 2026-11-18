@@ -148,16 +148,14 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheCoreStateCodesTheGeneratorChecksAreTheStatesTheTableNamesItself()
     {
-        var listed = typeof(CoreStateCodesAttribute)
-            .Assembly.GetCustomAttributes(typeof(CoreStateCodesAttribute), false)
-            .Cast<CoreStateCodesAttribute>()
-            .SelectMany(attribute => attribute.Codes);
-        var modules = JobTablesRegistry.StateNames.Select(state => state.Code).ToHashSet();
+        // The list the History Edition source declares for the generator is checked against the same codes in that source's
+        // test project (the class of this name there); here the table's own states are the ones the modules do not name.
+        var modules = JobTableNames.States.Select(state => state.Code).ToHashSet();
         var core = NameTable
             .Entries.Where(entry => entry.Kind == NameTable.CodeKind.State && !modules.Contains(entry.Code))
             .Select(entry => entry.Code);
 
-        CollectionAssert.AreEquivalent(core.ToList(), listed.ToList());
+        CollectionAssert.AreEquivalent(new[] { 1, 2, 3, 4, 5, 6, 7, 0xf, 0x10, 0x19, 0x1c, 0x42, 0x4a }, core.ToList());
     }
 
     [TestMethod]

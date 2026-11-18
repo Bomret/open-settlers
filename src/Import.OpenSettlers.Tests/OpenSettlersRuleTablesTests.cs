@@ -126,6 +126,18 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.AreEqual(new Builder(), made.Get<WorkerRequest>(new Builder()).Job, "job data");
     }
 
+    // The table the application's CarrierBehaviorTests runs the busy-road rule under, in the test of the same name there.
+    [TestMethod]
+    public void TheBasicSetsRoadCapacitiesAreTheTableTheBusyRoadTestRuns()
+    {
+        var tables = Checked();
+
+        CollectionAssert.AreEqual(
+            new byte[] { 1, 1, 2, 2, 3, 3, 4, 4 },
+            Enumerable.Range(0, RuleTables.RoadCapacityCount).Select(tables.RoadCapacity).ToArray()
+        );
+    }
+
     [TestMethod]
     public void TheBasicSetsJobsAreNamedByStableNameAndHaveNoCodes()
     {

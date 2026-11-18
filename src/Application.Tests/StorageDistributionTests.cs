@@ -280,8 +280,8 @@ public sealed class StorageDistributionTests
         Assert.AreEqual(0, site.FillLow);
 
         // A carrier on the road makes the request reachable: the next cycle serves it.
-        rig.Bench.Flags[0].Side(East).HoldsCarrier = true;
-        rig.Bench.Flags[1].Side(West).HoldsCarrier = true;
+        rig.Bench.Flags[0].Side(East).HoldCarrier();
+        rig.Bench.Flags[1].Side(West).HoldCarrier();
         rig.Bench.Draws.Enqueue(2);
         rig.Distribution.Run();
 

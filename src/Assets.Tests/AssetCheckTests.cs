@@ -159,6 +159,29 @@ public sealed class AssetCheckTests
     }
 
     [TestMethod]
+    public void APortWithNoUsableDataExitsTwoWithItsReasonAndReadsNothing()
+    {
+        var report = AssetCheck.Run(Check, LaunchInstall.Assets(Check));
+
+        Assert.AreEqual(2, report.ExitCode);
+        CollectionAssert.AreEqual(
+            new[] { $"ERROR no install given: {LaunchInstall.HowToGive}" },
+            report.Lines.ToList()
+        );
+    }
+
+    [TestMethod]
+    public void ABadArgumentExitsFourBeforeThePortIsAsked()
+    {
+        var args = LaunchArgs.Parse(["--check", "--map"], null);
+
+        var report = AssetCheck.Run(args, LaunchInstall.Assets(args));
+
+        Assert.AreEqual(4, report.ExitCode);
+        Assert.IsFalse(report.Lines.Any(l => l.Contains(LaunchInstall.HowToGive)));
+    }
+
+    [TestMethod]
     public void AFlagWithoutItsValueExitsFour()
     {
         var report = AssetCheck.Run(LaunchArgs.Parse(["--check", "--game"], null), new FakeAssets());

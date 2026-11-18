@@ -50,7 +50,10 @@ public sealed class JobCoverageTests
     {
         var problems = Problems(RulesJobs().Append(typeof(Jobless)), Looks());
 
-        CollectionAssert.AreEquivalent(new[] { $"Jobless has rules and no look under {ContentSet}" }, problems.ToArray());
+        CollectionAssert.AreEquivalent(
+            new[] { $"Jobless has rules and no look under {ContentSet}" },
+            problems.ToArray()
+        );
     }
 
     [TestMethod]

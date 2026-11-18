@@ -204,7 +204,7 @@ public sealed class JobSearchTests
     {
         var game = GameFactory.Create(BasicTables(), Meadow());
         var digest = game.Digest();
-        var generator = game.Draws.Generator;
+        var generator = game.RandomState;
 
         foreach (
             var type in new[]
@@ -225,6 +225,6 @@ public sealed class JobSearchTests
         }
 
         Assert.AreEqual(digest, game.Digest());
-        Assert.AreEqual(generator, game.Draws.Generator);
+        Assert.AreEqual(generator, game.RandomState);
     }
 }

@@ -44,7 +44,7 @@ public sealed class ImageKindTests
         );
         var args = LaunchArgs.Parse(["--check", "--game", fake.Root], null);
 
-        var report = AssetCheck.Run(args, RealKinds.Over(args, new PaletteKind(), new RawImageKind()));
+        var report = AssetCheck.Run(args, NamedKinds.Over(args, "palette", "raw image"));
 
         Assert.AreEqual(1, report.ExitCode);
         CollectionAssert.Contains(report.Lines.ToList(), "loca/SPAD.PA: 1 entry (palette)");

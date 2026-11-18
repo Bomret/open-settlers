@@ -1,7 +1,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
-using static OpenSettlers.Tests.WoodcuttingWorld;
+using static OpenSettlers.Adapters.Testing.WoodcuttingWorld;
 
 namespace OpenSettlers.Tests;
 

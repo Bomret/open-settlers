@@ -161,7 +161,8 @@ public sealed class FastForwardTests
     {
         var (game, _) = SawmillWorld.World();
         SawmillWorld.SawmillerInside(game);
-        game.Goods.LayGood(0, 0, Good.Log);
+        game.Flags[0].Places[0].Lay(Good.Log, null, null);
+        game.Flags[0].MarkGoodsTurnDue();
 
         return game;
     }
