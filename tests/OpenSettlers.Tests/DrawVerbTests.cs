@@ -231,7 +231,7 @@ public sealed class DrawVerbTests
         var log = Path.Combine(_folder, "calls.log");
         File.WriteAllText(
             script,
-            $"#!/bin/sh\necho \"$*\" >> \"{log}\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && {{ touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }}; done\necho 'EmulateMapStart.java> EMU ok'\n"
+            $"#!/bin/sh\necho \"$*\" >> \"{log}\"\nfor a in \"$@\"; do [ \"$a\" = -import ] && {{ touch \"$1/Emu.gpr\"; echo 'INFO  REPORT: Import succeeded (HeadlessAnalyzer)'; }}; done\necho 'EmulateMapStart.java> EMU ok'\necho 'EmulateMapStart.java> EMU command=1 ended'\n"
         );
         if (!OperatingSystem.IsWindows())
         {

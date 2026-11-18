@@ -139,6 +139,13 @@ folder stay. The caller removes the folder.
 Each output line starts with `EMU `. The header of `EmulateMapStart.java` lists the commands. Words are
 hexadecimal, without spaces.
 
+A call with commands other than `draw:` exits 0 only where every command ended: the script prints the line
+`EMU command=N ended` after the command `N` (counting from 1) returns, and `emulate.py` checks these lines and leaves
+them out of its output. A command ends without a line of its own where it prints none. A command does not end where it
+throws, where Ghidra stops before it, where the import fails, or where Ghidra exits non-zero. A failed call prints
+nothing on stdout, writes the first command that did not end (its number and its text) and the tail of Ghidra's
+output to stderr, and exits non-zero.
+
 The `gen` command runs `MapGen_Generate` up to the end of `MapGen_CountResource1` for a size value and a map
 seed, for example `gen:3:1234,5678,9ABC` (the size value is decimal), and prints the generator words and the
 layer digests of the canonical map form after each pass (`docs/rules/map-form.md`). A run takes from 15
@@ -147,8 +154,7 @@ silently, once per size and seed in one Ghidra launch: the first run keeps the m
 registers it left, and later commands of the same launch, `draw:` batch commands among them, start from that state
 instead of generating again. Each command restores a copy of that state. A launch is one `emulate.py` call, and its
 commands are independent. A command prints the lines it prints in a launch of its own, whatever commands ran before it
-(INV-0018). A command that fails ends a launch that runs no `draw:` batch, and the later commands of the launch print
-nothing. A command of a `draw:` batch that fails prints a failure line, and the batch runs on. The `gen` command
+(INV-0018). A command that fails ends a launch that runs no `draw:` batch, and the call fails, as above. A command of a `draw:` batch that fails prints a failure line, and the batch runs on. The `gen` command
 always generates, because it prints each pass. The commands `site`, `castle`, `stockrows`,
 `opponents`, and `peek` run the build-site evaluator, the castle placement, the start stock table, the free-game
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they

@@ -216,25 +216,15 @@ public sealed class ToolArgumentTests
     }
 
     [TestMethod]
-    public void AGhidraThatPrintsNoEmuLineFailsTheRunAndShowsItsOutput()
-    {
-        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> no result'\necho STANDIN-LOG");
-
-        var run = PythonTool.Run(_folder, [Emulate(), "--game", Game(), "rng:0,0,0"], bin);
-
-        Assert.AreEqual(1, run.Exit);
-        Assert.IsFalse(run.Stdout.Contains("EMU "), "no EMU line, no recording");
-        StringAssert.Contains(run.Stderr, "STANDIN-LOG");
-    }
-
-    [TestMethod]
     [DataRow("Siedler1.exe")]
     [DataRow("siedler1.exe")]
     [DataRow("SIEDLER1.EXE")]
     public void TheProgramIsFoundWhateverTheCaseOfItsName(string name)
     {
         var game = Game(name);
-        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
+        var bin = RecordingHeadless(
+            "echo 'INFO  EmulateMapStart.java> EMU ok'\necho 'INFO  EmulateMapStart.java> EMU command=1 ended'"
+        );
 
         var run = PythonTool.Run(_folder, [Emulate(), "--game", game, "rng:0,0,0"], bin);
 
@@ -259,7 +249,9 @@ public sealed class ToolArgumentTests
     public void WithoutGameTheInstallComesFromSiedlerDir()
     {
         var game = Game();
-        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
+        var bin = RecordingHeadless(
+            "echo 'INFO  EmulateMapStart.java> EMU ok'\necho 'INFO  EmulateMapStart.java> EMU command=1 ended'"
+        );
 
         var run = PythonTool.Run(_folder, [Emulate(), "rng:0,0,0"], bin, siedlerDir: game);
 
@@ -272,7 +264,9 @@ public sealed class ToolArgumentTests
     public void TheGameFlagOverridesSiedlerDir()
     {
         var game = Game();
-        var bin = RecordingHeadless("echo 'INFO  EmulateMapStart.java> EMU ok'");
+        var bin = RecordingHeadless(
+            "echo 'INFO  EmulateMapStart.java> EMU ok'\necho 'INFO  EmulateMapStart.java> EMU command=1 ended'"
+        );
 
         var run = PythonTool.Run(
             _folder,

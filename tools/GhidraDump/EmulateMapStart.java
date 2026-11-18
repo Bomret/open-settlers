@@ -7,7 +7,7 @@
 // a start address to a stop address, and reads the result back. Each script argument is one command, with
 // hexadecimal words and no spaces. A launch is one emulate.py call. Its commands are independent: each prints the
 // lines it prints in a launch of its own (INV-0018). A command that fails ends a launch that runs no draw: batch,
-// and the later commands print nothing. A command of a draw: batch that fails prints a failure line, and the batch
+// and emulate.py prints nothing on stdout for the call. A command of a draw: batch that fails prints a failure line, and the batch
 // runs on.
 //
 //   rng:S0,S1,S2             one Rng_Step (0x466ade) from the state words S0,S1,S2; prints the new words
@@ -172,7 +172,11 @@
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
 //
-// Output lines start with "EMU " so that the caller can tell them from Ghidra's log.
+// Output lines start with "EMU " so that the caller can tell them from Ghidra's log. After the verb of the command N
+// (counting from 1) returns, the script prints "EMU command=N ended"; a command that throws prints no such line.
+// emulate.py exits 0 only where every command ended, leaves these lines out of its output, and otherwise prints nothing on
+// stdout and names the first command that did not end on stderr. EmulateDraw prints only "EMU draw " lines, so its
+// output carries none of them.
 //@category OpenSettlers
 // simplicity: EmulatorHelper is deprecated for removal in Ghidra 12.1; the pcode emulator API replaces it
 // when a Ghidra release drops it.
@@ -204,7 +208,9 @@ public class EmulateMapStart extends GhidraScript {
 
     @Override
     protected void run() throws Exception {
-        for (String command : getScriptArgs()) {
+        String[] commands = getScriptArgs();
+        for (int index = 1; index <= commands.length; index++) {
+            String command = commands[index - 1];
             int colon = command.indexOf(':');
             String name = command.substring(0, colon);
             String rest = command.substring(colon + 1);
@@ -263,6 +269,8 @@ public class EmulateMapStart extends GhidraScript {
                     case "tables" -> tables();
                     default -> throw new IllegalArgumentException("unknown command " + command);
                 }
+                // Only a verb that returns marks its command: a throw leaves it unmarked, and emulate.py fails the call.
+                println("EMU command=" + index + " ended");
             } finally {
                 emu.dispose();
             }
