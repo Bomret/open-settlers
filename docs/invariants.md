@@ -86,24 +86,48 @@ Class: architecture
 Concepts: Import port, Graphics source, Install
 Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats. Only the Open Settlers source assembly reads the basic content set: its graphics, its stand-in rules, and its walk steps (ADR 0018). The map view, the asset check and the asset browser state (`src/Assets`), the domain, and the application name no type of a source assembly. The launch library (`src/Launch`) and the Godot host name one only where they build a source: the launch code and the main scene, `AssetBrowserView`. The rule tables source builds the content catalog, and every other layer reads it as `RuleTables.Catalog` (ADR 0020). The adapter assembly is the one exception: it names `JobTableNames` of the History Edition source, through which the name table reads the state names; a job names itself on its type and its catalog entry (ADR 0017, ADR 0020).
 Breaks: loudly
-Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks and the rule file reader are internal to the Open Settlers assembly. Its public types are the ones the host builds: `OpenSettlersSource`, `OpenSettlersRuleTables`, and `OpenSettlersWalkSteps`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view and `src/Assets` are libraries of their own, but the map view references the adapters, which reference the History Edition source, and `src/Assets` references the launch library, which references both sources, so the compiler does not keep either from those public types. `src/Viewer` compiles inside the Godot project, which references both source assemblies, so the compiler does not keep it from them either. `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
+Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks and the rule file reader are internal to the Open Settlers assembly. Its public types are the ones the host builds: `OpenSettlersSource`, `OpenSettlersRuleTables`, and `OpenSettlersWalkSteps`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view and `src/Assets` are libraries of their own. The map view references the adapters, which reference the History Edition source. `src/Assets` references the launch library, which references both sources. The compiler therefore keeps neither from those public types. `src/Viewer` compiles inside the Godot project, which references both source assemblies, so the compiler does not keep it from them either. `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
 
 ### INV-0012
 
 Class: architecture
 Concepts: Library, Test pair
-Statement: Every library has a test pair: a test project beside it that references the library, `OpenSettlers.Testing`, and the helper projects (`OpenSettlers.<Name>.Testing`) of that library and of every library it references directly or through another library, and no other project. A library and the Godot host (`OpenSettlers.csproj`) reference no test project and no helper project, `OpenSettlers.Testing` included, so no test code ships. `OpenSettlers.Testing` references no library, and a helper project references only its library and the helper projects of the libraries that library references directly or through another library. Tests of the repository itself live in `OpenSettlers.Tests/` beside the Godot project (ADR 0019).
+Statement: Every library has a test pair: a test project beside it. The test project references the library and `OpenSettlers.Testing`. It also references the helper projects (`OpenSettlers.<Name>.Testing`) of the library and of every library it references, directly or through another library. It references no other project. A library and the Godot host (`OpenSettlers.csproj`) reference no test project and no helper project, `OpenSettlers.Testing` included, so no test code ships. `OpenSettlers.Testing` references no library. A helper project references only its library and the helper projects of the libraries that library references, directly or through another library. Tests of the repository itself live in `OpenSettlers.Tests/` beside the Godot project (ADR 0019).
 Breaks: silently
-Check: `TestPairTests` in `OpenSettlers.Tests` reads every project folder under `src/`, whatever its project file is called, and fails on a library without a sibling `<Name>.Tests` project, on a test project or a helper project that reaches a project outside its library's reach (references followed transitively), on `src/Testing` reaching a library, on a library or a project outside `src/` whose folder does not end in `.Tests`, such as `OpenSettlers.csproj`, that references a test project, a helper project, or `src/Testing`, on a test or helper project with no library beside it, on a test project whose assembly name is not `OpenSettlers.<Name>.Tests`, such as another library's test assembly, on any other project, a helper project or a project outside `src/`, that builds a library's test assembly name, and on an `AssemblyName` set in a `.props` or `.targets` file. It reads project references and the assembly name by element name in any case and in any namespace. It allows no exception.
+Check: `TestPairTests` in `OpenSettlers.Tests` reads every project folder under `src/`, whatever its project file is called. It reads project references and the assembly name by element name in any case and in any namespace. It allows no exception. It fails on each of these:
+
+- A library without a sibling `<Name>.Tests` project.
+- A test project or a helper project that reaches a project outside its library's reach, with references followed transitively.
+- `src/Testing` reaching a library.
+- A library, or a project outside `src/` whose folder does not end in `.Tests`, that references a test project, a helper project, or `src/Testing`. `OpenSettlers.csproj` is such a project.
+- A test or helper project with no library beside it.
+- A test project whose assembly name is not `OpenSettlers.<Name>.Tests`, such as another library's test assembly.
+- Any other project, a helper project or a project outside `src/`, that builds a library's test assembly name.
+- An `AssemblyName` set in a `.props` or `.targets` file.
 Paths: src/**, OpenSettlers.Tests/**
 
 ### INV-0013
 
 Class: architecture
 Concepts: Library, Test pair
-Statement: A library grants its internals to its own test project, `OpenSettlers.<Name>.Tests`, and to no other assembly, by no route: not through an `InternalsVisibleTo` item, an `AssemblyAttribute` item, a source attribute, or a shared build file, and not through reflection that skips the access check. Another library reaches it only through its public types (ADR 0019).
+Statement: A library grants its internals to its own test project, `OpenSettlers.<Name>.Tests`, and to no other assembly. Another library reaches it only through its public types (ADR 0019). No route grants more. These routes are closed:
+
+- An `InternalsVisibleTo` item.
+- An `AssemblyAttribute` item.
+- A source attribute.
+- A shared build file.
+- Reflection that skips the access check.
 Breaks: silently
-Check: `TestPairTests` in `OpenSettlers.Tests` fails on a grant, written as an `InternalsVisibleTo` item, an `AssemblyAttribute` item, or a source attribute in its short or full name, that names an assembly other than `OpenSettlers.<Name>.Tests`, on a grant whose assembly it cannot read, on a grant in a `Directory.Build.props`, `Directory.Build.targets`, or any other `.props` or `.targets` file, on a grant written outside a library (a helper project, `OpenSettlers.csproj`, `OpenSettlers.Tests`, or any source file of the repository), on a `using` alias of the attribute, including a `global::` alias, and on `IgnoresAccessChecksTo`, written as an item, an `AssemblyAttribute` item, or a source attribute; item types match in any case. It scans every source file, those of `TestPairs` and `TestPairTests` included: their fixtures write the attribute names in parts. It allows no exception. Reviewers check that no test reads another library's non-public member by reflection.
+Check: `TestPairTests` in `OpenSettlers.Tests` scans every source file, those of `TestPairs` and `TestPairTests` included, because their fixtures write the attribute names in parts. It allows no exception. Item types match in any case. It fails on each of these:
+
+- A grant that names an assembly other than `OpenSettlers.<Name>.Tests`. A grant is an `InternalsVisibleTo` item, an `AssemblyAttribute` item, or a source attribute, in its short or full name.
+- A grant whose assembly it cannot read.
+- A grant in a `Directory.Build.props`, `Directory.Build.targets`, or any other `.props` or `.targets` file.
+- A grant written outside a library: in a helper project, `OpenSettlers.csproj`, `OpenSettlers.Tests`, or any source file of the repository.
+- A `using` alias of the attribute, including a `global::` alias.
+- `IgnoresAccessChecksTo`, written as an item, an `AssemblyAttribute` item, or a source attribute.
+
+Reviewers check that no test reads another library's non-public member by reflection.
 Symbols: InternalsVisibleTo, IgnoresAccessChecksTo
 Paths: **/*.csproj, **/*.cs, **/*.props, **/*.targets
 

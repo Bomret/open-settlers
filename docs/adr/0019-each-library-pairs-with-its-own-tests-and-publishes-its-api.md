@@ -10,13 +10,13 @@ A test project references its library and test helpers, and no other library. Th
 library type live in `src/Testing/` (`OpenSettlers.Testing`), which references no library. The helpers
 that name a library's types live beside that library in `src/<Name>.Testing/`
 (`OpenSettlers.<Name>.Testing`), which references that library and the helper projects of the libraries it
-references. A test project references the helper projects of its own library and of every library its
-library references, directly or through another library. The Godot host pairs with `OpenSettlers.Tests/` at the
+references. A test project references the helper projects of its own library. It also references those of every library
+its library references, directly or through another library. The Godot host pairs with `OpenSettlers.Tests/` at the
 repository root, which also holds the tests of the repository itself: the code-style build, the tools, the
 content set, and the test category filters.
 
-A library grants its internals to its own test project and to no other assembly, by no route: no
-`InternalsVisibleTo` item, `AssemblyAttribute` item, source attribute, or shared build file names another
+A library grants its internals to its own test project and to no other assembly. No route grants more.
+No `InternalsVisibleTo` item, `AssemblyAttribute` item, source attribute, or shared build file names another
 assembly, and no reflection skips the access check. The rule has no exception. A type or member that
 another library uses is public, and is part of the library's API; the rest stays internal. A consumer
 changes another library's state through that library's public API, never by writing its internals.
@@ -40,8 +40,8 @@ project above every library, so helpers split by library.
   consumer sees is not the API a reader of the library sees.
 - **One helper project for every library.** Every test project would reach every library through it, so
   every change would reach every test project.
-- **Launch and Assets as one library.** It keeps their mutual reference, but breaks one library per
-  folder; the reference from Launch to Assets is one helper, which moves to Assets.
+- **Launch and Assets as one library.** It would break one library per folder. It would also put the code of Launch
+  and Assets in one assembly, so Assets would no longer reference Launch.
 
 ## Consequences
 

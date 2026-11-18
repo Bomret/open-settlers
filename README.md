@@ -237,11 +237,16 @@ To run Godot by hand, use `mise exec -- <godot>`, where `<godot>` is the name in
   - `Launch/` holds the command-line arguments, the decision whether a map launch opens or exits, and the text of a crash.
   - `MapView/` holds the terrain, object, road, and settler drawing plans, the click handling, and the camera.
   - `Viewer/` holds the asset browser, the map view, the play driver, and the shaders. `MapViewControl.cs` also shows the game view.
-- `.gdignore` files: the C# folders outside the Godot assembly (`src/Domain/`, `src/Import/`, `src/Import.HistoryEdition/`, `src/Import.OpenSettlers/`, `src/Application/`, `src/Adapters/`, `src/Generators/`, `src/Launch/`, `src/Assets/`, `src/MapView/`, every test and helper project of `src/`, and `OpenSettlers.Tests/`) carry one, so the Godot editor does not scan them. The editor writes a `.uid` file beside each script and shader it scans; those are committed with their source.
+- `.gdignore` files: the C# folders outside the Godot assembly carry one, so the Godot editor does not scan them. These are the libraries of `src/`, every test and helper project of `src/`, and `OpenSettlers.Tests/`. The editor writes a `.uid` file beside each script and shader it scans. Those files are committed with their source.
 - `content/`: the content sets the repository ships (ADR 0015). `content/basic/` is the basic content set: a manifest, PNGs, and a `.gdignore`.
 - `play/`: the checked-in play scripts ("Run a play script").
 - `layouts/`: the checked-in layouts ("Layouts" under "Run a play script").
-- `src/<Name>.Tests/`: the unit tests (MSTest) of the library `src/<Name>/`, the one assembly that sees its internals. `src/Testing/` and `src/<Name>.Testing/` hold the shared and the per-library test helpers. `OpenSettlers.Tests/` beside the Godot project holds the tests of the repository itself: the code-style build, the tools, the content set, and the layout of the test projects (`TestPairTests`). The projects also hold the `Install` and `Ghidra` test categories, which the unit commands filter out; the unit tests need neither Godot nor an install. `src/Viewer/` has no test project (ADR 0019, INV-0012, INV-0013). `docs/agents/verification.md` ("Where a new test goes") says where a new test goes.
+- `src/<Name>.Tests/`: the unit tests (MSTest) of the library `src/<Name>/`. It is the one assembly that sees the library's internals.
+  - `src/Testing/` and `src/<Name>.Testing/` hold the shared and the per-library test helpers.
+  - `OpenSettlers.Tests/` beside the Godot project holds the tests of the repository itself: the code-style build, the tools, the content set, and the layout of the test projects (`TestPairTests`).
+  - The projects also hold the `Install` and `Ghidra` test categories, which the unit commands filter out. The unit tests need neither Godot nor an install.
+  - `src/Viewer/` has no test project (ADR 0019, INV-0012, INV-0013).
+  - `docs/agents/verification.md` ("Where a new test goes") says where a new test goes.
 - `docs/adr/`: decisions. `docs/invariants.md`: invariants. `CONTEXT.md`: domain terms.
 - `docs/roadmap.md`: the milestone plan.
 - `docs/controls.md`: the controls of the map view and the game view.

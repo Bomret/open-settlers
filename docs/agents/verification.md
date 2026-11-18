@@ -74,7 +74,7 @@ reaches one of them. Its header comment lists the forms of reach the check catch
 A test lives in the test project of the lowest library that reaches, through its own references, every type the
 test uses (ADR 0019). For a library `src/<Name>/`, that project is `src/<Name>.Tests/`. A test of what no library
 holds goes in `OpenSettlers.Tests/`: the code-style build, the tools, the content set, the test category filters,
-and the layout of the test projects.
+and the layout of the test projects. Every other test goes in a library's test project.
 
 - **Helpers.** A helper that names no library type goes in `src/Testing/`. A helper that names a library's types
   goes in `src/<Name>.Testing/` beside that library. A helper project holds no tests.
@@ -97,8 +97,8 @@ every test class has the namespace `OpenSettlers.Tests`. `--project <folder>` wi
 mise exec -- dotnet test --project src/MapView.Tests --filter 'ClassName=OpenSettlers.Tests.ShotCropTests'
 ```
 
-A class split across two projects has the same full name in each, so run the filter once per project, or use
-`mise run test:focused`, which runs the class in each project that holds it.
+A class split across two projects has the same full name in each, so run the filter once per project.
+`mise run test:focused -- <path>...` takes changed paths, not a class name, and runs the test classes those paths can affect.
 `FullyQualifiedName~<Class>` matches by substring: `FullyQualifiedName~GameTests` also selects `RoadSplitGameTests`.
 Without the install, add the category clauses, which run the class's unit tests alone:
 
