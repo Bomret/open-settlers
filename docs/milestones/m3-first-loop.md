@@ -33,8 +33,7 @@ left open:
 - `0x46414d`: known. The phase's slice of `Table70`. Its road loop asks for carriers
   ([Carriers](../rules/carriers.md#the-flag-pass)); its goods part (destination by `0x45d3ea`, direction by `0x464aa8`,
   `0x464bb2`, `0x464c36`) is in [Goods at a flag](../rules/goods.md), confirmed against the emulator for a log at a flag with one
-  storage. Open leads: the request words of a building and the
-  priority table of the player's block. The harness verb `wood:` leaves flag slot 0 to the castle's flag, where no good ever
+  storage. Open leads: the request words of a building and the priority table of the player's block. The harness verb `wood:` leaves flag slot 0 to the castle's flag, where no good ever
   leaves; `goods:` takes the dummy slot as the original's game start does.
 - `0x42cb2d`, `0x42f3d9`: known. The slices of `Table18` and `Table16`: [Settlers](../rules/settlers.md#the-pass).
 - `0x42f4f1`: runs the turn of each settler in view once more; with `Game.EveryPassTurns` the engine gives that turn to
