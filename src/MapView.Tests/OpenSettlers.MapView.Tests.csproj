@@ -27,4 +27,12 @@
     <ProjectReference Include="../Adapters/OpenSettlers.Adapters.csproj" />
     <ProjectReference Include="../MapView/OpenSettlers.MapView.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The file lives in OpenSettlers.Import.HistoryEdition.Tests/, which checks the road rules against it. -->
+    <None
+      Include="../Import.HistoryEdition.Tests/road-strips.txt"
+      Link="road-strips.txt"
+      CopyToOutputDirectory="PreserveNewest"
+    />
+  </ItemGroup>
 </Project>

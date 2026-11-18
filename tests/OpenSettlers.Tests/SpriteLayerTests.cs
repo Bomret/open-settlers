@@ -5,8 +5,7 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// The settlers sprites on the History Edition (SettlerPair is internal to its import, which the map view cannot reach);
-// the rest of this class is in src/MapView.Tests.
+// The settlers sprites on the History Edition; the rest of this class is in src/MapView.Tests.
 [TestClass]
 public sealed class SpriteLayerTests
 {
@@ -17,7 +16,7 @@ public sealed class SpriteLayerTests
     {
         var install = TestProgram.OpenInstall();
         var tables = TestProgram.Tables();
-        var pair = SettlerPair.Of(install, tables);
+        var figures = new SettlerFigures(StepOffsets.Load(install), tables.Figures);
         var source = HistoryEditionSource.Load(install, tables);
         var map = MapGenerator.Generate(
             MadeProgram.Made(),
@@ -73,7 +72,7 @@ public sealed class SpriteLayerTests
 
         foreach (var settler in settlers)
         {
-            ObjectQuads.Flat(pair.Terms(map, [settler], 0), source, layers);
+            ObjectQuads.Flat(figures.Draws(map, [settler], 0), source, layers);
         }
 
         Assert.IsGreaterThan(256, layers.Images.Count);

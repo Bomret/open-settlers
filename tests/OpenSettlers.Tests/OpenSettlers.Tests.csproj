@@ -42,7 +42,6 @@
   <ItemGroup>
     <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-builds.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="road-strips.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="wood-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="stone-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="fish-walks.txt" CopyToOutputDirectory="PreserveNewest" />
@@ -76,6 +75,5 @@
     <None Include="construction-builder.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="construction-digger.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="construction-removal.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="settler-draws.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
