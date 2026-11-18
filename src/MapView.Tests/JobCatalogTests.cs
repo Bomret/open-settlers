@@ -159,9 +159,8 @@ public sealed class JobCatalogTests
         Assert.AreNotEqual(first, coded);
     }
 
-    // The digest of a codeless job's waiting settler stays in tests/OpenSettlers.Tests: it reads the adapters' digest of a game whose
-    // castle list it empties through the castle roster, which is internal to the application, and no public route empties the list
-    // alone (a castle that names other settlers changes the settler table's job words the digest mixes as well).
+    // The digest's by-name part for a codeless job's waiting settler is in the class of the same name in src/Adapters.Tests: it reads
+    // the digest's waiting part (GameDigest.MixWaiting), which is internal to the adapters.
 
     [TestMethod]
     public void ARuleThatMeetsAJobTheCatalogLacksStopsWithAnErrorNamingIt()
