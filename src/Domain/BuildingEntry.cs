@@ -17,7 +17,7 @@ public sealed record BuildingEntry
     /// <summary>The evidence for the name where the name stands for a type of the original (INV-0006); null for an entry of a set's own.</summary>
     public string? NameEvidence { get; init; }
 
-    /// <summary>The number the original gives the type; null for an entry the original lacks. The History Edition importer and the exporters read it.</summary>
+    /// <summary>The number the original gives the type; null for an entry the original lacks. The History Edition importer and the exporters read it, and the readout reads whether the entry has one.</summary>
     public int? OriginalCode { get; init; }
 
     /// <summary>

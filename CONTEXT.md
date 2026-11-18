@@ -202,7 +202,8 @@ _Avoid_: id, key, slug
 
 **Original code**
 The number the original game gives a good, building type, or job, kept as an optional attribute of its catalog
-entry. Only the History Edition importer and the exporters read it; an entry the original lacks has none.
+entry. Only the History Edition importer and the exporters read it, and the map view's readout reads whether an
+entry has one to decide whether it shows a raw value beside the name. An entry the original lacks has none.
 _Avoid_: id, type code (as identity)
 
 **ObjectClass**
