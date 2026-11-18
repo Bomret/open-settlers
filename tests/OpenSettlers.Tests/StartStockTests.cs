@@ -54,6 +54,18 @@ public sealed class StartStockTests
     }
 
     [TestMethod]
+    public void AGoodTheCatalogLacksHasNoPlaceInTheStartStock()
+    {
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.MadeStartStock(),
+            goods: new ContentCatalog([TestCatalog.Entry(7, 1)])
+        );
+
+        CollectionAssert.AreEqual(new[] { Good.Log }, StartStock.At(tables, 0).Keys.ToArray());
+    }
+
+    [TestMethod]
     public void LevelZeroTakesTheCastlesSubtractionsFromTheFirstRow()
     {
         CollectionAssert.AreEqual(LevelZero, AtLevel(0));
@@ -90,7 +102,8 @@ public sealed class StartStockTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            [.. rows.Select(row => (IReadOnlyDictionary<Good, byte>)row)]
+            [.. rows.Select(row => (IReadOnlyDictionary<Good, byte>)row)],
+            goods: TestCatalog.Of()
         );
         var stock = StartStock.At(tables, 1);
 

@@ -103,14 +103,13 @@ public sealed class RuleTablesTests
         );
 
     [TestMethod]
-    public void TheTransportPriorityIsTheRankOfTheGoodsEntryAndZeroForNoGoodAndForAGoodWithNoEntry()
+    public void TheTransportPriorityIsTheRankOfTheGoodsEntryAndZeroForNoGood()
     {
         var tables = WithGoods();
 
         Assert.AreEqual(4, tables.TransportPriority(Good.Log));
         Assert.AreEqual(9, tables.TransportPriority(new Good { Name = "ai-token" }));
         Assert.AreEqual(0, tables.TransportPriority(Good.None));
-        Assert.AreEqual(0, tables.TransportPriority(Good.Plank));
     }
 
     [TestMethod]
@@ -120,7 +119,29 @@ public sealed class RuleTablesTests
 
         Assert.AreEqual(new GoodClass { Class = 2, Word = RequestWord.Second }, tables.ClassOfGood(Good.Log));
         Assert.IsNull(tables.ClassOfGood(TestCatalog.GoodOf(13)), "an entry with no request goes to storage at once");
-        Assert.IsNull(tables.ClassOfGood(Good.Plank), "a good with no entry goes to storage at once");
+        Assert.IsNull(tables.ClassOfGood(Good.None));
+    }
+
+    [TestMethod]
+    public void EveryRuleFactOfAGoodTheCatalogLacksStopsWithAnErrorNamingIt()
+    {
+        var tables = WithGoods();
+        var lacking = Good.Plank;
+
+        foreach (
+            var read in new Action[]
+            {
+                () => tables.TransportPriority(lacking),
+                () => tables.ClassOfGood(lacking),
+                () => tables.FillCounterOf(lacking),
+                () => tables.HandoverCounterOf(lacking),
+                () => tables.CountsAgainstResource1(lacking),
+            }
+        )
+        {
+            var error = Assert.ThrowsExactly<InvalidOperationException>(read);
+            StringAssert.Contains(error.Message, "plank");
+        }
     }
 
     [TestMethod]
@@ -149,7 +170,7 @@ public sealed class RuleTablesTests
         var tables = WithGoods();
 
         Assert.IsTrue(tables.CountsAgainstResource1(Good.Log), "the original's rule would say no");
-        Assert.IsFalse(tables.CountsAgainstResource1(TestCatalog.GoodOf(14)), "the original's rule would say yes");
+        Assert.IsFalse(tables.CountsAgainstResource1(TestCatalog.GoodOf(13)), "coal counts against nothing");
         Assert.IsFalse(tables.CountsAgainstResource1(Good.None));
     }
 
