@@ -139,7 +139,7 @@ public class PlayRunWrapperTests
         Put("play/.cache.play", "wait 1");
         Put("content/basic/manifest.json", "{}");
         Put("README.md", "readme");
-        Put("tests/T.cs", "class T {}");
+        Put("docs/T.cs", "class T {}");
         Put(".gitignore", "play-out/\nsrc/ignored.txt\n");
         Put("src/ignored.txt", "ignored");
         foreach (
@@ -594,7 +594,7 @@ public class PlayRunWrapperTests
     {
         Run(Args);
         Write("README.md", "edited");
-        Write("tests/T.cs", "edited");
+        Write("docs/T.cs", "edited");
         Write("src/ignored.txt", "edited");
 
         Run(Args);

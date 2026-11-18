@@ -55,7 +55,14 @@ static class TestPairs
         var problems = new List<string>();
         foreach (var grant in Grants(root, projects))
         {
-            if (grant.Assembly is null)
+            if (grant.Text.StartsWith("IgnoresAccessChecksTo", StringComparison.Ordinal))
+            {
+                problems.Add(
+                    $"{grant.Origin} uses {grant.Text}: it reaches internals with no grant, which a library's own test project alone has, "
+                        + "and then only through InternalsVisibleTo"
+                );
+            }
+            else if (grant.Assembly is null)
             {
                 problems.Add(
                     $"{grant.Origin} grants its internals to an assembly it does not name as a plain string ({grant.Text}): "
@@ -232,7 +239,7 @@ static class TestPairs
     static string AssemblyOf(string written) => written.Split(',')[0].Trim();
 
     static readonly Regex AttributeOpening = new(
-        @"\bInternalsVisibleTo(?:Attribute)?\s*\(",
+        @"\b(?:InternalsVisibleTo|IgnoresAccessChecksTo)(?:Attribute)?\s*\(",
         RegexOptions.CultureInvariant
     );
 
@@ -265,6 +272,9 @@ static class TestPairs
                         ):
                     written = (string?)item.Attribute("_Parameter1") ?? (string?)item.Element("_Parameter1");
                     break;
+                case "IgnoresAccessChecksTo":
+                    yield return (null, $"IgnoresAccessChecksTo {(string?)item.Attribute("Include")}");
+                    continue;
                 default:
                     continue;
             }

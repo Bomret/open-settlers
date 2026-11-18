@@ -403,6 +403,36 @@ public sealed class TestPairTests
         StringAssert.Contains(problems[0], "Viewer");
     }
 
+    // Reflection reaches internals with no grant when the runtime skips the access check of an assembly.
+    [TestMethod]
+    [DataRow("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"OpenSettlers.Domain\")]")]
+    [DataRow("[assembly: IgnoresAccessChecksToAttribute(\"OpenSettlers.Domain\")]")]
+    public void SkippingTheAccessCheckInASourceFileIsAProblem(string text)
+    {
+        using var tree = Chain().Source("Import.Tests", text);
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "IgnoresAccessChecksTo");
+    }
+
+    [TestMethod]
+    public void SkippingTheAccessCheckThroughAProjectItemIsAProblem()
+    {
+        using var tree = Chain()
+            .Project(
+                "Import.Tests",
+                ["Import", "Domain", "Testing", "Import.Testing", "Domain.Testing"],
+                extra: "<ItemGroup><IgnoresAccessChecksTo Include=\"OpenSettlers.Domain\" /></ItemGroup>"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "IgnoresAccessChecksTo");
+    }
+
     // A build file shared by several projects grants its internals to the assembly it names from each of them.
     [TestMethod]
     [DataRow(

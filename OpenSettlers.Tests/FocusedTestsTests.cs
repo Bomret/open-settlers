@@ -273,7 +273,7 @@ public sealed class FocusedTestsTests
         );
     }
 
-    // The single test project of tests/ is gone, so a folder there holds no test project.
+    // A test project is a *.Tests folder at the root, under src/, or under a folder of src/: a folder under tests/ is none.
     [TestMethod]
     public void AFolderUnderTestsIsNoTestProject()
     {
