@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -183,6 +184,37 @@ public sealed class CommandQueueTests
             Assert.AreEqual(Place(first), Taken(forward), $"{first} before {second}");
             Assert.AreEqual(Place(first), Taken(backward), $"{first} before {second}, added last");
         }
+    }
+
+    // An added type with no code states its rank in its data: the tannery's 3 puts it before the stonecutter's hut (4), though its
+    // stable name sorts after.
+    [TestMethod]
+    public void AnAddedTypeWithNoCodeGoesByTheTieRankItsDataStatesWhicheverIsAddedFirst()
+    {
+        var tannery = new BuildingType { Name = "tannery" };
+        var catalog = new ContentCatalog(
+            TestCatalog.Default.Goods,
+            TestCatalog
+                .Buildings()
+                .Append(
+                    TestCatalog.Buildings().First() with
+                    {
+                        Name = tannery.Name,
+                        OriginalCode = null,
+                        TieRank = 3,
+                    }
+                ),
+            TestCatalog.Jobs()
+        );
+        var forward = new CommandQueue(catalog);
+        forward.Add(Place(tannery), 0);
+        forward.Add(Place(BuildingType.Stonecutter), 0);
+        var backward = new CommandQueue(catalog);
+        backward.Add(Place(BuildingType.Stonecutter), 0);
+        backward.Add(Place(tannery), 0);
+
+        Assert.AreEqual(Place(tannery), Taken(forward));
+        Assert.AreEqual(Place(tannery), Taken(backward), "added last");
     }
 
     [TestMethod]
