@@ -7,8 +7,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace OpenSettlers.Tests;
 
 // The commands of one launch of the emulator harness (tools/GhidraDump/emulate.py) are independent (INV-0018): a command that
-// runs after others in one launch prints the lines it prints in a launch of its own. The runs need Ghidra and the install, and
-// are inconclusive without them.
+// runs after others in one launch prints the lines it prints in a launch of its own. A command that fails ends a launch that is
+// not a draw batch. The runs need Ghidra and the install, and are inconclusive without them.
 [TestClass]
 [TestCategory(Needs.Install)]
 [TestCategory(Needs.Ghidra)]
@@ -63,6 +63,16 @@ public sealed class EmulatorLaunchTests
                 ),
         ];
 
+    // The rate-0 supply lines of a launch equal the recording's lines before the pass 376.
+    static void AssertRecorded(string[] lines) =>
+        CollectionAssert.AreEqual(
+            Recorded(376),
+            lines
+                .Where(line => line.StartsWith("EMU supply ") && line.Contains(" rate=0 "))
+                .Select(Unlabelled)
+                .ToArray()
+        );
+
     // A command that restores the cached map generation after an earlier command restored it and ran passes on it: the first
     // command generates the map, the second restores it and runs 400 passes, the third restores it again. The third prints the
     // recording's generator words at pass 375 only where the second's passes left the cached generation as the first made it.
@@ -75,13 +85,7 @@ public sealed class EmulatorLaunchTests
             $"supply:1:{Seed}:0:18,20:0:376"
         );
 
-        CollectionAssert.AreEqual(
-            Recorded(376),
-            lines
-                .Where(line => line.StartsWith("EMU supply ") && line.Contains(" rate=0 "))
-                .Select(Unlabelled)
-                .ToArray()
-        );
+        AssertRecorded(lines);
     }
 
     // A command of one verb after a command of another: construct runs the phase routine 0x42965c at the last phase of each
@@ -90,19 +94,16 @@ public sealed class EmulatorLaunchTests
     [TestMethod]
     public void ACommandAfterACommandOfAnotherVerbRunsWithItsOwnVerbsSettingsOnly()
     {
-        var lines = Emulate($"construct:1:{Seed}:0:18,20::::0:1:c@18,20", $"supply:1:{Seed}:0:18,20:0:376");
-
-        CollectionAssert.AreEqual(
-            Recorded(376),
-            lines.Where(line => line.StartsWith("EMU supply ")).Select(Unlabelled).ToArray()
-        );
+        AssertRecorded(Emulate($"construct:1:{Seed}:0:18,20::::0:1:c@18,20", $"supply:1:{Seed}:0:18,20:0:376"));
     }
 
     // The carrier game of DrawVerbTests: a goods: game whose carrier is on its road at pass 100.
     const string Draw = $"draw:100-101:17,20:goods:1:{Seed}:0:18,20:16,20:19,21,343:16,20,2:102:0::-1:5,0,7";
 
-    // A draw batch runs each command in a script instance of its own, and the instances share the cached map generation. The
-    // third command restores the generation after the second restored it and ran its passes on it.
+    // A draw batch runs each command in a script instance of its own. The test guards state carried between the instances of a
+    // batch and the batch's framing of each command's lines. It does not guard the cached generation against a command that
+    // changes it: a draw line records only the settlers near the camera.
+    // ACommandThatRestoresTheCachedGenerationAfterAnotherDidPrintsItsOwnLaunchLines guards that.
     [TestMethod]
     public void EachCommandOfADrawBatchPrintsTheLinesOfASingleDrawCommand()
     {
@@ -130,12 +131,7 @@ public sealed class EmulatorLaunchTests
         try
         {
             EmulateIn(project, $"supply:1:{Seed}:0:18,20:40:400");
-            var lines = EmulateIn(project, $"supply:1:{Seed}:0:18,20:0:376");
-
-            CollectionAssert.AreEqual(
-                Recorded(376),
-                lines.Where(line => line.StartsWith("EMU supply ")).Select(Unlabelled).ToArray()
-            );
+            AssertRecorded(EmulateIn(project, $"supply:1:{Seed}:0:18,20:0:376"));
         }
         finally
         {
