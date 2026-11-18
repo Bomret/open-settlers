@@ -183,7 +183,7 @@ test. The count is a power of two, and `JobSearch` refuses any other. The search
 `JobSearch.Entry`, which keeps the original's mask. It finds the entry's node around the worker through `JobSearch.NodeAt`. It tests the
 node with `JobSearch.Accepts`. `Game.SearchOf` answers the job search of a building type through the worker that `RuleTables.WorkerOf`
 names. The work-area overlay of the game view reads the same declaration ([Controls](../controls.md#work-areas)).
-`Flag.Places` holds the 8 places of a flag. `Woodcutter` is job 5, and `BuildingType.Woodcutter` is the type `woodcutter-hut`, whose original code is 2.
+`Flag.Places` holds the 8 places of a flag. `Woodcutter` is the job `woodcutter`, whose original code is 5, and `BuildingType.Woodcutter` is the type `woodcutter-hut`, whose original code is 2.
 
 The woodcutter's work is the activities `LooksForTree`, `StepsOntoFlag`, `WalksFree`, `Cuts`, `EntersBuilding`, and `Door`. A
 `WalksFree` carries a `Trip` whose `Purpose` is `ToTree`, `BackToHut`, or `Home`. `RuleTables.WalkRows` holds the rows of
