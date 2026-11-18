@@ -658,9 +658,7 @@ public sealed class OpenSettlersSourceTests
         var stepsOut = source
             .Draw(Settler(new Sawmiller(), new WaitsOutStep { Then = new PutsDownGood { Good = wine } }))!
             .Image!;
-        var plank = source
-            .Draw(Settler(new Sawmiller(), new PutsDownGood { Good = Good.Plank }))!
-            .Image!;
+        var plank = source.Draw(Settler(new Sawmiller(), new PutsDownGood { Good = Good.Plank }))!.Image!;
 
         Assert.AreEqual((1, 1, 2), (putsDown.Rgba[0], stepsOut.Rgba[0], plank.Rgba[0]));
     }

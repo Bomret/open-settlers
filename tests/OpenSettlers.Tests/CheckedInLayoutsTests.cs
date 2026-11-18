@@ -43,14 +43,15 @@ public sealed class CheckedInLayoutsTests
         }
 
         // The game as the launch builds it: the start stock level the layout's seed draws, and the passes of a played game.
-        return LayoutLoad.Start(
-            read.Layout,
-            tables,
-            read.Layout.BuildMap(),
-            StartStock.LevelOf(read.Layout.Seed),
-            out _,
-            out var message
-        ) == 0
+        return
+            LayoutLoad.Start(
+                read.Layout,
+                tables,
+                read.Layout.BuildMap(),
+                StartStock.LevelOf(read.Layout.Seed),
+                out _,
+                out var message
+            ) == 0
             ? null
             : message;
     }

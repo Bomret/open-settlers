@@ -213,7 +213,8 @@ public sealed record Thing
         settler.Activity switch
         {
             WalksRoad { Load: { Good.IsNone: false } load } => load.Good,
-            HandsOver { Load: { Good.IsNone: false } load } when catalog.Require(load.Good).OriginalCode is null => load.Good,
+            HandsOver { Load: { Good.IsNone: false } load } when catalog.Require(load.Good).OriginalCode is null =>
+                load.Good,
             StepsOutWithGood { Good.IsNone: false } stepping => stepping.Good,
             PutsDownGood { Good.IsNone: false } putting => putting.Good,
             _ => null,

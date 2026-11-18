@@ -20,8 +20,11 @@ namespace OpenSettlers.Tests;
 public sealed class OriginalCodeBoundaryTests
 {
     // A read of an original code found in one file.
-    sealed class Violation(string file, int line, string rule, string text)
+    sealed class Violation(string file, int line, string rule, string text, string access)
     {
+        // The flagged access alone: the whole member access of a `.Code` read, else the flagged token.
+        public string Access { get; } = access;
+
         public string File { get; } = file;
 
         public string Text { get; } = text;
@@ -33,14 +36,19 @@ public sealed class OriginalCodeBoundaryTests
         public override string ToString() => $"{File}:{Line}: {Rule}";
     }
 
-    // A declaration site that stays: the file it lies in, the exact line, and why it is no rule's read.
-    sealed class Allowed(string fileRegex, string lineRegex, string reason)
+    // A declaration site that stays: the file it lies in, the exact line, and why it is no rule's read. With onAccess the pattern
+    // matches the flagged access alone, so an allowed access cannot hide another violation on its line.
+    sealed class Allowed(string fileRegex, string lineRegex, string reason, bool onAccess = false)
     {
+        public bool OnAccess { get; } = onAccess;
+
         public string FileRegex { get; } = fileRegex;
 
         public string LineRegex { get; } = lineRegex;
 
         public string Reason { get; } = reason;
+
+        public override string ToString() => $"{FileRegex} {LineRegex}";
     }
 
     static readonly Allowed[] AllowList =
@@ -82,8 +90,9 @@ public sealed class OriginalCodeBoundaryTests
         ),
         new(
             @"^src/(Domain/(RuleTables|MapObject|Fnv1a)|Application/(HutWork|StonecutterRules|FarmerRules))\.cs$",
-            @"\b(mapObject|sapling|Object)\.Code\b",
-            "a map object code is no original code of the catalog"
+            @"(^|\W)(mapObject|sapling|Object)\s*\??\.\s*Code$",
+            "a map object code is no original code of the catalog",
+            onAccess: true
         ),
         new(
             @"^src/Domain/Jobs/UnportedJob\.cs$",
@@ -171,7 +180,12 @@ public sealed class OriginalCodeBoundaryTests
             if (RuleOf(token) is { } rule)
             {
                 var line = tree.GetLineSpan(token.Span).StartLinePosition.Line;
-                found.Add(new Violation(file, line + 1, rule, stripped.Lines[line].ToString().Trim()));
+                var access =
+                    token.Parent is IdentifierNameSyntax { Parent: MemberAccessExpressionSyntax member } name
+                    && member.Name == name
+                        ? stripped.GetSubText(member.Span).ToString()
+                        : token.Text;
+                found.Add(new Violation(file, line + 1, rule, stripped.Lines[line].ToString().Trim(), access));
             }
         }
 
@@ -189,7 +203,7 @@ public sealed class OriginalCodeBoundaryTests
         foreach (var v in violations)
         {
             var allowed = allowList.FirstOrDefault(a =>
-                Regex.IsMatch(v.File, a.FileRegex) && Regex.IsMatch(v.Text, a.LineRegex)
+                Regex.IsMatch(v.File, a.FileRegex) && Regex.IsMatch(a.OnAccess ? v.Access : v.Text, a.LineRegex)
             );
             if (allowed is null)
             {
@@ -205,8 +219,12 @@ public sealed class OriginalCodeBoundaryTests
     }
 
     // A stale allow-list entry would hide a later read at its site.
-    static void AssertEveryEntryUsed(Allowed[] allowList, HashSet<Allowed> used) =>
-        CollectionAssert.AreEquivalent(allowList, used.ToList(), "an allow-list entry matches no declaration site");
+    static void AssertEveryEntryUsed(Allowed[] allowList, HashSet<Allowed> used)
+    {
+        var stale = allowList.Where(entry => !used.Contains(entry)).Select(entry => entry.ToString()).ToList();
+
+        Assert.IsEmpty(stale, "an allow-list entry matches no declaration site:\n" + string.Join("\n", stale));
+    }
 
     static string RootOf()
     {
@@ -294,7 +312,9 @@ public sealed class OriginalCodeBoundaryTests
         var (reported, used) = Classify(Violations("src/Domain/Planted.cs", "var c = Object.Code;"), list);
 
         Assert.IsEmpty(reported);
-        Assert.Throws<AssertFailedException>(() => AssertEveryEntryUsed(list, used));
+        var failure = Assert.Throws<AssertFailedException>(() => AssertEveryEntryUsed(list, used));
+        StringAssert.Contains(failure.Message, stale.FileRegex);
+        StringAssert.Contains(failure.Message, stale.LineRegex);
         AssertEveryEntryUsed([live], used);
     }
 
@@ -391,6 +411,18 @@ public sealed class OriginalCodeBoundaryTests
 
         CollectionAssert.AreEqual(new[] { "src/Application/HutWork.cs:1: Code read" }, entry);
         Assert.IsEmpty(heap);
+        Assert.HasCount(1, used);
+    }
+
+    [TestMethod]
+    public void AnAllowedMapObjectCodeDoesNotHideAnEntryCodeOnTheSameLine()
+    {
+        var (reported, used) = Classify(
+            Violations("src/Application/HutWork.cs", "var same = at.Object.Code == entry.Code;"),
+            AllowList
+        );
+
+        CollectionAssert.AreEqual(new[] { "src/Application/HutWork.cs:1: Code read" }, reported);
         Assert.HasCount(1, used);
     }
 }
