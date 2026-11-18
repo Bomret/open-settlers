@@ -11,7 +11,8 @@ public static class GameSetup
 {
     /// <summary>
     /// Puts a good on a place of a flag as the settler's put does (0x436b46): the place's destination is cleared, or set to a
-    /// given one, and the place's way is as given. The flag's turn is due.
+    /// given one, and the place's way is as given. The flag's turn is due. It repeats the writes of
+    /// <c>GoodsTransport.LayGood</c> in <c>src/Application/GoodsTransport.cs</c>; a change to one changes the other.
     /// </summary>
     /// <param name="game">The game.</param>
     /// <param name="flag">The slot of the flag in the flag table.</param>

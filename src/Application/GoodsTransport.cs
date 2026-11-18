@@ -42,6 +42,8 @@ public sealed class GoodsTransport(
     /// <summary>
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
     /// lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
+    /// <c>GameSetup.LayGood</c> in <c>src/Adapters.Testing/GameSetup.cs</c> repeats these writes for the adapters' tests; a
+    /// change to one changes the other.
     /// </summary>
     public void LayGood(int flag, int place, Good good, int? destination = null, int? way = null)
     {
