@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Import.ContentSet;
+using OpenSettlers.Launch;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -36,11 +37,21 @@ public sealed class CheckedInLayoutsTests
             return string.Join("; ", read.Problems);
         }
 
-        return read.Layout.Apply(
-            tables is null
-                ? LayoutSettlersTests.NewGame(read.Layout)
-                : GameFactory.Create(tables, read.Layout.BuildMap())
+        if (tables is null)
+        {
+            return read.Layout.Apply(LayoutSettlersTests.NewGame(read.Layout));
+        }
+
+        // The game as the launch builds it: the start stock level the layout's seed draws, and the passes of a played game.
+        var game = GameFactory.Create(
+            tables,
+            read.Layout.BuildMap(),
+            StartStock.LevelOf(read.Layout.Seed),
+            everyPassTurns: true,
+            handsOutGoods: true
         );
+
+        return LayoutLoad.Start(read.Layout, game, out _, out var message) == 0 ? null : message;
     }
 
     [TestMethod]
