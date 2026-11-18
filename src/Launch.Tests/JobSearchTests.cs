@@ -1,7 +1,6 @@
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Import.ContentSet;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;

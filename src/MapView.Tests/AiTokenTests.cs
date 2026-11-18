@@ -73,8 +73,7 @@ public sealed class AiTokenTests
     static Game Delivered()
     {
         var game = NewGame(withAiToken: true);
-        game.Flags[1].Places[0].Lay(TestCatalog.AiToken, 0, null);
-        game.Flags[1].MarkGoodsTurnDue();
+        game.LayGood(1, 0, TestCatalog.AiToken, destination: 0);
         for (var i = 0; i < 3000 && game.CastleStock.Count(TestCatalog.AiToken) == 0; i++)
         {
             game.Tick();
