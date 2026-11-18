@@ -146,19 +146,26 @@ public sealed class ContentCatalogTests
     }
 
     [TestMethod]
-    public void AGoodIsFoundByItsNameOrElseByItsOriginalCodeAndNoGoodIsNeverFound()
+    public void AGoodIsFoundByItsStableNameAloneAndNoGoodIsNeverFound()
     {
         var catalog = new ContentCatalog([Entry("log", 1, code: 7), Entry("ai-token", 2)]);
 
-        Assert.AreEqual("log", catalog.EntryOf(new Good { Code = 7, Name = "log" })!.Name);
-        Assert.AreEqual(
-            "log",
-            catalog.EntryOf(new Good { Code = 7, Name = "made-up" })!.Name,
-            "by the code where the name is unknown"
-        );
-        Assert.AreEqual("log", catalog.EntryOf(new Good { Code = 7 })!.Name);
-        Assert.AreEqual("ai-token", catalog.EntryOf(new Good { Code = 99, Name = "ai-token" })!.Name);
-        Assert.IsNull(catalog.EntryOf(new Good { Code = 99 }));
+        Assert.AreEqual("log", catalog.EntryOf(Good.Log)!.Name);
+        Assert.AreEqual("ai-token", catalog.EntryOf(new Good { Name = "ai-token" })!.Name);
+        Assert.IsNull(catalog.EntryOf(new Good { Name = "made-up" }), "no code stands in for a name");
         Assert.IsNull(catalog.EntryOf(Good.None));
+    }
+
+    [TestMethod]
+    public void RequiringAGoodTheCatalogLacksThrowsAnErrorThatNamesIt()
+    {
+        var catalog = new ContentCatalog([Entry("log", 1, code: 7)]);
+
+        Assert.AreEqual("log", catalog.Require(Good.Log).Name);
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            catalog.Require(new Good { Name = "made-up" })
+        );
+        StringAssert.Contains(error.Message, "made-up");
+        Assert.ThrowsExactly<InvalidOperationException>(() => catalog.Require(Good.None));
     }
 }

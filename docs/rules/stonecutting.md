@@ -137,4 +137,4 @@ The activities are:
 - `WalksFree` with `EyesHeaps` set, state `0x16`. It is a trip whose purpose is `ToHeap`.
 - `CutsStone`, state `0x17`, with the part of the cut and the quarter.
 
-`Stonecutter` is job 7. `MapObjectKind.StoneHeap` holds the codes `0x48` to `0x4f`. `StonecutterRules.GoodStone` is the stone. `CastleRoster` asks for his worker for a building of type 4. A layout's `stonecutter` entry stands his worker in the building (`WalkBehavior.StandWorkerInHut`), because the module declares `CanStandInHut`.
+`Stonecutter` is job 7. `MapObjectKind.StoneHeap` holds the codes `0x48` to `0x4f`. `Good.Stone` is the stone. `CastleRoster` asks for his worker for a building of type 4. A layout's `stonecutter` entry stands his worker in the building (`WalkBehavior.StandWorkerInHut`), because the module declares `CanStandInHut`.

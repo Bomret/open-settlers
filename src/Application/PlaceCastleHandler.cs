@@ -17,7 +17,7 @@ public sealed class PlaceCastleHandler(
     RuleTables tables,
     Map map,
     CastleStock castle,
-    System.Collections.Generic.IReadOnlyList<int> startStock,
+    System.Collections.Generic.IReadOnlyDictionary<Good, int> startStock,
     FlagTable flags,
     SettlerTable settlers,
     CastleRoster roster,

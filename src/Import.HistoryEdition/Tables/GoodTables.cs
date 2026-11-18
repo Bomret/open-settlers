@@ -166,14 +166,10 @@ static class GoodTables
     static readonly IReadOnlyDictionary<int, Known> ByCode = All.ToDictionary(good => good.Code);
 
     /// <summary>
-    /// The original's code of <paramref name="good"/>, or null for a good with no code in the original (a good of another set, no good).
-    /// A named good is found by its stable name; a good with no name, one made from a number alone, by its number where that is one of the
-    /// original's. No mask: a number past 26 is no good of the original.
+    /// The original's code of <paramref name="good"/>, found by its stable name, or null for a good with no code in the original (a good of
+    /// another set, no good).
     /// </summary>
-    public static int? CodeOf(Good good) =>
-        good.Name.Length > 0 ? (CodeOfName.TryGetValue(good.Name, out var code) ? code : null)
-        : ByCode.ContainsKey(good.Code) ? good.Code
-        : null;
+    public static int? CodeOf(Good good) => CodeOfName.TryGetValue(good.Name, out var code) ? code : null;
 
     /// <summary>
     /// The good of the original with the code <paramref name="code"/>, with its stable name. Throws an <see cref="InvalidDataException"/>
@@ -181,7 +177,7 @@ static class GoodTables
     /// </summary>
     public static Good GoodOf(int code, string where) =>
         ByCode.TryGetValue(code, out var known)
-            ? new Good { Code = code, Name = known.Name }
+            ? new Good { Name = known.Name }
             : throw new InvalidDataException(
                 $"Siedler1.exe names the good {code} at {where}, which has no entry: the original's goods are 1 to {Count}."
             );

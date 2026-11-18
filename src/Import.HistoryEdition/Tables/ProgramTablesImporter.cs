@@ -363,10 +363,15 @@ static class ProgramTablesImporter
     internal static RuleTables Import(byte[] exe, IReadOnlyList<IJobTables> modules)
     {
         var classes = Slice(exe, ClassTableAddress, RuleTables.ClassCount);
-        var startStock = new byte[RuleTables.StartStockRows][];
+        // Each row of the program's table holds one byte for each good in the order of the codes; the rule tables name the good.
+        var startStock = new IReadOnlyDictionary<Good, byte>[RuleTables.StartStockRows];
         for (var row = 0; row < RuleTables.StartStockRows; row++)
         {
-            startStock[row] = Slice(exe, StartStockAddress + row * RuleTables.Goods, RuleTables.Goods);
+            var counts = Slice(exe, StartStockAddress + row * GoodTables.Count, GoodTables.Count);
+            startStock[row] = GoodTables.All.ToDictionary(
+                good => new Good { Name = good.Name },
+                good => counts[good.Code - 1]
+            );
         }
 
         var steps = Slice(exe, StepTimeAddress + 2 * RuleTables.StepTimeFirst, 2 * RuleTables.StepTimeCount);
@@ -561,7 +566,7 @@ static class ProgramTablesImporter
                 break;
             }
 
-            if (steps.Count >= 2 * RuleTables.Goods || words[0] is not (0x42 or 0x44))
+            if (steps.Count >= 2 * GoodTables.Count || words[0] is not (0x42 or 0x44))
             {
                 throw new InvalidDataException(
                     $"Siedler1.exe holds no order of the storage's hand-out at 0x{address:x}: step {steps.Count} is no step."
@@ -662,7 +667,7 @@ static class ProgramTablesImporter
     // priorities.
     static byte[] TransportPriorityRanks(byte[] exe)
     {
-        var goods = RuleTables.Goods;
+        var goods = GoodTables.Count;
         var code = Slice(exe, TransportPriorityAddress, TransportPriorityStep * goods);
         var ranks = new byte[goods];
         for (var good = 0; good < goods; good++)

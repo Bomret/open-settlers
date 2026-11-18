@@ -16,7 +16,7 @@ public sealed class FoodBuildingTests
     const int SiteY = 8;
     const int Planks = 2;
     const int Stones = 1;
-    static readonly Good FoodTool = new() { Code = 21 };
+    static readonly Good FoodTool = TestCatalog.GoodOf(21);
 
     // The made-up request of every food type: a job of its own between 11 and 20 (the castle holds no settler of those), with the tool
     // for the types whose number is even.

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -44,6 +45,13 @@ static class TestCatalog
         "shield",
     ];
 
+    /// <summary>The good of <see cref="Names"/> at the 1-based position <paramref name="code"/>; no good for any other number.</summary>
+    public static Good GoodOf(int code) =>
+        code >= 1 && code <= Names.Length ? new Good { Name = Names[code - 1] } : Good.None;
+
+    /// <summary>The 1-based position of the good in <see cref="Names"/>, 0 for no good: the code the made-up catalogs give it.</summary>
+    public static int CodeOf(Good good) => Array.IndexOf(Names, good.Name) + 1;
+
     /// <summary>
     /// A catalog of the 26 goods. <paramref name="ranks"/> gives the rank of each good by index good - 1 (the good's own code where
     /// null), and a good whose rank is 0 has no entry at all. <paramref name="classes"/> gives each good's request by its code (storage
@@ -65,6 +73,26 @@ static class TestCatalog
                     )
                 )
         );
+
+    /// <summary>The catalog of <see cref="Of"/> with its defaults: what an exporter reads a made-up game's goods from.</summary>
+    public static readonly ContentCatalog Default = Of();
+
+    /// <summary>A good that only a made-up catalog data entry gives: it has no original code.</summary>
+    public static readonly Good AiToken = new() { Name = "ai-token" };
+
+    /// <summary>The 26 goods and <see cref="AiToken"/>, which has no original code.</summary>
+    public static ContentCatalog WithAiToken() =>
+        new([
+            .. Of().Goods,
+            new GoodEntry
+            {
+                Name = AiToken.Name,
+                Counter = FillCounter.Low,
+                HandoverCounter = FillCounter.Low,
+                CountsAgainstResource1 = false,
+                TransportRank = 100,
+            },
+        ]);
 
     /// <summary>One good of <see cref="Names"/> with its code and the given facts.</summary>
     public static GoodEntry Entry(int code, int rank, GoodClass? request = null, byte kind = 0) =>

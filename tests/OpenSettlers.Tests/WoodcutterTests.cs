@@ -230,7 +230,9 @@ public sealed class WoodcutterTests
             if (line.TryGetValue("g", out var goods))
             {
                 var places = game.Flags[hutFlag].Places;
-                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
                 Assert.AreEqual(goods.Split('/')[1], bytes, $"{name}: the goods on the hut's flag after pass {pass}");
                 Assert.AreEqual(
                     Convert.ToInt32(goods.Split('/')[0], 16) >> 7,

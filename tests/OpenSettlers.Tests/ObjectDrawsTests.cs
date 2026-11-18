@@ -328,7 +328,7 @@ public sealed class ObjectDrawsTests
         var (map, game) = CastleWorld();
         var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>>
         {
-            [(16, 6)] = [.. goods.Select(good => new Good { Code = good })],
+            [(16, 6)] = [.. goods.Select(good => TestCatalog.GoodOf(good))],
         };
 
         return [.. ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6)];
@@ -350,21 +350,21 @@ public sealed class ObjectDrawsTests
                     Row = 6,
                     X = 422,
                     Y = 56,
-                    Good = new Good { Code = 1 },
+                    Good = TestCatalog.GoodOf(1),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 426,
                     Y = 58,
-                    Good = new Good { Code = 2 },
+                    Good = TestCatalog.GoodOf(2),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 412,
                     Y = 56,
-                    Good = new Good { Code = 3 },
+                    Good = TestCatalog.GoodOf(3),
                 },
                 new MapObjectDraw
                 {
@@ -379,35 +379,35 @@ public sealed class ObjectDrawsTests
                     Row = 6,
                     X = 426,
                     Y = 62,
-                    Good = new Good { Code = 4 },
+                    Good = TestCatalog.GoodOf(4),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 408,
                     Y = 58,
-                    Good = new Good { Code = 5 },
+                    Good = TestCatalog.GoodOf(5),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 422,
                     Y = 64,
-                    Good = new Good { Code = 6 },
+                    Good = TestCatalog.GoodOf(6),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 408,
                     Y = 62,
-                    Good = new Good { Code = 7 },
+                    Good = TestCatalog.GoodOf(7),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 412,
                     Y = 64,
-                    Good = new Good { Code = 8 },
+                    Good = TestCatalog.GoodOf(8),
                 },
             },
             draws.Skip(flag - 3).Take(9).ToList()
@@ -454,7 +454,7 @@ public sealed class ObjectDrawsTests
         );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good { Code = 1 }] };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [TestCatalog.GoodOf(1)] };
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
 
@@ -571,7 +571,7 @@ public sealed class ObjectDrawsTests
                     Row = 6,
                     X = 422,
                     Y = 56,
-                    Good = new Good { Code = 1 },
+                    Good = TestCatalog.GoodOf(1),
                 },
                 new MapObjectDraw
                 {
@@ -600,7 +600,7 @@ public sealed class ObjectDrawsTests
                 Row = 6,
                 X = 422,
                 Y = 56,
-                Good = new Good { Code = 0x27 },
+                Good = new Good { Name = "ai-token" },
             },
             one
         );

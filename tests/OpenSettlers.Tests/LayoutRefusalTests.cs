@@ -17,7 +17,7 @@ public sealed class LayoutRefusalTests
     const string Settler =
         "{\"job\": \"carrier\", \"state\": \"waiting-on-road\", \"x\", \"y\", \"direction\"} (a flag of the road and "
         + "the direction the road leaves it)";
-    const string Good = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
+    const string Good = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": a stable name}";
     const string Directions = "directions must be a list of one or more whole numbers from 0 to 5";
 
     static string[] Problems(string text) => [.. Layout.Read(text, "t.jsonc").Problems];
@@ -135,22 +135,21 @@ public sealed class LayoutRefusalTests
     [DataRow("\"goods\": 3", "goods: must be a list")]
     [DataRow("\"goods\": [3]", "goods[0]: must be " + Good)]
     [DataRow(
-        "\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0, \"good\": 7, \"z\": 2}]",
+        "\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0, \"good\": \"log\", \"z\": 2}]",
         "goods[0]: unknown key z, a good is " + Good
     )]
     [DataRow(
-        "\"goods\": [{\"x\": 1.5, \"y\": 1, \"place\": 0, \"good\": 7}]",
-        "goods[0]: must be " + Good + ", whole numbers"
+        "\"goods\": [{\"x\": 1.5, \"y\": 1, \"place\": 0, \"good\": \"log\"}]",
+        "goods[0]: must be " + Good + ", x, y, and place whole numbers"
     )]
     [DataRow(
-        "\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0.5, \"good\": 7}]",
-        "goods[0]: must be " + Good + ", whole numbers"
+        "\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0.5, \"good\": \"log\"}]",
+        "goods[0]: must be " + Good + ", x, y, and place whole numbers"
     )]
     [DataRow(
-        "\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0, \"good\": 7.5}]",
-        "goods[0]: must be " + Good + ", whole numbers"
+        "\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0}]",
+        "goods[0]: must be " + Good + ", x, y, and place whole numbers"
     )]
-    [DataRow("\"goods\": [{\"x\": 1, \"y\": 1, \"place\": 0}]", "goods[0]: must be " + Good + ", whole numbers")]
     public void ASettlerOrGoodEntryOfTheWrongKindIsOneProblem(string extra, string problem)
     {
         CollectionAssert.AreEqual(new[] { "t.jsonc: " + problem }, Extra(extra));

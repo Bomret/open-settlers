@@ -100,8 +100,8 @@ public sealed class RuleTablesShapeTests
         Assert.AreEqual(RuleTables.StartStockRows, tables.StartStock.Length);
         for (var row = 0; row < RuleTables.StartStockRows; row++)
         {
-            Assert.AreEqual(RuleTables.Goods, tables.StartStock[row].Length);
-            Assert.AreEqual((byte)(row * 10 + 4), tables.StartStock[row][4], $"row {row}");
+            Assert.AreEqual(TestCatalog.Names.Length, tables.StartStock[row].Count);
+            Assert.AreEqual((byte)(row * 10 + 4), tables.StartStock[row][TestCatalog.GoodOf(5)], $"row {row}");
         }
     }
 
@@ -150,9 +150,9 @@ public sealed class RuleTablesShapeTests
     {
         var rows = TestProgram.MadeStartStock();
         var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows);
-        rows[2][4] = 99;
+        ((Dictionary<Good, byte>)rows[2])[TestCatalog.GoodOf(5)] = 99;
 
-        Assert.AreEqual((byte)24, tables.StartStock[2][4]);
+        Assert.AreEqual((byte)24, tables.StartStock[2][TestCatalog.GoodOf(5)]);
     }
 
     [TestMethod]

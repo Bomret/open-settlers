@@ -73,8 +73,9 @@ at either end of the road then sends him on at his next turn (`0x42ff81`).
 
 ## Goods
 
-`{"x", "y", "place": 0 to 7, "good": 1 to 25}` puts the good on the place of the flag at the node, as `Flag_PutGood`
-(`0x436b46`) does. The place's destination is cleared and the flag's goods bit is set. The next turn of the flag's
+`{"x", "y", "place": 0 to 7, "good": "grain"}` puts the good, given by its stable name, on the place of the flag at the node,
+as `Flag_PutGood` (`0x436b46`) does. A number, or a name the game's content catalog lacks, is refused with a message that
+lists the names the content set knows. Every one of the original's 26 goods loads, the shield included. The place's destination is cleared and the flag's goods bit is set. The next turn of the flag's
 goods then gives the good a destination and a direction ([Goods at a flag](goods.md#the-turn-of-a-flags-goods)).
 
 The original's put takes the first empty place and checks nothing. The layout names the place. The engine refuses a

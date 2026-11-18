@@ -185,7 +185,7 @@ public sealed class LayoutApplyTests
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Farm.Code] = 2;
         var workers = TestProgram.MadeWorkers();
-        var scythe = new Good { Code = 20 };
+        var scythe = TestCatalog.GoodOf(20);
         workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = scythe };
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;

@@ -27,7 +27,7 @@ public static class GameFactory
     )
     {
         var clock = new GameClock();
-        var castle = new CastleStock();
+        var castle = new CastleStock(tables.Catalog);
         var flags = new FlagTable();
         var network = new RoadNetwork();
         var buildings = new BuildingTable();
@@ -36,8 +36,17 @@ public static class GameFactory
         var draws = new GeneratorDraws(map.Generator);
         // The history reads the tick count of the game, which exists once the parts are wired.
         Game? game = null;
-        var history = new GameHistory(new SnapshotExporter(settlers, buildings, flags), () => game!.TickCount);
-        var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
+        var history = new GameHistory(
+            new SnapshotExporter(settlers, buildings, flags, tables.Catalog),
+            () => game!.TickCount
+        );
+        var movement = new SettlerMovement(
+            map,
+            buildings,
+            tables,
+            () => clock.Now,
+            activity => SettlerEncoder.ResidueOf(activity, tables.Catalog)
+        );
         int Route(int from, int to) => network.Route(flags.Count, from, to);
 
         var goods = new GoodsTransport(movement, flags, network, history, buildings);

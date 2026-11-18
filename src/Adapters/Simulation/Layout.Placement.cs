@@ -324,7 +324,7 @@ public sealed partial class Layout
 
         bool ReadGood(string name, JsonElement entry, List<Step> steps)
         {
-            const string Shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
+            const string Shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": a stable name}";
             if (entry.ValueKind != JsonValueKind.Object)
             {
                 Fail(name, $"must be {Shape}");
@@ -348,26 +348,27 @@ public sealed partial class Layout
                 || !Whole(entry, "y", out var y)
                 || !Whole(entry, "place", out var place)
                 || place is < 0 or > 7
-                || !Whole(entry, "good", out var good)
-                || good is < 1 or >= StartStock.Goods
+                || !entry.TryGetProperty("good", out var named)
             )
             {
-                Fail(name, $"must be {Shape}, whole numbers");
+                Fail(name, $"must be {Shape}, x, y, and place whole numbers");
 
                 return false;
             }
 
+            // The game's catalog is not known while the file is read: a number or a name the catalog lacks is refused when the layout is
+            // built, with the names the game's content set knows.
+            var good = new Good { Name = named.ValueKind == JsonValueKind.String ? named.GetString() ?? "" : "" };
+            var given = named.GetRawText();
             steps.Add(
                 new Step
                 {
                     Name = name,
                     Command = default,
-                    Place = game => game.Goods.PlaceGood(
-                            x,
-                            y,
-                            place,
-                            new Good { Code = good, Name = NameTable.GoodName(good) ?? "" }
-                        ),
+                    Place = game =>
+                        good.IsNone || game.Tables.Catalog.EntryOf(good) is null
+                            ? $"the good {given} is no stable name of a good of this content set, use {string.Join(", ", game.Tables.Catalog.Goods.Select(entry => entry.Name))}"
+                            : game.Goods.PlaceGood(x, y, place, good),
                 }
             );
 

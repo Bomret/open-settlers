@@ -40,9 +40,9 @@ public static class SettlerEncoder
     const int PutsDownState = 0xd;
 
     /// <summary>The original's fields for the settler.</summary>
-    public static SettlerFields Fields(Settler settler)
+    public static SettlerFields Fields(Settler settler, ContentCatalog catalog)
     {
-        var raw = Of(settler.Activity);
+        var raw = Of(settler.Activity, catalog);
         var stamp = settler.Stamp;
         if (settler.Activity is WaitsOffRoad { Approach: var approach })
         {
@@ -63,9 +63,9 @@ public static class SettlerEncoder
     }
 
     /// <summary>The bytes the activity leaves as they are when the settler takes up another activity.</summary>
-    internal static Residue ResidueOf(Activity activity)
+    internal static Residue ResidueOf(Activity activity, ContentCatalog catalog)
     {
-        var raw = Of(activity);
+        var raw = Of(activity, catalog);
 
         return new Residue
         {
@@ -77,7 +77,7 @@ public static class SettlerEncoder
     }
 
     /// <summary>The bytes the settler's activity leaves as they are when the settler takes up another activity.</summary>
-    public static Residue ResidueOf(Settler settler) => ResidueOf(settler.Activity);
+    public static Residue ResidueOf(Settler settler, ContentCatalog catalog) => ResidueOf(settler.Activity, catalog);
 
     /// <summary>The word the original's settler item holds for a good's destination flag: the flag's slot plus one, 0 for none.</summary>
     internal static int DestinationWord(int? destination) => destination is { } slot ? slot + 1 : 0;
@@ -95,7 +95,7 @@ public static class SettlerEncoder
         public required int Next { get; init; }
     }
 
-    static Raw Of(Activity activity)
+    static Raw Of(Activity activity, ContentCatalog catalog)
     {
         var r = activity.Residue;
 
@@ -120,7 +120,7 @@ public static class SettlerEncoder
             WalksRoad a => new()
             {
                 State = a.Code,
-                Mode = a.Load?.Good.Code ?? 0,
+                Mode = GoodWords.Of(catalog, a.Load?.Good ?? Good.None),
                 Target = a.Load is { } load ? DestinationWord(load.Destination) : r.Target,
                 Heading = a.Heading.Value,
                 Next = a.Marked ? 0xff : a.Waits,
@@ -133,7 +133,7 @@ public static class SettlerEncoder
                 Heading = r.Heading,
                 Next = r.Next,
             },
-            WaitsOutStep a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
+            WaitsOutStep a => Of(a.Then, catalog) with { State = a.Code, Next = a.Then.Code },
             EntersBuilding a => new()
             {
                 State = a.Code,
@@ -142,7 +142,7 @@ public static class SettlerEncoder
                 Heading = r.Heading,
                 Next = r.Next,
             },
-            StepsOntoFlag a => Of(a.Then) with { State = a.Code, Next = a.Then.Code },
+            StepsOntoFlag a => Of(a.Then, catalog) with { State = a.Code, Next = a.Then.Code },
             Builds a => new()
             {
                 State = a.Code,
@@ -217,7 +217,7 @@ public static class SettlerEncoder
             StepsOutWithGood a => new()
             {
                 State = a.Code,
-                Mode = a.Good.Code,
+                Mode = GoodWords.Of(catalog, a.Good),
                 Target = 0,
                 Heading = r.Heading,
                 Next = PutsDownState,
@@ -225,7 +225,7 @@ public static class SettlerEncoder
             PutsDownGood a => new()
             {
                 State = a.Code,
-                Mode = a.Good.Code,
+                Mode = GoodWords.Of(catalog, a.Good),
                 Target = 0,
                 Heading = r.Heading,
                 Next = r.Next,
@@ -233,7 +233,7 @@ public static class SettlerEncoder
             HandsOver a => new()
             {
                 State = a.Code,
-                Mode = a.Load?.Good.Code ?? 0,
+                Mode = GoodWords.Of(catalog, a.Load?.Good ?? Good.None),
                 Target = a.Load is { } load ? DestinationWord(load.Destination) : r.Target,
                 Heading = a.Heading.Value,
                 Next = a.Marked ? 0xff : 0,

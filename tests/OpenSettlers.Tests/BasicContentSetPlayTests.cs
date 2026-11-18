@@ -233,7 +233,7 @@ public sealed class BasicContentSetPlayTests
 
         return held
             ? null
-            : $"{string.Join("+", buildings.Select(b => b.Type))}: {start} of good {good.Code} after {ChainCap} ticks";
+            : $"{string.Join("+", buildings.Select(b => b.Type))}: {start} of good {good.Name} after {ChainCap} ticks";
     }
 
     // The castle's flag at 16,11 to the flag of a building at (x, 10) three steps east, and so on east.
@@ -341,8 +341,8 @@ public sealed class BasicContentSetPlayTests
         public void Dispose() => Directory.Delete(Root, true);
     }
 
-    // A layout's good is given by number: under the basic set, whose catalog holds no original codes, the layout step gives it
-    // its stable name, so the carrier lines the log up with the log's rank and the good reads its request class.
+    // A layout's good is given by its stable name: under the basic set, whose catalog holds no original codes, the carrier lines
+    // the log up with the log's rank and the good reads its request class.
     [TestMethod]
     public void ALayoutGoodOnTheBasicSetReadsItsTransportPriorityAndRequestClass()
     {
@@ -350,10 +350,10 @@ public sealed class BasicContentSetPlayTests
             LayoutTests.Text(
                 extra: """
 
-                    "castle": {"x": 10, "y": 10},
-                    "flags": [{"x": 14, "y": 11}],
-                    "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
-                    """
+                "castle": {"x": 10, "y": 10},
+                "flags": [{"x": 14, "y": 11}],
+                "goods": [{"x": 14, "y": 11, "place": 0, "good": "log"}]
+                """
             ),
             "good.jsonc"
         );

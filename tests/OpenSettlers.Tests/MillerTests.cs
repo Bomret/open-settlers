@@ -192,7 +192,7 @@ public sealed class MillerTests
         {
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.Goods.LayGood(put.Flag, put.Place, put.Good);
+                game.Goods.LayGood(put.Flag, put.Place, TestCatalog.GoodOf(put.Good));
             }
 
             game.Tick();
@@ -225,7 +225,9 @@ public sealed class MillerTests
             if (line.TryGetValue("g", out var goods))
             {
                 var places = game.Flags[hutFlag].Places;
-                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
                 Assert.AreEqual(
                     goods.Split('/')[1],
                     bytes,

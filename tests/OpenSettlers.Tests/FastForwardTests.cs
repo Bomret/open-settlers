@@ -161,7 +161,7 @@ public sealed class FastForwardTests
     {
         var (game, _) = SawmillTests.World();
         SawmillTests.SawmillerInside(game);
-        game.Goods.LayGood(0, 0, Good.Log.Code);
+        game.Goods.LayGood(0, 0, Good.Log);
 
         return game;
     }

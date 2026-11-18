@@ -9,7 +9,7 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CarrierBehaviorTests
 {
-    const int Log = 7;
+    static readonly Good Log = Good.Log;
     const int East = 0;
     const int West = 3;
 
@@ -153,11 +153,7 @@ public sealed class CarrierBehaviorTests
         var castle = new Building(BuildingType.Castle, 3, 3, 0) { FillLow = 0xff, FillHigh = 0xff };
         rig.Bench.Buildings.Add(castle);
         map.At(3, 3).LinkTo(0);
-        var load = new Load
-        {
-            Good = new Good { Code = Log },
-            Destination = 0,
-        };
+        var load = new Load { Good = Log, Destination = 0 };
         var settler = new Settler(
             new Carrier(),
             0,
@@ -180,6 +176,6 @@ public sealed class CarrierBehaviorTests
         rig.Bench.Clock += 200;
         rig.Registry.Handle(slot, settler);
 
-        CollectionAssert.AreEqual(new[] { new Good { Code = Log } }, rig.Stocked, "the castle counts the log once");
+        CollectionAssert.AreEqual(new[] { Log }, rig.Stocked, "the castle counts the log once");
     }
 }

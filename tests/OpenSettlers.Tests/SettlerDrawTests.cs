@@ -210,14 +210,7 @@ public sealed class SettlerDrawTests
         var heading = new Heading { Value = (sbyte)bytes[14] };
         var next = bytes[15];
         var approach = new Heading { Value = (sbyte)BitConverter.ToUInt16(bytes, 8) };
-        var load =
-            mode > 0
-                ? new Load
-                {
-                    Good = new Good { Code = mode },
-                    Destination = null,
-                }
-                : (Load?)null;
+        var load = mode > 0 ? new Load { Good = TestCatalog.GoodOf(mode), Destination = null } : (Load?)null;
         var vector = new Vector((sbyte)mode, (sbyte)target);
         var mark = target >> 8;
 
@@ -258,11 +251,11 @@ public sealed class SettlerDrawTests
             {
                 Then =
                     next == 0xd
-                        ? new PutsDownGood { Good = new Good { Code = mode } }
+                        ? new PutsDownGood { Good = TestCatalog.GoodOf(mode) }
                         : new Walks { Errand = new ToStorage(), Heading = heading },
             },
-            0xb => new StepsOutWithGood { Good = new Good { Code = mode } },
-            0xd => new PutsDownGood { Good = new Good { Code = mode } },
+            0xb => new StepsOutWithGood { Good = TestCatalog.GoodOf(mode) },
+            0xd => new PutsDownGood { Good = TestCatalog.GoodOf(mode) },
             0xe => new HandsOver
             {
                 Load = load,

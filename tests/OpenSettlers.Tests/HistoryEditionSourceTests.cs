@@ -426,7 +426,7 @@ public sealed class HistoryEditionSourceTests
         payloads[3][3 * 8] = 40;
         payloads[3][3 * 8 + 1] = 12;
         payloads[ObjectSprites.FlagEntry + 1] = ObjectGraphicsTests.Square(10, 5);
-        payloads[ObjectSprites.GoodEntry(new Good { Code = 7 })!.Value] = ObjectGraphicsTests.Square(3, 1);
+        payloads[ObjectSprites.GoodEntry(Good.Log)!.Value] = ObjectGraphicsTests.Square(3, 1);
         payloads[ObjectSprites.WaterEntry(0, 0)] = ObjectGraphicsTests.Square(4, 4);
         payloads[1250 + ObjectGraphics.ShadowOffset] = ObjectGraphicsTests.ShadowMask();
         change?.Invoke(payloads);
@@ -781,12 +781,10 @@ public sealed class HistoryEditionSourceTests
         using var fake = ObjectFake();
         var source = Open(fake);
 
-        var log = source.Draw(AtFlag(new Good { Code = 7, Name = "log" }))!;
+        var log = source.Draw(AtFlag(Good.Log))!;
 
         Assert.AreEqual(3, log.Image!.OffsetX);
         Assert.IsNull(log.Shadow);
-        Assert.AreSame(log, source.Draw(AtFlag(new Good { Code = 0, Name = "log" })));
-        Assert.AreSame(log, source.Draw(AtFlag(new Good { Code = 7 })));
     }
 
     [TestMethod]
@@ -795,9 +793,7 @@ public sealed class HistoryEditionSourceTests
         using var fake = ObjectFake();
         var source = Open(fake);
 
-        Assert.IsNull(source.Draw(AtFlag(new Good { Code = 28, Name = "wine" })));
-        Assert.IsNull(source.Draw(AtFlag(new Good { Code = 7, Name = "wine" })));
-        Assert.IsNull(source.Draw(AtFlag(new Good { Code = 0x27 })));
+        Assert.IsNull(source.Draw(AtFlag(new Good { Name = "wine" })));
         Assert.IsNull(source.Draw(AtFlag(Good.None)));
     }
 

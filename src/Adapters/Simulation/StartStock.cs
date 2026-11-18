@@ -10,36 +10,32 @@ namespace OpenSettlers.Simulation;
 /// </summary>
 public static class StartStock
 {
-    /// <summary>The number of goods the castle counts.</summary>
-    public const int Goods = RuleTables.Goods;
-
-    // What the castle's construction and its 20 first settlers take from the stock, by entry of the list (the 0-based
-    // count of the storage item's word at 6 + 2 * entry, so the entry e is the good e + 1): the planks and stones the
-    // castle's own site uses (the entries 7 and 9, the goods 8 and 10, Good.Plank and Good.Stone) and the tools the
-    // settlers carry out. Confirmed for the planks and stones: 0x442704 subtracts 7 and 2 itself. inferred for the
-    // tools: they are the difference between the interpolated rows and the castle stock of the emulator (castle:, 7
-    // start stock levels in castle-placements.txt), not read from the subtractions of 0x442704's callees;
-    // docs/rules/castle.md states their origin. Upgrade path: read those callees' subtractions.
-    static readonly (int Good, int Count)[] Taken =
+    // What the castle's construction and its 20 first settlers take from the stock, by the good's stable name: the planks and
+    // stones the castle's own site uses (the plank and the stone) and the tools the settlers carry out. Confirmed for the planks
+    // and stones: 0x442704 subtracts 7 and 2 itself. inferred for the tools: they are the difference between the interpolated rows
+    // and the castle stock of the emulator (castle:, 7 start stock levels in castle-placements.txt), not read from the
+    // subtractions of 0x442704's callees; docs/rules/castle.md states their origin. Upgrade path: read those callees'
+    // subtractions.
+    static readonly (string Good, int Count)[] Taken =
     [
-        (7, 7),
-        (9, 2),
-        (15, 1),
-        (16, 4),
-        (17, 1),
-        (20, 1),
-        (21, 2),
-        (22, 3),
-        (24, 3),
-        (25, 3),
+        ("plank", 7),
+        ("stone", 2),
+        ("shovel", 1),
+        ("hammer", 4),
+        ("fishing-rod", 1),
+        ("hatchet", 1),
+        ("saw", 2),
+        ("pickaxe", 3),
+        ("sword", 3),
+        ("shield", 3),
     ];
 
     /// <summary>
-    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40). Each count steps from
-    /// its value in the lower row towards the higher row of the program's table (<see cref="RuleTables.StartStock"/>)
-    /// by the tenths of the level, rounded as the original rounds.
+    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good the rows of the
+    /// program's table name. Each count steps from its value in the lower row towards the higher row
+    /// (<see cref="RuleTables.StartStock"/>) by the tenths of the level, rounded as the original rounds.
     /// </summary>
-    public static IReadOnlyList<int> At(RuleTables tables, int level)
+    public static IReadOnlyDictionary<Good, int> At(RuleTables tables, int level)
     {
         var low =
             level < 10 ? 0
@@ -50,19 +46,22 @@ public static class StartStock
         var high = low == 4 ? 4 : low + 1;
         var weight = (level - 10 * low) * 0x199a & 0xffff;
         var rows = tables.StartStock;
-        var stock = new int[Goods];
-        for (var good = 0; good < Goods; good++)
+        var stock = new Dictionary<Good, int>();
+        foreach (var (good, from) in rows[low])
         {
-            var from = rows[low][good];
-            var difference = (ushort)(rows[high][good] - from);
+            var difference = (ushort)(rows[high].GetValueOrDefault(good) - from);
             var product = (uint)difference * (uint)weight;
             var rounded = (product & 0xffff) > 0x7fff ? 1 : 0;
             stock[good] = (ushort)(from + rounded + (int)(product >> 16));
         }
 
-        foreach (var (good, count) in Taken)
+        foreach (var (name, count) in Taken)
         {
-            stock[good] = (ushort)(stock[good] - count);
+            var good = new Good { Name = name };
+            if (stock.TryGetValue(good, out var held))
+            {
+                stock[good] = (ushort)(held - count);
+            }
         }
 
         return stock;

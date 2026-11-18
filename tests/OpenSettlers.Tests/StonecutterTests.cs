@@ -202,7 +202,7 @@ public sealed class StonecutterTests
             var flagsBefore = Layers.Of(map, MapLayer.Flags);
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.Goods.LayGood(hutFlag, put.Place, put.Good);
+                game.Goods.LayGood(hutFlag, put.Place, TestCatalog.GoodOf(put.Good));
             }
 
             foreach (var set in sets.Where(set => set.Pass == pass))
@@ -261,7 +261,9 @@ public sealed class StonecutterTests
             if (line.TryGetValue("g", out var goods))
             {
                 var places = game.Flags[hutFlag].Places;
-                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
                 Assert.AreEqual(
                     goods.Split('/')[1],
                     bytes,

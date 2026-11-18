@@ -55,7 +55,7 @@ public sealed class ConstructionDiggerTests
 
             foreach (var put in puts.Where(candidate => candidate[0] == pass))
             {
-                game.Goods.LayGood(put[1] - 1, put[2], put[3], put[4] == 0 ? null : put[4] - 1);
+                game.Goods.LayGood(put[1] - 1, put[2], TestCatalog.GoodOf(put[3]), put[4] == 0 ? null : put[4] - 1);
             }
 
             // The castle hands out nothing the engine could lay on a flag at once: the original delivers after 130 passes, so the planks and

@@ -184,7 +184,10 @@ sealed record StandInRules
                 [
                     .. Enumerable
                         .Range(0, RuleTables.StartStockRows)
-                        .Select(row => Goods.Select(good => good.StartStock[row]).ToArray()),
+                        .Select(row =>
+                            (IReadOnlyDictionary<Good, byte>)
+                                Goods.ToDictionary(good => good.Good, good => good.StartStock[row])
+                        ),
                 ],
                 steps,
                 doors,

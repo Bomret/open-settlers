@@ -20,13 +20,7 @@ public sealed class ThingHistoryTests
 
         return new RuleTables(
             classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
+            TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
@@ -364,7 +358,7 @@ public sealed class ThingHistoryTests
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
         "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
         "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
-        "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
+        "goods": [{"x": 14, "y": 11, "place": 0, "good": "log"}]
         """;
 
     internal static Game Laid(string extra = Built)
@@ -475,7 +469,7 @@ public sealed class ThingHistoryTests
         StringAssert.StartsWith(line, $"settler {carrier.s.X},{carrier.s.Y} job=0 ");
         StringAssert.Contains(
             line,
-            $"stamp={SettlerEncoder.Fields(carrier.s).Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(((WaitsAtFlag)carrier.s.Activity).Flag)} "
+            $"stamp={SettlerEncoder.Fields(carrier.s, game.Tables.Catalog).Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(((WaitsAtFlag)carrier.s.Activity).Flag)} "
         );
         var waiting = Lines(game)
             .Count(l =>

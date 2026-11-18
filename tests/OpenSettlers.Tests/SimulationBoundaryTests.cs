@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
@@ -16,12 +17,9 @@ public sealed class SimulationBoundaryTests
     // ----- Castle stock (F26) -----
 
     [TestMethod]
-    [DataRow(0)]
-    [DataRow(27)]
-    [DataRow(-1)]
-    public void AGoodCodeOutsideOneToTwentySixHasNoCountAndTheStockIgnoresIt(int code)
+    public void NoGoodHasNoCountAndTheStockIgnoresIt()
     {
-        var castle = new CastleStock();
+        var castle = new CastleStock(TestCatalog.Default);
         castle.Place(
             new Castle
             {
@@ -29,9 +27,9 @@ public sealed class SimulationBoundaryTests
                 Y = 1,
                 Height = 1,
             },
-            new int[StartStock.Goods]
+            new Dictionary<Good, int>()
         );
-        var good = new Good { Code = code };
+        var good = Good.None;
 
         castle.Add(good);
 
@@ -41,7 +39,7 @@ public sealed class SimulationBoundaryTests
     [TestMethod]
     public void BeforeTheCastleIsPlacedTheCountsAreZeroAndAddAndTakeChangeNothing()
     {
-        var castle = new CastleStock();
+        var castle = new CastleStock(TestCatalog.Default);
 
         castle.Add(Good.Plank);
 

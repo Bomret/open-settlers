@@ -69,7 +69,7 @@ public sealed class WorkerWalkTests
     // twice the map's width), the stamp, the state, the mode, the target, the heading, and the next state.
     internal static string Hex(Settler s, int width)
     {
-        var raw = SettlerEncoder.Fields(s);
+        var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
         var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));

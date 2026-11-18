@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
@@ -18,10 +19,7 @@ public sealed class GameDigest : IGameDigest
     {
         var hash = Mix(Mix(FnvOffset, game.TickCount), (long)Applied(game));
         hash = Mix(hash, game.CastleStock.Castle is { } castle ? castle.X * 65536L + castle.Y : -1);
-        foreach (var count in game.CastleStock.Stock)
-        {
-            hash = Mix(hash, count);
-        }
+        MixStock(game, ref hash);
 
         foreach (var item in FlagEncoder.Items(game.Flags))
         {
@@ -53,6 +51,30 @@ public sealed class GameDigest : IGameDigest
         }
 
         return hash;
+    }
+
+    // The castle's stock: the count of each good with an original code, in the order of the codes (the storage item's words), then, in
+    // the catalog's order of stable names, the hash of the name and the count of each good with no code that the castle holds some of.
+    // A good with no code and a count of 0 leaves the digest as it is.
+    static void MixStock(Game game, ref ulong hash)
+    {
+        var stock = game.CastleStock;
+        var entries = stock.Catalog.Goods.Select(
+            (entry, place) => (entry, count: stock.Stock.Count > place ? stock.Stock[place] : -1)
+        );
+        foreach (
+            var (entry, count) in entries
+                .Where(e => e.entry.OriginalCode is not null && e.count >= 0)
+                .OrderBy(e => e.entry.OriginalCode)
+        )
+        {
+            hash = Mix(hash, count);
+        }
+
+        foreach (var (entry, count) in entries.Where(e => e.entry.OriginalCode is null && e.count > 0))
+        {
+            hash = Mix(Mix(hash, (long)GoodWords.Hash(entry.Name)), count);
+        }
     }
 
     // The commands the game applied, folded one after the other.
@@ -90,7 +112,7 @@ public sealed class GameDigest : IGameDigest
         hash = Mix(Mix(Mix(hash, random.W0), random.W1), random.W2);
         var (stamp, timer, x, y, decay) = game.Hut.ObjectPassState;
         hash = Mix(Mix(Mix(Mix(Mix(hash, stamp), timer), x), y), decay);
-        foreach (var good in FlagEncoder.Places(game.Flags))
+        foreach (var good in FlagEncoder.Places(game.Flags, game.Tables.Catalog))
         {
             hash = Mix(hash, good);
         }
@@ -135,7 +157,7 @@ public sealed class GameDigest : IGameDigest
 
         foreach (var settler in game.Settlers)
         {
-            var raw = SettlerEncoder.Fields(settler);
+            var raw = SettlerEncoder.Fields(settler, game.Tables.Catalog);
             foreach (
                 var value in new[]
                 {

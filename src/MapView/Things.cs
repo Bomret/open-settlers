@@ -58,10 +58,10 @@ public sealed record Thing
     static string Hex(int value) => $"0x{value:x2}";
 
     /// <summary>The settler as a thing: every value the engine holds for it, and its job and state names where there are some.</summary>
-    public static Thing Of(Settler settler)
+    public static Thing Of(Settler settler, ContentCatalog catalog)
     {
         // The readout shows the original's own encoding of the settler beside the names (INV-0006).
-        var raw = SettlerEncoder.Fields(settler);
+        var raw = SettlerEncoder.Fields(settler, catalog);
 
         return new()
         {
@@ -179,9 +179,8 @@ public sealed record Thing
         ];
     }
 
-    // The name the name table gives a good, or its number where it names none.
-    static string GoodText(Good good) =>
-        NameTable.GoodName(good.Code) ?? good.Code.ToString(CultureInfo.InvariantCulture);
+    // A good is shown by its stable name, with no raw value beside it (INV-0006).
+    static string GoodText(Good good) => good.Name;
 
     // The goods that lie on the places of a flag, named and in the order of the places, as one value; none where the flag holds none.
     static (string, string)[] GoodsOf(Flag flag)
@@ -207,7 +206,7 @@ public sealed record Thing
     // slot in the target.
     static Thing Of(Game game, Settler settler, int slot)
     {
-        var thing = Of(settler);
+        var thing = Of(settler, game.Tables.Catalog);
         var flag = settler.Activity switch
         {
             WaitsAtFlag waiting => FlagLink(game, waiting.Flag),

@@ -29,13 +29,6 @@ public sealed class GoodsTransport(
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
     /// lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
     /// </summary>
-    public void LayGood(int flag, int place, int good, int? destination = null, int? way = null) =>
-        LayGood(flag, place, new Good { Code = good }, destination, way);
-
-    /// <summary>
-    /// Lays <paramref name="good"/> as <see cref="LayGood(int, int, int, int?, int?)"/> does, keeping the good's stable name, so a good
-    /// the rules look up by name (a set with no original codes) is found on the flag.
-    /// </summary>
     public void LayGood(int flag, int place, Good good, int? destination = null, int? way = null)
     {
         var laid = flags[flag].Places[place];
@@ -46,7 +39,7 @@ public sealed class GoodsTransport(
     }
 
     /// <summary>
-    /// Puts a good on a place of the flag on the node as the settler's put does (0x436b46, <see cref="LayGood(int, int, int, int?, int?)"/>). The
+    /// Puts a good on a place of the flag on the node as the settler's put does (0x436b46, <see cref="LayGood(int, int, Good, int?, int?)"/>). The
     /// original's put takes the first empty place and checks nothing: this refuses a node that holds no flag and a place
     /// that holds a good. The place is 0 to 7, as the layout's read checks. It returns why it refused, or null.
     /// </summary>
@@ -74,9 +67,9 @@ public sealed class GoodsTransport(
 
     /// <summary>
     /// The transport priority of a good (a byte of the table in the player's block, +good - 0x55 from the pointer +0x64 + 4 *
-    /// player, read at 0x43b054): the rank the player's setup at a new game writes for each good 1 to 26 (0x42055e calls
-    /// 0x445570), read from the program. Good 0 is no good and has none. The bytes for the goods 27 to 31 belong to other fields
-    /// of the player's block in the original; no good has those numbers, and the engine gives them none.
+    /// player, read at 0x43b054): the rank the player's setup at a new game writes for each of the original's goods
+    /// (0x42055e calls 0x445570), read from the program into the good's catalog entry. No good has none, and a good the catalog
+    /// lacks is an error.
     /// </summary>
     public int TransportPriority(Good good) => movement.Tables.TransportPriority(good);
 
@@ -469,7 +462,7 @@ public sealed class GoodsTransport(
         movement.Become(settler, walks);
         if (changed)
         {
-            var detail = $"took {took} left {left}";
+            var detail = $"took {history.GoodText(took)} left {history.GoodText(left)}";
             history.RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{history.FlagId(flag)} {detail}");
             history.RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{history.SettlerId(slot)} {detail}");
         }

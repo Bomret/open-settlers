@@ -16,7 +16,7 @@ public sealed class StonecuttingTests
     const int HutX = 16;
     const int HutY = 2;
 
-    static readonly Good Stone = new() { Code = 10 };
+    static readonly Good Stone = Good.Stone;
 
     // The nodes a heap can stand on for the stonecutter: the north-west neighbour of each of the 128 nodes around the hut.
     static (int X, int Y)[] Reach() =>
@@ -217,7 +217,7 @@ public sealed class StonecuttingTests
 
         return LayoutSettlersTests.MadeTables(
             buildingClass: 4,
-            transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
+            transportPriorities: [.. Enumerable.Range(1, TestCatalog.Names.Length).Select(good => (byte)good)],
             buildingSizes: ConstructionTables.Sizes(),
             buildingNeeds: needs,
             goodClasses: ConstructionTables.Classes(),

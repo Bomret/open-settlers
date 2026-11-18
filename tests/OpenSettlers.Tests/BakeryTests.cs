@@ -73,7 +73,7 @@ public sealed class BakeryTests
         BakerInside(game);
         var flour = game.CastleStock.Count(Good.Flour);
         var bread = game.CastleStock.Count(Good.Bread);
-        game.Goods.LayGood(CastleFlag, 0, Good.Flour.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Flour);
 
         ConstructionWorld.Run(game, 12000);
 
@@ -92,7 +92,7 @@ public sealed class BakeryTests
     {
         var (game, bakery) = World();
         var baker = BakerInside(game);
-        game.Goods.LayGood(CastleFlag, 0, Good.Flour.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Flour);
         var phases = new System.Collections.Generic.List<int>();
         var marked = new System.Collections.Generic.List<bool>();
         var carriedOut = false;
@@ -125,7 +125,7 @@ public sealed class BakeryTests
         BakerInside(game);
         for (var place = 0; place < 8; place++)
         {
-            game.Goods.LayGood(1, place, Good.Flour.Code);
+            game.Goods.LayGood(1, place, Good.Flour);
         }
 
         ConstructionWorld.Run(game, 80);
@@ -136,7 +136,7 @@ public sealed class BakeryTests
             "eight are served to the bakery, whose rank 0xff is then shifted to 0"
         );
         Assert.AreEqual(0, FlourRequest(game).Rank, "eight flours on the way fill the store: the request ranks 0");
-        game.Goods.LayGood(CastleFlag, 0, Good.Flour.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Flour);
         var flour = game.CastleStock.Count(Good.Flour);
 
         ConstructionWorld.Run(game, 8000);
@@ -154,10 +154,10 @@ public sealed class BakeryTests
         // The made-up kind table sends the flour to the high byte where its request word counts the low one: the byte a flour is counted
         // in on its way and the byte it is counted back from agree whichever table says it.
         var kinds = new byte[TestCatalog.Slots];
-        kinds[Good.Flour.Code] = 1;
+        kinds[TestCatalog.CodeOf(Good.Flour)] = 1;
         var (game, bakery) = World(kinds: kinds);
         BakerInside(game);
-        game.Goods.LayGood(1, 0, Good.Flour.Code);
+        game.Goods.LayGood(1, 0, Good.Flour);
         for (var tick = 0; tick < 100 && bakery.FillLow + bakery.FillHigh == 0; tick++)
         {
             game.Tick();
@@ -229,7 +229,7 @@ public sealed class BakeryTests
         {
             if (game.Flags[BakeryFlag].Places[place].IsEmpty)
             {
-                game.Goods.LayGood(BakeryFlag, place, Good.Stone.Code);
+                game.Goods.LayGood(BakeryFlag, place, Good.Stone);
                 laid++;
             }
         }
@@ -244,7 +244,7 @@ public sealed class BakeryTests
         var baker = BakerInside(game);
         var stones = game.CastleStock.Count(Good.Stone);
         var bread = game.CastleStock.Count(Good.Bread);
-        game.Goods.LayGood(CastleFlag, 0, Good.Flour.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Flour);
         var laid = 0;
         var tick = 0;
         while (baker.Activity is not StepsOutWithGood && tick++ < 12000)

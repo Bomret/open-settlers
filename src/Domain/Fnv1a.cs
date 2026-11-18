@@ -14,6 +14,18 @@ public static class Fnv1a
     /// <summary>Mixes a map object into the hash by its code.</summary>
     public static ulong Add(ulong hash, MapObject mapObject) => Add(hash, mapObject.Code);
 
-    /// <summary>Mixes a good into the hash by its number.</summary>
-    public static ulong Add(ulong hash, Good good) => Add(hash, (ulong)good.Code);
+    /// <summary>
+    /// The hash of a text: the FNV-1a of its UTF-8 bytes, one byte at a time. The one definition of the hash of a stable name that the
+    /// exporters write for an entry with no original code (ADR 0020).
+    /// </summary>
+    public static ulong Of(string text)
+    {
+        var hash = Offset;
+        foreach (var value in System.Text.Encoding.UTF8.GetBytes(text))
+        {
+            hash = Add(hash, value);
+        }
+
+        return hash;
+    }
 }
