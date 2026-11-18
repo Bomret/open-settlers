@@ -134,7 +134,7 @@ public sealed class CodelessGoodTests
         var catalog = new ContentCatalog([CodelessEntry("g5258", 1), CodelessEntry("g7361", 2)]);
 
         var error = Assert.ThrowsExactly<ArgumentException>(() =>
-            GoodWords.CheckCodeless("goods", catalog.Goods.Select(entry => entry.Name), "catalog")
+            ExporterWords.CheckCodeless("goods", catalog.Goods.Select(entry => entry.Name), "catalog")
         );
 
         StringAssert.Contains(error.Message, "g5258");

@@ -6,7 +6,7 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// How the exporters write a job (ADR 0020, INV-0008, INV-0014): the original's code where the job's entry has one, and for an entry with
-/// no code the word <see cref="GoodWords"/> writes for a good: the FNV-1a hash of its stable name with the low byte cleared, so it never
+/// no code the exporter word of its stable name (<see cref="ExporterWords"/>): the FNV-1a hash with the low byte cleared, so it never
 /// equals a job number of the original (0 to 31). An <see cref="UnportedJob"/> has no entry and no name: it writes its raw number.
 /// </summary>
 public static class JobWords
@@ -24,7 +24,7 @@ public static class JobWords
 
         var entry = catalog.Require(job);
 
-        return entry.OriginalCode ?? GoodWords.WordOf(entry.Name);
+        return entry.OriginalCode ?? ExporterWords.Of(entry.Name);
     }
 
     /// <summary>

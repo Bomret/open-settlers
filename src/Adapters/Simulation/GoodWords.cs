@@ -7,8 +7,8 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// How the exporters write a good (ADR 0020, INV-0008, INV-0014): the original's code where the good's entry has one, and for an entry
-/// with no code a word made of the FNV-1a hash of its stable name (<see cref="Fnv1a.Of"/>). The word of a code-less good is the hash's low
-/// 31 bits with the low byte cleared, and 0x100 where that leaves 0. So it never equals the code of an original good (1 to 26), no good (0),
+/// with no code the exporter word of its stable name (<see cref="ExporterWords"/>): the hash's low 31 bits with the low byte cleared, and
+/// 0x100 where that leaves 0. So it never equals the code of an original good (1 to 26), no good (0),
 /// or the carrier's storage and building modes (0xfe and 0xff), and a packed byte that holds a good in its low bits and a direction above
 /// them keeps its direction bits when the exporter adds them to the word.
 /// </summary>
@@ -27,16 +27,7 @@ public static class GoodWords
 
         var entry = catalog.Require(good);
 
-        return entry.OriginalCode ?? WordOf(entry.Name);
-    }
-
-    // The word of a good with no original code, as the class summary states it. The building types use the same word
-    // (BuildingWords): its low byte is clear, so it holds neither the constructing bit 0x20 nor an original code.
-    internal static int WordOf(string name)
-    {
-        var word = (int)(Fnv1a.Of(name) & 0x7fffff00);
-
-        return word == 0 ? 0x100 : word;
+        return entry.OriginalCode ?? ExporterWords.Of(entry.Name);
     }
 
     /// <summary>
@@ -44,29 +35,7 @@ public static class GoodWords
     /// and shows the good by name (INV-0006).
     /// </summary>
     public static bool IsCodelessWord(ContentCatalog catalog, int word) =>
-        catalog.Goods.Any(entry => entry.OriginalCode is null && WordOf(entry.Name) == word);
-
-    /// <summary>
-    /// Throws an <see cref="ArgumentException"/> that names both entries (<paramref name="kind"/> says what they are) where two of the
-    /// stable names <paramref name="names"/> of entries with no original code have one exporter word, which the words an exporter writes
-    /// could not tell apart. The exception names <paramref name="parameter"/> as the argument at fault: the caller's parameter that holds
-    /// the catalog.
-    /// </summary>
-    internal static void CheckCodeless(string kind, IEnumerable<string> names, string parameter)
-    {
-        var byWord = new Dictionary<int, string>();
-        foreach (var name in names)
-        {
-            var word = WordOf(name);
-            if (!byWord.TryAdd(word, name))
-            {
-                throw new ArgumentException(
-                    $"The {kind} {byWord[word]} and {name} have no original code and the same exporter word, 0x{word:x}.",
-                    parameter
-                );
-            }
-        }
-    }
+        catalog.Goods.Any(entry => entry.OriginalCode is null && ExporterWords.Of(entry.Name) == word);
 
     /// <summary>
     /// The text an event writes for <paramref name="good"/>: the number <see cref="Of"/> writes for a good with an original code and for no

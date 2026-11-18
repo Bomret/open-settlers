@@ -6,8 +6,8 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// How the exporters write a building type (ADR 0020, INV-0008, INV-0014): the original's code where the type's entry has one, and for an
-/// entry with no code the word of the FNV-1a hash of its stable name that <see cref="GoodWords"/> writes for a good: the hash's low 31 bits
-/// with the low byte cleared, and 0x100 where that leaves 0. So it never equals the code of an original type (0 to 0x18), the type of no
+/// entry with no code the exporter word of its stable name (<see cref="ExporterWords"/>): the FNV-1a hash's low 31 bits with the low byte
+/// cleared, and 0x100 where that leaves 0. So it never equals the code of an original type (0 to 0x18), the type of no
 /// building (-1), or a word with the constructing bit 0x20, which the exporter adds to the word of a building under construction.
 /// </summary>
 public static class BuildingWords
@@ -28,7 +28,7 @@ public static class BuildingWords
 
         var entry = catalog.Require(type);
 
-        return entry.OriginalCode ?? GoodWords.WordOf(entry.Name);
+        return entry.OriginalCode ?? ExporterWords.Of(entry.Name);
     }
 
     /// <summary>

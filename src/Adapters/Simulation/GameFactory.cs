@@ -36,17 +36,17 @@ public static class GameFactory
         // Two code-less entries of one kind with one word: the flag word, the carrier's mode, the building table's item, a settler's
         // item, the snapshot, and the digest could not tell them apart.
         var catalog = tables.Catalog;
-        GoodWords.CheckCodeless(
+        ExporterWords.CheckCodeless(
             "goods",
             catalog.Goods.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
             nameof(tables)
         );
-        GoodWords.CheckCodeless(
+        ExporterWords.CheckCodeless(
             "building types",
             catalog.Buildings.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
             nameof(tables)
         );
-        GoodWords.CheckCodeless(
+        ExporterWords.CheckCodeless(
             "jobs",
             catalog.Jobs.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
             nameof(tables)
