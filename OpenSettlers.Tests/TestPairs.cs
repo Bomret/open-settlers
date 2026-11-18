@@ -10,16 +10,21 @@ namespace OpenSettlers.Tests;
 // Reads every project under <root>/src and names what breaks the layout of libraries, test projects, and helper
 // projects (INV-0012, INV-0013, ADR 0019). A project is a folder holding a project file of any name; the folder's name
 // says what it is: `<Name>.Tests` is the test project of the library `<Name>` beside it, `<Name>.Testing` its helper
-// project, and `Testing` the helpers shared by every pair.
+// project, and `src/Testing` the helpers shared by every pair. The project files outside src and every source and build
+// file of the repository are read for grants of internals and for the assembly names they take.
 static class TestPairs
 {
-    const string SharedHelpers = "Testing";
-
     sealed class Project
     {
         public required string Folder { get; init; }
 
         public required string File { get; init; }
+
+        // How a problem names the project: its folder's name under src, its file's path below the root elsewhere.
+        public required string Label { get; init; }
+
+        // Whether this is <root>/src/Testing, the helpers shared by every pair.
+        public bool Shared { get; init; }
 
         // What the project builds: <AssemblyName>, or the project file's name without its extension.
         public required string Assembly { get; init; }
@@ -31,9 +36,12 @@ static class TestPairs
 
         public bool IsTests => Name.EndsWith(".Tests", StringComparison.Ordinal);
 
-        public bool IsHelper => Name == SharedHelpers || Name.EndsWith(".Testing", StringComparison.Ordinal);
+        public bool IsHelper => Shared || Name.EndsWith(".Testing", StringComparison.Ordinal);
 
         public bool IsLibrary => !IsTests && !IsHelper;
+
+        // The folder of the library a test or helper project belongs to.
+        public string LibraryFolder => Folder[..Folder.LastIndexOf('.')];
     }
 
     // One grant of internals: where it is written, the assembly it names (null where it names none that can be read),
@@ -52,10 +60,18 @@ static class TestPairs
     public static List<string> Problems(string root)
     {
         var projects = Read(root);
+        var outside = ReadOutside(root);
         var problems = new List<string>();
-        foreach (var grant in Grants(root, projects))
+        foreach (var grant in Grants(root, projects, outside))
         {
-            if (grant.Text.StartsWith("IgnoresAccessChecksTo", StringComparison.Ordinal))
+            if (grant.Text.StartsWith("using ", StringComparison.Ordinal))
+            {
+                problems.Add(
+                    $"{grant.Origin} aliases the attribute of a grant of internals ({grant.Text}): "
+                        + "write the attribute by its name, so the grant can be read"
+                );
+            }
+            else if (grant.Text.StartsWith("IgnoresAccessChecksTo", StringComparison.Ordinal))
             {
                 problems.Add(
                     $"{grant.Origin} uses {grant.Text}: it reaches internals with no grant, which a library's own test project alone has, "
@@ -84,11 +100,25 @@ static class TestPairs
             }
         }
 
+        var testAssemblies = new HashSet<string>();
         foreach (var library in projects.Values.Where(project => project.IsLibrary))
         {
-            if (!projects.ContainsKey(Sibling(library, ".Tests")))
+            testAssemblies.Add($"OpenSettlers.{library.Name}.Tests");
+            if (!projects.ContainsKey(library.Folder + ".Tests"))
             {
                 problems.Add($"{library.Name} has no test project: add src/{library.Name}.Tests beside it");
+            }
+        }
+
+        foreach (
+            var project in projects.Values.Where(project => project.IsTests || (project.IsHelper && !project.Shared))
+        )
+        {
+            if (!projects.TryGetValue(project.LibraryFolder, out var library) || !library.IsLibrary)
+            {
+                problems.Add(
+                    $"{project.Name} has no library beside it: add src/{Describe(project.LibraryFolder)} or remove the project"
+                );
             }
         }
 
@@ -104,9 +134,21 @@ static class TestPairs
             );
         }
 
+        // No other project builds the assembly a library grants its internals to: a helper project, a library, or a
+        // project outside src that did would see them.
+        foreach (var project in projects.Values.Where(project => !project.IsTests).Concat(outside))
+        {
+            if (testAssemblies.Contains(project.Assembly))
+            {
+                problems.Add(
+                    $"{project.Label} builds the assembly {project.Assembly}: only the test project of that library builds it"
+                );
+            }
+        }
+
         foreach (var project in projects.Values.Where(project => project.IsHelper || project.IsTests))
         {
-            if (project.Name == SharedHelpers)
+            if (project.Shared)
             {
                 problems.AddRange(SharedHelperProblems(projects, project));
             }
@@ -119,14 +161,12 @@ static class TestPairs
         return problems;
     }
 
-    static string Sibling(Project project, string suffix) => project.Folder + suffix;
-
     static string Describe(string folder) => Path.GetFileName(folder);
 
     // The shared helpers reference no library: not directly, and not through a helper project.
     static IEnumerable<string> SharedHelperProblems(Dictionary<string, Project> projects, Project shared)
     {
-        foreach (var (reached, through) in Closure(projects, shared, project => project.IsLibrary))
+        foreach (var (reached, through) in Closure(projects, shared, (_, known) => known is null || known.IsLibrary))
         {
             yield return through is null
                 ? $"{shared.Name} references {Describe(reached)}: the shared helpers reference no library"
@@ -139,7 +179,7 @@ static class TestPairs
     static IEnumerable<string> ReachProblems(Dictionary<string, Project> projects, Project project)
     {
         var libraries = new HashSet<string>();
-        var pending = new Stack<string>([project.Folder[..project.Folder.LastIndexOf('.')]]);
+        var pending = new Stack<string>([project.LibraryFolder]);
         while (pending.TryPop(out var next))
         {
             if (libraries.Add(next) && projects.TryGetValue(next, out var found))
@@ -152,28 +192,28 @@ static class TestPairs
         }
 
         bool Allowed(string folder) =>
-            Describe(folder) == SharedHelpers
+            projects.GetValueOrDefault(folder)?.Shared == true
             || libraries.Contains(folder)
             || libraries.Any(name => folder == name + ".Testing");
 
-        foreach (var (reached, through) in Closure(projects, project, _ => false, folder => !Allowed(folder)))
+        foreach (var (reached, through) in Closure(projects, project, (folder, _) => !Allowed(folder)))
         {
             yield return through is null
                 ? $"{project.Name} references {Describe(reached)}, which is outside the reach of its library: "
                     + "a test or helper project references its library, the libraries that library uses, "
-                    + $"{SharedHelpers}, and the helper projects of those libraries"
+                    + "src/Testing, and the helper projects of those libraries"
                 : $"{project.Name} reaches {Describe(reached)} through {Describe(through)}, which is outside the reach of its library";
         }
     }
 
     // The projects reached from `start` through project references, each with the project it was reached through
-    // (null where `start` references it). A project is reported where `report` holds for it or, for a folder outside
-    // src, where `reportFolder` holds; the walk does not continue below a reported project or below the shared helpers.
+    // (null where `start` references it). A project is reported where `report` holds for its folder and the project
+    // there (null for a folder that holds none of src); the walk does not continue below a reported project or below the
+    // shared helpers.
     static List<(string Reached, string? Through)> Closure(
         Dictionary<string, Project> projects,
         Project start,
-        Func<Project, bool> report,
-        Func<string, bool>? reportFolder = null
+        Func<string, Project?, bool> report
     )
     {
         var found = new List<(string, string?)>();
@@ -189,14 +229,11 @@ static class TestPairs
             }
 
             var known = projects.GetValueOrDefault(next.Folder);
-            var reported = known is null
-                ? reportFolder?.Invoke(next.Folder) ?? true
-                : report(known) || (reportFolder?.Invoke(next.Folder) ?? false);
-            if (reported)
+            if (report(next.Folder, known))
             {
                 found.Add((next.Folder, next.Through));
             }
-            else if (known is not null && known.Name != SharedHelpers)
+            else if (known is { Shared: false })
             {
                 foreach (var reference in known.References)
                 {
@@ -208,7 +245,7 @@ static class TestPairs
         return found;
     }
 
-    static bool IsBuildOutput(string name) => name is "obj" or "bin" or "node_modules" || name.StartsWith('.');
+    static bool IsBuildOutput(string name) => name is "obj" or "bin" || name.StartsWith('.');
 
     // The files with one of the extensions below `folder`, build output and hidden folders (.git, .superdev) left out.
     static List<string> FilesUnder(string folder, params string[] extensions)
@@ -243,6 +280,17 @@ static class TestPairs
         RegexOptions.CultureInvariant
     );
 
+    // `using Alias = ...InternalsVisibleToAttribute;`: the attribute is then written under another name.
+    static readonly Regex AttributeAlias = new(
+        @"\busing\s+\w+\s*=\s*(?:[\w.]*\.)?(?:InternalsVisibleTo|IgnoresAccessChecksTo)(?:Attribute)?\s*;",
+        RegexOptions.CultureInvariant
+    );
+
+    static readonly Regex VisibleToType = new(
+        @"(?:^|\.)InternalsVisibleTo(?:Attribute)?$",
+        RegexOptions.CultureInvariant
+    );
+
     static readonly Regex AttributeArgument = new(
         @"\G\s*(?:assemblyName\s*:\s*)?(?:@""(?<name>[^""]*)""|""(?<name>[^""\\]*)"")\s*\)",
         RegexOptions.CultureInvariant
@@ -255,28 +303,26 @@ static class TestPairs
     {
         foreach (var item in document.Descendants())
         {
+            // MSBuild item types are case-insensitive.
+            var kind = item.Name.LocalName.ToLowerInvariant();
+            var include = (string?)item.Attribute("Include") ?? "";
             string? written;
-            switch (item.Name.LocalName)
+            if (kind == "internalsvisibleto")
             {
-                case "InternalsVisibleTo":
-                    written = (string?)(item.Attribute("Include") ?? item.Attribute("Update"));
-                    break;
-                case "AssemblyAttribute"
-                    when ((string?)item.Attribute("Include") ?? "").EndsWith(
-                        "InternalsVisibleTo",
-                        StringComparison.Ordinal
-                    )
-                        || ((string?)item.Attribute("Include") ?? "").EndsWith(
-                            "InternalsVisibleToAttribute",
-                            StringComparison.Ordinal
-                        ):
-                    written = (string?)item.Attribute("_Parameter1") ?? (string?)item.Element("_Parameter1");
-                    break;
-                case "IgnoresAccessChecksTo":
-                    yield return (null, $"IgnoresAccessChecksTo {(string?)item.Attribute("Include")}");
-                    continue;
-                default:
-                    continue;
+                written = (string?)(item.Attribute("Include") ?? item.Attribute("Update"));
+            }
+            else if (kind == "assemblyattribute" && VisibleToType.IsMatch(include))
+            {
+                written = (string?)item.Attribute("_Parameter1") ?? (string?)item.Element("_Parameter1");
+            }
+            else if (kind == "ignoresaccesschecksto")
+            {
+                yield return (null, $"IgnoresAccessChecksTo {include}");
+                continue;
+            }
+            else
+            {
+                continue;
             }
 
             var assembly = written is null ? null : AssemblyOf(written);
@@ -296,22 +342,27 @@ static class TestPairs
             var rest = text[opening.Index..Math.Min(text.Length, opening.Index + 80)].Split('\n')[0].Trim();
             yield return argument.Success ? (AssemblyOf(argument.Groups["name"].Value), rest) : (null, rest);
         }
+
+        foreach (Match alias in AttributeAlias.Matches(text))
+        {
+            yield return (null, alias.Value);
+        }
     }
 
-    // Every grant of internals under <root>/src, in a project file, a source file, and in every build file of the
-    // repository (props and targets files apply to more than one project).
-    static List<Grant> Grants(string root, Dictionary<string, Project> projects)
+    // Every grant of internals in the repository: in the project files of src and outside it, in every source file, and
+    // in every build file (props and targets files apply to more than one project).
+    static List<Grant> Grants(string root, Dictionary<string, Project> projects, List<Project> outside)
     {
         var grants = new List<Grant>();
-        foreach (var project in projects.Values)
+        foreach (var project in projects.Values.Concat(outside))
         {
             foreach (var (assembly, text) in ItemGrants(XDocument.Load(project.File)))
             {
                 grants.Add(
                     new Grant
                     {
-                        Origin = project.Name,
-                        Owner = project,
+                        Origin = project.Label,
+                        Owner = projects.GetValueOrDefault(project.Folder),
                         Assembly = assembly,
                         Text = text,
                     }
@@ -335,11 +386,21 @@ static class TestPairs
             }
         }
 
-        var source = Path.Combine(root, "src");
-        foreach (var file in FilesUnder(source, ".cs"))
+        var fullRoot = Path.GetFullPath(root);
+        foreach (var file in FilesUnder(root, ".cs"))
         {
+            // These two files hold the grants they test as text.
+            if (
+                Path.GetRelativePath(root, file).Replace('\\', '/')
+                is "OpenSettlers.Tests/TestPairs.cs"
+                    or "OpenSettlers.Tests/TestPairTests.cs"
+            )
+            {
+                continue;
+            }
+
             var folder = Path.GetDirectoryName(Path.GetFullPath(file));
-            while (folder is not null && !projects.ContainsKey(folder) && folder.Length > source.Length)
+            while (folder is not null && !projects.ContainsKey(folder) && folder.Length > fullRoot.Length)
             {
                 folder = Path.GetDirectoryName(folder);
             }
@@ -366,28 +427,53 @@ static class TestPairs
     // The projects under <root>/src by folder: every folder with a project file, whatever the file is called.
     static Dictionary<string, Project> Read(string root)
     {
+        var shared = Path.GetFullPath(Path.Combine(root, "src", "Testing"));
         var projects = new Dictionary<string, Project>();
-        foreach (var file in FilesUnder(Path.Combine(root, "src"), ".csproj", ".fsproj", ".vbproj"))
+        foreach (var file in FilesUnder(Path.Combine(root, "src"), ".csproj"))
         {
             var folder = Path.GetFullPath(Path.GetDirectoryName(file)!);
-            var document = XDocument.Load(file);
-            var references = document
-                .Descendants("ProjectReference")
-                .Select(item => (string)item.Attribute("Include")!)
-                .Select(include => Path.GetFullPath(Path.Combine(folder, include.Replace('\\', '/'))))
-                .Select(path => Path.GetDirectoryName(path)!)
-                .ToArray();
-            projects[folder] = new Project
-            {
-                Folder = folder,
-                File = file,
-                Assembly =
-                    document.Descendants("AssemblyName").Select(item => item.Value.Trim()).LastOrDefault()
-                    ?? Path.GetFileNameWithoutExtension(file),
-                References = references,
-            };
+            projects[folder] = Load(file, Path.GetFileName(folder), folder == shared);
         }
 
         return projects;
+    }
+
+    // The project files outside <root>/src (the root project and the repository's own test project), named by their
+    // path below the root.
+    static List<Project> ReadOutside(string root)
+    {
+        var source = Path.GetFullPath(Path.Combine(root, "src"));
+        return
+        [
+            .. FilesUnder(root, ".csproj")
+                .Where(file =>
+                    !Path.GetFullPath(file).StartsWith(source + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                )
+                .Select(file => Load(file, Path.GetRelativePath(root, file).Replace('\\', '/'), false)),
+        ];
+    }
+
+    static Project Load(string file, string label, bool shared)
+    {
+        var folder = Path.GetFullPath(Path.GetDirectoryName(file)!);
+        var document = XDocument.Load(file);
+        return new Project
+        {
+            Folder = folder,
+            File = file,
+            Label = label,
+            Shared = shared,
+            Assembly =
+                document.Descendants("AssemblyName").Select(item => item.Value.Trim()).LastOrDefault()
+                ?? Path.GetFileNameWithoutExtension(file),
+            References =
+            [
+                .. document
+                    .Descendants("ProjectReference")
+                    .Select(item => (string)item.Attribute("Include")!)
+                    .Select(include => Path.GetFullPath(Path.Combine(folder, include.Replace('\\', '/'))))
+                    .Select(path => Path.GetDirectoryName(path)!),
+            ],
+        };
     }
 }

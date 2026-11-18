@@ -71,6 +71,16 @@ public sealed class TestPairTests
             return this;
         }
 
+        // A text file at the repository path (`OpenSettlers.Tests/Grant.cs`, ...).
+        public Tree Text(string path, string text)
+        {
+            var full = Path.Combine(Root, path);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            File.WriteAllText(full, text);
+
+            return this;
+        }
+
         public void Dispose() => Directory.Delete(Root, true);
     }
 
@@ -582,6 +592,169 @@ public sealed class TestPairTests
 
         Assert.HasCount(1, problems);
         StringAssert.Contains(problems[0], "OpenSettlers.Viewer");
+    }
+
+    // The assembly a library grants its internals to is its test project's alone: no other project builds it, whether a
+    // helper project, a library, or a project outside src.
+    [TestMethod]
+    public void AHelperProjectTakingALibrarysTestAssemblyNameIsAProblem()
+    {
+        using var tree = Chain().Project("Domain.Testing", ["Domain"], assembly: "OpenSettlers.Domain.Tests");
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "Domain.Testing");
+        StringAssert.Contains(problems[0], "OpenSettlers.Domain.Tests");
+    }
+
+    [TestMethod]
+    [DataRow("OpenSettlers.csproj")]
+    [DataRow("OpenSettlers.Tests/OpenSettlers.Tests.csproj")]
+    public void AProjectOutsideSrcTakingALibrarysTestAssemblyNameIsAProblem(string path)
+    {
+        using var tree = Chain()
+            .Build(path, "<PropertyGroup><AssemblyName>OpenSettlers.Domain.Tests</AssemblyName></PropertyGroup>");
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], path);
+        StringAssert.Contains(problems[0], "OpenSettlers.Domain.Tests");
+    }
+
+    [TestMethod]
+    public void AProjectOutsideSrcWithItsOwnAssemblyNameAndNoGrantIsNoProblem()
+    {
+        using var tree = Chain()
+            .Build(
+                "OpenSettlers.Tests/OpenSettlers.Tests.csproj",
+                "<PropertyGroup><AssemblyName>OpenSettlers.Repository.Tests</AssemblyName></PropertyGroup>"
+            );
+
+        CollectionAssert.AreEqual(Array.Empty<string>(), TestPairs.Problems(tree.Root));
+    }
+
+    [TestMethod]
+    [DataRow(
+        "OpenSettlers.csproj",
+        "<ItemGroup><InternalsVisibleTo Include=\"OpenSettlers.Domain.Tests\" /></ItemGroup>"
+    )]
+    [DataRow(
+        "OpenSettlers.Tests/OpenSettlers.Tests.csproj",
+        "<ItemGroup><InternalsVisibleTo Include=\"OpenSettlers.Domain.Tests\" /></ItemGroup>"
+    )]
+    [DataRow(
+        "OpenSettlers.Tests/OpenSettlers.Tests.csproj",
+        "<ItemGroup><IgnoresAccessChecksTo Include=\"OpenSettlers.Domain\" /></ItemGroup>"
+    )]
+    public void AGrantInAProjectFileOutsideSrcIsAProblem(string path, string xml)
+    {
+        using var tree = Chain().Build(path, xml);
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], path);
+    }
+
+    [TestMethod]
+    [DataRow("[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(\"OpenSettlers.Domain.Tests\")]")]
+    [DataRow("[assembly: System.Runtime.CompilerServices.IgnoresAccessChecksTo(\"OpenSettlers.Domain\")]")]
+    public void AGrantInASourceFileOutsideSrcIsAProblem(string text)
+    {
+        using var tree = Chain().Text("OpenSettlers.Tests/Grant.cs", text);
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "OpenSettlers.Tests");
+    }
+
+    // An alias hides the attribute's name at the place it is used, so the alias itself is the problem.
+    [TestMethod]
+    [DataRow(
+        "using IVT = System.Runtime.CompilerServices.InternalsVisibleToAttribute;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
+    )]
+    [DataRow(
+        "using IVT = System.Runtime.CompilerServices.InternalsVisibleTo;\n[assembly: IVT(\"OpenSettlers.Viewer\")]"
+    )]
+    [DataRow(
+        "using Skip = System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute;\n[assembly: Skip(\"OpenSettlers.Domain\")]"
+    )]
+    public void AGrantThroughAUsingAliasIsAProblem(string text)
+    {
+        using var tree = Chain().Source("Domain", text);
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "Domain");
+        StringAssert.Contains(problems[0], "using");
+    }
+
+    // MSBuild item types are case-insensitive.
+    [TestMethod]
+    [DataRow("<ItemGroup><internalsVisibleTo Include=\"OpenSettlers.Viewer\" /></ItemGroup>")]
+    [DataRow(
+        "<ItemGroup><ASSEMBLYATTRIBUTE Include=\"System.Runtime.CompilerServices.InternalsVisibleTo\" _Parameter1=\"OpenSettlers.Viewer\" /></ItemGroup>"
+    )]
+    public void AGrantItemWithAnotherCaseIsAProblem(string xml)
+    {
+        using var tree = Chain().Project("Domain", grants: ["OpenSettlers.Domain.Tests"], extra: xml);
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "OpenSettlers.Viewer");
+    }
+
+    [TestMethod]
+    public void SkippingTheAccessCheckThroughAnItemWithAnotherCaseIsAProblem()
+    {
+        using var tree = Chain()
+            .Project(
+                "Domain",
+                grants: ["OpenSettlers.Domain.Tests"],
+                extra: "<ItemGroup><ignoresAccessChecksTo Include=\"OpenSettlers.Import\" /></ItemGroup>"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "IgnoresAccessChecksTo");
+    }
+
+    [TestMethod]
+    [DataRow("Foo.Tests")]
+    [DataRow("Foo.Testing")]
+    public void ATestOrHelperProjectWithNoLibraryBesideItIsAProblem(string name)
+    {
+        using var tree = Chain().Project(name, assembly: name == "Foo.Tests" ? "OpenSettlers.Foo.Tests" : null);
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], name);
+        StringAssert.Contains(problems[0], "Foo");
+    }
+
+    [TestMethod]
+    public void OnlyTheTestingFolderOfSrcIsTheSharedHelpers()
+    {
+        using var tree = Chain()
+            .Project(
+                "Domain.Tests",
+                ["Domain", "Testing", "Domain.Testing"],
+                assembly: "OpenSettlers.Domain.Tests",
+                extra: "<ItemGroup><ProjectReference Include=\"../../Host/Testing/Testing.csproj\" /></ItemGroup>"
+            );
+
+        var problems = TestPairs.Problems(tree.Root);
+
+        Assert.HasCount(1, problems);
+        StringAssert.Contains(problems[0], "Domain.Tests");
+        StringAssert.Contains(problems[0], "Testing");
     }
 
     [TestMethod]

@@ -9,7 +9,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The stand-in readout of the castle's log, plank, stone, and food counts in the play view (the original's stock window is a later slice's).
-// The tests against the basic set's and the install's start stock are in the pairs of the sources, since the map view cannot reach the
+// The tests against the basic set's and the install's start stock are in src/Launch.Tests/CastleReadoutTests.cs, since the map view cannot reach the
 // Open Settlers source.
 [TestClass]
 public sealed class CastleReadoutTests
