@@ -2,6 +2,7 @@
   <ItemGroup>
     <!-- The tests read the internal members of the launch code. -->
     <InternalsVisibleTo Include="OpenSettlers.Tests" />
+    <InternalsVisibleTo Include="OpenSettlers.Launch.Tests" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="OpenSettlers.Domain" />
