@@ -1,0 +1,16 @@
+# The territory border: placing the castle shows its border posts at once, a pole on each edge between the territory
+# and the land nobody owns, a water post where the edge lies in water, drawn under the trees, buildings, and settlers.
+# The castle's click places it at 15,5; its territory reaches 8 steps, so the border runs about 23,5 to the east.
+# Run it on the game view with seed 4455544685788642 and size 1, with the install:
+#   sh tools/play-run.sh border-posts --game-view --seed 4455544685788642 --size 1 --fps 10
+# On the basic content set, without the install:
+#   sh tools/play-run.sh border-posts --game-view --seed 4455544685788642 --size 1 --content-set basic --fps 10
+expect seed = 4455544685788642
+expect size = 1
+wait 0.3
+shot before 15 5 9
+click-tile 15 5
+wait 0.3
+shot territory 15 5 9
+shot east 23 5 2 3
+shot west 7 5 2 3

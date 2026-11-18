@@ -1,0 +1,42 @@
+# The castle under construction (docs/rules/construction.md, "The castle under construction"): from the click that places it the castle
+# grows from the bottom up over its whole shadow by its progress word, with no ground, base, or scaffold under it, and once it stands it
+# is drawn whole. The shots at the ticks 30, 31, and 32 show it grow a little each pass. The castle's click places it at 24,3. The shots crop around the castle's node.
+# Run it on the game view of the basic content set with seed 1234567812345634 and size 1, with no install and no SIEDLER_DIR
+# (play/castle-growing.play runs the same on the History Edition):
+#   sh tools/play-run.sh castle-growing-basic --game-view --content-set basic --seed 1234567812345634 --size 1 --fps 10
+expect seed = 1234567812345634
+expect size = 1
+wait 0.3
+click-tile 24 3
+wait 0.1
+list placed
+expect-count building = 1
+dump placed
+shot placed 24 3 1 3
+fast-forward until ticks >= 20 max 60000
+wait 0.1
+list early
+dump early
+shot early 24 3 1 3
+fast-forward until ticks >= 30 max 60000
+wait 0.1
+list tick30
+shot tick30 24 3 1 3
+fast-forward until ticks >= 31 max 60000
+wait 0.1
+list tick31
+shot tick31 24 3 1 3
+fast-forward until ticks >= 32 max 60000
+wait 0.1
+list tick32
+shot tick32 24 3 1 3
+fast-forward until ticks >= 45 max 60000
+wait 0.1
+list mid
+dump mid
+shot mid 24 3 1 3
+fast-forward until ticks >= 200 max 60000
+wait 0.3
+list stands
+dump stands
+shot stands 24 3 1 3

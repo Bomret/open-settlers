@@ -115,6 +115,15 @@ public sealed class MapViewStateTests
     }
 
     [TestMethod]
+    public void TheSettlerRateIsThatOfTheAppliedSeed()
+    {
+        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+
+        // The free-game seed 3905,0577,7739 opens the screen with the rate 16 (opponents:3905,0577,7739, byte +0x37c).
+        Assert.AreEqual(16, state.SettlerRate);
+    }
+
+    [TestMethod]
     public void OpeningWithAnInvalidSeedHasNoMapAndAReason()
     {
         var state = MapViewState.Open(TestProgram.Made(), "0000000000000000", 1);
@@ -208,7 +217,32 @@ public sealed class MapViewStateTests
         Assert.AreEqual(layout.Seed.ToScreen(), state.SeedText);
         Assert.AreEqual(1, state.SizeValue);
         Assert.AreEqual(StartStock.LevelOf(layout.Seed), state.StockLevel);
+        Assert.AreEqual(StartStock.SettlerRateOf(layout.Seed), state.SettlerRate);
         Assert.IsNull(state.Problem);
+    }
+
+    // A broken rule file draws no map and names its file and key, on a layout as on a seed.
+    [TestMethod]
+    public void OpeningOnALayoutWithUnreadableRuleTablesDrawsNoMapAndNamesTheProblem()
+    {
+        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+
+        var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+    }
+
+    [TestMethod]
+    public void ApplyingOnALayoutWithUnreadableRuleTablesKeepsTheFileAndKeyInTheProblem()
+    {
+        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+        var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
+
+        state.Apply("abc", layout.Size.Value);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
     }
 
     [TestMethod]
@@ -259,5 +293,21 @@ public sealed class MapViewStateTests
 
         Assert.IsNull(state.Map);
         StringAssert.Contains(state.Problem, "the program is unreadable");
+    }
+
+    // A broken rule file of the basic set shows its file and key, and the view does not blame a program it never read.
+    [TestMethod]
+    public void ARuleFileThatFailsShowsItsFileAndKeyWithoutNamingAProgram()
+    {
+        var port = new FakeRuleTables(() =>
+            throw new InvalidDataException("rules/world.jsonc: stepTimes.-4: 0 is outside 1 to 65535")
+        );
+
+        var tables = MapViewState.ReadTables(port, out var problem);
+        var state = MapViewState.Open(tables, Seed, 1, problem);
+
+        Assert.IsNull(state.Map);
+        StringAssert.Contains(state.Problem, "rules/world.jsonc: stepTimes.-4: 0 is outside 1 to 65535");
+        Assert.DoesNotContain("program", state.Problem!);
     }
 }

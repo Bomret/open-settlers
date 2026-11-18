@@ -261,7 +261,7 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x427642` | `Terrain_DrawTiles` | Draws the terrain triangles of the view rows with the routines at `0x4278be` and `0x427a25` and the tables of [Terrain drawing](graphics-images.md#terrain-drawing). | confirmed | game | Called by `0x4275d6`. |
 | `0x4278be` | `Terrain_DrawUpper` | Draws the upper triangle of a tile: forms the index `(a + 4 - l) + 9 x (a + 4 - r)` from the heights of the apex `a` and the base nodes `l` and `r` and reads `Render_TriangleVariantsUpper` at it with no range check on a slope, so a slope outside 0 to 8 reaches another row (or, for an index outside 0 to 80, a byte before or past the table); a texture byte with bit 7 set (`0xff`) draws nothing. | confirmed | game | Called by `Terrain_DrawTiles`; calls `Gfx_DrawTexturedFill` at `0x4279a9`. [Terrain drawing](graphics-images.md#terrain-drawing). |
 | `0x427a25` | `Terrain_DrawLower` | Draws the lower triangle of a tile in the same way, with the index `(l + 4 - a) + 9 x (r + 4 - a)` of the top nodes `l` and `r` over the apex `a` and `Render_TriangleVariantsLower`, again with no range check on a slope. | confirmed | game | Called by `Terrain_DrawTiles`; calls `Gfx_DrawTexturedFill` at `0x427b0d`. [Terrain drawing](graphics-images.md#terrain-drawing). |
-| `0x42f7ea` | — | Works out the screen position of the node at `+0xfc` and `+0xfe` of the view's record relative to the view origin, wrapping at the map size. Its full role is unknown. | unknown | game | Called by `View_HandleClick`, `0x427133`, and `0x440b01`. |
+| `0x42f7ea` | `View_PlaceCursorList` | Places the road cursor's list at view `+0xa4`: entry 0 at the screen position of the node at `+0xfc` and `+0xfe` of the view's player block, wrapped at the map size and raised by its height, and entries 1 to 6 at its six neighbors, each raised by its own height. Hides the list (bit 7 of its first byte) where the node lies outside the view's window. | confirmed | game | Called by `View_HandleClick`, `Render_RedrawViewBase`, and `0x440b01`. See [Roads](roads.md#the-road-markers). |
 | `0x406420` | `Gfx_DrawSpriteOverColor8` | Sets the clip rectangle from the target surface and draws the entry of the draw block through `Gfx_SpriteOverColor8`. | confirmed | platform | Called at `0x44ffcd`, in `0x44ff59`. |
 | `0x405d00` | `Gfx_SpriteOverColor8` | Passes the surface, the position, and the entry's address to `Gfx_BlitSpriteOverColor8`. | confirmed | platform | Called at `0x40647a`, in `Gfx_DrawSpriteOverColor8`. |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | Picks one of the 16 entries 630 to 645 from the tile record's address (`& 0x3c`, doubled, `^ 0xa8`) plus the counter at the game state block's `+0x206`, shifted right 3 and masked to 4 bits, and draws it through `Gfx_DrawSpriteOverColor8`. | confirmed | game | Called by `0x44d5b4`; the add of 630 is at `0x44ffc7`. See [Map objects](map-objects.md#water). |
@@ -272,7 +272,7 @@ Note: [Graphics archives](graphics-archives.md).
 | `0x4279d4` | `Render_TriangleVariantsUpper` | Data: 81 bytes, by height-difference index, the texture variant (a multiple of 4, `0xff` none) of an upper triangle. | confirmed | game |
 | `0x427b38` | `Render_TriangleVariantsLower` | Data: the same 81 bytes for a lower triangle. | confirmed | game |
 | `0x427b89` | `Render_TerrainTextures` | Data: 128 bytes, 8 for each terrain code, the texture number minus 260 by variant. | confirmed | game |
-| `0x44e114` | `Gfx_SpriteLists` | Data: 25 inline sprite lists in the code band, entries 0 or 8, read by the site `0x44e0d1`. | inferred | game |
+| `0x44e114` | `Gfx_SpriteLists` | Data: the flame lists of a burning building, inline in the code band: 25 word offsets from the data's start, one list per building type. Each list holds 3-byte flames: a size byte 0 or 8, then a signed x and y. A byte of `0x80` or more ends a list. Types 7 and 8 share a list. Read by the burning branch of `Building_Draw`, drawn at `0x44e0d1`. | confirmed | game |
 | `0x44f225` | `Gfx_BuildingPairTable` | Data: 128 byte pairs inline in the code band (up to `0x44f325`); first bytes 162 to 173, read with an even index by the eight sites from `0x44ee56`. | confirmed | game |
 | `0x44fd16` | `Gfx_ObjectNumberTable` | Data: inline byte table in the code band of object numbers (152 to 193) for the shadow path through `0x44fcd0` to `0x44ff2a`; sibling of the table at `0x44fcfe`. | confirmed | game |
 | `0x44d87d` | `Render_WaitingCarrierPhases` | Data: in the code band, 16 words, the phase of a waiting carrier's figure by the tile record's address. | confirmed | game |
@@ -300,10 +300,11 @@ Sites:
 - `0x44da9e`, `0x44dac8`: forms the shadow entry (index plus 1500), then the sprite entry (index plus 1250) (in `Gfx_DrawObjectSprite`).
 - `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d`: call `Gfx_DrawSpriteBase320` with an object byte masked to 0 to 31, entries 320 to 351 (in `Render_DrawFlag`).
 - `0x44de86`: draws raw image 870 plus a tile index through `Gfx_DrawSprite` (in `0x44de56`).
-- `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a sprite-list entry (0 or 8, from the 25 inline lists at `0x44e114`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in code after `Gfx_DrawSpriteBase320` and before `0x44e329` that no Ghidra function covers; the containing routine's entry was not established (REA rizin unavailable).
-- `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`). Code not covered by a Ghidra function, between `Sound_Request` and `Gfx_DrawPhaseSprite`; entry `0x44fee2` (jumped to at `0x44fc70`) is a candidate routine, not verified.
+- `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a flame's size byte (0 or 8, from the lists at `Gfx_SpriteLists`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in the burning branch (`0x44dedc` to `0x44e113`) of `Building_Draw` (`0x44e329`), which jumps there at `0x44e37f` ([Removal](removal.md#the-burning-draw)).
+- `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`), in `Gfx_DrawGrowingWithShadow` (`0x44fee2`).
 - `0x45006a`: stores shadow entry 4 for the call to `Gfx_DrawShadow` at `0x45007d`; `0x450128` to `0x45014c`: adds a word of the table `Settler_FigureOffsets` to both entry fields (in `Gfx_DrawSettlerRecords`).
-- `0x450ada` (in `0x450a8f`), `0x450fc5` (in `0x450f6e`): call `Gfx_DrawSpriteBase320` with a run-time list word; not bounded. The two routines are called from `Render_DrawViewLayers`.
+- `0x450ada` (in `0x450a8f`): calls `Gfx_DrawSpriteBase320` with a run-time list word; not bounded. The routine is called from `Render_DrawViewLayers`.
+- `0x450fc5` (in `Render_DrawCursorList`): calls `Gfx_DrawSpriteBase320` with a word of the road cursor's list: 32 or 33, 44, 45, or 39 plus a height difference, the entries 352, 353, 364, 365, and 355 to 363 for a difference up to 4 either way ([Roads](roads.md#the-road-markers)).
 - `0x450f2f` (in `BuildHelp_DrawRowMarkers`): calls `Gfx_DrawSpriteBase320` with the build marker, 47 to 50, so the entries 367 to 370 ([Build sites](build-sites.md#the-build-site-overlay)).
 - `0x452394`, `0x452400`, `0x452443`: draw raw images 1, 5 to 11, and 15 to 21 through `Gfx_DrawSprite` under palette 3997 (title scene). Code not covered by a Ghidra function; containing routine not established.
 - `0x45cf10`: draws raw images 660 to 663; `0x45cf57` to `0x45d02c`: 670 to 677 (in `Panel_CopyViewToScreen`, `0x45ce7b`).
@@ -314,6 +315,8 @@ Sites:
 | Address | Name | Role | Status | Layer | Anchor |
 | --- | --- | --- | --- | --- | --- |
 | `0x440aae` | `Ui_HandleViews` | For each view, runs the start-screen click handler or the in-game click and panel handlers. | inferred | game | Called by `Main_Loop`. |
+| `0x440b01` | — | The handlers of one view: the start-screen click handler, or the game view's click (`View_HandleClick`) and panel handlers; where bit 2 of the view's byte 1 is set, clears it and runs `Road_UpdateCursor`, `0x44c768`, and `View_PlaceCursorList`. | confirmed | game | Called by `Ui_HandleViews`. See [Roads](roads.md#the-road-markers). |
+| `0x44c768` | — | Writes the panel's button list at view `+0x60`: one list where bit 5 of the state's byte `+0x37e` is set, another in road mode, and otherwise the one the handler of the jump table at `0x44c80f` writes for the player's byte `+0x100`, with a pointer to view `+0xa4` for the road cursor's list. In road mode it leaves the list at `+0xa4` alone. | confirmed | game | Called by `0x440b01`, `View_RunButtonAction`, `Flag_PlaceFromButton`, `Castle_PlaceFromClick`, `Click_Remove`, and `Click_RemoveRoad`. See [Roads](roads.md#the-road-markers). |
 | `0x44591d` | `Panel_HandleClick` | Hit-tests a panel's buttons and dispatches the action through the table at `0x44668c`. | inferred | game | Called by `0x440c24` and `StartScreen_HandleClick`. |
 | `0x451355` | `Panel_Update` | For each view, runs the handler of the requested or current panel screen. | inferred | game | Called by `Main_Loop`. |
 | `0x45ce5a` | `Panel_CopyToScreen` | For each view, copies the panel into the view's screen. | inferred | game | Called by `Main_Loop`. |
@@ -321,14 +324,16 @@ Sites:
 | `0x44d3ae` | `Render_DrawViewRows` | Walks the rows of one view two at a time and runs `Render_DrawRowTiles` for each. | confirmed | game | Called by `Render_DrawMapView`. See [Map objects](map-objects.md). |
 | `0x44d77e` | `Render_AddWaitingCarrier` | Appends a draw record (the low two bits of record B byte 1, the figure word, x, y) to the list at `Render_WaitingCarriers` for a tile whose record B byte 1 has bit 7 set. Where bit 6 of the tile's record A byte 0 is set, the figure word is `0x203` and the position the tile's (x the column counter times 8, y the row position less 4 times the height). Otherwise it takes a phase word from `Render_WaitingCarrierPhases` by bits 2 to 5 of the tile record's address (`0x44d832`), adds the clock (`+0x206`), shifts right 2, masks with `0xfe`, and takes that byte offset in `Render_WaitingCarrierFigures` as the figure word (`0x44d85d`). It then adds the two signed bytes of `Render_WaitingCarrierOffsets` at twice the low six bits of record A byte 0 to the position (`0x44d9b2`). | confirmed | game | Called at `0x44d5ef` by `Render_DrawRowTiles`. [Carriers](carriers.md#drawing). |
 | `0x44d5b4` | `Render_DrawRowTiles` | Draws the tiles of one row from west to east. For each tile it first reads byte 1 of record B (at the state's `+0x36` from the tile's record) and calls `Render_AddWaitingCarrier` where bit 7 is set (`0x44d5ef`). Then, for the object code in byte 3 of record A: no sprite for 0, other routines for 1 to 7, the animated or still sprite through `Gfx_DrawObjectSprite` from 8 on. It starts the list at `Render_WaitingCarriers` and ends it with `0xffff`. | confirmed | game | Called by `Render_DrawViewRows`. See [Map objects](map-objects.md). |
+| `0x44e329` | `Building_Draw` | Draws the building of a tile. A building marked as taken down (status bit 5) jumps at `0x44e37f` to the burning branch at `0x44dedc`: the sound `0x54` request, the countdown taken down by the clock and written back with the stamp (nothing drawn where it borrows), the building through `Building_DrawByType` (`0x44dfc2`), then its flames from `Gfx_SpriteLists` (`0x44e0d1`). Any other building is drawn by its type through the jump table at `0x44e3aa`. | confirmed | game | Called by `Render_DrawRowTiles`. [Removal](removal.md#the-burning-draw). |
+| `0x44e385` | `Building_DrawByType` | The tail of `Building_Draw` that draws a building by its type byte (with the construction bit) through the jump table at `0x44e3aa`. | confirmed | game | Called at `0x44dfc2` by the burning branch of `Building_Draw`. |
 | `0x450a35` | `Render_DrawViewOverlay` | Runs `Render_DrawViewLayers` for the first view and then for the second (the view records that the game state block's `+0x78` and `+0x7c` name). | confirmed | game | Called by `Main_Loop` in a game. |
 | `0x41f86b` | `View_Setup` | Sets up a view record at the start of a game: clears byte 0 and byte 1, then sets byte 0 bit 4 and byte 1 bits 1 and 2, names the player block (`+0x82`), and points the build-marker buffer (`+0xda`) at a buffer of the game state block (`+0x100`). The build-site overlay starts off. | confirmed | game | Called by `0x41f7b9`. |
 | `0x427133` | `Render_RedrawViewBase` | Unless view byte 0 bit 0 is set, redraws the base of one view (`0x427360`, `0x427375`, `0x427507`, `Render_DrawRoadsAndBorders`) and clears view byte 0 bit 7, so the next frame judges the build markers again. | inferred | game | Called by `Input_ApplyPointerMotion`. |
-| `0x450a56` | `Render_DrawViewLayers` | The overlay of one view: draws nothing where view byte 0 bit 0 is set; otherwise the build markers (`BuildHelp_DrawMarkers`) while bit 6 is set, then the sprite lists of `0x450f6e` and `0x450a8f`. | confirmed | game | Only caller is `Render_DrawViewOverlay`. See [Build sites](build-sites.md#the-build-site-overlay). |
+| `0x450a56` | `Render_DrawViewLayers` | The overlay of one view: draws nothing where view byte 0 bit 0 is set; otherwise the build markers (`BuildHelp_DrawMarkers`) while bit 6 is set, then the sprite lists of `Render_DrawCursorList` and `0x450a8f`. | confirmed | game | Only caller is `Render_DrawViewOverlay`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x450ae7` | `BuildHelp_DrawMarkers` | Draws the build marker of every node in the view's window of nodes for the view's player (view `+0x82`): saves the player's node and result (`+0xfc` to `+0x102`), runs `BuildHelp_DrawRowMarkers` for each half row, restores them, and sets view byte 0 bit 7. | confirmed | game | Only caller is `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x450d85` | `BuildHelp_DrawRowMarkers` | Draws the build markers of one row of nodes: per node, judges it with `BuildSite_Evaluate` (keeping the player's byte `+3`) and stores the marker in the view's buffer (`+0xda`), or reads the stored marker while view byte 0 bit 7 is set, then draws a marker that is not 0 through `Gfx_DrawSpriteBase320`, raised by the node's height times 4. | confirmed | game | Called by `BuildHelp_DrawMarkers`. See [Build sites](build-sites.md#the-build-site-overlay). |
-| `0x450f6e` | — | Draws the first sprite list of a view, above the build markers: up to seven entries of the list at view `+0xa4`, each a sprite-list word and a position. The list is empty where its first byte is negative, and an entry with the word 0 draws nothing. `View_Setup` fills the words with 32 and 33. What the list shows is open. | confirmed | game | Called by `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
-| `0x450a8f` | — | Draws the second sprite list of a view, after `0x450f6e`: the entries of the list that view `+0x1aa` points to, each a position and a sprite-list word, as many as the count at `+0x1ae` plus 1 (none at -1). `View_Setup` and `0x4409d5` set the count to -1. What the list shows is open. | confirmed | game | Called by `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
+| `0x450f6e` | `Render_DrawCursorList` | Draws the road cursor's list, above the build markers: up to seven entries of the list at view `+0xa4`, each a sprite-list word and a position. The list is empty where its first byte is negative, and an entry with the word 0 draws nothing. `View_Setup` fills the words with 32 and 33. | confirmed | game | Called by `Render_DrawViewLayers`. See [Roads](roads.md#the-road-markers). |
+| `0x450a8f` | — | Draws the second sprite list of a view, after `Render_DrawCursorList`: the entries of the list that view `+0x1aa` points to, each a position and a sprite-list word, as many as the count at `+0x1ae` plus 1 (none at -1). `View_Setup` and `0x4409d5` set the count to -1. What the list shows is open. | confirmed | game | Called by `Render_DrawViewLayers`. See [Build sites](build-sites.md#the-build-site-overlay). |
 | `0x44d2fc` | — | For each view, copies a rectangle from the surface at `+0x108` into the view's screen. | unknown | game | Called by `Main_Loop` in a game. |
 | `0x424d87` | `Minimap_Build` | Writes one byte per tile from terrain and height to the buffer at `+0x8c`. | inferred | game | Called by `MapGen_Generate` and `Game_ResumeLoaded`. |
 | `0x406500` | `Gfx_CopyRect` | Copies a rectangle between two surfaces. | confirmed | platform | Called by panel and view code. |
@@ -348,7 +353,7 @@ Sites:
 | `0x442509` | — | Byte-identical copy of `Panel_Reset`. | confirmed | game | Called by `View_RunButtonAction`. |
 | `0x444780` | `Map_CountPlayerObjects` | Clears player `+0x12a` to `+0x130` and walks every node of the map through `0x444954`. | inferred | game | Called by `View_HandleClick`. |
 | `0x444954` | `Map_CountNodeObject` | For a node owned by the player (top bits of the height byte), counts objects of class 2 to 4 into the player's counters. | inferred | game | Called by `0x444780`. |
-| `0x44c8cf` | `Panel_WriteButtonList` | Writes a short button list through the EDI block's `+0x24` pointer (0, then 0x10 or 7 by bit 0 of byte 2 of the `+0x30` record) and stores 0x20 and 0x21 through the `+0x28` pointer. | confirmed | game | Only caller is `0x44c80f`; [M3](../milestones/m3-first-loop.md) guesses the build menu. |
+| `0x44c8cf` | `Panel_WriteButtonList` | Writes a short button list through the EDI block's `+0x24` pointer (0, then 0x10 or 7 by bit 0 of byte 2 of the `+0x30` record) and stores 0x20 and 0x21 through the `+0x28` pointer, the words of entries 0 and 2 of the road cursor's list. | confirmed | game | Only caller is `0x44c80f`; [M3](../milestones/m3-first-loop.md) guesses the build menu. |
 | `0x45080d` | `Render_MarkTwoDirty` | Sets bit 0x10 in the bytes that the game state block's `+0x78` and `+0x7c` pointers name, saving and restoring the EDI block's `+0x20`. Meaning of the bit unknown. | confirmed | game | Called by `Road_Cancel`, `Castle_Place`, and `Territory_Update`. |
 | `0x4513a8` | `Panel_UpdateView` | The part of `Panel_Update` for one view: runs the handler of the panel screen at view `+0x72`. | inferred | game | Only caller is `Panel_Update`. |
 | `0x45ac83` | `Minimap_DrawPanel` | Draws the minimap panel by calling sixteen layer routines from `0x45afcf` to `0x45ccc6`. | inferred | game | Only caller is `0x45591a`; [M9](../milestones/m9-free-play-release.md). |
@@ -387,7 +392,7 @@ entries per phase (see "Item tables").
 | `0x42f512` | `View_ScanSettlers` | One view: returns for a hidden view (bit 0 of its byte 0); clears the row lists (`0x4409d5`); scans the nodes of the view row by row (two rows a step, the columns from the view's west edge) for the settler word of each node (`+2` of the second layer); for each settler runs its turn (`0x42fc81`) and builds its record (`0x43f537`); ends the row lists with `-1` (`0x440a53`). | confirmed | game | Called by `0x42f4f1`. |
 | `0x43f537` | `Settler_BuildRecord` | Builds the draw record of the settler at the item pointer. It ends at once unless the node's settler word is the settler's slot. It takes the view row: the view's `+0x4c` plus the node's row plus the signed byte of the frame in the table at `0x43f402`. It takes the position `(32 x - 16 y + view +0x9a, 20 y + view +0x90 - 4 * height - 2)`. It takes the triple of the sequence of its frame (entry 2, through `+0xb0`) at 3 times the timer shifted right 3. Then it jumps to the job's handler (`0x43f744`). The handler appends (flags, figure word, x, y) to the row's list at `+0x92` of the view if the row is below the view's `+0x50`. | confirmed | game | Called by `0x42f512`. |
 | `0x43f402` | `Settler_FrameRows` | Data: 181 signed bytes, one for each frame of a settler (up to the table at `0x43f4b7`): what `0x43f537` adds to the row of the record; -1 for the frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128, else 0. | confirmed | game | Read by `0x43f537`. `RuleTables.FrameRows`. |
-| `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `0x428a75` for each player block. | unknown | game | Called by `Main_Loop`. |
+| `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `Player_MakeSettlers` for each player block. | unknown | game | Called by `Main_Loop`. |
 | `0x428728` | `Sim_ClearRetryBits` | Each pass clears bit 2 of the status of a window of `Table18` buildings from a cursor (`+0x54`, the window `+0x52`, stops after 10 set bits), and bit 7 of the flag status of a window of `Table70` (cursor `+0x56`). | confirmed | game | Called by `0x4286d8`. [Settlers](settlers.md#the-retry-scan). |
 | `0x42be63` | `Building_RequestWorker` | A building asks the storages for a settler of the job in the registers: a search over the flags from the building's flag; at a storage flag it takes the waiting settler of the job (state 15, mode 255, target the building's flag) or makes one of a jobless settler and a tool from the stock ([the worker request](construction.md#the-worker-request)). | confirmed | game | Called by the building handlers (`0x42e0b8` and its siblings through `0x42cd1d`) and by `0x42d55f`. [Settlers](settlers.md#the-request). |
 | `0x42b455` | `Road_RequestCarrier` | A land road asks the storages for a carrier: the search of `0x42be63` started at both ends of the road marks every flag with the end it was reached from; at a storage's flag it takes the waiting settler of job 0, or makes one of a waiting settler of job 21 (no tool), sends it (state 15, mode the direction of the road at the end the storage's flag was reached from, target that end's flag), and sets bit 7 of the road byte at both ends. | confirmed | game | Called by `0x464c36`. [Carriers](carriers.md#the-request). |
@@ -494,16 +499,19 @@ entries per phase (see "Item tables").
 | `0x42fca1` | `Settler_StateJumpTable` | Data: the jump table of `Settler_Dispatch`: 8 bytes for each value of the settler's state byte, each a `jmp` to the state's routine. | confirmed | game | Read by `Settler_Dispatch` (`0x42fc81`). |
 | `0x43ca54` | `Settler_JobStartTable` | Data: the jump table of the job's start routine that `Settler_PassDoor` runs, 8 bytes for each job. | confirmed | game | Read by `Settler_PassDoor` (`0x43c96b`). |
 | `0x44e3aa` | `Building_DrawJumpTable` | Data: the jump table of the building draw routine `0x44e329`: 8 bytes for each value of byte 4 of the building's item with its low two bits cleared (the type shifted left 2, with bit 7 while under construction), each a `jmp` to a stub that stores the object number. | confirmed | game | Read by `0x44e329`; the stubs lie from `0x44e62b`. [Build sites](build-sites.md#the-building-types). |
+| `0x44f91d` | `Gfx_DrawCastle` | The draw stub of the castle that stands (byte 4 `0x60`): object 178 drawn whole, with its shadow ([the castle under construction](construction.md#the-castle-under-construction)). | confirmed | graphics | Entry `0x60` of `0x44e3aa`; the emulator's `castle-site` run (`site-draws.txt`) after the castle stands. Not a Ghidra function. |
+| `0x44fd2f` | `Gfx_DrawCastleGrowing` | The draw stub of the castle under construction (byte 4 `0xe0`): stores object 178 and the progress word (`+0xc`) as the fraction and jumps to `0x44fee2`; it never reaches `0x44fa79` ([the castle under construction](construction.md#the-castle-under-construction)). | confirmed | graphics | Entry `0xe0` of `0x44e3aa` (the jump at `0x44e56a`); the emulator's `castle-site` run (`site-draws.txt`). Not a Ghidra function. |
+| `0x44fee2` | `Gfx_DrawGrowingWithShadow` | Draws an object's shadow whole (the object plus 1500, through `0x406210`) and then its sprite (the object plus 1250) through `Gfx_DrawSpriteGrowing` by the fraction stored before it ([the castle under construction](construction.md#the-castle-under-construction)). | confirmed | graphics | Jumped to from `0x44fd2f` and at `0x44fc70`; the emulator's `castle-site` run (`site-draws.txt`). |
 | `0x44fa79` | — | The common part of the draw of a building under construction: tests the progress word at `+0xc` of its item (0 draws the object 144, `0x44fa69`), draws the goods delivered, then the stage. Entry inferred. | inferred | game | Jumped to by the stubs of the types with bit 7 set, from `0x44f92e`. |
 | `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `Rng_Step`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the saplings `0x67` and `0x68` grow into trees ([Forestry](forestry.md#growth)), the codes from `0x69` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `Rng_Step`. [Woodcutting](woodcutting.md#the-object-pass). |
-| `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
+| `0x428a75` | `Player_MakeSettlers` | For a player in the game whose castle stands: takes the clock units since `+0x11e` off the countdown `+0x120` and, for each period `+0x122` that has passed, makes a settler through `Settler_CreateInStorage`, a knight where one is owed (`+0x10c`, fed by 20000 added to `+0x126` per settler) and the storage holds goods 25 and 26. Also zeroes `+0x112`, `+0x116`, `+0x11a` near overflow and counts down `+0x1b0`, `+0x1b2` (computer players) and `+0x170` (byte 2 bits 2, 4, 5; role open). | confirmed | game | Called by `0x4286d8` for each player block. [New settlers](new-settlers.md). |
 | `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Called by `0x42965c` while the clock runs. |
 | `0x42965c` | `Storage_HandOutGoods` | Phase 32: calls `0x42b18d`, also while the clock is stopped; only while the clock runs it calls `0x42a3f1`, `0x42a74a`, and `0x42abac` (player statistics), draws once from the generator, and runs one of the three orders of hand-out steps (`0x42a313`, `0x42a35d`, `0x42a3a7`, picked by the draw): for each step each storage whose stock holds the step's good hands one to the flag whose request ranks highest ([Materials for a building site](construction-materials.md#the-castles-hand-out), [Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entry 0 of the phase table at `0x4292ee`; the stock words of the storage fall in the emulator's `construct:` games. |
 | `0x4293f6` | — | Phases 33 to 48, with `0x42944d`, `0x4294a4`, and `0x4294fb` for the player blocks at `+0x64` to `+0x70`: for a block with bits 7 and 6 of byte 2 set (inferred: an active computer player), draws through `Rng_Step` and may call `0x46986d`; otherwise advances `Sim_Phase` within the same pass ([Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entries 1 to 16 of the phase table at `0x4292ee`; writes `Sim_Phase` at `0x429445`, `0x42949c`, `0x4294f3`, `0x42954a`, `0x429578`. |
 | `0x429580` | `Ai_PhaseUpdate` | Phase-table entry: runs `Ai_UpdatePlayer` when the player block at `+0x64` has bits 7 and 6 of byte 2 set. | confirmed | game | Entry of the phase table at `0x42923c`. |
-| `0x42a3f1` | — | Counts the player blocks with bit 6 of byte 2 set, sums their `+0x112`, compares the count with `+0x48`, then scales the sum and calls `0x42a567`. | unknown | game | Called by `0x42965c`. |
-| `0x42a567` | — | Scales a player's `+0x112` by `+0x4a` and adds `+0x58`; role open. | unknown | game | Called by `0x42a3f1`. |
+| `0x42a3f1` | `Player_UpdateSettlerCaps` | Counts the players in the game and sums their owned nodes (`+0x112`); where the settler table has at least as many free slots (`+0x48`) as players, shifts the sum into 16 bits and runs `Player_UpdateSettlerCap` for each player. | confirmed | game | Called by `0x42965c`. [New settlers](new-settlers.md#the-cap). |
+| `0x42a567` | `Player_UpdateSettlerCap` | The player's cap of settlers: its share of the owned nodes times `+0x4a`, plus `+0x58`; sets bit 2 of player byte 3 where the sum of the player's 27 counts at `-0x3a` to `-6` is below the cap, else clears it. | confirmed | game | Called by `Player_UpdateSettlerCaps`. [New settlers](new-settlers.md#the-cap). |
 | `0x42b1ce` | — | Writes player `+0x188` (sum of `+0x17c` and `+0x180`, capped) and `+0x184` (a ratio to `+0x4c` scaled by `+0x5a`, plus `0x400`, adjusted by `+0x15e`). | unknown | game | Called by `0x42b18d`. |
 | `0x42e7e0` | `Building_HandleCastle` | The handler of the building type 0x18, the castle (knights and defence). Not ported. Entry inferred. At its common tail (from `0x42edb9`) it sets the scratch word `+0x30` of the item block to a map-table address on every turn, and on some turns to a slot address after that, never to the player block: the pig farm's handler reads its rank through that word ([Pig farming](pig-farming.md#the-rank-of-the-request-for-grain)). | inferred | game | Entry 0x18 of `0x42cd1d` (jump at `0x42cddd`); follows a `ret`. |
 | `0x43013b` | — | A soldier's work at a military building (code to `0x4312ed`). Entry inferred. | inferred | game | Entry 0x34 of `0x42fca1` (jump at `0x42fe41`). |
@@ -694,14 +702,14 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x41f6a5` | `Map_BuildNeighborOffsets` | Turns the spiral table into the masked node offsets at state `+0xc4`, 295 of them. | confirmed | game | Called by `Game_Start` and `Game_ResumeLoaded`. |
 | `0x442630` | `Castle_PlaceFromClick` | The click action for the castle: judges the node under the cursor and places the castle where the node state is 7 and the site is 5, else asks for the error sound. | confirmed | game | Called by `0x440d23` for build action 5. |
 | `0x442704` | `Castle_Place` | Takes the first slots of the storage, building, and flag tables, writes the castle, its flag, the heights, and the start stock, and calls `Castle_CreateSettlers`. | confirmed | game | Called by `Castle_PlaceAtStart`. |
-| `0x442f0c` | `Castle_CreateSettlers` | Creates the castle's 20 first settlers one by one and takes their tools from the storage item. | inferred | game | Called by `Castle_Place`. |
-| `0x44333d` | `Settler_TakeFromStorage` | Creates one settler of a player from the storage item that holds the fewest. | inferred | game | Called by `Castle_CreateSettlers` and `0x428a75`. |
+| `0x442f0c` | `Castle_CreateSettlers` | Sets bit 2 of player byte 3, then creates the castle's 20 first settlers one by one through `Settler_CreateInStorage`, gives each its job, and takes their tools and the three knights' weapons from the storage item. | inferred | game | Called by `Castle_Place`. [New settlers](new-settlers.md#knights). |
+| `0x44333d` | `Settler_CreateInStorage` | Where player byte 3 bit 2 is set and the settler table has a free slot, creates a settler of job 21 in state 1 in the player's storage with the fewest settlers without a job (`+0x40`); in a knight try (player `+0x10e` not 0) first only among storages that hold goods 25 and 26. Returns the sign flag set where it made none. | confirmed | game | Called by `Castle_CreateSettlers` and `Player_MakeSettlers`. [New settlers](new-settlers.md#making-one-settler). |
 | `0x442244` | `Flag_PlaceFromButton` | The flag button: judges the node under the cursor and, where the site is not 0 and the node state is 4, 6, or 7, goes on to `Flag_Place`, else to the error report (`0x44c768`). It first clears view byte 0 bit 7, so the build markers are judged again. | confirmed | game | Called by `0x440d23`. |
 | `0x4422c5` | `Flag_Place` | Takes the first free slot of the flag table, writes the flag bit and the flag object on the node, moves the node's deposit to its neighbors, and stores the slot as the node's link. Where the node state at `+0x100` is 4 (the node holds road bits) it then calls `Road_SplitAtFlag` on the node. | confirmed | game | Called by `Flag_PlaceFromButton` (`0x4422c3`) and twice by `Road_ClickStep` (`0x44426c`, `0x444491`). See [Roads](roads.md#a-flag-on-a-road). |
 | `0x45d7ad` | `Table70_Allocate` | Takes the first free slot of the flag table, clears the item, and leaves the slot number in the registers; reports a full table. | confirmed | game | Called by `Flag_Place`, `Castle_Place`, `0x421530`, and `0x449a63`. |
 | `0x45da8f` | `Table18_Allocate` | Takes the first free slot of the building table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Castle_Place`, and `0x449a63`. |
 | `0x45dd1c` | `Table120_Allocate` | Takes the first free slot of the storage table ([Item tables](item-tables.md)). | confirmed | game | Called by `Castle_Place`. |
-| `0x45e121` | `Table16_Allocate` | Takes the first free slot of the settler table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Settler_TakeFromStorage`, and `0x41f2d2`. |
+| `0x45e121` | `Table16_Allocate` | Takes the first free slot of the settler table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Settler_CreateInStorage`, and `0x41f2d2`. |
 | `0x449f58` | `Flag_MoveDeposit` | Moves the resource deposit of a node that is about to hold a flag to the nodes around it. | confirmed | game | Called by `Flag_Place` and `0x449a63`. |
 | `0x449a63` | `Building_Place` | Places a building on the judged node (`+0xfc`, `+0xfe` of the player block): takes a building slot, and a flag slot unless the node state at `+0x100` is 5. It writes the building's object and marks on the node. Where the node state is not 5 it writes a flag on the south-east node as `Flag_Place` does: the object code 1, the flag bit `0x80`, the deposit moved through `Flag_MoveDeposit`, and the new slot as the link. Where the node state is 5 it takes the flag that stands there. | confirmed | game | Two callers, none a player's click: `0x41f2f6` (the start-of-mission placement `0x41f2d2`, which hands it a building of type 2 or 3 with no node-state check) and `0x42d274` (in `Building_Free`, only where the node state is 5, 6, or 7). Where the node state is 6 it ends with a call of `Road_SplitAtFlag` on the south-east node (`0x449f12`). The click that places a building is not recovered. See [Castle and build sites](build-sites.md#placing-a-building). |
 | `0x44a0aa` | `Deposit_MergeInto` | Adds a deposit to the byte of one node: into an empty byte, or into one of the same type up to 31, carrying the rest on. | confirmed | game | Called by `Flag_MoveDeposit`. |
@@ -727,14 +735,15 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x41e640` | `Map_ObjectClassTable` | Data: 128 bytes, the class (size) of each object code; code 1 is class 3 (flag), codes 2 to 4 are classes 4 to 6 (buildings, castle), generated trees and stones classes 1 and 2. | confirmed | game | Stored into `+0xc8` by `0x41dbea`; read from the executable by `ProgramTablesImporter` (`RuleTables.ClassOf`). |
 | `0x45e44b` | — | One of the five checks `Territory_Update` runs on the tiles around a position. | unknown | game | Only caller is `Territory_Update`. |
 | `0x45e4ca` | — | One of the five checks `Territory_Update` runs on the tiles around a position. | unknown | game | Only caller is `Territory_Update`. |
-| `0x45eb4c` | — | One of the five checks `Territory_Update` runs on the tiles around a position; calls `0x45ed5f`. | unknown | game | Only caller is `Territory_Update`. |
+| `0x45eb4c` | — | One of the five checks `Territory_Update` runs on the tiles around a position; calls `0x45ed5f`. Keeps each player's count of owned nodes (`+0x112`): adds 1 where a node takes the player's owner bits, takes 1 where a node loses them. | unknown | game | Only caller is `Territory_Update`. [New settlers](new-settlers.md#the-cap). |
 | `0x45f154` | — | One of the five checks `Territory_Update` runs on the tiles around a position; reads the map geometry fields `+0x0` to `+0xc`. | unknown | game | Only caller is `Territory_Update`. |
 | `0x674a30` | `BuildSite_NeighborTiles` | Data: a list of tile pointers around a node; the build-site checks read the object byte of each; game state `+0x98e`. | inferred | game | Read by `BuildSite_EvaluateFromSouthEast`, `Road_UpdateCursor`, `BuildSite_Evaluate`, `0x44bd72`. |
 
 Sites:
 
-- `0x44e329` draws a finished building by its type through the jump table at `0x44e3aa`. The type `0xe0` of a
-  castle reaches the stub at `0x44fd2f`, which stores the object number 178; its sprite is entry 1428.
+- `Building_Draw` (`0x44e329`) draws a building by byte 4 of its item through the jump table at `0x44e3aa`. The castle that stands
+  (`0x60`) reaches `Gfx_DrawCastle` (`0x44f91d`) and the castle under construction (`0xe0`) reaches
+  `Gfx_DrawCastleGrowing` (`0x44fd2f`); both draw object 178, entry 1428 ([the castle under construction](construction.md#the-castle-under-construction)).
 - `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
 - `0x41f2d2`: places a group of 3, 6, or 12 settlers on the start node of a mission start; not recovered further.
 - `0x44e62b` to `0x44fd2f`: the building stubs that the jump table at `0x44e3aa` in `0x44e329` reaches; each stores an object number and jumps or calls into `Gfx_DrawObjectSprite` or `Gfx_DrawSpriteBase320`. `0x44e62b` stores object 0xa7 (entry 1417), `0x44e63b` object 0xa8 (entry 1418); `0x44e636` and on to `0x44f928` are the jumps into `Gfx_DrawObjectSprite` for objects 152 to 171 and 174; `0x44e653` tests object byte 9 before `0x44e6c5` draws byte 9 plus 174 plus 320; `0x44e720`, `0x44e86d`, `0x44e9ba`, `0x44eb07` and `0x44e781`, `0x44e8ce`, `0x44ea1b`, `0x44eb68` draw 152 and 153 plus 320; `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d` draw entries 502 to 517; `0x44ee56`, `0x44eeda`, `0x44ef5e`, `0x44efd8`, `0x44f05c`, `0x44f0e0`, `0x44f160`, `0x44f1e3` draw the first byte of a pair of the table `0x44f225` plus 320 (data after the jump at `0x44f220`, code again at `0x44f325`); `0x44f42e` and `0x44f528`, `0x44f5c8`, `0x44f908` are tail jumps for 474 to 481 and 448 to 455; `0x44f3a8` forms 188 plus 0 to 3 and jumps at `0x44f3ae`; `0x44ec2a` jumps with 192; `0x44f933` to `0x44fa5d` store an index of 1 to 23 for the table that `0x44fc87` reads before the call at `0x44fcac`; `0x44fa74` jumps for object 144; `0x44faf3`, `0x44fba7` draw 330 and 328. Source: [Graphics archives](graphics-archives.md#entries-no-routine-reads), [Graphics images](graphics-images.md).
@@ -750,7 +759,7 @@ How the player draws a road between two flags, what the commit writes, and how a
 | `0x440c24` | `View_HandleClick` | The click handler of a game view: routes a click on the map or on a panel; in road mode the click on a node runs the step at `0x443f62`. | inferred | game | Called by `0x440b01`. |
 | `0x440d23` | `View_RunButtonAction` | Runs the action of the button a click hit: the road button (action `0x18`) starts road mode, the flag and castle buttons place theirs. With bit 3 of the view's flag byte at `+1` set (the second pointer button held) the road, flag, and building buttons (actions 1 to 4, 8, `0x11`, `0x12`, `0x17`, and `0x18`) only run `0x4417db`, which toggles bit 6 of byte 0 (the build-site overlay, [Build sites](build-sites.md#the-build-site-overlay)) where bit 1 is set and road mode (bit 7) is off, and place nothing; the building buttons without the bit open the building panels and place nothing. | inferred | game | Called by `0x440c24`. |
 | `0x443f62` | `Road_ClickStep` | The click on a node in road mode, inside `0x440c24`: works out the direction from the end of the road to the node, checks it against the mask of allowed directions, takes a step back, extends the road, or ends it at a flag. With bit 3 of the view's flag byte at `+1` set, a click on a node that the check `0x44b6e6` gives a site (and where bit 1 of the player block's byte at `+3` is clear: unrecovered) puts a flag there (`Flag_Place`) and ends the road at it; without the bit a click on a node with road bits is refused. | confirmed | game | Entered by jumps inside `0x440c24`; returns at `0x44477f`. See [Roads](roads.md#a-flag-on-a-road). |
-| `0x44b6ce` | `Road_UpdateCursor` | In road mode, leaves at `+0xd0` of the view the mask of the directions in which the road's end may go on, and at `+0xaa` the cursor code for each of the six. It refuses a direction whose node holds an object of class 2 or 4 of the class table. A tree (class 1) does not refuse it. | confirmed | game | Called by `0x440b01`. |
+| `0x44b6ce` | `Road_UpdateCursor` | In road mode, leaves at `+0xd0` of the view the mask of the directions in which the road's end may go on, and the sprite words of entries 1 to 6 of the road cursor's list (`+0xaa` to `+0xc8`): 44 for a refused direction, 45 for the way back once the length at `+0xce` is not 0, else 39 plus the neighbor's height less the end's (`0x44c6ff`). It refuses a direction whose node holds an object of class 2 or 4 of the class table. A tree (class 1) does not refuse it. | confirmed | game | Called by `0x440b01`. See [Roads](roads.md#the-road-markers). |
 | `0x444e68` | `Road_Commit` | Walks the drawn road from the flag it ends at back to the one it started at, checks the owner of every node and that the triangles beside the road are all land or all water, and joins the two flags' items. | confirmed | game | Called at `0x444534` by the step. |
 | `0x4454e7` | `Road_LengthClass` | Turns a road's length into a class 0 to 7 (steps up at 4, 6, 7, 10, 13, 18, and 24) that the commit stores for each end. | confirmed | game | Called by `Road_Commit`. |
 | `0x442002` | `Road_Cancel` | Leaves road mode and takes the road drawn so far off the map, from the road's end back, one bit pair for each step counted at `+0xce`. | confirmed | game | Called by `0x440d23`, `0x444534`. |
@@ -764,19 +773,25 @@ How the player draws a road between two flags, what the commit writes, and how a
 | `0x463ef9` | `Carrier_DismissWaiting` | Sends the carriers that wait on a node (states `0x42`, `0x43`, `0x45`) home as state `0x44`. | confirmed | game | Called by `0x463204` and `0x463a40`. |
 | `0x464008` | `Carrier_TakeWaiting` | A piece of the flag pass that finds a carrier waiting on a node and gives it state `0x45`. | inferred | game | Called by `0x463a40`. |
 | `0x444b29` | `Road_WalkEnds` | Finds the two directions of a node's road and runs `0x444c61` on each: a walk of the road to its ends, which the cursor update calls for a road under the cursor when a start-up option is set. | inferred | game | Called by `Road_UpdateCursor` and `Road_TakeDown`. |
-| `0x427c09` | `Render_DrawRoadsAndBorders` | For each pair of rows, the passes that draw the roads (and the territory borders where no road lies) of the view's window of nodes. | confirmed | game | Called at `0x427133`. |
-| `0x428008` | `Render_DrawRoadEast` | Draws the strip of the road that leaves a node east: the mask 234 plus the height difference, the road texture from the slope and the terrain. | confirmed | game | Called by `0x427d3e`. |
-| `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a`. |
-| `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427f1f`. |
-| `0x428389` | — | Where no road lies and the owners of two neighbors differ, draws the border between them (east); with `0x42846d` and `0x428528` for the other two directions. | inferred | game | Called by `0x427d3e`, `0x427e3a`, `0x427f1f`. |
+| `0x427c09` | `Render_DrawRoadsAndBorders` | Walks the view's window of nodes from west to east, 16 pixels a step, one pass a step in the order `0x427d16`, `0x427e3a`, `0x427d3e`, `0x427f1f`, until the window's columns run out; the passes draw the roads and, where no road lies and the owners differ, the border posts. See [Roads](roads.md#how-a-border-is-drawn). | confirmed | game | Called at `0x427133`. |
+| `0x428008` | `Render_DrawRoadEast` | Draws the strip of the road that leaves a node east: the mask 234 plus the height difference, the road texture from the slope and the terrain. | confirmed | game | Called by `0x427d3e` (also reached from `0x427d16`). |
+| `0x428105` | `Render_DrawRoadSouthEast` | The same for the road leaving south-east: the mask 243 plus the height difference. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
+| `0x4281cc` | `Render_DrawRoadSouth` | The same for the road leaving south: the mask 252 plus the height difference. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
+| `0x427d16` | — | The east pass of the odd rows of the window, from row 1 down in steps of two rows, at the column 16 pixels west of the even rows' nodes: the same loop as `0x427d3e`, with the road strip or the border post of each east edge. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x427d3e` | — | The east pass of the even rows of one column of the window, from row 2 down in steps of two rows: per node, `Render_DrawRoadEast` where the east road bit is set, else `Render_DrawBorderEast` where the owner bits of the node and its east neighbor differ. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x427e3a` | — | A zigzag pass down one column: per step the south-east and the south edge in turn, starting with south-east, each with its road strip where the road bit is set, else its border post where the owner bits differ. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x427f1f` | — | The same zigzag pass, starting with south. | confirmed | game | Called by `Render_DrawRoadsAndBorders`. |
+| `0x428389` | `Render_DrawBorderEast` | Draws the border post on the east edge of a node: the image 610 to 612 by the border's slope sum, raised by 3 or 6 by the ground, or 619 in water, placed at the edge's mean height. | confirmed | game | Called by `0x427d3e` (also reached from `0x427d16`). See [Roads](roads.md#how-a-border-is-drawn). |
+| `0x42846d` | `Render_DrawBorderSouthEast` | The same for the south-east edge. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
+| `0x428528` | `Render_DrawBorderSouth` | The same for the south edge. | confirmed | game | Called by `0x427e3a` and `0x427f1f`. |
 | `0x444d24` | — | A step of the road walk: moves to the next node and returns 0 at an object code 1, else finds the road bits (`& 0x3f`) to go on. | inferred | game | Called by `0x444c74`; calls `0x444c61`. |
 | `0x462acd` | `Road_CarrierCapacities` | Data: 8 bytes, the number of carriers a road of each length class (`0x4454e7`) holds at most. | confirmed | game | Read at `0x46252a` (`Flag_TakeDown`), `0x465189` (`Flag_VisitRoads`), `0x466928`; ported as `RoadCapacities`. |
 
 Sites:
 
-- `0x427dc7`, `0x427eb3`, `0x427f98`: the calls of `Render_DrawRoadEast`, `Render_DrawRoadSouthEast`, and `Render_DrawRoadSouth` (in `0x427d3e`, `0x427e3a`, and `0x427f1f`).
+- `0x427dc7`, `0x427eb3`, `0x427f98`: calls of `Render_DrawRoadEast`, `Render_DrawRoadSouthEast`, and `Render_DrawRoadSouth` (in `0x427d3e`, `0x427e3a`, and `0x427f1f`); each zigzag pass also calls the other of the two diagonal routines.
 - `0x44426c`, `0x444491`: the calls of `Flag_Place` in `Road_ClickStep` (a click on a road node, a click on an empty node, each with bit 3 of the view's flag byte set); `0x444261`: the call of `Road_WalkEnds` before the first, which refuses the placement where the node's road leads to no flag (the road being drawn).
-- `0x444079`, `0x44439b`, `0x444544`, `0x4445b6`, `0x444608`, `0x444657`, `0x4446cb`, `0x4446f6`, `0x444716`, `0x444743`: the sound requests (`Sound_Request`); `0x4445a8`: the call of `0x42f7ea` (in `Road_ClickStep`).
+- `0x444079`, `0x44439b`, `0x444544`, `0x4445b6`, `0x444608`, `0x444657`, `0x4446cb`, `0x4446f6`, `0x444716`, `0x444743`: the sound requests (`Sound_Request`); `0x4445a8`: the call of `View_PlaceCursorList` (in `Road_ClickStep`).
 - `0x46358c`: the walk reaches the flag at the road's end and turns the direction round (direction minus 3, modulo 6) for the flag's side; code after the computed jump at `0x463308` that Ghidra left outside the function (in `Road_TakeDownWalk`).
 
 ### Save and load
@@ -927,7 +942,10 @@ the timed messages at `+0x1f34`. The bytes `-0x54` to `-0x3b` (good g at `-0x55 
 `Player_SetTransportPriorities` writes; the carrier's exchange (`0x43b054`, in `Settler_WalkRoad`) and the direction step of
 `Table70_Pass` (`0x46501a`) read them by the good's low 5 bits ([Goods](goods.md#transport-priorities)). The words at `-0x3a`
 and `-0x36`, which those reads reach for the goods 27 and 31, are counters that `Castle_CreateSettlers` adds to (inferred:
-counts of settlers).
+counts of settlers). The 27 words from `-0x3a` to `-6` are the counts that `Player_UpdateSettlerCap` sums (inferred: the
+player's settlers by kind; a new settler counts in `-0x10`, a knight in `-0xe`). Byte 3 bit 2 lets
+`Settler_CreateInStorage` make settlers. The settler timer and the knights owed are at `+0x10c` to `+0x126`, the owned
+nodes at `+0x112`, the knights made at `+0x11a` ([New settlers](new-settlers.md)).
 
 ### View records
 
@@ -940,6 +958,8 @@ Byte 0 of a view record holds these bits ([Build sites](build-sites.md#the-build
 - Bit 0: the view draws no overlay and no base redraw (`Render_DrawViewLayers`, `Render_RedrawViewBase` return at once). Inferred: the view is off.
 - Bit 6: the build-site overlay is on. `View_Setup` starts it off. `View_RunButtonAction` toggles it with sound 8 on the second-button gesture over a road, flag, or building button. `View_HandleClick` holds the same toggle on a path not traced. Opening a panel clears it (`View_HandleClick`, `View_RunButtonAction`, `Castle_PlaceFromClick`).
 - Bit 7: the build-marker buffer is valid. `BuildHelp_DrawMarkers` sets it, and `Render_RedrawViewBase` and `Flag_PlaceFromButton` clear it.
+
+Bit 2 of byte 1 asks for the road cursor to be updated: `0x440b01` clears it and runs `Road_UpdateCursor` and `View_PlaceCursorList`. The list at `+0xa4` is the road cursor: seven entries of a sprite word, a column, and a row ([Roads](roads.md#the-road-markers)).
 
 The pointer at `+0xda` names the build-marker buffer: one byte per node of the view's window, the marker that `BuildHelp_DrawRowMarkers` stored. The pointer at `+0x82` names the view's player block.
 
@@ -1173,14 +1193,20 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x427b38` | `Render_TriangleVariantsLower` | confirmed | Graphics images |
 | `0x427b89` | `Render_TerrainTextures` | confirmed | Graphics images |
 | `0x427c09` | `Render_DrawRoadsAndBorders` | confirmed | Roads |
+| `0x427d16` | — | confirmed | Roads |
+| `0x427d3e` | — | confirmed | Roads |
+| `0x427e3a` | — | confirmed | Roads |
+| `0x427f1f` | — | confirmed | Roads |
 | `0x428008` | `Render_DrawRoadEast` | confirmed | Roads |
 | `0x428105` | `Render_DrawRoadSouthEast` | confirmed | Roads |
 | `0x4281cc` | `Render_DrawRoadSouth` | confirmed | Roads |
-| `0x428389` | — | inferred | Roads |
+| `0x428389` | `Render_DrawBorderEast` | confirmed | Roads |
+| `0x42846d` | `Render_DrawBorderSouthEast` | confirmed | Roads |
+| `0x428528` | `Render_DrawBorderSouth` | confirmed | Roads |
 | `0x4286d8` | — | unknown | Simulation |
 | `0x428728` | `Sim_ClearRetryBits` | confirmed | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
-| `0x428a75` | — | unknown | Simulation |
+| `0x428a75` | `Player_MakeSettlers` | confirmed | Simulation |
 | `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4290d5` | `Sapling_GrowFirst` | confirmed | Simulation |
 | `0x42910f` | `Sapling_GrowSecond` | confirmed | Simulation |
@@ -1196,8 +1222,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42a313` | `Storage_HandOutOrder1` | confirmed | Simulation |
 | `0x42a35d` | `Storage_HandOutOrder2` | confirmed | Simulation |
 | `0x42a3a7` | `Storage_HandOutOrder3` | confirmed | Simulation |
-| `0x42a3f1` | — | unknown | Simulation |
-| `0x42a567` | — | unknown | Simulation |
+| `0x42a3f1` | `Player_UpdateSettlerCaps` | confirmed | Simulation |
+| `0x42a567` | `Player_UpdateSettlerCap` | confirmed | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
 | `0x42abed` | `Player_CheckWarnings` | confirmed | Simulation |
 | `0x42b1ce` | — | unknown | Simulation |
@@ -1225,7 +1251,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42f3d9` | `Table16_Pass` | confirmed | Simulation |
 | `0x42f4f1` | `View_BuildSettlerRecords` | confirmed | Simulation |
 | `0x42f512` | `View_ScanSettlers` | confirmed | Simulation |
-| `0x42f7ea` | — | unknown | Graphics images |
+| `0x42f7ea` | `View_PlaceCursorList` | confirmed | Graphics images |
 | `0x42fc81` | `Settler_Dispatch` | confirmed | Simulation |
 | `0x42fca1` | `Settler_StateJumpTable` | confirmed | Simulation |
 | `0x42ff81` | `Settler_CarrierWaits` | confirmed | Simulation |
@@ -1326,6 +1352,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4400d3` | `MillWorker_FigureWord` | confirmed | Simulation |
 | `0x440112` | `BakerWorker_FigureWord` | confirmed | Simulation |
 | `0x440aae` | `Ui_HandleViews` | inferred | Views, panels, and drawing |
+| `0x440b01` | — | confirmed | Views, panels, and drawing |
 | `0x440c24` | `View_HandleClick` | inferred | Roads |
 | `0x440d23` | `View_RunButtonAction` | inferred | Roads |
 | `0x441062` | `Msg_HandleOpenClick` | inferred | Views, panels, and drawing |
@@ -1344,7 +1371,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
 | `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
 | `0x442f0c` | `Castle_CreateSettlers` | inferred | Castle and build sites |
-| `0x44333d` | `Settler_TakeFromStorage` | inferred | Castle and build sites |
+| `0x44333d` | `Settler_CreateInStorage` | confirmed | Castle and build sites |
 | `0x443f62` | `Road_ClickStep` | confirmed | Roads |
 | `0x444780` | `Map_CountPlayerObjects` | inferred | Views, panels, and drawing |
 | `0x444954` | `Map_CountNodeObject` | inferred | Views, panels, and drawing |
@@ -1371,6 +1398,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44ba52` | `BuildSite_EvaluateFromSouthEast` | inferred | Castle and build sites |
 | `0x44bd72` | `BuildSite_EvaluateBuilding` | inferred | Castle and build sites |
 | `0x44be72` | `BuildSite_SortTriangle` | confirmed | Castle and build sites |
+| `0x44c768` | — | confirmed | Views, panels, and drawing |
 | `0x44c8cf` | `Panel_WriteButtonList` | confirmed | Views, panels, and drawing |
 | `0x44cb6e` | `Msg_RunTimers` | confirmed | Main loop |
 | `0x44cb8f` | `Msg_RunPlayerTimers` | inferred | Main loop |
@@ -1388,14 +1416,19 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44da4d` | `Gfx_DrawObjectSprite` | confirmed | Graphics images |
 | `0x44db26` | `Render_DrawFlag` | inferred | Castle and build sites |
 | `0x44de9a` | `Gfx_DrawSpriteBase320` | confirmed | Graphics images |
-| `0x44e114` | `Gfx_SpriteLists` | inferred | Graphics images |
+| `0x44e114` | `Gfx_SpriteLists` | confirmed | Graphics images |
+| `0x44e329` | `Building_Draw` | confirmed | Views, panels, and drawing |
+| `0x44e385` | `Building_DrawByType` | confirmed | Views, panels, and drawing |
 | `0x44e3aa` | `Building_DrawJumpTable` | confirmed | Simulation |
 | `0x44ed02` | `Gfx_DrawFarm` | confirmed | Simulation |
 | `0x44f225` | `Gfx_BuildingPairTable` | confirmed | Graphics images |
+| `0x44f91d` | `Gfx_DrawCastle` | confirmed | Simulation |
 | `0x44fa79` | `Gfx_DrawBuildingSite` | confirmed | Simulation |
 | `0x44fd16` | `Gfx_ObjectNumberTable` | confirmed | Graphics images |
+| `0x44fd2f` | `Gfx_DrawCastleGrowing` | confirmed | Simulation |
 | `0x44fd4a` | `Gfx_DrawSpriteBase320Low` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
+| `0x44fee2` | `Gfx_DrawGrowingWithShadow` | confirmed | Simulation |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
 | `0x44ffe7` | `Render_DrawRowSettlers` | confirmed | Graphics images |
 | `0x44fff3` | `Gfx_DrawSettlerRecords` | confirmed | Graphics images |
@@ -1408,7 +1441,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x450a8f` | — | confirmed | Views, panels, and drawing |
 | `0x450ae7` | `BuildHelp_DrawMarkers` | confirmed | Views, panels, and drawing |
 | `0x450d85` | `BuildHelp_DrawRowMarkers` | confirmed | Views, panels, and drawing |
-| `0x450f6e` | — | confirmed | Views, panels, and drawing |
+| `0x450f6e` | `Render_DrawCursorList` | confirmed | Views, panels, and drawing |
 | `0x4511d5` | `Text_DrawGlyphs` | inferred | Graphics images |
 | `0x451355` | `Panel_Update` | inferred | Views, panels, and drawing |
 | `0x4513a8` | `Panel_UpdateView` | inferred | Views, panels, and drawing |
@@ -1561,7 +1594,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 397 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 343 confirmed, 69 inferred, 51 unknown.
+Coverage: the index names 410 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 363 confirmed, 66 inferred, 47 unknown.
 <!-- coverage:end -->
 
 Open anchors:

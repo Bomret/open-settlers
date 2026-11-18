@@ -6,8 +6,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// The focused command (mise.toml, tasks.test) and the full command (tasks.check) filter out exactly the categories of Needs;
-// the integration command (tasks."test:integration") selects exactly them.
+// The unit-test command (mise.toml, tasks.test), the full command (tasks.check), and the focused command
+// (tools/focused-tests.py) filter out exactly the categories of Needs; the integration command
+// (tasks."test:integration") selects exactly them.
 [TestClass]
 public sealed class NeedsTests
 {
@@ -23,7 +24,7 @@ public sealed class NeedsTests
     }
 
     [TestMethod]
-    public void TheFocusedFilterNamesExactlyTheCategoriesOfNeeds()
+    public void TheUnitTestFilterNamesExactlyTheCategoriesOfNeeds()
     {
         var expected = typeof(Needs)
             .GetFields()
@@ -43,9 +44,20 @@ public sealed class NeedsTests
         [.. typeof(Needs).GetFields().Select(f => $"{prefix}{f.GetRawConstantValue()}").Order()];
 
     [TestMethod]
-    public void TheFullCommandRunsTheFocusedFilter()
+    public void TheFullCommandRunsTheUnitTestFilter()
     {
         CollectionAssert.AreEqual(Categories("TestCategory!="), Filter("check").Split('&').Order().ToArray());
+    }
+
+    // The CATEGORIES constant of tools/focused-tests.py, the focused command's filter.
+    [TestMethod]
+    public void TheFocusedFilterNamesExactlyTheCategoriesOfNeeds()
+    {
+        var selector = File.ReadAllText(PythonTool.InRepo("tools", "focused-tests.py"));
+        var constant = Regex.Match(selector, "^CATEGORIES = \"([^\"]*)\"$", RegexOptions.Multiline);
+        Assert.IsTrue(constant.Success, "tools/focused-tests.py holds no CATEGORIES constant");
+
+        CollectionAssert.AreEqual(Categories("TestCategory!="), constant.Groups[1].Value.Split('&').Order().ToArray());
     }
 
     [TestMethod]

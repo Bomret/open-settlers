@@ -135,6 +135,37 @@ the player block, the storage items' request fields (the last loop of `0x4312ed`
 it comes back to a hut that is gone is not recovered), the military buildings' and the castle's branches (the territory), and a good whose
 destination flag holds no building (the program reads a null pointer there; the engine leaves it).
 
+### The burning draw
+
+**Status:** confirmed from the code of `Building_Draw` (`0x44e329`) and the data `Gfx_SpriteLists` (`0x44e114`). Not emulated.
+
+`Building_Draw` tests the mark of a building that is taken down (bit 5 of the status byte) and jumps to its burning branch at
+`0x44dedc` where the mark is set (`0x44e37f`); a building without the mark is drawn by its type through the jump table at `0x44e3aa`.
+The branch does this, in order:
+
+- **The sound.** The countdown is the word that held the worker's slot. Where bits 3 and 4 of it are both set, the branch asks once
+  for sound `0x54` through `0x44fe05` (`0x44df40`) and sets bit 3 of the status byte. Otherwise it clears that bit. The sound plays
+  while the countdown passes through those values. **Not ported:** the map view plays no sound.
+- **The countdown.** It reads the game clock at state `+0x206` and stores it in the word at 14. It takes the clock since the old word
+  off the countdown, as the building pass does. Where that borrows, it sets the countdown to 0 and draws neither the building nor its
+  flames. The draw thus writes the countdown and the stamp back into the building every frame the building is on screen.
+  **Not ported:** the engine's view derives the countdown at the clock and writes nothing (INV-0016). The burn's own pass keeps the
+  count off screen.
+- **The building.** It draws the building as usual through `Building_DrawByType` (`0x44e385`, called at `0x44dfc2`), the tail of
+  `Building_Draw` that dispatches by the type, a site's stage included.
+- **The list.** It picks a flame list by the building's type. That is the list of the type's number, or list 0 for a building site
+  whose progress word at 12 is below 16000. A site has bit 7 of the type byte set. `Gfx_SpriteLists` starts with 25 word offsets
+  from its own start, one per list. A list holds 3 bytes for each flame. The first is a size byte, 0 for a small flame and 8 for a
+  large one. The others are a signed x and y offset in pixels from the building's draw position. A byte of `0x80` or more ends the
+  list. The types 7 and 8 share one list.
+- **The flames.** The phase of the first flame is the countdown shifted right by 3, masked to 0 to 7, and inverted (`^ 7`), so it runs
+  from 0 at the start of the burn. Each flame draws the entry of its size byte, plus the phase, plus 136 through
+  `Gfx_DrawSpriteBase320` (`0x44e0d1`), so the entries 456 to 471 ([Graphics images](graphics-images.md)). Each further flame of the
+  list adds 3 to the phase, modulo 8.
+
+**Inferred:** the flames' alignment to the building is that of the building's own draw position, as for the objects
+([Map objects](map-objects.md)).
+
 ### The butcher's shop
 
 **Status:** confirmed, emulated.
@@ -233,7 +264,10 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
 - The states `0x44` and `0x45` (`Dismissed`, `Rejoined`) and the carrier's end-of-road counting (`Wait` in `src/Application/CarrierBehavior.cs`).
 - Departures: the engine's flag slot 0 is the castle's flag, so the original's test of a waiting settler's target (state 1) is left out ([Goods at a flag](goods.md) states the dummy); a carrier that waits has the
   flag's slot in the target where the original keeps a pointer, so the bytes of a settler in state `0x19` that was one are masked in the test.
-- The drawing: the stand-in button "Remove" in `MapViewControl`; a hut that burns is not drawn (its fire is not read).
+- The drawing: the stand-in button "Remove" in `MapViewControl`. A building that burns is drawn with its flames over it until its
+  countdown runs out (`ObjectDraws.Of`, ADR 0021); the view derives the countdown at the game's clock and writes no game state (INV-0016).
+  The History Edition source reads the flame lists (`FlameLists`, `src/Import.HistoryEdition/`); the basic set places flames of its own
+  making. Tests: `ObjectDrawsTests` (the draw list, the phase, the digest) and `FlameListsTests` (the lists from a program built in code).
 - Tests: `RemovalTests` (the verb's games and classes, `removals.txt`) and `RemovalLogicTests` (the engine's own logic, made-up tables);
   `SawmillRemovalTests` (a sawmill's worker waiting, sawing, and out with the plank, `saw-removals.txt`, [Sawmilling](sawmilling.md#removal)).
 - A site taken down (`Removal.TakeBuildingDown`) keeps its `Building.Site` with the planks it needs set to 0; `BuildSite.Evaluate` reads the clock (`Building.Stamp`) as the height of a large site taken down while it waited. The remove click reaches a site through the same command (`RemoveBuilding`). Tests: `ConstructionRemovalTests` (`construction-removal.txt`, the emulator verb `remove` with clicks written `N=click`).

@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
-"""Writes the art of the Open Settlers content set: content/open-settlers/manifest.json and its PNGs.
+"""Writes the art of the basic content set: content/basic/manifest.json and its PNGs.
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
-buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
-settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
+buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, the border posts
+(a pole on land and a post in water), one pose per job and kind of activity for the
+settlers, and a flame per size and phase, all drawn here from nothing but numbers. The flames of a small and of a large building that burns,
+and of an early site, stand at places of the project's own choosing, read from nothing (ADR 0021). It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
 
-    python3 tools/open-settlers-art.py [<folder>]
+    python3 tools/basic-art.py [<folder>]
 
-It writes into content/open-settlers, or into <folder> where given. The unit test
-RepositoryContentTests.TheOpenSettlersContentSetIsTheGeneratorsOutput writes the set into a temporary folder and fails
-where content/open-settlers holds any file it does not write the same, apart from the .gdignore. Run the script after a
+It writes into content/basic, or into <folder> where given. The unit test
+RepositoryContentTests.TheBasicContentSetIsTheGeneratorsOutput writes the set into a temporary folder and fails
+where content/basic holds any file it does not write the same, apart from the .gdignore and the hand-written JSONC
+files of content/basic/rules/ that the rule tables port and the walk steps port read. Run the script after a
 change to it and commit its output.
 
 The terrain triangles are 32 pixels wide and 20 high, the node spacing and row spacing of the map. An upper triangle
@@ -28,7 +31,7 @@ import struct
 import sys
 import zlib
 
-OUT = os.path.join("content", "open-settlers")
+OUT = os.path.join("content", "basic")
 WIDTH = 32
 HEIGHT = 20
 BLEED = 8
@@ -473,6 +476,18 @@ def good(code):
 MARKER = (245, 225, 70)
 
 
+def border_post(water):
+    """A border post standing with its foot on the term's position: a black and white pole on land, a red post in water.
+    Both ignore the slope of the ground."""
+    c = Canvas(3, 10)
+    if water:
+        c.rect(0, 0, 3, 10, (200, 40, 40))
+    else:
+        for y in range(0, 10, 2):
+            c.rect(0, y, 3, 2, INK if y % 4 == 0 else (235, 235, 230))
+    return c, (-1, -9)
+
+
 def marker(kind):
     """A build marker, standing with its foot on the node: a pennant for a flag, a pick for a mine, a small house for a
     small building, and a wide house for a large building, in one bright colour with an outline so it reads over any
@@ -497,6 +512,68 @@ def marker(kind):
         c.rect(1, 6, 16, 7, MARKER)
     c.outline(INK)
     return c, (-(c.width // 2), -(c.height - 1))
+
+
+FLAME_OUTER = (240, 120, 30)
+FLAME_INNER = (250, 220, 80)
+
+
+def flame(size, phase):
+    """A flame standing with its foot on its place: a tongue of orange around a yellow core, small or large. Its height
+    rises and falls with the phase, so the flames flicker."""
+    width, height = (6, 9) if size == "small" else (10, 15)
+    lift = (0, 1, 2, 1, 0, 2, 1, 2)[phase]
+    height += lift
+    c = Canvas(width, height)
+    c.triangle((width // 2, 0), height - 1, width // 2, FLAME_OUTER)
+    c.triangle((width // 2, height // 3), height - 1, width // 4, FLAME_INNER)
+    return c, (-(width // 2), -(height - 1))
+
+
+# The flames of a burning building as (size, x, y) from its node: two over a small building, three over a large one, and one
+# over a site below 16000 progress. OpenSettlersSource gives each building type the small or the large list by the size of its
+# scaffold. The places are the project's own.
+FLAMES = {
+    "small": [("small", -6, -12), ("large", 4, -18)],
+    "large": [("large", -14, -16), ("small", 2, -26), ("large", 14, -14)],
+    "early-site": [("small", 0, -8)],
+}
+
+
+def road_marker(kind, difference=0):
+    """A road marker, centred on its node: a ring for the end of the road, a red cross for a blocked neighbour, a hooked
+    arrow pointing back for the way back, and for a slope a box filled up to a line that rises or falls by the height
+    difference, green up to 1 either way, yellow at 2, and red at 3 and 4. Each reads apart from the others."""
+    if kind == "end":
+        c = Canvas(11, 11)
+        c.disc(5, 5, 4, MARKER)
+        for y in range(3, 8):
+            for x in range(3, 8):
+                if (x - 5) ** 2 + (y - 5) ** 2 <= 4:
+                    c.pixels[y][x] = (0, 0, 0, 0)
+    elif kind == "blocked":
+        c = Canvas(11, 11)
+        c.line(1, 1, 8, 8, (210, 40, 40), 2)
+        c.line(8, 1, 1, 8, (210, 40, 40), 2)
+    elif kind == "way-back":
+        c = Canvas(13, 11)
+        c.line(4, 5, 11, 5, MARKER, 2)
+        c.line(11, 5, 11, 9, MARKER, 2)
+        c.triangle((1, 5), 5, 0, MARKER)
+        c.line(1, 5, 4, 2, MARKER, 2)
+        c.line(1, 5, 4, 8, MARKER, 2)
+    else:
+        size = abs(difference)
+        color = (70, 170, 70) if size <= 1 else (235, 200, 50) if size == 2 else (210, 50, 40)
+        c = Canvas(14, 12)
+        c.rect(0, 0, 14, 12, (60, 70, 140))
+        c.rect(1, 1, 12, 10, (215, 215, 220))
+        left, right = 6 + difference, 6 - difference
+        for x in range(1, 13):
+            top = left + (right - left) * (x - 1) // 11
+            c.rect(x, top, 1, 11 - top, color)
+    c.outline(INK)
+    return c, (-(c.width // 2), -(c.height // 2))
 
 
 JOBS = {
@@ -628,10 +705,21 @@ def main():
         add(f"good/{code}", f"good/{code}.png", good(code))
     for kind in ("flag", "mine", "small", "large"):
         add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
+    for kind in ("end", "blocked", "way-back"):
+        add(f"road-marker/{kind}", f"road-marker/{kind}.png", road_marker(kind))
+    for difference in range(-4, 5):
+        add(f"road-marker/slope/{difference}", f"road-marker/slope-{difference}.png", road_marker("slope", difference))
+    add("border/pole", "border/pole.png", border_post(water=False))
+    add("border/water", "border/water.png", border_post(water=True))
     for job, color in JOBS.items():
         for kind in KINDS:
             load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else FISH if job == "fisher" else WOOD
             add(f"settler/{job}/{kind}", f"settler/{job}-{kind}.png", figure(color, kind, load))
+    for size in ("small", "large"):
+        for phase in range(8):
+            add(f"flame/{size}/{phase}", f"flame/{size}-{phase}.png", flame(size, phase))
+    for name, flames in FLAMES.items():
+        manifest[f"flames/{name}"] = {"flames": [{"size": size, "at": [x, y]} for size, x, y in flames]}
     with open(os.path.join(OUT, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")

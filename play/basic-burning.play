@@ -1,0 +1,22 @@
+# A building taken down burns on the basic content set: the woodcutter's hut of layouts/woodcutter.jsonc at 13,10 is razed with the
+# Remove button, stays drawn with the basic set's flames over it, which flicker from shot to shot, and is gone once the burn frees its
+# node. It needs no install. Run it with:
+#   sh tools/play-run.sh basic-burning --layout layouts/woodcutter.jsonc --content-set basic --fps 10
+wait 0.3
+scroll up 2
+name hut 13 10 building
+shot standing 13 10 1 3
+
+button Remove
+click-tile 13 10
+button Remove
+wait 0.1
+shot burning 13 10 1 3
+wait 0.5
+shot burning-later 13 10 1 3
+
+# The burn's countdown of 0x7ff clock units runs out, and the slot is freed.
+fast-forward until count woodcutter-hut = 0 max 20000
+wait 0.3
+expect-gone hut
+shot freed 13 10 1 3

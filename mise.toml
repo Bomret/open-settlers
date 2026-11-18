@@ -7,7 +7,7 @@ dotnet = ["10.0.402", "8.0.427"]
 # Ghidra and the build of its decompiler. Microsoft's build, because it covers Windows on ARM.
 java = "microsoft-25"
 gradle = "9"
-# program_index.py, and tools/open-settlers-art.py, which a unit test runs.
+# program_index.py, tools/focused-tests.py, and tools/basic-art.py, which a unit test runs.
 python = "3.13"
 
 # Godot .NET build. The version must match Godot.NET.Sdk in OpenSettlers.csproj and GODOT below.
@@ -55,6 +55,10 @@ description = "Run the unit tests that need neither the install nor Ghidra"
 # The category names are the constants of tests/OpenSettlers.Tests/Needs.cs.
 run = "dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory!=Install&TestCategory!=Ghidra'"
 
+[tasks."test:focused"]
+description = "Run the unit-test classes the changed paths can affect: -- <path>..."
+run = "python -I tools/focused-tests.py"
+
 [tasks."test:integration"]
 description = "Run the integration tests, which need the install (SIEDLER_DIR) and Ghidra"
 run = "dotnet test --project tests/OpenSettlers.Tests --filter 'TestCategory=Install|TestCategory=Ghidra'"
@@ -79,12 +83,12 @@ depends = ["build"]
 run = "{{ env.GODOT }} --path ."
 
 [tasks.map]
-description = "Open the map view (needs SIEDLER_DIR)"
+description = "Open the map view (needs SIEDLER_DIR only on the History Edition; no install on --content-set basic): -- [--seed <seed>] [--size <n>] [--content-set <set>]"
 depends = ["build"]
 run = "{{ env.GODOT }} --path . -- --map"
 
 [tasks.game]
-description = "Open the game view (needs SIEDLER_DIR): -- [--seed <seed>] [--size <n>] [--layout <file>]"
+description = "Open the game view (needs SIEDLER_DIR only on the History Edition; no install on --content-set basic): -- [--seed <seed>] [--size <n>] [--layout <file>] [--content-set <set>]"
 depends = ["build"]
 run = "{{ env.GODOT }} --path . -- --game-view"
 
@@ -94,12 +98,12 @@ depends = ["build"]
 run = "{{ env.GODOT }} --path . --"
 
 [tasks.seed-info]
-description = "Print the digests and counts of one seed's map (needs SIEDLER_DIR: it opens the install and imports Siedler1.exe's tables): -- --seed <seed> [--size <n>]"
+description = "Print the digests and counts of one seed's map (needs SIEDLER_DIR only on the History Edition, where it opens the install and imports Siedler1.exe's tables; --content-set basic reads only the rule files): -- --seed <seed> [--size <n>] [--content-set <set>]"
 depends = ["build"]
 run = "{{ env.GODOT }} --headless --path . -- --seed-info"
 
 [tasks.play]
-description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR): <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--graphics <source>] --fps <n> [--fresh] [--repro]"
+description = "Run a play script under Movie Maker, reusing a stored result (needs SIEDLER_DIR only on the History Edition; --content-set basic needs none): <stem> [--game-view] [--layout <file>] [--seed <s>] [--size <n>] [--content-set <set>] --fps <n> [--fresh] [--repro]"
 run = "sh tools/play-run.sh"
 
 [tasks.editor]

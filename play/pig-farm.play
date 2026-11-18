@@ -1,9 +1,9 @@
 # A pig farm raises a pig on the grain the castle sends it: the pig farmer stands inside from the start, two grains lie on the castle's flag, a
 # carrier takes them over the road to the pig farm's flag and on into the pig farm, the pig farmer takes a grain out and works in
 # stretches, and a pig grows and goes out to the flag and back to the castle. The script fast-forwards to the pig on the step out, takes a shot,
-# then to the castle's first pig and takes a shot of the pig farm and its road. Run it on the layout, under either graphics source:
+# then to the castle's first pig and takes a shot of the pig farm and its road. Run it on the layout
+# with the install; its expect values are the History Edition's (play/basic-production.play runs the food chains on the basic set):
 #   sh tools/play-run.sh pig-farm --layout layouts/pig-farm.jsonc --fps 10
-#   sh tools/play-run.sh pig-farm --layout layouts/pig-farm.jsonc --fps 10 --graphics open-settlers
 wait 0.3
 expect pigs = 0
 expect-at 13 10 pig-farm

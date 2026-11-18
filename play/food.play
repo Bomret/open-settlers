@@ -1,8 +1,8 @@
 # The six food buildings stand finished on layouts/food.jsonc, each with its flag south-east of it, and the dump names each food good.
 # A building asks for its worker and finds no road, so none walks out. The layout stands the fisher's worker inside his building. The castle's start stock holds one grain and no other food.
-# Run it on the layout, under either graphics source:
+# Run it on the layout with the install; its expect values are the History Edition's (play/basic-production.play runs the food chains
+# on the basic set):
 #   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10
-#   sh tools/play-run.sh food --layout layouts/food.jsonc --fps 10 --graphics open-settlers
 # The castle stands at 10,10. The farm is at 7,6, the baker at 12,6, the fisher at 14,10, the pig farm at 14,13, the mill at 7,14, and the
 # butcher at 12,14; each flag is south-east of its building.
 wait 0.3

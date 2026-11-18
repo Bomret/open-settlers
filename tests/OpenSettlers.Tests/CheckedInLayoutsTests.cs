@@ -2,12 +2,15 @@ using System;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Import.ContentSet;
+using OpenSettlers.Launch;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// Every layouts/*.jsonc of the repository reads and applies to a game without a refusal. A file that does not load fails
-// the test and names the file and the entry.
+// Every layouts/*.jsonc of the repository reads and applies to a game without a refusal, under the basic content set's rules at
+// the start stock level its seed draws: the conditions a play run loads it in. A file that does not load fails the test and
+// names the file and the entry.
 [TestClass]
 public sealed class CheckedInLayoutsTests
 {
@@ -35,7 +38,10 @@ public sealed class CheckedInLayoutsTests
             return string.Join("; ", read.Problems);
         }
 
-        return read.Layout.Apply(LayoutSettlersTests.NewGame(read.Layout));
+        var tables = new OpenSettlersRuleTables(LaunchInstall.BasicFolder(PythonTool.RepoRoot())).Read();
+        var game = GameFactory.Create(tables, read.Layout.BuildMap(), StartStock.LevelOf(read.Layout.Seed));
+
+        return read.Layout.Apply(game);
     }
 
     [TestMethod]

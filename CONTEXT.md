@@ -79,17 +79,28 @@ triangle, objects), a seed for the game's random generator, the castle, flags, r
 commands, and settlers and goods in entry states.
 _Avoid_: scenario, save, fixture
 
+**Castle contents**
+The goods and settlers the castle holds when it is placed. By default these are the goods and the 20 settlers the original's castle
+starts with, as `docs/rules/castle.md` records. A layout can name goods and settlers in their place.
+_Avoid_: castle inventory, start roster
+
 **Graphics source**
 Where the map view gets the image for each draw term: the History Edition source, which reads the install's
-archives, or a content set the repository ships. The launch flag `--graphics` picks one. A source answers a
-term with an RGBA image and its anchor point, or with nothing for an effect it does not draw (ADR 0014).
+archives, or the images of a content set the repository ships. The content set a run uses brings its graphics
+source. A source answers a term with an RGBA image and its anchor point, or with nothing for an effect it does
+not draw (ADR 0014).
 _Avoid_: skin, theme, renderer, asset pack
 
 **Draw term**
 What the map view asks a graphics source to draw, named in game terms: a terrain triangle, a map object, a
-settler, a road, or a build marker, with the data that picks its image, such as a settler's job, activity, heading, and
+settler, a road, a border post, a build marker, or a road marker, with the data that picks its image, such as a settler's job, activity, heading, and
 animation step. A draw term never holds an entry number (INV-0010).
 _Avoid_: sprite ID, entry, frame number
+
+**Flame**
+One image of the fire drawn over a burning building: small or large, at an offset from the building, at a phase of 0
+to 7. The graphics source gives a building's flames, and the burn's countdown gives their phase (ADR 0021).
+_Avoid_: fire sprite, burn mark
 
 **Build-site overlay**
 The markers the game view draws on every visible node of its player's territory, or before the castle stands, of every
@@ -100,10 +111,17 @@ that toggles it.
 _Avoid_: where-to-build overlay, placement overlay
 
 **Content set**
-A folder under `content/` that holds a graphics source as PNG images and one JSON manifest mapping draw terms
-to images and anchors (ADR 0015). It holds graphics only; rules always come from `Siedler1.exe`. `--graphics`
-names the shipped set `open-settlers`; a new folder under `content/` is not selectable.
-_Avoid_: mod, pack, theme
+Where a run gets its game data: its graphics source, its rule data, and its walk steps. There are two: the
+History Edition set, which is the install read through the History Edition source, and the basic set, which the
+repository ships in `content/basic/` with stand-in rules (ADR 0015, ADR 0018). The launch flag `--content-set`
+picks one; a new folder under `content/` is not selectable.
+_Avoid_: mod, pack, theme, graphics set
+
+**Stand-in rules**
+The rule data and walk steps of the basic content set: values of the project's own making that let the
+engine run a game without an install. They are not the original's rules, so a seed gives another map and
+another game than under the History Edition set (ADR 0018).
+_Avoid_: custom rules, rule mod, fake tables
 
 **Entry state**
 A state of a settler or a good that a routine of the original writes at the start of a behaviour, such as a
@@ -227,6 +245,18 @@ _Avoid_: item, cargo
 A path between two flags, built one of six directions at a time. One carrier serves each road.
 _Avoid_: edge, path, street
 
+**Road marker**
+A sign the game view shows in road mode on the end of the road being drawn and on each of its six neighbors: the end
+mark on the end itself, and on each neighbor a blocked mark where no step may go, a way-back mark on the node the road
+came from, or otherwise a slope mark for the height difference of that step. The original's road cursor picks each
+neighbor's mark. A click on a neighbor's mark is a click on that node.
+_Avoid_: cursor symbol, pointer sprite, slope icon
+
+**Border post**
+One piece of the territory border that the views draw between two neighbor nodes whose owners differ and where no road
+lies: a pole on land, a post in water. The views draw it in the pass that draws the roads, so trees and buildings cover it.
+_Avoid_: border marker, pole, boundary line
+
 **Carrier**
 A settler who walks one road and carries goods between its two flags.
 _Avoid_: porter, transporter, worker
@@ -253,6 +283,18 @@ One of the player's people, one object for its whole life: its place on the map,
 one activity. Its slot in the settler table is its number and the slot of its thing ID.
 _Avoid_: worker, unit, figure
 
+**Settler supply**
+A player's timer that makes one settler without a job in a storage for each period that passes. The player's settler
+rate, a start setting from 0 to 40, sets the period: the higher the rate, the shorter the period. About 31 % of the new
+settlers are owed as knights, and the new settler becomes one where its storage holds a sword and a shield
+(`docs/rules/new-settlers.md`).
+_Avoid_: reproduction, spawning, birth, population growth
+
+**Settler cap**
+The most settlers a player may hold before its settler supply stops making new ones: an eighth of the settler table,
+plus the player's share of the rest by the land it owns. A player alone in a game holds the whole table.
+_Avoid_: population limit, settler limit
+
 **Building**
 A building of the player's, finished or a building site: its type, its node and flag, whether its worker is inside
 or on the way, and the counters of the goods it takes in. Its slot in the building table is its number. The castle
@@ -263,6 +305,12 @@ _Avoid_: house, structure
 A building that a person placed and that is not finished yet. It waits for a digger to level it (large buildings
 only), for the planks and stones its type needs, and for a builder who builds it from them.
 _Avoid_: construction site, site (alone), unfinished building
+
+**Castle under construction**
+The castle from its placement until it stands, while its first settler raises its progress word. It is no building
+site: no digger, no builder, and no planks or stones come to it. The engine draws it through the site drawing types
+(`BuildingDraw.SiteProgress`, `SitePart`, `SiteLayer`, `SiteDrawings`).
+_Avoid_: castle site (a node where the castle may be placed), unfinished castle
 
 **Request**
 A building's standing ask, held at its flag, for one kind of good, with a rank that falls as goods of that kind

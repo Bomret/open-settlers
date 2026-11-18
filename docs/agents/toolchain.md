@@ -20,6 +20,7 @@
   - Check formatting — part of `mise run check`
   - Build — `mise run build`
   - Unit tests — `mise run test` (skips the `Install` and `Ghidra` test categories, MSTest on Microsoft.Testing.Platform, selected in `global.json`)
+  - Focused unit tests — `mise run test:focused -- <path>...` (the unit-test classes the changed paths can affect)
   - Integration tests — `mise run test:integration` (runs only the `Install` and `Ghidra` test categories; needs `SIEDLER_DIR` and Ghidra)
   - Asset check, asset browser, Godot editor — `mise run assets`, `mise run browser`, `mise run editor`
   - Map view, game view — `mise run map`, `mise run game -- [--seed <seed>] [--size <n>] [--layout <file>]`

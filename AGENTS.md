@@ -2,8 +2,8 @@
 
 An open-source engine for Die Siedler (Blue Byte, 1993) on Godot 4 with C#. It ships no game content of
 the original and reads the files of a Die Siedler install the user owns. The map view and the game view draw
-through a graphics source: the install's art or the repository's own content set (`content/`, ADR 0014,
-ADR 0015). See `README.md` for layout and usage.
+through a content set: the History Edition install's art and rules, or the repository's basic set, which runs
+without an install (`content/`, ADR 0014, ADR 0015, ADR 0018). See `README.md` for layout and usage.
 
 ## Where to read
 
@@ -23,7 +23,7 @@ interface that returns dedicated types, never a format type.
 - `src/Import.HistoryEdition/` reads the install (formats, assets, program tables, graphics) and implements every
   port. Its readers and tables are internal; its public types are the ones the host builds, plus `JobTableNames`
   for the adapters.
-- `src/Import.OpenSettlers/` reads `content/open-settlers/` and implements the graphics source.
+- `src/Import.OpenSettlers/` reads `content/basic/` and implements the graphics source, the rule tables port, and the walk steps port.
 - The map view, `src/Assets/`, the domain, and the application name no source type. The launch code and the asset
   browser build a source.
 
@@ -46,6 +46,10 @@ guess a rule or copy one from a fan source or another reimplementation. Record e
 own words with its address as evidence (INV-0001). Mark a rule that the program does not confirm as
 **inferred** or **stand-in**. Mark a finding that lies only in the platform layer, outside the game code
 (`CONTEXT.md`), as a platform-layer finding.
+
+The install also holds the game's manual as PDF: `$SIEDLER_DIR/THE SETTLERS - Manual-EN.pdf`, with German
+and French editions beside it (`-DE.pdf`, `-FR.pdf`). The manual is a valid source of information on the
+game's rules and terms. Cite it by file and page.
 
 ## Agent skills
 

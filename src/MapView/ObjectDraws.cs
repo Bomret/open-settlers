@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenSettlers.Domain;
@@ -24,6 +25,9 @@ public static class ObjectDraws
     ];
 
     const int GoodsBeforeFlag = 3;
+
+    // The progress below which a building site takes the flames of an early site.
+    const int EarlySiteProgress = 16000;
 
     /// <summary>
     /// The geometry of a flag for a click (<see cref="MapPicking.Pick"/>): the box of the History Edition's flag at its
@@ -53,15 +57,19 @@ public static class ObjectDraws
     /// tile's node with the node's height taken off, where its roads meet (<c>docs/rules/map-objects.md</c>); the
     /// sprite's own header offsets apply where the sprite is drawn. Every object is a term, and a source that has no
     /// image for one draws nothing for it. Resources are no objects and are never drawn. With a
-    /// <paramref name="castle"/>, it is drawn at its node, and each woodcutter's hut of <paramref name="buildings"/>
-    /// likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>.
+    /// <paramref name="castle"/>, it is drawn at its node, by the progress word of its building (slot 0 of <paramref name="buildings"/>)
+    /// while it is under construction, and each woodcutter's hut of <paramref name="buildings"/> likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>. A building that burns is
+    /// drawn with the <paramref name="flames"/> of its type right after it (ADR 0021), their phase taken from its countdown at
+    /// the game's clock <paramref name="clock"/>; once the countdown has run out, nothing is drawn for it.
     /// </summary>
     public static List<ObjectTerm> Of(
         Map map,
         Castle? castle = null,
         IReadOnlyList<Building>? buildings = null,
         IReadOnlyDictionary<(int X, int Y), IReadOnlyList<Good>>? flagGoods = null,
-        ushort counter = 0
+        ushort counter = 0,
+        ushort clock = 0,
+        Func<BuildingType, bool, IReadOnlyList<Flame>>? flames = null
     )
     {
         var objects = map.Objects;
@@ -104,38 +112,73 @@ public static class ObjectDraws
                     X = x,
                     Y = y - height * TerrainTriangles.HeightStep,
                     Type = BuildingType.Castle,
+                    SiteProgress = CastleProgress(buildings),
                 }
             );
         }
 
-        // A building that was taken down burns (docs/rules/removal.md); the burning is not drawn (the sprites of the fire are not
-        // read).
-        foreach (
-            var hut in buildings?.Where(building =>
-                BuildingPlacement.Types.Contains(building.Type) && !building.IsDemolishing
-            )
-                ?? []
-        )
+        foreach (var hut in buildings?.Where(building => BuildingPlacement.Types.Contains(building.Type)) ?? [])
         {
+            // A building that was taken down burns (docs/rules/removal.md). Its countdown runs down with the clock between
+            // its turns, so the view derives it anew for each frame and writes no game state (INV-0016). Once the countdown
+            // has run out, neither the building nor its flames are drawn.
+            var countdown = hut.IsDemolishing ? hut.BurnLeft - (ushort)(clock - hut.Stamp) : 0;
+            if (countdown < 0)
+            {
+                continue;
+            }
+
             // A building is drawn like the castle: at its node in the order of its row. inferred: the alignment is that of an
             // object, as for the castle. A site is drawn by its progress word (0x44e329 reads it at 0x44fa7c).
             var (x, y) = Camera.NodePosition(hut.X, hut.Y);
             var height = map.At(hut.X, hut.Y).Height;
+            var top = y - height * TerrainTriangles.HeightStep;
             var index = draws.FindIndex(draw => draw.Row > hut.Y);
+            var at = index < 0 ? draws.Count : index;
             draws.Insert(
-                index < 0 ? draws.Count : index,
+                at,
                 new BuildingDraw
                 {
                     Row = hut.Y,
                     X = x,
-                    Y = y - height * TerrainTriangles.HeightStep,
+                    Y = top,
                     Type = hut.Type,
                     SiteProgress = hut.Constructing ? hut.Progress : null,
                 }
             );
+            if (hut.IsDemolishing && flames is not null)
+            {
+                draws.InsertRange(at + 1, FlamesOf(hut, flames, countdown, hut.Y, x, top));
+            }
         }
 
         return draws;
+    }
+
+    // The flames of a burning building at its draw position, in the source's order. The first flame's phase follows the
+    // countdown, and each further flame's is 3 more, modulo 8.
+    static IEnumerable<FlameDraw> FlamesOf(
+        Building hut,
+        Func<BuildingType, bool, IReadOnlyList<Flame>> flames,
+        int countdown,
+        int row,
+        int x,
+        int y
+    )
+    {
+        var phase = ((countdown >> 3) & 7) ^ 7;
+        foreach (var flame in flames(hut.Type, hut.Constructing && hut.Progress < EarlySiteProgress))
+        {
+            yield return new FlameDraw
+            {
+                Row = row,
+                X = x + flame.X,
+                Y = y + flame.Y,
+                Size = flame.Size,
+                Phase = phase,
+            };
+            phase = (phase + 3) & 7;
+        }
     }
 
     /// <summary>
@@ -167,6 +210,11 @@ public static class ObjectDraws
 
         return draws;
     }
+
+    // The castle under construction is drawn by its progress word (0x44fd2f jumps to 0x44fee2, docs/rules/construction.md), which its
+    // building, slot 0 of the game's buildings, holds until it stands. Without the game's buildings the castle is drawn whole.
+    static ushort? CastleProgress(IReadOnlyList<Building>? buildings) =>
+        buildings is [{ Constructing: true } castle, ..] && castle.Type == BuildingType.Castle ? castle.Progress : null;
 
     static void AddGoods(List<ObjectTerm> draws, IReadOnlyList<Good>? goods, int row, int x, int y, int from, int to)
     {

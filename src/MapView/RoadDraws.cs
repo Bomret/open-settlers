@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
@@ -11,75 +10,41 @@ namespace OpenSettlers.MapView;
 /// the direction east, south-east, or south (<c>0x427d3e</c>, <c>0x427e3a</c>, <c>0x427f1f</c> with <c>0x428008</c>,
 /// <c>0x428105</c>, and <c>0x4281cc</c>); the other three directions are drawn from the node at the other end.
 /// </summary>
-public static class RoadDraws
+static class RoadDraws
 {
     // Pixels the strip reaches above its higher node (0x428008 subtracts 2 more after the height); the level strip is
     // 5 rows high, so it is centered on the line.
     const int Above = 2;
 
-    /// <summary>
-    /// The strips of the map's roads in row-major order of the node each is drawn from. Every strip gives a term; the
-    /// source decides which it draws.
-    /// </summary>
-    public static List<RoadStrip> Of(Map map)
-    {
-        var strips = new List<RoadStrip>();
-        var width = map.Size.Width;
-        for (var row = 0; row < map.Size.Height; row++)
-        {
-            for (var column = 0; column < width; column++)
-            {
-                var roads = map.At(column, row).Roads;
-                for (var direction = 0; direction < 3; direction++)
-                {
-                    if (roads.Has(direction))
-                    {
-                        strips.Add(Strip(map, column, row, (RoadDirection)direction));
-                    }
-                }
-            }
-        }
-
-        return strips;
-    }
-
-    // The strip of the road that leaves a node east, south-east, or south.
-    static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
+    // The strip of the road that leaves a node east, south-east, or south. Every strip gives a term; the source decides
+    // which it draws.
+    internal static RoadStrip Strip(Map map, int column, int row, RoadDirection direction)
     {
         int H(int dx, int dy) => map.At(column + dx, row + dy).Height;
-        Terrain Low(int dx, int dy) => map.At(column + dx, row + dy).Lower;
-        Terrain High(int dx, int dy) => map.At(column + dx, row + dy).Upper;
 
         var (x, y) = Camera.NodePosition(column, row);
         var here = H(0, 0);
+        var (slope, ground) = SlopeAndGround(map, column, row, direction);
         int difference,
-            slope,
             top,
             left;
-        Terrain ground;
         switch (direction)
         {
             case RoadDirection.East:
                 // East: the node and its east neighbour, the strip as high as the higher of them.
                 difference = here - H(1, 0);
-                slope = -3 * difference + H(0, -1) - H(1, 1);
-                ground = Terrain.Higher(Low(0, 0), High(0, -1));
                 top = y - Math.Max(here, H(1, 0)) * TerrainTriangles.HeightStep;
                 left = x;
                 break;
             case RoadDirection.SouthEast:
                 // South-east: the strip starts at the node's own height.
                 difference = here - H(1, 1);
-                slope = 2 * (H(1, 0) - H(0, 1));
-                ground = Terrain.Higher(Low(0, 0), High(0, 0));
                 top = y - here * TerrainTriangles.HeightStep;
                 left = x;
                 break;
             default:
                 // South: the strip lies west of the node.
                 difference = here - H(0, 1);
-                slope = 3 * difference - H(-1, 0) + H(1, 1);
-                ground = Terrain.Higher(High(0, 0), Low(-1, 0));
                 top = y - here * TerrainTriangles.HeightStep;
                 left = x - Camera.NodeSpacing / 2;
                 break;
@@ -93,6 +58,26 @@ public static class RoadDraws
             Difference = difference,
             Slope = slope,
             Ground = ground,
+        };
+    }
+
+    /// <summary>
+    /// The slope sum and the ground of the edge that leaves a node east, south-east, or south: the road strip's and the
+    /// border post's alike (<c>docs/rules/roads.md</c>).
+    /// </summary>
+    internal static (int Slope, Terrain Ground) SlopeAndGround(Map map, int column, int row, RoadDirection direction)
+    {
+        int H(int dx, int dy) => map.At(column + dx, row + dy).Height;
+        Terrain Low(int dx, int dy) => map.At(column + dx, row + dy).Lower;
+        Terrain High(int dx, int dy) => map.At(column + dx, row + dy).Upper;
+
+        var here = H(0, 0);
+
+        return direction switch
+        {
+            RoadDirection.East => (-3 * (here - H(1, 0)) + H(0, -1) - H(1, 1), Terrain.Higher(Low(0, 0), High(0, -1))),
+            RoadDirection.SouthEast => (2 * (H(1, 0) - H(0, 1)), Terrain.Higher(Low(0, 0), High(0, 0))),
+            _ => (3 * (here - H(0, 1)) - H(-1, 0) + H(1, 1), Terrain.Higher(High(0, 0), Low(-1, 0))),
         };
     }
 }

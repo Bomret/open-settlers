@@ -26,7 +26,8 @@ notation that REA shows. Do not cite a file offset.
 Each rule note holds:
 
 - The rule, in our own words.
-- One or more addresses as evidence.
+- One or more addresses as evidence. The game's manual in the install
+  (`THE SETTLERS - Manual-EN.pdf`) is also valid evidence; cite it by file and page.
 - A status: **confirmed** when the code at the address shows the rule, **inferred** when the rule
   follows from the code but no single address shows it, or **stand-in** when the engine supplies a value
   or a check that the program does not confirm.
@@ -128,6 +129,8 @@ When the dump is missing, build it before you investigate.
 - [Roads](roads.md): how the player draws a road between two flags, what it writes, and how it is drawn.
 - [Carriers](carriers.md): how a road gets its carrier, its walk from the castle, and where it waits.
 - [Settlers](settlers.md): how a building asks for a worker, the route search, and the worker's walk.
+- [New settlers](new-settlers.md): how a player's timer makes settlers without a job and knights in its storages, and the cap
+  on a player's settlers.
 - [Goods](goods.md): how a good on a flag gets its destination, and how carriers lift, hand over, and deliver it.
 - [Woodcutting](woodcutting.md): the woodcutter's work cycle and how a felled tree leaves the map.
 - [Construction](construction.md): how a building site asks for its builder, how he builds in state 9, how a finished building asks

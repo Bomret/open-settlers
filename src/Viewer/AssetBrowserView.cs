@@ -21,8 +21,9 @@ namespace OpenSettlers.Viewer;
 ///   godot --path . -- --map --seed 1234567812345678 --size 2 --game &lt;install&gt;
 ///   godot --path . --write-movie play-out/&lt;stem&gt;/frame.png --fixed-fps 30 -- --map --play &lt;script&gt;
 ///   (a play run, <see cref="PlayDriver"/>; <c>--game-view</c> in place of <c>--map</c> runs it on the game view)
-/// <c>SIEDLER_DIR</c> stands in for <c>--game</c>. A bad argument prints its problem and quits with exit code 4
-/// before the install is opened.
+///   godot --path . -- --map --content-set basic   (the basic content set: no install, no <c>--game</c>, no <c>SIEDLER_DIR</c>)
+/// <c>SIEDLER_DIR</c> stands in for <c>--game</c> on the History Edition. A bad argument prints its problem and quits with
+/// exit code 4 before the install is opened.
 /// </summary>
 public partial class AssetBrowserView : Control
 {
@@ -58,7 +59,7 @@ public partial class AssetBrowserView : Control
             // Seed info reads the large objects through the rule tables port. A Godot callback exception does not set
             // the exit code, so this owns it.
             var code = SeedInfo.Run(
-                LaunchInstall.RuleTables(args),
+                LaunchInstall.RuleTables(args, ProjectSettings.GlobalizePath("res://")),
                 args.SeedText!,
                 args.Seed!.Value,
                 args.Size ?? MapSize.Offered[0],
@@ -163,20 +164,33 @@ public partial class AssetBrowserView : Control
         var install = open.Install;
         var script = open.Script;
         var folder = open.PlayOutFolder;
-        IRuleTablesSource tablesSource = new HistoryEditionRuleTables(install);
-        // The view calls this where it catches a read failure: a broken content set names its file and key, and the view draws
-        // no map, as for a missing install file.
-        Func<RuleTables?, GraphicsLoad> loadGraphics =
-            args.Graphics == GraphicsSourceName.OpenSettlers
-                ? _ => new GraphicsLoad
-                {
-                    Source = OpenSettlersSource.Load(
-                        ProjectSettings.GlobalizePath("res://content/open-settlers"),
-                        new GodotImageDecoder()
-                    ),
-                }
-                : tables => HistoryEditionSource.LoadGraphics(install, tables);
-        Func<IWalkSteps> loadSteps = () => StepOffsets.Load(install);
+        // MapLaunch opened the install on the History Edition and none on the basic set, so the install decides the content set
+        // once and the History Edition's tables come from the install already open.
+        IRuleTablesSource tablesSource;
+        Func<RuleTables?, GraphicsLoad> loadGraphics;
+        Func<IWalkSteps> loadSteps;
+        if (install is null)
+        {
+            var basicFolder = LaunchInstall.BasicFolder(ProjectSettings.GlobalizePath("res://"));
+            tablesSource = new OpenSettlersRuleTables(basicFolder);
+            // The view calls this where it catches a read failure: a broken content set names its file and key, and the
+            // view draws no map, as for a missing install file. The walk steps arrive with the graphics, and the view calls
+            // loadSteps only where a successful graphics load carries none, so no view path calls it here; a call still reads
+            // the walk steps file and raises its own fault.
+            loadGraphics = _ => new GraphicsLoad
+            {
+                Source = OpenSettlersSource.Load(basicFolder, new GodotImageDecoder()),
+                Steps = OpenSettlersWalkSteps.Load(basicFolder),
+            };
+            loadSteps = () => OpenSettlersWalkSteps.Load(basicFolder);
+        }
+        else
+        {
+            tablesSource = new HistoryEditionRuleTables(install);
+            loadGraphics = tables => HistoryEditionSource.LoadGraphics(install, tables);
+            loadSteps = () => StepOffsets.Load(install);
+        }
+
         var view = layout is not null
             ? new MapViewControl(tablesSource, loadGraphics, loadSteps, layout)
             : new MapViewControl(
@@ -186,7 +200,8 @@ public partial class AssetBrowserView : Control
                 args.SeedText ?? MapViewState.DefaultSeed,
                 args.Size?.Value ?? MapSize.Offered[0].Value,
                 args.Mode == LaunchMode.GameView,
-                args.Stock
+                args.Stock,
+                args.Rate
             );
         AddChild(view);
         if (script is not null)

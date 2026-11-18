@@ -41,24 +41,32 @@ public sealed class RepositoryContentTests
         Assert.IsEmpty(found, $"install file types in the repository: {string.Join(", ", found)}");
     }
 
-    // The content set is the output of tools/open-settlers-art.py, which draws every image from numbers, so the set holds
+    // The content set is the output of tools/basic-art.py, which draws every image from numbers, so the set holds
     // nothing derived from an install. A hand-edited or pasted file, a file the generator does not write, or a manifest
     // the generator does not write fails here. .gdignore keeps Godot from importing the PNGs and is not art. A PNG
     // compares by its chunks with the image data decompressed, since the compressed bytes may differ between zlib builds.
     // The test fails where python3 is not on the path: mise install provides it.
     [TestMethod]
-    public void TheOpenSettlersContentSetIsTheGeneratorsOutput()
+    public void TheBasicContentSetIsTheGeneratorsOutput()
     {
         var root = RepositoryRoot();
-        var generated = Path.Combine(Path.GetTempPath(), "open-settlers-art-" + Guid.NewGuid().ToString("N"));
+        var generated = Path.Combine(Path.GetTempPath(), "basic-art-" + Guid.NewGuid().ToString("N"));
         try
         {
-            var run = PythonTool.Run(root, [PythonTool.InRepo("tools", "open-settlers-art.py"), generated]);
+            var run = PythonTool.Run(root, [PythonTool.InRepo("tools", "basic-art.py"), generated]);
             Assert.AreEqual(0, run.Exit, run.Stderr);
 
-            var checkedIn = Path.Combine(root, "content", "open-settlers");
+            var checkedIn = Path.Combine(root, "content", "basic");
             var expected = SetFiles(generated);
-            var actual = SetFiles(checkedIn).Where(file => file != ".gdignore").ToList();
+            // The rule files and the walk steps file are hand-written, not generated: exactly the files the rule tables port
+            // and the walk steps port name are exempt.
+            var actual = SetFiles(checkedIn)
+                .Where(file =>
+                    file != ".gdignore"
+                    && !OpenSettlersRuleTables.Files.Contains(file)
+                    && file != OpenSettlersWalkSteps.WalkStepsFile
+                )
+                .ToList();
             var differences = expected
                 .Except(actual)
                 .Select(file => $"missing {file}")
@@ -74,10 +82,7 @@ public sealed class RepositoryContentTests
                 )
                 .ToList();
 
-            Assert.IsEmpty(
-                differences,
-                $"content/open-settlers/ against the generator: {string.Join(", ", differences)}"
-            );
+            Assert.IsEmpty(differences, $"content/basic/ against the generator: {string.Join(", ", differences)}");
         }
         finally
         {
@@ -94,14 +99,14 @@ public sealed class RepositoryContentTests
     public void EachStageOfAStoneHeapHasItsOwnImage()
     {
         var manifest = System.Text.Json.JsonDocument.Parse(
-            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "open-settlers", "manifest.json"))
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "basic", "manifest.json"))
         );
         byte[] Image(string key) =>
             File.ReadAllBytes(
                 Path.Combine(
                     RepositoryRoot(),
                     "content",
-                    "open-settlers",
+                    "basic",
                     manifest.RootElement.GetProperty(key).GetProperty("image").GetString()!
                 )
             );
@@ -111,13 +116,40 @@ public sealed class RepositoryContentTests
         Assert.HasCount(8, heaps.Distinct(), "the eight stages of a heap");
     }
 
+    // Each road marker the basic set draws, the end, blocked, and way-back marks and the slope of each difference from -4 to 4,
+    // has an image of its own, so the player tells them apart.
+    [TestMethod]
+    public void EachRoadMarkerHasItsOwnImage()
+    {
+        var manifest = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "basic", "manifest.json"))
+        );
+        string Image(string key) =>
+            Convert.ToHexString(
+                File.ReadAllBytes(
+                    Path.Combine(
+                        RepositoryRoot(),
+                        "content",
+                        "basic",
+                        manifest.RootElement.GetProperty(key).GetProperty("image").GetString()!
+                    )
+                )
+            );
+
+        var keys = new[] { "road-marker/end", "road-marker/blocked", "road-marker/way-back" }.Concat(
+            Enumerable.Range(-4, 9).Select(difference => $"road-marker/slope/{difference}")
+        );
+
+        Assert.HasCount(12, keys.Select(Image).Distinct(), "the twelve road markers");
+    }
+
     // The two saplings a forester plants (the object codes 0x67 and 0x68) have images of their own, not the litter the generator
     // draws for the codes it names nothing for, and differ from each other, as the two grow into different trees.
     [TestMethod]
     public void EachSaplingHasItsOwnImage()
     {
         var manifest = System.Text.Json.JsonDocument.Parse(
-            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "open-settlers", "manifest.json"))
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "basic", "manifest.json"))
         );
         string Image(string key) => manifest.RootElement.GetProperty(key).GetProperty("image").GetString()!;
 

@@ -15,15 +15,15 @@ path segment without regard to letter case.
 |---|---|---|---|
 | `Siedler1.exe`, data tables and instruction immediates | `ProgramTablesImporter` and the job tables modules (`src/Adapters/Simulation/`) | `RuleTables` (`src/Domain/RuleTables.cs`) | Simulation, map generator, seed info, History Edition graphics source |
 | `loca/SPAD.PA`, palette, masks, textures, sprites | `TerrainGraphics`, `RoadGraphics`, `ObjectGraphics`, `SettlerSprites` (`src/MapView/`) | GPU layers and `ObjectImage` | `HistoryEditionSource` (`IGraphicsSource`) |
-| `loca/SPAD.PA`, entry 2 (walk sequences) | `StepOffsets` (`src/MapView/`) | `StepOffsets`, and the raw bytes for `SettlerFigureTables` | Game view under both graphics sources |
+| `loca/SPAD.PA`, entry 2 (walk sequences) | `StepOffsets` (`src/MapView/`) | `StepOffsets`, and the raw bytes for `SettlerFigureTables` | Game view on the History Edition set |
 | `loca/SPAD.PA`, `SPAE.PA`, `SPAF.PA`, every entry | `ArchiveEntryKind` and its subclasses (`src/Assets/`) | Previews | Asset browser and asset check |
 | `loca/eng.txt`, `ger.txt`, `fre.txt` | `TextKind` | Previews | Asset browser |
 | `snd/01.SND` to `snd/99.SND` | `SoundKind` | Previews | Asset browser |
 | `snd/music_1.midi` | `MusicKind` | Previews | Asset browser |
 
-Seed info reads only `Siedler1.exe`. The map view and the game view read `Siedler1.exe`, and `loca/SPAD.PA`
-under the History Edition graphics source. The game view also reads entry 2 of `loca/SPAD.PA` under the Open
-Settlers graphics source. The text, sound, and music files are read only by the asset browser and the asset check.
+Seed info reads only `Siedler1.exe`. The map view and the game view read `Siedler1.exe` and `loca/SPAD.PA`
+under the History Edition content set, which includes entry 2 of `loca/SPAD.PA` for the settlers' step offsets.
+Under the basic content set none of these is read: the rules and step offsets come from `content/basic/rules/`. The text, sound, and music files are read only by the asset browser and the asset check.
 
 ## `Siedler1.exe`
 

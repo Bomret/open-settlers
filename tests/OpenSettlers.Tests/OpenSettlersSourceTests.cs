@@ -26,6 +26,11 @@ public sealed class OpenSettlersSourceTests
                 Entries[key] = Entry("a.png", "0, 0");
             }
 
+            foreach (var key in FlamesKeys)
+            {
+                Entries[key] = Flames("small, 0, 0");
+            }
+
             Png("a.png", "2x2:9");
         }
 
@@ -47,6 +52,17 @@ public sealed class OpenSettlersSourceTests
 
         public static string Entry(string image, string anchor) =>
             $$"""{ "image": "{{image}}", "anchor": [{{anchor}}] }""";
+
+        // A flame placement entry from flames written as "size, x, y".
+        public static string Flames(params string[] flames) =>
+            "{ \"flames\": ["
+            + string.Join(
+                ", ",
+                flames
+                    .Select(flame => flame.Split(", "))
+                    .Select(part => $$"""{ "size": "{{part[0]}}", "at": [{{part[1]}}, {{part[2]}}] }""")
+            )
+            + "] }";
 
         public OpenSettlersSource Load()
         {
@@ -125,6 +141,14 @@ public sealed class OpenSettlersSourceTests
             .Concat(BuildingKeys)
             .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
             .Concat(["marker/flag", "marker/mine", "marker/small", "marker/large"])
+            .Concat(["road-marker/end", "road-marker/blocked", "road-marker/way-back"])
+            .Concat(Enumerable.Range(-4, 9).Select(difference => $"road-marker/slope/{difference}"))
+            .Concat(["border/pole", "border/water"])
+            .Concat(
+                from size in new[] { "small", "large" }
+                from phase in Enumerable.Range(0, 8)
+                select $"flame/{size}/{phase}"
+            )
             .Concat(
                 from job in new[]
                 {
@@ -145,6 +169,8 @@ public sealed class OpenSettlersSourceTests
                 from kind in new[] { "walks", "carries", "cuts", "door", "hands-over", "waits" }
                 select $"settler/{job}/{kind}"
             );
+
+    static readonly string[] FlamesKeys = ["flames/small", "flames/large", "flames/early-site"];
 
     static TerrainTriangle Triangle(int code, bool upper) =>
         new()
@@ -345,6 +371,154 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    [DataRow("flames/small")]
+    [DataRow("flames/large")]
+    [DataRow("flames/early-site")]
+    [DataRow("flame/small/0")]
+    [DataRow("flame/large/7")]
+    public void AManifestWithoutAFlameEntryIsRefusedNamingIt(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    [DataRow("{ \"flames\": 3 }")]
+    [DataRow("{ \"flames\": [{ \"size\": \"small\", \"at\": [1] }] }")]
+    [DataRow("{ \"flames\": [{ \"size\": \"huge\", \"at\": [1, 2] }] }")]
+    public void AMalformedFlamePlacementIsRefusedNamingItsKey(string value)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/large"] = value;
+
+        Refuses(folder, "manifest.json", "flames/large");
+    }
+
+    [TestMethod]
+    public void ASmallBuildingsFlamesAreTheSmallPlacementsInOrderAndAnEarlySiteTakesTheEarlySitesWhateverItsType()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/small"] = ContentFolder.Flames("small, -3, -10", "large, 4, -12");
+        folder.Entries["flames/early-site"] = ContentFolder.Flames("large, 1, -5");
+
+        var source = folder.Load();
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Small,
+                    X = -3,
+                    Y = -10,
+                },
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 4,
+                    Y = -12,
+                },
+            },
+            source.Flames(BuildingType.Woodcutter, earlySite: false).ToArray()
+        );
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 1,
+                    Y = -5,
+                },
+            },
+            source.Flames(BuildingType.Mill, earlySite: true).ToArray()
+        );
+        Assert.IsEmpty(source.Flames(BuildingType.Castle, earlySite: false));
+    }
+
+    [TestMethod]
+    public void ALargeBuildingsFlamesAreTheLargePlacements()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["flames/large"] = ContentFolder.Flames("large, 2, -20");
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new Flame
+                {
+                    Size = FlameSize.Large,
+                    X = 2,
+                    Y = -20,
+                },
+            },
+            folder.Load().Flames(BuildingType.Sawmill, earlySite: false).ToArray()
+        );
+    }
+
+    [TestMethod]
+    [DataRow(FlameSize.Small, 0, "flame/small/0")]
+    [DataRow(FlameSize.Small, 5, "flame/small/5")]
+    [DataRow(FlameSize.Large, 7, "flame/large/7")]
+    public void EachFlameDrawsTheImageOfItsSizeAndPhase(FlameSize size, int phase, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries[key] = ContentFolder.Entry("f.png", "-2, -8");
+        folder.Png("f.png", "4x9:7");
+
+        var image = folder
+            .Load()
+            .Draw(
+                new FlameDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Size = size,
+                    Phase = phase,
+                }
+            )!;
+
+        Assert.AreEqual((4, 9, -2, -8), (image.Width, image.Height, image.OffsetX, image.OffsetY));
+    }
+
+    [TestMethod]
+    public void TheCheckedInContentSetGivesFlamesForEveryBuildingTheGameCanTakeDownAndForAnEarlySite()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
+
+        foreach (
+            var (type, earlySite) in BuildingPlacement
+                .Types.Select(type => (type, false))
+                .Append((BuildingType.Woodcutter, true))
+        )
+        {
+            var flames = source.Flames(type, earlySite);
+            Assert.IsNotEmpty(flames, $"{type} early site {earlySite}");
+            foreach (var flame in flames)
+            {
+                for (var phase = 0; phase < 8; phase++)
+                {
+                    Assert.IsNotNull(
+                        source.Draw(
+                            new FlameDraw
+                            {
+                                Row = 0,
+                                X = 0,
+                                Y = 0,
+                                Size = flame.Size,
+                                Phase = phase,
+                            }
+                        )
+                    );
+                }
+            }
+        }
+    }
+
+    [TestMethod]
     [DataRow(BuildMarker.Flag, "marker/flag")]
     [DataRow(BuildMarker.Mine, "marker/mine")]
     [DataRow(BuildMarker.Small, "marker/small")]
@@ -366,6 +540,89 @@ public sealed class OpenSettlersSourceTests
     [DataRow("marker/small")]
     [DataRow("marker/large")]
     public void AMarkerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    static BorderPost Post(int ground, int slope = 0) =>
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Direction = RoadDirection.East,
+            Slope = slope,
+            Ground = new Terrain { Code = ground },
+        };
+
+    [TestMethod]
+    public void ALandPostDrawsThePoleAndAWaterPostTheWaterPostTheSameInstanceForEqualPicks()
+    {
+        using var folder = new ContentFolder();
+        folder.Entries["border/pole"] = ContentFolder.Entry("pole.png", "-1, -9");
+        folder.Entries["border/water"] = ContentFolder.Entry("water.png", "-2, -6");
+        folder.Png("pole.png", "3x10:4");
+        folder.Png("water.png", "5x7:6");
+        var source = folder.Load();
+
+        var pole = source.Draw(Post(5))!;
+        var water = source.Draw(Post(3))!;
+
+        Assert.AreEqual((3, 10, -1, -9), (pole.Width, pole.Height, pole.OffsetX, pole.OffsetY));
+        Assert.AreEqual((5, 7, -2, -6), (water.Width, water.Height, water.OffsetX, water.OffsetY));
+        // The slope does not change the pick, nor does the ground on land.
+        Assert.AreSame(pole, source.Draw(Post(15, slope: -20)));
+        Assert.AreSame(water, source.Draw(Post(0, slope: 7)));
+    }
+
+    [TestMethod]
+    [DataRow("border/pole")]
+    [DataRow("border/water")]
+    public void ABorderKeyTheManifestLacksIsRefusedByFileAndKey(string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries.Remove(key);
+
+        Refuses(folder, "manifest.json", key);
+    }
+
+    [TestMethod]
+    [DataRow(RoadMarkerKind.End, 0, "road-marker/end")]
+    [DataRow(RoadMarkerKind.Blocked, 0, "road-marker/blocked")]
+    [DataRow(RoadMarkerKind.WayBack, 0, "road-marker/way-back")]
+    [DataRow(RoadMarkerKind.Slope, -4, "road-marker/slope/-4")]
+    [DataRow(RoadMarkerKind.Slope, 0, "road-marker/slope/0")]
+    [DataRow(RoadMarkerKind.Slope, 4, "road-marker/slope/4")]
+    public void EachRoadMarkerDrawsTheImageOfItsKey(RoadMarkerKind kind, int difference, string key)
+    {
+        using var folder = new ContentFolder();
+        folder.Entries[key] = ContentFolder.Entry("r.png", "-4, -3");
+        folder.Png("r.png", "8x6:7");
+
+        var image = folder.Load().Draw(new RoadMarker { Kind = kind, Difference = difference })!;
+
+        Assert.AreEqual((8, 6, -4, -3), (image.Width, image.Height, image.OffsetX, image.OffsetY));
+    }
+
+    [TestMethod]
+    [DataRow(-5)]
+    [DataRow(5)]
+    public void ASlopeBeyondFourEitherWayDrawsNothing(int difference)
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(new RoadMarker { Kind = RoadMarkerKind.Slope, Difference = difference }));
+    }
+
+    [TestMethod]
+    [DataRow("road-marker/end")]
+    [DataRow("road-marker/way-back")]
+    [DataRow("road-marker/slope/-4")]
+    public void ARoadMarkerKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
         folder.Entries.Remove(key);
@@ -552,6 +809,38 @@ public sealed class OpenSettlersSourceTests
         Assert.AreEqual(5, first.Rgba[0]);
         Assert.AreEqual(5, later.Rgba[0], "the rows above the grown building still show the scaffold");
         Assert.AreEqual(4, later.Rgba[(7 * 9) * 4], "the building's rows cover the scaffold's at the bottom");
+    }
+
+    // The castle under construction grows the set's castle by its progress word, with no site layer under it; the set's castle has no
+    // shadow, so its image draws alone.
+    [TestMethod]
+    public void TheCastleUnderConstructionGrowsTheSetsCastleByItsProgressWord()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("base.png", "9x2:6");
+        folder.Png("castle.png", "9x8:4");
+        folder.Entries["building/site-small"] = ContentFolder.Entry("base.png", "-4, -1");
+        folder.Entries["building/site-large"] = ContentFolder.Entry("base.png", "-4, -1");
+        folder.Entries[OpenSettlersSource.CastleKey] = ContentFolder.Entry("castle.png", "-4, -7");
+        var source = folder.Load();
+        ObjectDrawing Castle(ushort? progress) =>
+            source.Draw(
+                new BuildingDraw
+                {
+                    Row = 0,
+                    X = 0,
+                    Y = 0,
+                    Type = BuildingType.Castle,
+                    SiteProgress = progress,
+                }
+            )!;
+
+        // (0x8000 * 8 >> 16) + 1 = 5 rows of 8; a progress of 0 shows the bottom row, with no ground under it.
+        Assert.AreEqual((1, 0), (Castle(0).Image!.Height, Castle(0).Image!.OffsetY));
+        Assert.AreEqual((5, -4), (Castle(0x8000).Image!.Height, Castle(0x8000).Image!.OffsetY));
+        Assert.AreEqual(4, Castle(0x8000).Image!.Rgba[0], "the castle's own pixels");
+        Assert.AreEqual(8, Castle(null).Image!.Height, "the castle that stands, whole");
+        Assert.IsNull(Castle(0x8000).Shadow);
     }
 
     [TestMethod]
@@ -1425,7 +1714,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetLoadsAndDrawsEveryTerrainCodeAndRoadDirection()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
 
         for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
         {
@@ -1459,7 +1748,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetCoversEveryObjectTermTheBuildersEmit()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
             TestProgram.Made(),
             new MapSeed
@@ -1515,7 +1804,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetDrawsEveryObjectCodeFlagGoodAndBuildingTheGameCanName()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
 
         Assert.IsNotNull(
             source
@@ -1639,7 +1928,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetDrawsEverySettlerTheBuildersEmit()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
             TestProgram.Made(),
             new MapSeed
@@ -1797,7 +2086,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void EveryTerrainImageCoversTheLargestDrop()
     {
-        var source = OpenSettlersSource.Load(RepoPath("content/open-settlers"), new HeaderDecoder());
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         const int LargestDrop = Node.MaxHeight * TerrainTriangles.HeightStep;
 
         for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
@@ -1813,7 +2102,7 @@ public sealed class OpenSettlersSourceTests
     [TestMethod]
     public void TheCheckedInContentSetHoldsTheGdignoreThatKeepsGodotFromImportingIt()
     {
-        Assert.IsTrue(File.Exists(RepoPath("content/open-settlers/.gdignore")));
+        Assert.IsTrue(File.Exists(RepoPath("content/basic/.gdignore")));
     }
 
     [TestMethod]

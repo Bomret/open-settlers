@@ -25,16 +25,17 @@ namespace OpenSettlers.Viewer;
 /// The view of the map, opened on <c>seedText</c> and the size <c>sizeValue</c>: the
 /// seed field shows the seed and the size picker selects the size. With <paramref name="gameView"/> a
 /// <see cref="Game"/> on the shown map ticks at <see cref="Game.TicksPerSecond"/>; a new map starts a new game.
-/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; the rules come from the install
-/// under every source.
+/// <paramref name="loadGraphics"/> gives the source the view draws from, which the host picks; <paramref name="tablesSource"/>
+/// gives the rules, read from the install on the History Edition and from the set's own rule files on the basic set.
 /// </remarks>
 /// <param name="tablesSource">The rule tables port; reading it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the tables cannot be read.</param>
 /// <param name="loadGraphics">Loads the graphics source the view draws from, given the rule tables the settlers are drawn by (null outside the game view); it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the source cannot be read.</param>
-/// <param name="loadSteps">Reads the walk steps where the graphics source has none, as under the Open Settlers source.</param>
+/// <param name="loadSteps">Reads the walk steps where the graphics load carries none, as on the History Edition, and only where the graphics load succeeded; it throws an <see cref="IOException"/> or <see cref="InvalidDataException"/> where the walk steps cannot be read.</param>
 /// <param name="seedText">The seed the view opens on, as the seed field shows it.</param>
 /// <param name="sizeValue">The map size the view opens on.</param>
 /// <param name="gameView">Whether a game ticks on the shown map.</param>
 /// <param name="stockLevel">The start stock level of the game's castle; null takes the level the seed draws.</param>
+/// <param name="settlerRate">The settler rate of the game's settler supply; null takes the rate the seed draws.</param>
 public partial class MapViewControl(
     IRuleTablesSource tablesSource,
     Func<RuleTables?, GraphicsLoad> loadGraphics,
@@ -42,7 +43,8 @@ public partial class MapViewControl(
     string seedText,
     int sizeValue,
     bool gameView = false,
-    int? stockLevel = null
+    int? stockLevel = null,
+    int? settlerRate = null
 ) : Control
 {
     // Rows of tiles in one mesh; 16 rows of the widest map are about 8,200 vertices.
@@ -58,6 +60,7 @@ public partial class MapViewControl(
 
     readonly bool _gameView = gameView;
     readonly int? _stockLevel = stockLevel;
+    readonly int? _settlerRate = settlerRate;
     Game? _game;
     readonly TickPacer _pacer = new();
 
@@ -122,6 +125,9 @@ public partial class MapViewControl(
     readonly ImageLayers _markerLayers = new();
     ShaderMaterial? _markerMaterial;
     int _markerImages;
+    readonly ImageLayers _roadMarkerLayers = new();
+    ShaderMaterial? _roadMarkerMaterial;
+    int _roadMarkerImages;
     readonly System.Collections.Generic.List<MeshInstance2D> _waterNodes = [];
     string? _graphicsProblem;
     string? _objectsProblem;
@@ -459,7 +465,8 @@ public partial class MapViewControl(
             GD.PrintErr($"map view: {e.Message}");
         }
 
-        if (_gameView && _tables is not null)
+        // No map is drawn where the graphics load failed, so the settlers are not loaded and their fault is not read twice.
+        if (_gameView && _tables is not null && _graphicsProblem is null)
         {
             try
             {
@@ -474,7 +481,7 @@ public partial class MapViewControl(
 
         _state = _layout is null
             ? MapViewState.Open(_tables, _seed.Text, _openSize, _tablesProblem)
-            : MapViewState.OpenLayout(_layout);
+            : MapViewState.OpenLayout(_layout, _tablesProblem);
         _camera = new Camera(_state.Map?.Size ?? MapSize.Offered[0]);
         StartGame();
         Redraw();
@@ -521,7 +528,9 @@ public partial class MapViewControl(
                     _state.Map,
                     _stockLevel ?? _state.StockLevel,
                     everyPassTurns: true,
-                    handsOutGoods: true
+                    handsOutGoods: true,
+                    settlerSupply: true,
+                    settlerRate: _settlerRate ?? _state.SettlerRate
                 ),
                 out _game,
                 out var layoutProblem
@@ -768,7 +777,9 @@ public partial class MapViewControl(
     }
 
     // The road being drawn as a line over the nodes it passes, in every copy of the map: a stand-in, where the original
-    // draws the road's strips into the map as it is drawn.
+    // draws the road's strips into the map as it is drawn. Over the line, the road markers of its end and the end's six
+    // neighbors (docs/rules/roads.md, "The road markers"). Redraw runs this too, so a change of the game around the end
+    // reaches the markers.
     void DrawPreview()
     {
         foreach (var child in _preview.GetChildren())
@@ -800,6 +811,36 @@ public partial class MapViewControl(
                 Position = new Vector2(x, y),
             };
             _preview.AddChild(line);
+        }
+
+        var markerMesh = RoadMarkerMesh();
+        var markerMaterial = markerMesh is null
+            ? null
+            : LayerMaterial(
+                _roadMarkerLayers,
+                "Objects",
+                "the road markers",
+                ref _roadMarkerMaterial,
+                ref _roadMarkerImages
+            );
+        if (markerMaterial is null)
+        {
+            return;
+        }
+
+        // The road markers paint over the build markers and the road line of every copy.
+        foreach (var (x, y) in _camera.Copies())
+        {
+            _preview.AddChild(
+                new MeshInstance2D
+                {
+                    Mesh = markerMesh,
+                    Material = markerMaterial,
+                    Position = new Vector2(x, y),
+                    ZAsRelative = false,
+                    ZIndex = 4,
+                }
+            );
         }
     }
 
@@ -891,7 +932,8 @@ public partial class MapViewControl(
                 copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = surface });
             }
 
-            // The roads are strips over the terrain of the whole map and under the objects.
+            // The roads are strips over the terrain of the whole map and under the objects; the border posts are drawn with
+            // them, so the objects cover the posts too.
             if (roadMesh is not null)
             {
                 copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = surface });
@@ -985,7 +1027,11 @@ public partial class MapViewControl(
                 _game?.CastleStock.Castle,
                 _game?.Buildings,
                 _game is null ? null : ObjectDraws.FlagGoodsOf(_game),
-                _frameCounter
+                _frameCounter,
+                // The game's current clock, never the frame counter, which lags it by one update.
+                _game?.Clock.Now
+                    ?? 0,
+                _source.Flames
             ),
             settlers,
             _source,
@@ -1038,7 +1084,23 @@ public partial class MapViewControl(
             return null;
         }
 
-        var quads = ObjectQuads.Flat(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+        return MarkerMesh(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+    }
+
+    // One mesh of the road markers of the road being drawn; null where none is drawn or the source draws none.
+    ArrayMesh? RoadMarkerMesh() =>
+        _game is null || _drawing is null || _source is null
+            ? null
+            : MarkerMesh(RoadMarkerDraws.Of(_game, _drawing), _source, _roadMarkerLayers);
+
+    // One flat mesh of marker draws, each image in its layer; null where the source draws none of them.
+    ArrayMesh? MarkerMesh(
+        System.Collections.Generic.IReadOnlyList<ObjectTerm> draws,
+        IGraphicsSource source,
+        ImageLayers layers
+    )
+    {
+        var quads = ObjectQuads.Flat(draws, source, layers);
 
         return quads.Count == 0
             ? null
@@ -1049,10 +1111,10 @@ public partial class MapViewControl(
     ShaderMaterial? SettlerMaterial() =>
         LayerMaterial(_settlerLayers, "Objects", "the settlers", ref _settlerMaterial, ref _settlerImages);
 
-    // One mesh of every road strip of the map, or null where there is none or the source draws none.
+    // One mesh of every road strip and border post of the map, or null where there is none or the source draws none.
     ArrayMesh? BuildRoadMesh(IGraphicsSource source, Map map)
     {
-        var quads = TerrainQuads.Strips(RoadDraws.Of(map), source, _layers);
+        var quads = TerrainQuads.Edges(map, source, _layers);
 
         return quads.Count == 0
             ? null

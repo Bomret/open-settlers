@@ -9,15 +9,23 @@ mise run check
 The focused command:
 
 ```sh
-mise run test
+mise run test:focused -- {paths}
 ```
 
 The full command restores the local tools, checks formatting, runs the unit tests, and builds the project.
 CSharpier names each unformatted file, and `mise run format` fixes them. `mise.toml` holds the steps.
 
+The focused command takes the changed paths for `{paths}` and runs the unit-test classes they can affect, through
+`tools/focused-tests.py`. The header of the script states the selection rules. The selection follows only the names a
+test file holds, so the full command, which runs every unit test, is the check before a merge.
+`mise run test` runs every unit test with no selection, and `python3 -I tools/focused-tests.py --list <path>...` prints
+the selection without a run. The command refuses to run without a path: it prints a usage line and exits 2.
+`FocusedTestsTests` pins the selection, and compares the test classes the script knows (`--classes`) with the test
+classes of the test assembly.
+
 Every build enforces the code-style rules of `docs/agents/CODING.md` ("What the build enforces" and "Document").
 A violation fails the full command at its test step. That step builds the test project and the projects it references.
-The focused command fails at its build on the same violations.
+The focused command fails at its build on the same violations where it selects a test.
 
 Two kinds of violation fail only the build step of the full command, which builds `OpenSettlers.csproj`. The focused
 command does not report them:
@@ -30,7 +38,8 @@ A violation prints as
 `<file>(<line>,<column>): error <rule ID>: <message>`. A play run with a violation exits 3 and prints the build output.
 `docs/agents/toolchain.md` says how to fix a finding. The rules follow the .NET SDK version that `mise.toml` pins.
 
-Both commands run the unit tests: the tests that need neither the install nor Ghidra. Both skip the tests
+The full command runs the unit tests: the tests that need neither the install nor Ghidra. The focused command runs
+a part of them. Both skip the tests
 with the MSTest category `Install` (they read `SIEDLER_DIR`, through `TestProgram.OpenInstall` or
 `TestProgram.Tables`). Both also skip the category `Ghidra` (they run `analyzeHeadless`). The filter is
 `TestCategory!=Install&TestCategory!=Ghidra`. Neither command needs the install, Ghidra, or Godot. The remaining tests
@@ -38,8 +47,8 @@ build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on 
 `mise install` provides. Where it is missing, they fail with that hint, except `HeadlessEntryTests`, which reports
 inconclusive. Each spawns
 its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR`, every `GIT_*` variable, and any host `analyzeHeadless` from the child's environment.
-`RepositoryContentTests` runs `tools/open-settlers-art.py` into a temporary folder and fails where
-`content/open-settlers/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
+`RepositoryContentTests` runs `tools/basic-art.py` into a temporary folder and fails where
+`content/basic/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
 `tools/GhidraDump/headless.py` in a temporary folder on a path that holds only stand-in `analyzeHeadless` and `gradle`
 shell scripts, so a Ghidra or Gradle of the host never runs. Its worktree cases build a git repository with a linked
 worktree and add a stand-in `git` that runs the host's git. It reports inconclusive without python3, and its stand-in
@@ -128,13 +137,13 @@ situation and takes named screenshots and dumps, then run it under Movie Maker t
 wrapper, from the repository root, with `SIEDLER_DIR` set:
 
 ```sh
-sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--graphics <source>] --fps <fps> [--fresh] [--repro]
+sh tools/play-run.sh <stem> [--game-view] [--layout <file>] [--seed <seed>] [--size <n>] [--content-set <set>] --fps <fps> [--fresh] [--repro]
 ```
 
 Without `--game-view` the wrapper runs the map view. `--game-view` runs the game view on `--seed` and `--size`.
 `--layout <file>` runs the game view on a layout and implies `--game-view`. A layout holds its own seed and size.
 The wrapper exits 2 on `--layout` with `--seed` or `--size`, on an empty value, and on a missing file.
-`--graphics history-edition|open-settlers` picks the graphics source of the run (the History Edition without the flag).
+`--content-set basic|history-edition` picks the content set of the run (the History Edition without the flag).
 Another value, a missing value, and a repeat exit 2.
 `mise run play -- <stem> ...` runs the same wrapper. The wrapper clears `play-out/<stem>/`, builds
 `OpenSettlers.csproj`, and runs the Godot command `README.md`'s "Run a play script" gives, through
@@ -152,14 +161,14 @@ size, such as on a display that clamps or scales the window, exits 4 and stores 
   stored result.
 - The hash covers every tracked or untracked, not ignored file under `src/`, `scenes/`, and `content/` (content and
   path). It also covers `project.godot`, `OpenSettlers.csproj`, `global.json`, `Directory.Build.props`, the play script, the mode, the
-  layout's path and content, the seed, the size, the graphics source, the frame rate, the Godot version, and the
+  layout's path and content, the seed, the size, the content set, the frame rate, the Godot version, and the
   `SIEDLER_DIR` path.
   It leaves out the install's content and `.godot/`. After a change to the install, run with `--fresh`.
 - A failed build prints the build output, starts no Godot, stores nothing, and exits 3. Bad arguments
   exit 2 with a message and run, store, and log nothing.
 - Each call appends one tab-separated line of 13 fields to `play-out/runs.log`. The fields are the UTC time, the
   input hash, `HEAD`, `clean` or `dirty` (an untracked file counts), the stem, `mode=<map|game-view>`,
-  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `graphics=<source>` (`history-edition` without the flag), `exit=<status>`, and `run`,
+  `layout=<file>` (empty without a layout), `seed=<s>`, `size=<n>`, `fps=<n>`, `content-set=<set>` (`history-edition` without the flag), `exit=<status>`, and `run`,
   `reused`, `build` (a failed build), or a `repro-` outcome (Repro mode below). A line proves a run at a tip when its `HEAD` equals the tip and it reads
   `clean`.
 - Calls for one stem run one at a time. A second call waits on the lock directory `play-out/.lock-<stem>`, says so
@@ -245,13 +254,18 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/woodcutter-figures.play` on the same layout: crops of the woodcutter at his door, on the way out, at the cut, and on the way back with the log.
 - `layouts/fisher.jsonc` and `play/fisher.play`: a fisher in his building beside a hand-drawn lake. The script fast-forwards to his
   walk out (state `0x10`) and to his cast (state `0x20`) and takes cropped shots of each. The lake holds a lake detail of 0, so he
-  catches nothing. The run gives one digest under both graphics sources.
+  catches nothing.
 - `play/fisher-catch.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, a fisher's site
   at 18,5 joins it by a road, and the fisher fishes at the generated lake to the east. The script fast-forwards to his cast, to his first
   catch (he carries the fish), and to the fish on his flag, with a shot of each and one of him on the way back.
+- `play/border-posts.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, and the
+  shots show its border posts, poles on land and posts in the lake to the east. It runs with the install and with
+  `--content-set basic`; the script's header holds both run lines.
 - `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.
+- `play/road-markers.play` on the game view with seed `1234567812345678` and size 1, under either content set: cropped shots of the road
+  markers at the castle's flag, after a step, after the step back, and none after the road is built.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
 - `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
   fast-forwarded to the castle's second meat beyond its start stock (`meat >= 27` from a start of 25).
@@ -261,20 +275,35 @@ script alone. Add a layout only where none of them holds the situation.
   fast-forwarded to the castle's first bread.
 - `layouts/pig-farm.jsonc` and `play/pig-farm.play`: a finished pig farm with its pig farmer inside, a road to the castle, and two grains on
   the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
+- `play/basic-construction.play` and `play/basic-production.play` on the game view with `--content-set basic` and no install.
+  The construction loop uses seed `1234567812345634`. The castle's materials build the sawmill and the woodcutter's hut. The woodcutter's logs reach
+  the sawmill, and its planks build a stonecutter's hut. The production chains use seed `4455544685788642` and four fresh games started by `seed`. Mill and baker give
+  bread, farm and mill give flour, butcher and pig farm give meat, and a fisher gives fish. The run lines are in each script's header. The chains
+  split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
+  are the History Edition's.
+- `play/burning.play` on `layouts/woodcutter.jsonc` and `play/basic-burning.play` on the same layout with `--content-set basic`: the
+  woodcutter's hut is razed with the Remove button, shots show it with its flames twice, then nothing once the burn frees its node.
+  The first shows the original's flames, the second the basic set's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
   the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
   beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.
   The play therefore shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
   the game's ticks run only after the first `shot` that follows a `fast-forward`.
+- `play/castle-growing.play` on the game view with seed `4455544685788642` and size 1, and `play/castle-growing-basic.play` on the
+  basic set with seed `1234567812345634` and size 1: each script places the castle with a click. It fast-forwards to ticks 20, 30, 31, 32, and 45, while
+  the castle grows, and to tick 200, after it stands. A cropped shot of the castle follows each. The shots of ticks 30 to 32 show the castle grow each pass.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the
   second road down, so its carrier walks home along the first road, and checks that it enters the castle. The pass with a
   woodcutter walking out is pinned by the golden scenario `head-on-pass-layout` (it puts a finished hut down at tick 401)
   and by `HeadOnPassTests`: a hut a layout stands has its worker inside from tick 0.
+- `layouts/castle-contents.jsonc` and `play/castle-contents.play`: a castle that names its settlers and goods, two carriers and
+  one settler without a job, and two sawmills. The first sawmill takes the settler without a job, and the second finds no settler. It runs on the install and with `--content-set basic`.
 - `layouts/hut-flag.jsonc`, `layouts/hut-on-road.jsonc`, and `layouts/two-logs.jsonc` with `play/hut-flag.play`,
   `play/hut-on-road.play`, and `play/two-logs.play`: a finished hut whose flag the entry puts down, a hut whose flag splits a
-  road, and a woodcutter's flag whose road no carrier works until a decoy road is taken down. `play/first-loop.play` and
+  road, and a woodcutter's flag whose road no carrier works until the castle's settler supply makes a settler: the play run
+  shows in the game view the supply's new settler taking the road ([New settlers](../rules/new-settlers.md#in-the-engine)). `play/first-loop.play` and
   `play/settler-bodies.play` run on `layouts/woodcutter.jsonc`.
 
 ```sh
@@ -295,7 +324,8 @@ applies it to a game. A layout that does not load therefore fails the unit tests
 
 The entries follow, and the game applies them in the file's order:
 
-- `castle`: `{"x","y"}`.
+- `castle`: `{"x","y"}`, optionally with `stock`, the goods it holds by name, and `settlers`, the settlers that wait in it by job name
+  ([The layout rules](../rules/layouts.md#the-castles-goods)).
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
 - `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a

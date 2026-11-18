@@ -150,7 +150,12 @@ instead of generating again. The `gen` command always generates, because it prin
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they
 check are in `docs/rules/build-sites.md` and `docs/rules/castle.md`. The `flag` command runs the flag button (`0x442244`) on every tile and counts, per pair of node state and site,
 the tiles that put a flag; `castle` with sites adds the same count after the castle stands. The `flagput` command places flags with the button after a castle; `road` draws roads between those flags with the original's cursor update, click step, and commit, and `roaddraw` runs the three strip routines that draw a road (`docs/rules/roads.md`). The `tables:x` command prints the digest of the
-spiral table and the object codes of the large objects.
+spiral table and the object codes of the large objects. The `supply` command runs the settler supply of the original in a castle game at a
+settler rate and start stock level it takes, for example `supply:1:1234,5678,9ABC:0:18,20:40:1200:25,0;26,0` (rate 40, no swords
+and shields in the castle). It prints a line for each pass where a settler was made or the knights or the stock changed:
+`tests/OpenSettlers.Tests/settler-supply.txt` holds its games, each run in a launch of its own, and `docs/rules/new-settlers.md` the
+rules it checks. A command that runs after others in one launch can start from state their passes left, so its generator words can
+differ from those of a launch of its own.
 
 ### The draw verb
 
@@ -184,6 +189,6 @@ The settler draw turns the settlers in view every pass, so from the first window
 pass's output with the `EMU draw ` prefix removed, under a `# name command` line (`tests/OpenSettlers.Tests/settler-draws.txt`).
 
 `site@X,Y` in place of `CX,CY` draws the building of the node `X,Y` alone in each pass of `WINDOWS` instead: the building draw `0x44e329`,
-which reaches the draw of a building under construction (`0x44fa79`). It turns no settler, so the run is the verb's. Each line lists the
+which reaches the draw of a building under construction (`0x44fa79`), or `0x44fee2` for the castle under construction. It turns no settler, so the run is the verb's. Each line lists the
 building's bytes and the shadows, sprites (with the fraction a grown sprite shows), and goods the draw drew
 (`tests/OpenSettlers.Tests/site-draws.txt`, `docs/rules/construction.md`).
