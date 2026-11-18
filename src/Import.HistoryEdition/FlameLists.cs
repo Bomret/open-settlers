@@ -90,4 +90,5 @@ sealed class FlameLists
 
     /// <summary>The sprite entry of a flame (<c>0x44e329</c>): 136, plus its size byte, plus its phase, plus the 320 that <c>Gfx_DrawSpriteBase320</c> adds.</summary>
     public static int Entry(FlameSize size, int phase) =>
-        FirstEntry + (size == FlameSize.Large ? LargeSize : 0) + (phase & 7);}
+        FirstEntry + (size == FlameSize.Large ? LargeSize : 0) + (phase & 7);
+}

@@ -91,16 +91,23 @@ public sealed class HistoryEditionSource : IGraphicsSource
         var flames = tables is null
             ? null
             : Try(() => FlameLists.Read(install.ReadAll(Install.Program)), out flamesProblem);
-        flamesProblem = flamesProblem is null ? null : $"no flame lists: {flamesProblem}";
+        var problems = new List<string>();
+        if (objectsProblem is not null)
+        {
+            problems.Add(objectsProblem);
+        }
+
+        if (flamesProblem is not null)
+        {
+            problems.Add($"no flame lists: {flamesProblem}");
+        }
 
         return new HistoryEditionSource(
             terrain,
             roads,
             roadsProblem,
             objects,
-            objectsProblem is null ? flamesProblem
-                : flamesProblem is null ? objectsProblem
-                : $"{objectsProblem}; {flamesProblem}",
+            problems.Count == 0 ? null : string.Join("; ", problems),
             settlers,
             settlersProblem,
             flames
