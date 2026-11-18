@@ -162,12 +162,12 @@ public sealed class FocusedTestsTests
         StringAssert.StartsWith(run.Stderr, "usage: ");
     }
 
-    // Every test project of the repository takes part in the selection: a *.Tests folder at the root, under src/, or under
-    // a folder of src/.
+    // Every test project of the repository takes part in the selection: a *.Tests folder at any depth.
     [TestMethod]
     [DataRow("OpenSettlers.Tests")]
     [DataRow("src/Import.Tests")]
     [DataRow("src/Import/Import.Tests")]
+    [DataRow("src/Import/Deep/Import.Tests")]
     public void AChangedTestFileOfAnotherTestProjectSelectsItsClass(string project)
     {
         Test("ElsewhereTests", "new Hut();", project);
@@ -273,14 +273,23 @@ public sealed class FocusedTestsTests
         );
     }
 
-    // A test project is a *.Tests folder at the root, under src/, or under a folder of src/: a folder under tests/ is none.
+    // A failing project does not stop the later projects: every selected project runs, and the run fails.
     [TestMethod]
-    public void AFolderUnderTestsIsNoTestProject()
+    public void AFailingTestProjectDoesNotStopTheLaterOnes()
     {
-        Test("StrayTests", "new Hut();", "tests/Stray.Tests");
+        Test("SplitTests", "new Hut();", "src/Domain.Tests");
+        Test("SplitTests", "new Hut();", "src/Import.Tests");
+        var bin = PythonTool.StandIn(Path.Combine(_folder, "bin"), "dotnet", "echo \"dotnet $*\"\nexit 1\n");
 
-        CollectionAssert.AreEqual(Classes("HelperTests", "HutTests"), List("src/Domain/Hut.cs"));
-        Assert.DoesNotContain("StrayTests", Run("--classes").Stdout);
+        var run = PythonTool.RunOnPath(
+            _folder,
+            [PythonTool.InRepo("tools", "focused-tests.py"), "src/Import.Tests/SplitTests.cs"],
+            [bin, "/bin", "/usr/bin"],
+            null
+        );
+
+        Assert.AreEqual(1, run.Exit);
+        Assert.AreEqual(2, run.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
     }
 
     [TestMethod]

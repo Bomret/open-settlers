@@ -5,9 +5,11 @@ Run it from the repository root, with the changed paths as arguments:
 
     python3 -I tools/focused-tests.py [--list] <path>...
 
-A test project is a folder named `*.Tests` at the root, under src/, or under a folder of src/ (TEST_GLOBS). A class may be
-split across two test projects under one full name: a selection runs it in each. It runs `dotnet test` on each test project that holds a selected class, filtered to the selected classes and always to
-`TestCategory!=Install&TestCategory!=Ghidra`. A whole-suite selection runs `dotnet test --solution OpenSettlers.slnx`
+A test project is a folder named `*.Tests` at any depth, as the build's exclusion rules read it. A class may be
+split across two test projects under one full name: a selection runs it in each. It runs `dotnet test` on each test
+project that holds a selected class, filtered to the selected classes and always to
+`TestCategory!=Install&TestCategory!=Ghidra`. Every such project runs, whatever an earlier one returned, and the first
+non-zero exit status is the result. A whole-suite selection runs `dotnet test --solution OpenSettlers.slnx`
 with the category filter, which reaches every test project. With --list it prints the selection instead and runs
 nothing: one class name per line, or the line `all` for the whole unit suite. Without a path it prints a usage line on
 stderr and exits 2. With --classes it prints every test class it knows, one full name per line, and runs nothing;
@@ -21,7 +23,7 @@ file of a test project. A name in a comment does not count.
   a .cs file of a test project that declares no test class.
 - A .cs file selects every test class whose file names a type the file declares, as a whole word. The test file of a
   class names that class, so a changed test file selects its own class. A helper file of a test project or of a helper
-  project (a folder named `Testing` or `*.Testing` under src/ or a folder of src/) that names such a type adds its own
+  project (`src/Testing` or a folder named `*.Testing` at any depth) that names such a type adds its own
   types to the names. A deleted .cs file stands for the type named as the file.
 - A .cs file under src/ that selects no test class selects the whole unit suite, so a change no test names still gets a
   build. Files under src/Viewer/ are exempt: no test project compiles them, and they may select nothing.
@@ -37,14 +39,15 @@ The selection follows only the names a test file holds. A test reached through a
 missed, so the full command stays the check before a merge.
 """
 
-import glob
+import functools
 import os
 import re
 import subprocess
 import sys
 
-TEST_GLOBS = ("*.Tests", "src/*.Tests", "src/*/*.Tests")
-HELPER_GLOBS = ("src/Testing", "src/*.Testing", "src/*/Testing", "src/*/*.Testing")
+TEST_SUFFIX = ".Tests"
+HELPER_SUFFIX = ".Testing"
+HELPER_FOLDERS = ("src/Testing",)
 SOLUTION = "OpenSettlers.slnx"
 CATEGORIES = "TestCategory!=Install&TestCategory!=Ghidra"
 SHARED_FILES = {"Directory.Build.props", "Directory.Build.targets", "global.json", "mise.toml", ".editorconfig"}
@@ -68,14 +71,23 @@ def read(path):
         return handle.read()
 
 
-def folders(globs):
-    """The folders the globs match, as repository paths in name order."""
-    found = {path.replace(os.sep, "/") for pattern in globs for path in glob.glob(pattern) if os.path.isdir(path)}
+@functools.cache
+def folders(suffix):
+    """The folders named `*<suffix>` at any depth, as repository paths in name order. Hidden folders, bin, and obj are
+    not searched."""
+    found = []
+    for root, names, _ in os.walk("."):
+        names[:] = [name for name in names if not name.startswith(".") and name not in ("bin", "obj")]
+        found += [os.path.relpath(os.path.join(root, name)).replace(os.sep, "/") for name in names if name.endswith(suffix)]
     return sorted(found)
 
 
 def test_projects():
-    return folders(TEST_GLOBS)
+    return folders(TEST_SUFFIX)
+
+
+def helper_projects():
+    return sorted({*folders(HELPER_SUFFIX), *(path for path in HELPER_FOLDERS if os.path.isdir(path))})
 
 
 def test_files():
@@ -83,7 +95,7 @@ def test_files():
     (project folder, full name) pairs, which only a test project has)."""
     files = []
     tests = test_projects()
-    for project in tests + folders(HELPER_GLOBS):
+    for project in tests + helper_projects():
         tested = project in tests
         for name in sorted(os.listdir(project)):
             if not name.endswith(".cs"):
@@ -209,10 +221,9 @@ def main(arguments):
     if not selected:
         print("focused-tests: no unit-test class names a changed path; nothing to run")
         return 0
-    status = 0
-    for command in run_commands(selected):
-        status = status or subprocess.run(command).returncode
-    return status
+    # Every project runs, whatever an earlier one returned; the first non-zero status is the result.
+    statuses = [subprocess.run(command).returncode for command in run_commands(selected)]
+    return next((status for status in statuses if status), 0)
 
 
 if __name__ == "__main__":
