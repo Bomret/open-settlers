@@ -345,19 +345,19 @@ public sealed class RepositoryContentTests
     // Godot writes a .uid beside each script and shader in a folder it scans, so a Godot run leaves the working tree clean only
     // where each of them is tracked; a .uid beside no source, or one Godot skips, is stale.
     [TestMethod]
-    [DataRow("src/Launch/A.cs", "no .uid: src/Launch/A.cs")]
+    [DataRow("src/Viewer/A.cs", "no .uid: src/Viewer/A.cs")]
     [DataRow("src/Viewer/W.gdshader", "no .uid: src/Viewer/W.gdshader")]
     [DataRow("src/Viewer/W.gdshaderinc", "no .uid: src/Viewer/W.gdshaderinc")]
     [DataRow("tools/t.gd", "no .uid: tools/t.gd")]
-    [DataRow("src/Launch/Gone.cs.uid", "no source: src/Launch/Gone.cs.uid")]
+    [DataRow("src/Viewer/Gone.cs.uid", "no source: src/Viewer/Gone.cs.uid")]
     [DataRow("src/Domain/.gdignore,src/Domain/D.cs,src/Domain/D.cs.uid", "skipped by Godot: src/Domain/D.cs.uid")]
     [DataRow("src/Domain/.gdignore,src/Domain/Deep/D.cs.uid", "skipped by Godot: src/Domain/Deep/D.cs.uid")]
     [DataRow(".claude/x/D.cs,.claude/x/D.cs.uid", "skipped by Godot: .claude/x/D.cs.uid")]
     [DataRow("src/.hidden/D.cs.uid", "skipped by Godot: src/.hidden/D.cs.uid")]
-    [DataRow("src/Launch/.H.cs,src/Launch/.H.cs.uid", "skipped by Godot: src/Launch/.H.cs.uid")]
+    [DataRow("src/Viewer/.H.cs,src/Viewer/.H.cs.uid", "skipped by Godot: src/Viewer/.H.cs.uid")]
     [DataRow("sub/project.godot,sub/S.cs,sub/S.cs.uid", "skipped by Godot: sub/S.cs.uid")]
     [DataRow("sub/project.godot,sub/Deep/S.cs.uid", "skipped by Godot: sub/Deep/S.cs.uid")]
-    [DataRow("src/Launch/A.cs,src/Launch/a.cs.uid", "no .uid: src/Launch/A.cs,no source: src/Launch/a.cs.uid")]
+    [DataRow("src/Viewer/A.cs,src/Viewer/a.cs.uid", "no .uid: src/Viewer/A.cs,no source: src/Viewer/a.cs.uid")]
     public void UidPairingNamesEachOffence(string tracked, string offences)
     {
         CollectionAssert.AreEquivalent(offences.Split(','), UidOffences(tracked.Split(',')));
@@ -369,14 +369,14 @@ public sealed class RepositoryContentTests
     {
         string[] tracked =
         [
-            "src/Launch/A.cs",
-            "src/Launch/A.cs.uid",
+            "src/Viewer/A.cs",
+            "src/Viewer/A.cs.uid",
             "Root.cs",
             "Root.cs.uid",
             "src/Domain/.gdignore",
             "src/Domain/Deep/D.cs",
             ".github/x.gd",
-            "src/Launch/.H.cs",
+            "src/Viewer/.H.cs",
             "project.godot",
             "sub/project.godot",
             "sub/S.cs",
