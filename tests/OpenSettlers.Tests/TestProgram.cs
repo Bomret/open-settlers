@@ -23,29 +23,34 @@ static class TestProgram
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
     /// blocks a site, and the start stock rows count up from the row number. With every class 0 no object is large, so
     /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
-    /// original's data use <see cref="Tables"/>. The catalog holds no good, so every transport priority is 0.
+    /// original's data use <see cref="Tables"/>. The catalog holds the 26 goods of <see cref="TestCatalog"/>, each ranked by its position.
     /// </summary>
     public static RuleTables Made() => Made(null);
 
     /// <summary>
-    /// The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1; a good of rank 0 has no entry), or a catalog
-    /// with no good for none.
+    /// The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1; a good of rank 0 has no entry), or the position as the rank
+    /// for none.
     /// </summary>
     public static RuleTables Made(byte[]? transportPriorities) =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             MadeStartStock(),
-            goods: transportPriorities is null ? null : TestCatalog.Of(ranks: transportPriorities),
+            goods: transportPriorities is null ? TestCatalog.StandIn() : TestCatalog.Of(ranks: transportPriorities),
             workers: MadeWorkers(),
             jobData: MadeJobData()
         );
 
     /// <summary>The start stock rows of <see cref="Made()"/>: each count is the row number times 10 plus the good's index.</summary>
-    public static byte[][] MadeStartStock() =>
+    public static IReadOnlyDictionary<Good, byte>[] MadeStartStock() =>
         [
             .. Enumerable
                 .Range(0, RuleTables.StartStockRows)
-                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()),
+                .Select(row =>
+                    (IReadOnlyDictionary<Good, byte>)
+                        TestCatalog
+                            .Names.Select((_, index) => (Good: TestCatalog.GoodOf(index + 1), Index: index))
+                            .ToDictionary(entry => entry.Good, entry => (byte)(row * 10 + entry.Index))
+                ),
         ];
 
     /// <summary>The job of each number 0 to 31.</summary>
@@ -89,7 +94,7 @@ static class TestProgram
         workers[BuildingType.Woodcutter.Code] = new WorkerRequest
         {
             Job = new Woodcutter(),
-            Tool = new Good { Code = 1 },
+            Tool = TestCatalog.GoodOf(1),
         };
         workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
         if (stonecutter)

@@ -36,7 +36,7 @@ The importer reads these tables:
 | Table | `RuleTables` member | Form in `RuleTables` | Used by |
 |---|---|---|---|
 | Object classes, one byte per object code | `ClassOf`, `Classes` | `ObjectClass` | Map generator (large objects), rules, `NameTable` |
-| Start stock, 5 levels of 26 goods | `StartStock` | `byte[][]` | `StartStock` (adapters) |
+| Start stock, 5 levels of 26 goods | `StartStock` | one count by `Good` for each row | `StartStock` (adapters) |
 | Step times | `StepTime`, `StepTimes` | `ushort` per step shape | Settler movement |
 | Door speeds | `DoorSpeed`, `DoorSpeeds` | `byte` per building type | Settler movement at doors |
 | Scan windows per map size | `ScanWindow`, `ScanWindows` | `ushort` per map size | Rules |

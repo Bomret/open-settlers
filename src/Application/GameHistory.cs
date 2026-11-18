@@ -40,6 +40,9 @@ public sealed class GameHistory(IThingSnapshots snapshots, Func<long> tickCount)
     /// </summary>
     public EventStore Events { get; } = new();
 
+    /// <summary>How an event's text names the good, as the snapshot port writes it (<see cref="IThingSnapshots.GoodText"/>).</summary>
+    internal string GoodText(Good good) => _snapshots.GoodText(good);
+
     /// <summary>The events of a settler, building, or flag in the order recorded.</summary>
     public IReadOnlyList<ThingEvent> EventsOf(ThingId thing) => Events.Of(thing);
 

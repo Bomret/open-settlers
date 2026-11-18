@@ -202,7 +202,7 @@ public sealed class FisherTests
             var detailsBefore = Layers.Of(map, MapLayer.Resource);
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.Goods.LayGood(hutFlag, put.Place, put.Good);
+                game.Goods.LayGood(hutFlag, put.Place, TestCatalog.GoodOf(put.Good));
             }
 
             foreach (var lake in lakes.Where(lake => lake[0] == pass))
@@ -269,7 +269,9 @@ public sealed class FisherTests
             if (line.TryGetValue("g", out var goods))
             {
                 var places = game.Flags[hutFlag].Places;
-                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
                 Assert.AreEqual(
                     goods.Split('/')[1],
                     bytes,

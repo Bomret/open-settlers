@@ -80,7 +80,7 @@ public sealed class SawmillTests
         SawmillerInside(game);
         var logs = game.CastleStock.Logs;
         var planks = game.CastleStock.Planks;
-        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Log);
 
         ConstructionWorld.Run(game, 12000);
 
@@ -95,7 +95,7 @@ public sealed class SawmillTests
         SawmillerInside(game);
         for (var place = 0; place < 8; place++)
         {
-            game.Goods.LayGood(1, place, Good.Log.Code);
+            game.Goods.LayGood(1, place, Good.Log);
         }
 
         ConstructionWorld.Run(game, 80);
@@ -103,7 +103,7 @@ public sealed class SawmillTests
         Assert.AreEqual(8, (sawmill.FillHigh >> 4) + (sawmill.FillHigh & 0xf), "all eight are served to the sawmill");
         Assert.AreEqual(0, LogRequest(game).Rank, "eight logs on the way fill the store: the request ranks 0");
         var logs = game.CastleStock.Logs;
-        game.Goods.LayGood(SawmillFlag, 5, Good.Log.Code);
+        game.Goods.LayGood(SawmillFlag, 5, Good.Log);
 
         ConstructionWorld.Run(game, 8000);
 
@@ -118,7 +118,7 @@ public sealed class SawmillTests
         ConstructionWorld.Site(game, BuildingType.Forester, 17, 5);
         var site = game.Buildings.Single(building => building.Type == BuildingType.Forester);
         var planks = game.CastleStock.Planks;
-        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Log);
 
         ConstructionWorld.Run(game, 12000);
 
@@ -136,7 +136,7 @@ public sealed class SawmillTests
         {
             if (game.Flags[SawmillFlag].Places[place].IsEmpty)
             {
-                game.Goods.LayGood(SawmillFlag, place, Good.Stone.Code);
+                game.Goods.LayGood(SawmillFlag, place, Good.Stone);
                 laid++;
             }
         }
@@ -151,7 +151,7 @@ public sealed class SawmillTests
         var sawmiller = SawmillerInside(game);
         var stones = game.CastleStock.Count(Good.Stone);
         var planks = game.CastleStock.Planks;
-        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Log);
         var laid = 0;
         var tick = 0;
         while (sawmiller.Activity is not StepsOutWithGood && tick++ < 12000)
@@ -190,7 +190,7 @@ public sealed class SawmillTests
     {
         var (game, _) = World();
         var sawmiller = SawmillerInside(game);
-        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Log);
         for (var tick = 0; tick < 12000 && sawmiller.Activity is not WaitsOutStep; tick++)
         {
             game.Tick();
@@ -221,8 +221,8 @@ public sealed class SawmillTests
         ConstructionWorld.Site(game, BuildingType.Forester, 17, 5);
         var site = game.Buildings.Single(building => building.Type == BuildingType.Forester);
         game.CastleStock.Add(ConstructionTables.BuilderTool);
-        game.Goods.LayGood(CastleFlag, 0, Good.Log.Code);
-        game.Goods.LayGood(CastleFlag, 1, Good.Log.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Log);
+        game.Goods.LayGood(CastleFlag, 1, Good.Log);
 
         for (var tick = 0; tick < 60000 && site.Constructing; tick++)
         {

@@ -66,7 +66,7 @@ public sealed class RequestSearchTests
     public void APlankGoesToTheFlagThatAsksForPlanksAheadOfStorage()
     {
         var (bench, goods, near, _) = Line(0x3e, 0);
-        goods.LayGood(1, 0, Good.Plank.Code);
+        goods.LayGood(1, 0, Good.Plank);
 
         Turn(goods, 1);
 
@@ -82,7 +82,7 @@ public sealed class RequestSearchTests
         bench
             .Flags[2]
             .SetRequest(RequestWord.Second, new Request { Asks = ConstructionTables.StoneClass, Rank = 0x3e });
-        goods.LayGood(1, 0, Good.Stone.Code);
+        goods.LayGood(1, 0, Good.Stone);
 
         Turn(goods, 1);
 
@@ -95,7 +95,7 @@ public sealed class RequestSearchTests
     public void AGoodThatNoFlagAsksForGoesToStorage()
     {
         var (bench, goods, near, far) = Line(0, 0);
-        goods.LayGood(1, 0, Good.Plank.Code);
+        goods.LayGood(1, 0, Good.Plank);
 
         Turn(goods, 1);
 
@@ -107,7 +107,7 @@ public sealed class RequestSearchTests
     public void ALogHasNoRequestInTheseTablesAndGoesToStorage()
     {
         var (bench, goods, _, _) = Line(0x3e, 0x3e);
-        goods.LayGood(1, 0, Good.Log.Code);
+        goods.LayGood(1, 0, Good.Log);
 
         Turn(goods, 1);
 
@@ -118,7 +118,7 @@ public sealed class RequestSearchTests
     public void ARequestOverARoadWithNoCarrierIsNotReached()
     {
         var (bench, goods, near, _) = Line(0x3e, 0x3e, carriers: false);
-        goods.LayGood(1, 0, Good.Plank.Code);
+        goods.LayGood(1, 0, Good.Plank);
 
         Turn(goods, 1);
 
@@ -140,7 +140,7 @@ public sealed class RequestSearchTests
         var goods = new GoodsTransport(bench.Movement, bench.Flags, bench.Roads, bench.History, bench.Buildings);
         var low = Site(bench, 0, 0x1e);
         var high = Site(bench, 2, 0x3e);
-        goods.LayGood(1, 0, Good.Plank.Code);
+        goods.LayGood(1, 0, Good.Plank);
 
         Turn(goods, 1);
 
@@ -155,7 +155,7 @@ public sealed class RequestSearchTests
         // The nearer request (0x1e) is found a level before the farther. Each level the best rank so far grows by a quarter
         // plus one (0x1e + 8 = 0x26): a farther request wins only above that.
         var (bench, goods, near, far) = Line(0x1e, 0x24);
-        goods.LayGood(1, 0, Good.Plank.Code);
+        goods.LayGood(1, 0, Good.Plank);
 
         Turn(goods, 1);
 
@@ -164,7 +164,7 @@ public sealed class RequestSearchTests
         Assert.AreEqual(0, far.FillLow);
 
         var (bench2, goods2, near2, far2) = Line(0x1e, 0x28);
-        goods2.LayGood(1, 0, Good.Plank.Code);
+        goods2.LayGood(1, 0, Good.Plank);
 
         Turn(goods2, 1);
 
@@ -177,7 +177,7 @@ public sealed class RequestSearchTests
     public void AGoodThatCannotReachItsRequestGivesItUpAndTheSiteAsksAgain()
     {
         var (bench, goods, near, _) = Line(0x3e, 0);
-        goods.LayGood(1, 0, Good.Plank.Code);
+        goods.LayGood(1, 0, Good.Plank);
         Turn(goods, 1);
         Assert.AreEqual(1, near.FillLow);
 

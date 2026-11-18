@@ -89,7 +89,7 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
-    public void TheFoodBuildingsAndGoodsHaveNamesWithEvidence()
+    public void TheFoodBuildingsHaveNamesWithEvidence()
     {
         // The numbers are the program's: a type 0xd handler asks for the job whose tool is good 19, the butcher's knife.
         CollectionAssert.AreEqual(
@@ -110,52 +110,19 @@ public sealed class NameTableTests
                 .Select(type => type.Code)
                 .ToArray()
         );
-        CollectionAssert.AreEqual(
-            new[] { "fish", "pig", "meat", "grain", "flour", "bread" },
-            Enumerable.Range(1, 6).Select(NameTable.GoodName).ToArray()
-        );
-        CollectionAssert.AreEqual(
-            new[]
-            {
-                "log",
-                "plank",
-                "boat",
-                "stone",
-                "iron-ore",
-                "iron",
-                "coal",
-                "gold-ore",
-                "gold",
-                "shovel",
-                "hammer",
-                "fishing-rod",
-                "butcher-knife",
-                "scythe",
-                "hatchet",
-                "saw",
-                "pickaxe",
-                "pliers",
-                "sword",
-                "shield",
-            },
-            Enumerable.Range(7, 20).Select(NameTable.GoodName).ToArray()
-        );
-        Assert.IsNull(NameTable.GoodName(0));
-        Assert.IsNull(NameTable.GoodName(27));
     }
 
     [TestMethod]
-    public void EveryGoodFromOneToTwentySixHasAnEntryThatCitesAnAddress()
+    public void TheNameTableHoldsNoGood()
     {
-        foreach (var good in Enumerable.Range(1, 26))
+        // A good takes its name from its catalog entry (ADR 0020); the table names objects, jobs, states, and building types.
+        foreach (var entry in NameTable.Entries)
         {
-            var entry = NameTable.Entries.Single(entry => entry.Kind == NameTable.CodeKind.Good && entry.Code == good);
-            StringAssert.Matches(
-                entry.Evidence,
-                new System.Text.RegularExpressions.Regex("0x[0-9a-f]{6}"),
-                $"good {good} {entry.Name}"
-            );
+            Assert.AreNotEqual("log", entry.Name);
+            Assert.AreNotEqual("shield", entry.Name);
         }
+
+        Assert.IsFalse(NameTable.IsName("fish"));
     }
 
     [TestMethod]
@@ -284,9 +251,6 @@ public sealed class NameTableTests
             table[code] = (byte)@class;
         }
 
-        return new NameTable(new RuleTables(table, ZeroStock()));
+        return new NameTable(new RuleTables(table, TestProgram.MadeStartStock()));
     }
-
-    static byte[][] ZeroStock() =>
-        [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods])];
 }

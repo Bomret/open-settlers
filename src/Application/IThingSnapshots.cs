@@ -15,4 +15,10 @@ public interface IThingSnapshots
 
     /// <summary>The state of the settler in the slot of the settler list.</summary>
     ThingState Settler(int slot);
+
+    /// <summary>
+    /// How an event's text names a good: the original's number (<c>7</c>) for a good that has one, and 0 for no good; the stable name
+    /// for a good with no original code.
+    /// </summary>
+    string GoodText(Good good);
 }

@@ -479,18 +479,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <inheritdoc />
     public ObjectDrawing? Draw(GoodAtFlag draw) => DrawingOf(draw.Good);
 
-    // The drawing of the good's stable name, or null for a good the set has no image for. A good made from a number alone is the set's
-    // good of that number, 1 to 26; no mask maps any other number to an image.
-    ObjectDrawing? DrawingOf(Good good)
-    {
-        var name =
-            good.Name.Length > 0 ? good.Name
-            : good.Code >= 1 && good.Code <= StandInRulesReader.GoodNames.Length
-                ? StandInRulesReader.GoodNames[good.Code - 1]
-            : null;
-
-        return name is not null && _goods.TryGetValue(name, out var drawing) ? drawing : null;
-    }
+    // The drawing of the good's stable name, or null for a good the set has no image for.
+    ObjectDrawing? DrawingOf(Good good) => _goods.GetValueOrDefault(good.Name);
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(SettlerDraw draw)

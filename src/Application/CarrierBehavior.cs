@@ -612,9 +612,9 @@ public sealed class CarrierBehavior(
                         buildingSlot,
                         EventType.Handover,
                         Cause.Goods,
-                        $"{history.SettlerId(slot)} good {good}"
+                        $"{history.SettlerId(slot)} good {history.GoodText(good)}"
                     );
-                    given = $"{history.BuildingId(buildingSlot)} good {good}";
+                    given = $"{history.BuildingId(buildingSlot)} good {history.GoodText(good)}";
                 }
             }
 

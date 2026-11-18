@@ -290,7 +290,7 @@ public sealed class ForestryTests
         {
             game.Tick();
             grown |= saplings.Any(node => map.At(node.X, node.Y).Object.Kind != MapObjectKind.Sapling);
-            log = game.Flags[3].Places.Any(place => place.Good == new Good { Code = WoodcutterRules.GoodLog });
+            log = game.Flags[3].Places.Any(place => place.Good == Good.Log);
         }
 
         Assert.IsTrue(grown, "a sapling of the hut's reach grew");

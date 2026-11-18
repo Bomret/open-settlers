@@ -21,6 +21,8 @@ public sealed class GameHistoryTests
 
         public ThingState Settler(int slot) => new() { Fields = [("slot", slot), ("state", State)] };
 
+        public string GoodText(Good good) => good.Name;
+
         public int State { get; set; }
     }
 
@@ -91,7 +93,7 @@ public sealed class GameHistoryTests
             Timer = 65535,
         };
         var settlers = new SettlerTable { settler };
-        var exporter = new SnapshotExporter(settlers, [], []);
+        var exporter = new SnapshotExporter(settlers, [], [], TestCatalog.Default);
 
         var state = exporter.Settler(0);
 
@@ -112,11 +114,11 @@ public sealed class GameHistoryTests
             flags[0].Side(direction).Carriers = direction + 1;
         }
 
-        flags[0].Places[0].Good = new Good { Code = 9 };
-        flags[0].Places[7].Good = new Good { Code = 1 };
+        flags[0].Places[0].Good = TestCatalog.GoodOf(9);
+        flags[0].Places[7].Good = TestCatalog.GoodOf(1);
         flags[0].Places[7].Way = 0;
 
-        var exporter = new SnapshotExporter([], [], flags);
+        var exporter = new SnapshotExporter([], [], flags, TestCatalog.Default);
 
         var state = exporter.Flag(0);
 

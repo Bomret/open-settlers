@@ -28,12 +28,12 @@ static class ConstructionTables
     public static GoodClass?[] Classes()
     {
         var table = new GoodClass?[TestCatalog.Slots];
-        table[Good.Plank.Code] = PlankClass;
-        table[Good.Stone.Code] = StoneClass;
-        table[Good.Log.Code] = LogClass;
-        table[Good.Grain.Code] = GrainClass;
-        table[Good.Flour.Code] = FlourClass;
-        table[Good.Pig.Code] = PigClass;
+        table[TestCatalog.CodeOf(Good.Plank)] = PlankClass;
+        table[TestCatalog.CodeOf(Good.Stone)] = StoneClass;
+        table[TestCatalog.CodeOf(Good.Log)] = LogClass;
+        table[TestCatalog.CodeOf(Good.Grain)] = GrainClass;
+        table[TestCatalog.CodeOf(Good.Flour)] = FlourClass;
+        table[TestCatalog.CodeOf(Good.Pig)] = PigClass;
 
         return table;
     }
@@ -100,14 +100,14 @@ static class ConstructionTables
     }
 
     // The made-up tool goods: the forester's worker needs the good 17 from the stock, the builder the good 18.
-    public static readonly Good ForesterTool = new() { Code = 17 };
-    public static readonly Good BuilderTool = new() { Code = 18 };
+    public static readonly Good ForesterTool = TestCatalog.GoodOf(17);
+    public static readonly Good BuilderTool = TestCatalog.GoodOf(18);
 
     // The made-up digger's tool: the good 19.
-    public static readonly Good DiggerTool = new() { Code = 19 };
+    public static readonly Good DiggerTool = TestCatalog.GoodOf(19);
 
     // The made-up sawmiller's tool: the good 20.
-    public static readonly Good SawTool = new() { Code = 20 };
+    public static readonly Good SawTool = TestCatalog.GoodOf(20);
 
     // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool, the
     // sawmill for the sawmiller's job with a tool, the mill for the miller's job with no tool.
@@ -172,7 +172,7 @@ static class ConstructionTables
             buildingClass: 4,
             // A made-up transport priority for each good (the good's own number): a carrier takes a waiting good only where its
             // priority is above 0.
-            transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
+            transportPriorities: [.. Enumerable.Range(1, TestCatalog.Names.Length).Select(good => (byte)good)],
             buildingSizes: sizes ?? Sizes(),
             buildingNeeds: needs ?? Needs(),
             goodKinds: goodKinds,

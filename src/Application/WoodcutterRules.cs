@@ -18,9 +18,6 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     readonly IRandomDraws _draws = parts.Draws;
     readonly HutWork _hut = parts.Hut;
 
-    /// <summary>The good of a log (the byte 7 the settler writes onto the flag, 0x438011).</summary>
-    public const int GoodLog = 7;
-
     Map Map => _movement.Map;
 
     /// <inheritdoc />

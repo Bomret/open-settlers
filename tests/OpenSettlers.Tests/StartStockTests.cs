@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
@@ -44,7 +46,42 @@ public sealed class StartStockTests
         22,
     ];
 
-    static int[] AtLevel(int level) => [.. StartStock.At(TestProgram.Made(), level)];
+    // The counts of the goods in the order of the made-up catalog's codes.
+    static int[] AtLevel(int level)
+    {
+        var stock = StartStock.At(TestProgram.Made(), level);
+
+        return [.. Enumerable.Range(1, TestCatalog.Names.Length).Select(code => stock[TestCatalog.GoodOf(code)])];
+    }
+
+    [TestMethod]
+    public void AStartStockGoodTheCatalogLacksStopsWithAnErrorNamingIt()
+    {
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            TestProgram.MadeStartStock(),
+            goods: new ContentCatalog([TestCatalog.Entry(7, 1)])
+        );
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
+
+        StringAssert.Contains(error.Message, $"'{tables.StartStock[0].First().Key.Name}'");
+        StringAssert.Contains(error.Message, "is no entry of the content catalog");
+    }
+
+    [TestMethod]
+    public void ADeductionForAGoodNoRowHoldsStopsWithAnErrorNamingIt()
+    {
+        var rows = TestProgram
+            .MadeStartStock()
+            .Select(row => (IReadOnlyDictionary<Good, byte>)row.Where(pair => pair.Key.Name != "plank").ToDictionary())
+            .ToArray();
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, goods: TestCatalog.Of());
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
+
+        StringAssert.Contains(error.Message, "'plank'");
+    }
 
     [TestMethod]
     public void LevelZeroTakesTheCastlesSubtractionsFromTheFirstRow()
@@ -73,19 +110,24 @@ public sealed class StartStockTests
     {
         var rows = Enumerable
             .Range(0, RuleTables.StartStockRows)
-            .Select(_ => Enumerable.Repeat((byte)100, StartStock.Goods).ToArray())
+            .Select(_ => TestCatalog.Names.ToDictionary(name => new Good { Name = name }, _ => (byte)100))
             .ToArray();
         int[] differences = [4, 5, 14, 15, 24, 25];
         for (var good = 0; good < differences.Length; good++)
         {
-            rows[1][good] = (byte)(100 + differences[good]);
+            rows[1][TestCatalog.GoodOf(good + 1)] = (byte)(100 + differences[good]);
         }
 
-        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows);
+        var tables = new RuleTables(
+            new ObjectClass[RuleTables.ClassCount],
+            [.. rows.Select(row => (IReadOnlyDictionary<Good, byte>)row)],
+            goods: TestCatalog.Of()
+        );
+        var stock = StartStock.At(tables, 1);
 
         CollectionAssert.AreEqual(
             new[] { 100, 101, 101, 102, 102, 103 },
-            StartStock.At(tables, 1).Take(differences.Length).ToArray()
+            Enumerable.Range(1, differences.Length).Select(code => stock[TestCatalog.GoodOf(code)]).ToArray()
         );
     }
 }

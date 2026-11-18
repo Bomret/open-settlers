@@ -19,9 +19,6 @@ public sealed class RuleTables
     /// <summary>The number of object codes, and the size of the class table.</summary>
     public const int ClassCount = 128;
 
-    /// <summary>The number of goods of the start stock rows and of the transport priority table.</summary>
-    public const int Goods = 26;
-
     /// <summary>The number of rows of the start stock table (the levels 0, 10, 20, 30, and 40).</summary>
     public const int StartStockRows = 5;
 
@@ -92,7 +89,7 @@ public sealed class RuleTables
     /// </summary>
     public RuleTables(
         ObjectClass[] classes,
-        byte[][] startStock,
+        IReadOnlyDictionary<Good, byte>[] startStock,
         ushort[]? stepTimes = null,
         byte[]? doorSpeeds = null,
         ushort[]? scanWindows = null,
@@ -117,24 +114,20 @@ public sealed class RuleTables
         ContentCatalog? goods = null
     )
     {
-        if (
-            classes.Length != ClassCount
-            || startStock.Length != StartStockRows
-            || startStock.Any(row => row.Length != Goods)
-        )
+        if (classes.Length != ClassCount || startStock.Length != StartStockRows)
         {
-            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
+            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows.");
         }
 
         // Every table is copied, the goods of each distribution step included, so no caller keeps a hand on what the tables hold.
         _classes = [.. classes];
-        StartStock = [.. startStock.Select(row => row.ToImmutableArray())];
+        StartStock = [.. startStock.Select(row => row.ToImmutableDictionary())];
         StepTimes = [.. stepTimes ?? new ushort[StepTimeCount]];
         _doorSpeeds = [.. doorSpeeds ?? new byte[DoorSpeedCount]];
         _scanWindows = [.. scanWindows ?? new ushort[ScanWindowCount]];
         _walkRows = [.. walkRows ?? new byte[WalkRowCount * WalkRowSize]];
         _roadCapacities = [.. roadCapacities ?? new byte[RoadCapacityCount]];
-        // stand-in: a catalog a test does not give holds no good, so every good reads as the stand-in facts of the accessors below.
+        // A catalog the caller does not give holds no good, so a rule that meets a good stops with an error naming it.
         Catalog = goods ?? ContentCatalog.Empty;
         Figures = new FigureTables(
             figureBases,
@@ -199,39 +192,40 @@ public sealed class RuleTables
     /// <summary>The class of the object <paramref name="mapObject"/>.</summary>
     public ObjectClass ClassOf(MapObject mapObject) => _classes[mapObject.Code];
 
-    /// <summary>The start stock rows, each <see cref="Goods"/> counts.</summary>
-    public ImmutableArray<ImmutableArray<byte>> StartStock { get; }
+    /// <summary>The start stock rows, each the count of the goods it names; a good a row does not name counts 0.</summary>
+    public ImmutableArray<ImmutableDictionary<Good, byte>> StartStock { get; }
 
     /// <summary>The figure tables the settlers are drawn from.</summary>
     public FigureTables Figures { get; }
 
     /// <summary>
     /// The goods of the game, one entry each (ADR 0020): the content set's source builds it, and the accessors below read the facts of
-    /// a good from its entry. A good the catalog lacks reads as the stand-in facts the accessors state.
+    /// a good from its entry. A good the catalog lacks stops the accessors with an error that names it.
     /// </summary>
     public ContentCatalog Catalog { get; }
 
     /// <summary>
     /// The default transport priority of the good <paramref name="good"/>: the rank of its entry, each rank given once; the carrier's
-    /// exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for no good and for a good the catalog lacks.
+    /// exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for no good; a good the catalog lacks is an error.
     /// </summary>
-    public int TransportPriority(Good good) => Catalog.EntryOf(good)?.TransportRank ?? 0;
+    public int TransportPriority(Good good) => good.IsNone ? 0 : Catalog.Require(good).TransportRank;
 
     /// <summary>
     /// Which byte of a building's fill a good counts in on its way: the counter of its entry, the one rule for every place that counts
     /// a good on its way (the request search and the storage's hand-out) and counts it back where it is lost (<c>docs/rules/removal.md</c>).
-    /// A good the catalog lacks counts in the low byte.
+    /// No good counts in the low byte; a good the catalog lacks is an error.
     /// </summary>
-    public FillCounter FillCounterOf(Good good) => Catalog.EntryOf(good)?.Counter ?? FillCounter.Low;
+    public FillCounter FillCounterOf(Good good) => good.IsNone ? FillCounter.Low : Catalog.Require(good).Counter;
 
     /// <summary>
     /// Which byte of a building's fill the carrier's handover of <paramref name="good"/> counts in: the handover counter of its entry
-    /// (the rule at <c>0x43c4ea</c>, <c>docs/rules/goods.md</c>). A good the catalog lacks counts in the low byte.
+    /// (the rule at <c>0x43c4ea</c>, <c>docs/rules/goods.md</c>). No good counts in the low byte; a good the catalog lacks is an error.
     /// </summary>
-    public FillCounter HandoverCounterOf(Good good) => Catalog.EntryOf(good)?.HandoverCounter ?? FillCounter.Low;
+    public FillCounter HandoverCounterOf(Good good) =>
+        good.IsNone ? FillCounter.Low : Catalog.Require(good).HandoverCounter;
 
-    /// <summary>Whether a lost good of this kind counts against the total of resource 1, as its entry states; false for a good the catalog lacks.</summary>
-    public bool CountsAgainstResource1(Good good) => Catalog.EntryOf(good)?.CountsAgainstResource1 ?? false;
+    /// <summary>Whether a lost good of this kind counts against the total of resource 1, as its entry states; false for no good, an error for a good the catalog lacks.</summary>
+    public bool CountsAgainstResource1(Good good) => !good.IsNone && Catalog.Require(good).CountsAgainstResource1;
 
     /// <summary>The number of carriers each length class of a road holds at most, as the importer read them.</summary>
     public ImmutableArray<byte> RoadCapacities => _roadCapacities;
@@ -307,9 +301,9 @@ public sealed class RuleTables
 
     /// <summary>
     /// The request a good with no destination looks for (<c>0x464117</c>): its class and the request word of the flags that ask for
-    /// it: the request of its entry; null for a good that goes to storage at once, and for a good the catalog lacks.
+    /// it: the request of its entry; null for no good and for a good that goes to storage at once; a good the catalog lacks is an error.
     /// </summary>
-    public GoodClass? ClassOfGood(Good good) => Catalog.EntryOf(good)?.Request;
+    public GoodClass? ClassOfGood(Good good) => good.IsNone ? null : Catalog.Require(good).Request;
 
     /// <summary>
     /// The order a storage serves the requests in, by the draw the phase routine takes at each cycle (<c>0x42965c</c>): the draw taken

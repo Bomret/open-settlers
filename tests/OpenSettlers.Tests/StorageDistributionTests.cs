@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
@@ -58,15 +59,17 @@ public sealed class StorageDistributionTests
             bench.Join(1, East, 2, West, carrier: carriers);
         }
 
-        var stock = new int[StartStock.Goods];
-        stock[Planks - 1] = planks;
-        stock[Stones - 1] = stones;
+        var stock = new Dictionary<Good, int>
+        {
+            [TestCatalog.GoodOf(Planks)] = planks,
+            [TestCatalog.GoodOf(Stones)] = stones,
+        };
         for (var index = 0; index < (food?.Length ?? 0); index++)
         {
-            stock[FoodGoods[index] - 1] = food![index];
+            stock[TestCatalog.GoodOf(FoodGoods[index])] = food![index];
         }
 
-        var castle = new CastleStock();
+        var castle = new CastleStock(bench.Tables.Catalog);
         if (withCastle)
         {
             castle.Place(
@@ -131,7 +134,11 @@ public sealed class StorageDistributionTests
         rig.Distribution.Run();
 
         Assert.AreEqual(4, rig.Castle.Planks);
-        Assert.AreEqual(Planks, rig.Bench.Flags[0].Places[0].Good.Code, "the plank lies on the castle's flag");
+        Assert.AreEqual(
+            TestCatalog.GoodOf(Planks),
+            rig.Bench.Flags[0].Places[0].Good,
+            "the plank lies on the castle's flag"
+        );
         Assert.AreEqual(1, rig.Bench.Flags[0].Places[0].Destination, "bound for the site's flag");
         Assert.AreEqual(1, site.FillLow, "and counted on its way to the site");
         Assert.AreEqual(
@@ -152,13 +159,7 @@ public sealed class StorageDistributionTests
         var tables = LayoutSettlersTests.MadeTables(
             distribution:
             [
-                [
-                    new DistributionStep
-                    {
-                        Class = food,
-                        Goods = [.. FoodGoods.Select(good => new Good { Code = good })],
-                    },
-                ],
+                [new DistributionStep { Class = food, Goods = [.. FoodGoods.Select(TestCatalog.GoodOf)] }],
                 [],
                 [],
             ]
@@ -169,13 +170,38 @@ public sealed class StorageDistributionTests
         rig.Distribution.Run();
 
         Assert.AreEqual(
-            3,
-            rig.Bench.Flags[0].Places[0].Good.Code,
+            TestCatalog.GoodOf(3),
+            rig.Bench.Flags[0].Places[0].Good,
             "the good 3, of which the castle holds 5, lies on the flag"
         );
-        Assert.AreEqual(4, rig.Castle.Count(new Good { Code = 3 }), "its count fell by one");
-        Assert.AreEqual(2, rig.Castle.Count(new Good { Code = 1 }), "the other foods stay");
-        Assert.AreEqual(3, rig.Castle.Count(new Good { Code = 6 }), "the other foods stay");
+        Assert.AreEqual(4, rig.Castle.Count(TestCatalog.GoodOf(3)), "its count fell by one");
+        Assert.AreEqual(2, rig.Castle.Count(TestCatalog.GoodOf(1)), "the other foods stay");
+        Assert.AreEqual(3, rig.Castle.Count(TestCatalog.GoodOf(6)), "the other foods stay");
+    }
+
+    // Among equal counts the pick keeps the step's own order, whatever the goods' names or codes order: the step lists meat, fish,
+    // bread, so the meat goes (the names would say bread, the codes fish).
+    [TestMethod]
+    public void AFoodStepWithEqualCountsHandsOutTheFirstGoodOfItsOwnOrder()
+    {
+        var food = new GoodClass { Class = 7, Word = RequestWord.First };
+        var tables = LayoutSettlersTests.MadeTables(
+            distribution:
+            [
+                [new DistributionStep { Class = food, Goods = [Good.Meat, Good.Fish, Good.Bread] }],
+                [],
+                [],
+            ]
+        );
+        var rig = Started(planks: 0, stones: 0, tables: tables, food: [4, 4, 4]);
+        rig.Bench.Flags[1].SetRequest(RequestWord.First, new Request { Asks = food, Rank = 0x3e });
+
+        rig.Distribution.Run();
+
+        Assert.AreEqual(Good.Meat, rig.Bench.Flags[0].Places[0].Good);
+        Assert.AreEqual(3, rig.Castle.Count(Good.Meat));
+        Assert.AreEqual(4, rig.Castle.Count(Good.Fish));
+        Assert.AreEqual(4, rig.Castle.Count(Good.Bread));
     }
 
     [TestMethod]
@@ -233,15 +259,15 @@ public sealed class StorageDistributionTests
         Site(planksFirst, 1, 0x3e, 0x3e);
         planksFirst.Distribution.Run();
 
-        Assert.AreEqual(Planks, planksFirst.Bench.Flags[0].Places[0].Good.Code);
-        Assert.AreEqual(Stones, planksFirst.Bench.Flags[0].Places[1].Good.Code);
+        Assert.AreEqual(TestCatalog.GoodOf(Planks), planksFirst.Bench.Flags[0].Places[0].Good);
+        Assert.AreEqual(TestCatalog.GoodOf(Stones), planksFirst.Bench.Flags[0].Places[1].Good);
 
         var stonesFirst = Started(planks: 5, stones: 5, draw: 0);
         Site(stonesFirst, 1, 0x3e, 0x3e);
         stonesFirst.Distribution.Run();
 
-        Assert.AreEqual(Stones, stonesFirst.Bench.Flags[0].Places[0].Good.Code);
-        Assert.AreEqual(Planks, stonesFirst.Bench.Flags[0].Places[1].Good.Code);
+        Assert.AreEqual(TestCatalog.GoodOf(Stones), stonesFirst.Bench.Flags[0].Places[0].Good);
+        Assert.AreEqual(TestCatalog.GoodOf(Planks), stonesFirst.Bench.Flags[0].Places[1].Good);
     }
 
     [TestMethod]
@@ -325,7 +351,7 @@ public sealed class StorageDistributionTests
         Site(rig, 1, 0x3e);
         for (var place = 0; place < Flag.PlaceCount; place++)
         {
-            rig.Goods.LayGood(0, place, 1);
+            rig.Goods.LayGood(0, place, TestCatalog.GoodOf(1));
         }
 
         rig.Distribution.Run();

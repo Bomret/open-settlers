@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -124,11 +125,13 @@ public sealed class PlayStateTests
     [TestMethod]
     public void TheCastlesPlanksAndStonesAreTheGoodsEightAndTenOfItsStock()
     {
-        var stock = new int[StartStock.Goods];
-        stock[6] = 3;
-        stock[7] = 53;
-        stock[9] = 28;
-        var castle = new CastleStock();
+        var stock = new Dictionary<Good, int>
+        {
+            [Good.Log] = 3,
+            [Good.Plank] = 53,
+            [Good.Stone] = 28,
+        };
+        var castle = new CastleStock(TestCatalog.Default);
         castle.Place(
             new Castle
             {

@@ -186,7 +186,7 @@ public sealed class ObjectQuadsTests
                     Row = 0,
                     X = 1,
                     Y = 1,
-                    Good = new Domain.Good { Code = 7 },
+                    Good = Domain.Good.Log,
                 },
             ],
             new EmptySource(empty),
@@ -253,7 +253,7 @@ public sealed class ObjectQuadsTests
                 Row = 0,
                 X = 10,
                 Y = 10,
-                Good = new Domain.Good { Code = 7 },
+                Good = Domain.Good.Log,
             },
             FlagAt(0, 100, 50),
             new GoodAtFlag
@@ -261,7 +261,7 @@ public sealed class ObjectQuadsTests
                 Row = 0,
                 X = 20,
                 Y = 10,
-                Good = new Domain.Good { Code = 7 },
+                Good = Domain.Good.Log,
             },
         };
 

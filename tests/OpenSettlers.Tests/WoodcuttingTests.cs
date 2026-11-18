@@ -34,23 +34,18 @@ public sealed class WoodcuttingTests
 
         return new RuleTables(
             classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
+            TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            workers: workers ?? TestProgram.MadeWorkers()
+            workers: workers ?? TestProgram.MadeWorkers(),
+            goods: TestCatalog.StandIn()
         );
     }
 
     // The 128 nodes around the hut the worker draws from, as the spiral gives them.
-    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good { Code = 7 });
+    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == Good.Log);
 
     // The goods on the hut's flag, place by place.
     static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
@@ -158,11 +153,7 @@ public sealed class WoodcuttingTests
             game.Tick();
         }
 
-        Assert.AreEqual(
-            new Good { Code = 7 },
-            game.Flags[HutFlag].Places[0].Good,
-            "the log lies on the first place of the flag"
-        );
+        Assert.AreEqual(Good.Log, game.Flags[HutFlag].Places[0].Good, "the log lies on the first place of the flag");
         Assert.AreEqual(8, game.Flags[HutFlag].Places.Count);
         Assert.AreEqual(before - 1, reach.Count(node => IsTree(map, node)), "one tree is felled");
     }
@@ -223,13 +214,13 @@ public sealed class WoodcuttingTests
         game.Tick();
         Assert.IsFalse(watch.Changed(game), "nothing moves with no tree in reach");
 
-        game.Goods.LayGood(0, 7, new Good { Code = 0, Name = "wine" });
+        game.Goods.LayGood(0, 7, new Good { Name = "wine" });
         game.Tick();
         Assert.IsTrue(watch.Changed(game), "a good with no code arrived");
         game.Tick();
         Assert.IsFalse(watch.Changed(game));
 
-        game.Goods.LayGood(0, 7, new Good { Code = 0, Name = "ale" });
+        game.Goods.LayGood(0, 7, new Good { Name = "ale" });
         game.Tick();
         Assert.IsTrue(watch.Changed(game), "another good with no code took its place");
         game.Tick();

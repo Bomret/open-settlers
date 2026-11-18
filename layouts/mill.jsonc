@@ -1,5 +1,5 @@
 // A finished mill at 13,10 with its miller inside, its flag at 14,11 joined to the castle's flag at 11,11 by a road with its carrier,
-// and two grains (good 4) on the castle's flag. The grains go to the mill, the miller grinds each into a flour, and the flour goes
+// and two grains on the castle's flag. The grains go to the mill, the miller grinds each into a flour, and the flour goes
 // back to the castle. Play it with play/mill.play.
 {
   "size": 1,
@@ -79,7 +79,7 @@
   "buildings": [{"type": "mill", "x": 13, "y": 10}],
   "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
   "goods": [
-    {"x": 11, "y": 11, "place": 0, "good": 4},
-    {"x": 11, "y": 11, "place": 1, "good": 4}
+    {"x": 11, "y": 11, "place": 0, "good": "grain"},
+    {"x": 11, "y": 11, "place": 1, "good": "grain"}
   ]
 }

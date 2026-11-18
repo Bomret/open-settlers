@@ -38,16 +38,11 @@ public sealed class CarrierEventsTests
         return GameFactory.Create(
             new RuleTables(
                 classes,
-                [
-                    .. Enumerable
-                        .Range(0, RuleTables.StartStockRows)
-                        .Select(row =>
-                            Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                        ),
-                ],
+                TestProgram.MadeStartStock(),
                 [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
                 [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-                [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)]
+                [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+                goods: TestCatalog.StandIn()
             ),
             map
         );
@@ -227,7 +222,7 @@ public sealed class CarrierEventsTests
             var tick = game.TickCount - 1;
             var settler = game.Settlers[request.Thing.Slot];
             var (state, _) = game.History.StateAt(request.Thing, tick);
-            var raw = SettlerEncoder.Fields(settler);
+            var raw = SettlerEncoder.Fields(settler, TestCatalog.Default);
             compared++;
             Assert.AreEqual(settler.Job.Code, state!.Get("job"), $"job at tick {tick}");
             Assert.AreEqual(raw.Mode, state.Get("mode"), $"mode at tick {tick}");

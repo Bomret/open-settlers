@@ -119,4 +119,6 @@ sealed class NoSnapshots : IThingSnapshots
     public ThingState Flag(int slot) => new() { Fields = [] };
 
     public ThingState Settler(int slot) => new() { Fields = [] };
+
+    public string GoodText(Good good) => good.Name;
 }

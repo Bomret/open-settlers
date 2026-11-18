@@ -131,7 +131,10 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(
+            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            map
+        );
         game.Enqueue(
             new Command
             {
@@ -192,7 +195,10 @@ public sealed class ObjectDrawsTests
         classes[1] = 3;
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Sawmill.Code] = 2;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock(), buildingSizes: sizes), map);
+        var game = GameFactory.Create(
+            new RuleTables(classes, TestProgram.MadeStartStock(), buildingSizes: sizes, goods: TestCatalog.StandIn()),
+            map
+        );
         game.Enqueue(
             new Command
             {
@@ -264,7 +270,10 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(
+            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            map
+        );
         game.Enqueue(
             new Command
             {
@@ -323,13 +332,13 @@ public sealed class ObjectDrawsTests
     // **Inferred:** the offsets of a good come from the decompile of 0x44db26 and 0x44de9a; no emulator or debugger run
     // of the draw confirms them (docs/rules/woodcutting.md, Drawing). The castle's flag stands at 16,6 on height 15 and
     // is drawn at 416,60.
-    static List<ObjectTerm> FlagDrawsWith(params int[] goods)
+    static List<ObjectTerm> FlagDrawsWith(params int[] goods) =>
+        FlagDrawsOf([.. goods.Select(good => TestCatalog.GoodOf(good))]);
+
+    static List<ObjectTerm> FlagDrawsOf(IReadOnlyList<Good> goods)
     {
         var (map, game) = CastleWorld();
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>>
-        {
-            [(16, 6)] = [.. goods.Select(good => new Good { Code = good })],
-        };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = goods };
 
         return [.. ObjectDraws.Of(map, game.CastleStock.Castle, null, flagGoods).Where(draw => draw.Row == 6)];
     }
@@ -350,21 +359,21 @@ public sealed class ObjectDrawsTests
                     Row = 6,
                     X = 422,
                     Y = 56,
-                    Good = new Good { Code = 1 },
+                    Good = TestCatalog.GoodOf(1),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 426,
                     Y = 58,
-                    Good = new Good { Code = 2 },
+                    Good = TestCatalog.GoodOf(2),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 412,
                     Y = 56,
-                    Good = new Good { Code = 3 },
+                    Good = TestCatalog.GoodOf(3),
                 },
                 new MapObjectDraw
                 {
@@ -379,35 +388,35 @@ public sealed class ObjectDrawsTests
                     Row = 6,
                     X = 426,
                     Y = 62,
-                    Good = new Good { Code = 4 },
+                    Good = TestCatalog.GoodOf(4),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 408,
                     Y = 58,
-                    Good = new Good { Code = 5 },
+                    Good = TestCatalog.GoodOf(5),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 422,
                     Y = 64,
-                    Good = new Good { Code = 6 },
+                    Good = TestCatalog.GoodOf(6),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 408,
                     Y = 62,
-                    Good = new Good { Code = 7 },
+                    Good = TestCatalog.GoodOf(7),
                 },
                 new GoodAtFlag
                 {
                     Row = 6,
                     X = 412,
                     Y = 64,
-                    Good = new Good { Code = 8 },
+                    Good = TestCatalog.GoodOf(8),
                 },
             },
             draws.Skip(flag - 3).Take(9).ToList()
@@ -430,7 +439,10 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(
+            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            map
+        );
         game.Enqueue(
             new Command
             {
@@ -454,7 +466,7 @@ public sealed class ObjectDrawsTests
         );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [new Good { Code = 1 }] };
+        var flagGoods = new Dictionary<(int, int), IReadOnlyList<Good>> { [(16, 6)] = [TestCatalog.GoodOf(1)] };
 
         var draws = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
 
@@ -571,7 +583,7 @@ public sealed class ObjectDrawsTests
                     Row = 6,
                     X = 422,
                     Y = 56,
-                    Good = new Good { Code = 1 },
+                    Good = TestCatalog.GoodOf(1),
                 },
                 new MapObjectDraw
                 {
@@ -590,7 +602,7 @@ public sealed class ObjectDrawsTests
     public void AnEmptyPlaceDrawsNoTermAndAGoodIsNamedByItsGoodWhateverItsBits()
     {
         var empty = FlagDrawsWith(0, 0, 0, 0, 0, 0, 0, 0);
-        var one = FlagDrawsWith(0x27, 0, 0, 0, 0, 0, 0, 0);
+        var one = FlagDrawsOf([TestCatalog.AiToken, .. Enumerable.Repeat(Good.None, 7)]);
 
         Assert.IsEmpty(empty.OfType<GoodAtFlag>());
         Assert.AreEqual(empty.Count + 1, one.Count);
@@ -600,7 +612,7 @@ public sealed class ObjectDrawsTests
                 Row = 6,
                 X = 422,
                 Y = 56,
-                Good = new Good { Code = 0x27 },
+                Good = new Good { Name = "ai-token" },
             },
             one
         );

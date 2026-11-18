@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
 
@@ -38,13 +39,7 @@ public sealed class ExchangeTests
                     new WalksRoad
                     {
                         Load =
-                            good == 0
-                                ? null
-                                : new Load
-                                {
-                                    Good = new Good { Code = good },
-                                    Destination = destination,
-                                },
+                            good == 0 ? null : new Load { Good = TestCatalog.GoodOf(good), Destination = destination },
                         Heading = new Heading { Value = Way },
                     }
                 )
@@ -55,13 +50,13 @@ public sealed class ExchangeTests
         goods.Exchange(0, carrier, (WalksRoad)carrier.Activity, 0);
 
     // The good a carrier carries; 0 for none.
-    static int Carried(Settler carrier) => ((WalksRoad)carrier.Activity).Load?.Good.Code ?? 0;
+    static int Carried(Settler carrier) => TestCatalog.CodeOf(((WalksRoad)carrier.Activity).Load?.Good ?? Good.None);
 
     [TestMethod]
     public void ACarrierThatCarriesAGoodLeavesItInThePlaceOfTheGoodThatWaitsForItsRoadAndTakesThatOneAlong()
     {
         var (bench, goods) = WithFlag();
-        goods.LayGood(0, 2, Log);
+        goods.LayGood(0, 2, TestCatalog.GoodOf(Log));
         goods.WaitForRoad(0, Way, 2);
         var carrier = Carrier(bench, Ninth, 0);
 
@@ -69,7 +64,7 @@ public sealed class ExchangeTests
 
         Assert.AreEqual(Log, Carried(carrier), "the carrier takes the good that waited");
         Assert.AreEqual(
-            new Good { Code = Ninth },
+            TestCatalog.GoodOf(Ninth),
             bench.Flags[0].Places[2].Good,
             "the good it carried is left in that place"
         );
@@ -82,7 +77,7 @@ public sealed class ExchangeTests
     public void ACarrierWithNothingTakesTheGoodThatWaitsForItsRoad()
     {
         var (bench, goods) = WithFlag();
-        goods.LayGood(0, 5, Log);
+        goods.LayGood(0, 5, TestCatalog.GoodOf(Log));
         goods.WaitForRoad(0, Way, 5);
         var carrier = Carrier(bench, 0, null);
 
@@ -96,20 +91,20 @@ public sealed class ExchangeTests
     public void ACarrierThatCarriesAGoodLeavesItOnTheFirstEmptyPlaceWhereNoGoodWaitsForItsRoad()
     {
         var (bench, goods) = WithFlag();
-        goods.LayGood(0, 0, Log);
+        goods.LayGood(0, 0, TestCatalog.GoodOf(Log));
         var carrier = Carrier(bench, Ninth, 0);
 
         Exchange(goods, carrier);
 
         Assert.AreEqual(0, Carried(carrier), "the carrier has nothing left");
-        Assert.AreEqual(new Good { Code = Ninth }, bench.Flags[0].Places[1].Good);
+        Assert.AreEqual(TestCatalog.GoodOf(Ninth), bench.Flags[0].Places[1].Good);
         Assert.AreEqual(0, bench.Flags[0].Places[1].Destination);
     }
 
     // Made-up ranks for the goods 1 to 26 (index good - 1): the ninth ranks above the log, the board below it.
     static byte[] Ranks(int log, int ninth, int board)
     {
-        var ranks = new byte[StartStock.Goods];
+        var ranks = new byte[TestCatalog.Names.Length];
         ranks[Log - 1] = (byte)log;
         ranks[Ninth - 1] = (byte)ninth;
         ranks[Board - 1] = (byte)board;
@@ -118,7 +113,8 @@ public sealed class ExchangeTests
     }
 
     // A good on a place that has been given the road's direction (bits 5 to 7 hold the direction plus one).
-    static void LayDirected(GoodsTransport goods, int place, int good) => goods.LayGood(0, place, good, way: Way);
+    static void LayDirected(GoodsTransport goods, int place, int good) =>
+        goods.LayGood(0, place, TestCatalog.GoodOf(good), way: Way);
 
     [TestMethod]
     public void AfterACarrierTakesAGoodTheGoodOfTheHighestTransportPriorityForTheSameRoadWaitsNext()
@@ -151,16 +147,16 @@ public sealed class ExchangeTests
     }
 
     [TestMethod]
-    public void AGoodWithNoTransportPriorityIsNeverLinedUp()
+    public void AGoodTheCatalogLacksStopsTheExchangeWithAnErrorNamingIt()
     {
         var (bench, goods) = WithFlag(Ranks(log: 0, ninth: 0, board: 0));
         LayDirected(goods, 1, Log);
         LayDirected(goods, 6, Ninth);
         goods.WaitForRoad(0, Way, 6);
 
-        Exchange(goods, Carrier(bench, 0, null));
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => Exchange(goods, Carrier(bench, 0, null)));
 
-        Assert.IsNull(bench.Flags[0].Side(Way).WaitingPlace, "no good waits for the road");
+        StringAssert.Contains(error.Message, "log");
     }
 
     [TestMethod]
@@ -169,7 +165,7 @@ public sealed class ExchangeTests
         var (bench, goods) = WithFlag();
         for (var place = 0; place < 8; place++)
         {
-            goods.LayGood(0, place, Log);
+            goods.LayGood(0, place, TestCatalog.GoodOf(Log));
         }
 
         var carrier = Carrier(bench, Ninth, 0);

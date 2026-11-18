@@ -38,13 +38,13 @@ public sealed class ProgramTablesTests
         BitConverter.GetBytes(sectionAt).CopyTo(exe, header + 12);
         BitConverter.GetBytes(SectionSize).CopyTo(exe, header + 16);
         BitConverter.GetBytes(RawStart).CopyTo(exe, header + 20);
-        for (var good = 1; good <= StartStock.Goods; good++)
+        for (var good = 1; good <= TestCatalog.Names.Length; good++)
         {
             var at =
                 FileOffset(ProgramTablesImporter.TransportPriorityAddress)
                 + ProgramTablesImporter.TransportPriorityStep * (good - 1);
             exe[at] = ProgramTablesImporter.MovAlOpcode;
-            exe[at + 1] = (byte)(StartStock.Goods + 1 - good);
+            exe[at + 1] = (byte)(TestCatalog.Names.Length + 1 - good);
         }
 
         WriteFigureRoutines(exe);
@@ -236,7 +236,7 @@ public sealed class ProgramTablesTests
                 bytes[FileOffset(ProgramTablesImporter.ClassTableAddress) + code] = (byte)(code * 3);
             }
 
-            for (var i = 0; i < RuleTables.StartStockRows * StartStock.Goods; i++)
+            for (var i = 0; i < RuleTables.StartStockRows * TestCatalog.Names.Length; i++)
             {
                 bytes[FileOffset(ProgramTablesImporter.StartStockAddress) + i] = (byte)(i + 1);
             }
@@ -245,7 +245,7 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(exe);
 
         Assert.AreEqual(new ObjectClass { Value = 17 * 3 }, tables.ClassOf(new MapObject { Code = 17 }));
-        Assert.AreEqual((byte)(2 * StartStock.Goods + 5 + 1), tables.StartStock[2][5]);
+        Assert.AreEqual((byte)(2 * TestCatalog.Names.Length + 5 + 1), tables.StartStock[2][TestCatalog.GoodOf(6)]);
     }
 
     [TestMethod]
@@ -273,12 +273,13 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
-    public void TablesOfTheWrongRowLengthsAreRefused()
+    public void TablesOfTheWrongSizesAreRefused()
     {
-        var rows = Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods]).ToArray();
-        rows[2] = new byte[StartStock.Goods - 1];
+        var rows = TestProgram.MadeStartStock();
 
-        Assert.ThrowsExactly<ArgumentException>(() => new RuleTables(new ObjectClass[RuleTables.ClassCount], rows));
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            new RuleTables(new ObjectClass[RuleTables.ClassCount], rows[..^1])
+        );
         Assert.ThrowsExactly<ArgumentException>(() => new RuleTables(new ObjectClass[RuleTables.ClassCount - 1], rows));
     }
 
@@ -289,7 +290,14 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         Assert.AreEqual(0xAAD8621C6BD7A8D0UL, Fnv([.. tables.Classes.Select(c => (byte)c.Value)]));
-        Assert.AreEqual(0x5495C7981E661835UL, Fnv([.. tables.StartStock.SelectMany(row => row)]));
+        Assert.AreEqual(
+            0x5495C7981E661835UL,
+            Fnv([
+                .. tables.StartStock.SelectMany(row =>
+                    Enumerable.Range(1, TestCatalog.Names.Length).Select(code => row[TestCatalog.GoodOf(code)])
+                ),
+            ])
+        );
     }
 
     [TestMethod]
@@ -534,9 +542,9 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(exe);
 
         // The kind byte of good g is g % 3: 0 counts low, 1 high, 2 in none.
-        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good { Code = 9 }));
-        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good { Code = 10 }));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 11 }));
+        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(TestCatalog.GoodOf(9)));
+        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(TestCatalog.GoodOf(10)));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(TestCatalog.GoodOf(11)));
         Assert.AreEqual((byte)(5 * 2), tables.RoadCapacities[5]);
     }
 
@@ -595,7 +603,11 @@ public sealed class ProgramTablesTests
 
     // A step as text: its request word, its class, and the goods it hands out.
     static string[] Steps(IEnumerable<DistributionStep> order) =>
-        [.. order.Select(step => $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods)}")];
+        [
+            .. order.Select(step =>
+                $"{step.Class.Word} {step.Class.Class}: {string.Join(',', step.Goods.Select(TestCatalog.CodeOf))}"
+            ),
+        ];
 
     [TestMethod]
     public void AFoodStepOfTheTableNamesTheThreeFoodGoods()
@@ -672,27 +684,15 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(7),
-                Tool = new Good { Code = 0x18 },
-            },
+            new WorkerRequest { Job = Job.Of(7), Tool = TestCatalog.GoodOf(0x18) },
             tables.Get<WorkerRequest>(new Builder())
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(12),
-                Tool = new Good { Code = 5 },
-            },
+            new WorkerRequest { Job = Job.Of(12), Tool = TestCatalog.GoodOf(5) },
             tables.WorkerOf(BuildingType.Woodcutter)
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(14),
-                Tool = new Good { Code = 7 },
-            },
+            new WorkerRequest { Job = Job.Of(14), Tool = TestCatalog.GoodOf(7) },
             tables.WorkerOf(BuildingType.Stonecutter)
         );
         Assert.AreEqual(
@@ -700,11 +700,7 @@ public sealed class ProgramTablesTests
             tables.WorkerOf(BuildingType.Forester)
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(27),
-                Tool = new Good { Code = 20 },
-            },
+            new WorkerRequest { Job = Job.Of(27), Tool = TestCatalog.GoodOf(20) },
             tables.WorkerOf(BuildingType.Sawmill)
         );
         Assert.IsNull(tables.WorkerOf(BuildingType.Castle), "the castle's handler asks for no worker of this kind");
@@ -728,11 +724,7 @@ public sealed class ProgramTablesTests
         )
         {
             Assert.AreEqual(
-                new WorkerRequest
-                {
-                    Job = Job.Of(type.Code + 10),
-                    Tool = new Good { Code = type.Code + 3 },
-                },
+                new WorkerRequest { Job = Job.Of(type.Code + 10), Tool = TestCatalog.GoodOf(type.Code + 3) },
                 tables.WorkerOf(type),
                 $"type {type.Code:x}"
             );
@@ -757,11 +749,7 @@ public sealed class ProgramTablesTests
         foreach (var (type, job, tool, size, planks, stones) in expected)
         {
             Assert.AreEqual(
-                new WorkerRequest
-                {
-                    Job = Job.Of(job),
-                    Tool = new Good { Code = tool },
-                },
+                new WorkerRequest { Job = Job.Of(job), Tool = TestCatalog.GoodOf(tool) },
                 tables.WorkerOf(type),
                 $"type {type.Code:x}"
             );
@@ -817,11 +805,7 @@ public sealed class ProgramTablesTests
 
         // The made-up handler loads the job 5 and the tool word 0x24: the request is what the handler says, not the digger's own numbers.
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(5),
-                Tool = new Good { Code = 18 },
-            },
+            new WorkerRequest { Job = Job.Of(5), Tool = TestCatalog.GoodOf(18) },
             tables.Get<WorkerRequest>(new Digger())
         );
         Assert.AreEqual(
@@ -850,11 +834,7 @@ public sealed class ProgramTablesTests
         var tables = TestProgram.Tables();
 
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Digger(),
-                Tool = new Good { Code = 16 },
-            },
+            new WorkerRequest { Job = new Digger(), Tool = TestCatalog.GoodOf(16) },
             tables.Get<WorkerRequest>(new Digger())
         );
         Assert.AreEqual(0x300, tables.Get<FigureAdds>(new Digger()).Walk);
@@ -1034,9 +1014,9 @@ public sealed class ProgramTablesTests
     {
         // peek:462d6d:32 (the kind table) and peek:464117:64 (the class table): one rule counts a good on its way, back, and in.
         var tables = TestProgram.Tables();
-        for (var code = 1; code < RuleTables.Goods; code++)
+        for (var code = 1; code < TestCatalog.Names.Length; code++)
         {
-            var good = new Good { Code = code };
+            var good = TestCatalog.GoodOf(code);
             var expected = tables.ClassOfGood(good) is { } asked
                 ? (asked.Word == RequestWord.First ? FillCounter.Low : FillCounter.High)
                 : FillCounter.None;
@@ -1065,27 +1045,15 @@ public sealed class ProgramTablesTests
         // word halved is the good whose stock word lies at 4 plus the word in the storage item), peek:43f0ba:48 (the order words), and
         // peek:43f0fa:96 (the steps).
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Builder(),
-                Tool = new Good { Code = 17 },
-            },
+            new WorkerRequest { Job = new Builder(), Tool = TestCatalog.GoodOf(17) },
             tables.Get<WorkerRequest>(new Builder())
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Woodcutter(),
-                Tool = new Good { Code = 21 },
-            },
+            new WorkerRequest { Job = new Woodcutter(), Tool = TestCatalog.GoodOf(21) },
             tables.WorkerOf(BuildingType.Woodcutter)
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(7),
-                Tool = new Good { Code = 23 },
-            },
+            new WorkerRequest { Job = Job.Of(7), Tool = TestCatalog.GoodOf(23) },
             tables.WorkerOf(BuildingType.Stonecutter)
         );
         Assert.AreEqual(
@@ -1093,11 +1061,7 @@ public sealed class ProgramTablesTests
             tables.WorkerOf(BuildingType.Forester)
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = Job.Of(6),
-                Tool = new Good { Code = 22 },
-            },
+            new WorkerRequest { Job = Job.Of(6), Tool = TestCatalog.GoodOf(22) },
             tables.WorkerOf(BuildingType.Sawmill)
         );
         Assert.IsFalse(tables.StoneAt(BuildingType.Woodcutter, 0));
@@ -1159,7 +1123,7 @@ public sealed class ProgramTablesTests
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         Assert.AreEqual(26, tables.TransportPriority(Good.Fish), "good 1");
-        Assert.AreEqual(1, tables.TransportPriority(new Good { Code = 26, Name = "shield" }), "good 26");
+        Assert.AreEqual(1, tables.TransportPriority(TestCatalog.GoodOf(26)), "good 26");
     }
 
     [TestMethod]
@@ -1172,8 +1136,8 @@ public sealed class ProgramTablesTests
             Enumerable.Range(1, 26).ToArray(),
             tables.Catalog.Goods.Select(good => good.OriginalCode!.Value).Order().ToArray()
         );
-        Assert.AreEqual("log", tables.Catalog.EntryOf(new Good { Code = 7 })!.Name);
-        Assert.AreEqual("iron-ore", tables.Catalog.EntryOf(new Good { Code = 11 })!.Name);
+        Assert.AreEqual("log", tables.Catalog.EntryOf(TestCatalog.GoodOf(7))!.Name);
+        Assert.AreEqual(11, tables.Catalog.EntryOf(new Good { Name = "iron-ore" })!.OriginalCode);
         Assert.IsTrue(
             tables.Catalog.Goods.All(good => !string.IsNullOrWhiteSpace(good.NameEvidence)),
             "each name cites evidence"
@@ -1186,13 +1150,13 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
-    public void TheNameOfEachGoodInTheCatalogIsTheNameTablesNameUntilTheNameTableLetsGo()
+    public void TheNameOfEachGoodInTheCatalogIsTheNameTheTestCatalogGivesItsCode()
     {
         var tables = ProgramTablesImporter.Import(Executable(_ => { }));
 
         foreach (var entry in tables.Catalog.Goods)
         {
-            Assert.AreEqual(OpenSettlers.Simulation.NameTable.GoodName(entry.OriginalCode!.Value), entry.Name);
+            Assert.AreEqual(TestCatalog.Names[entry.OriginalCode!.Value - 1], entry.Name);
         }
     }
 
@@ -1208,7 +1172,7 @@ public sealed class ProgramTablesTests
 
         foreach (var code in Enumerable.Range(1, 26))
         {
-            var good = new Good { Code = code };
+            var good = TestCatalog.GoodOf(code);
 
             Assert.AreEqual(OldHandover(code), tables.HandoverCounterOf(good), $"the handover of the good {code}");
             Assert.AreEqual(code is 14 or 15, tables.CountsAgainstResource1(good), $"resource 1 of the good {code}");
@@ -1252,7 +1216,7 @@ public sealed class ProgramTablesTests
         Assert.AreEqual(26, tables.Catalog.Goods.Length);
         foreach (var code in Enumerable.Range(1, 26))
         {
-            var good = new Good { Code = code };
+            var good = TestCatalog.GoodOf(code);
 
             Assert.AreEqual(classes[code], tables.ClassOfGood(good), $"the request of the good {code}");
             Assert.AreEqual(
@@ -1308,7 +1272,7 @@ public sealed class ProgramTablesTests
         // The bytes 1 to 26 of the prio= line of the goods and remove verbs, which run 0x445570 at the game's start.
         Assert.AreEqual(
             0xBBF1449BF71E9134UL,
-            Fnv(Enumerable.Range(1, 26).Select(code => (byte)tables.TransportPriority(new Good { Code = code })))
+            Fnv(Enumerable.Range(1, 26).Select(code => (byte)tables.TransportPriority(TestCatalog.GoodOf(code))))
         );
     }
 

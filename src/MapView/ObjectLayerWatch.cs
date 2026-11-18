@@ -58,15 +58,10 @@ public sealed class ObjectLayerWatch
         return changed;
     }
 
-    // A good is hashed by its stable name, so a good with no original code is told from an empty place and from any other good; a good
-    // made from a number alone has no name and is hashed by the number. The separator keeps two places' names apart.
+    // A good is hashed by its stable name, so a good with no original code is told from an empty place (no name) and from any other good.
+    // The separator keeps two places' names apart.
     static ulong AddGood(ulong hash, Good good)
     {
-        if (good.Name.Length == 0)
-        {
-            return Fnv1a.Add(hash, good);
-        }
-
         foreach (var letter in good.Name)
         {
             hash = Fnv1a.Add(hash, letter);

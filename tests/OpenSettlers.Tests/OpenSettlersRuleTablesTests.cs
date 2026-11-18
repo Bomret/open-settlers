@@ -95,14 +95,11 @@ public sealed partial class OpenSettlersRuleTablesTests
         var made = Checked();
         var empty = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            [.. Enumerable.Range(0, 5).Select(_ => new byte[26])]
+            [.. Enumerable.Range(0, 5).Select(_ => (IReadOnlyDictionary<Good, byte>)new Dictionary<Good, byte>())]
         );
 
         Assert.IsFalse(made.Classes.SequenceEqual(empty.Classes), "object classes");
-        Assert.IsFalse(
-            made.StartStock.Select(row => row.ToArray()).SelectMany(row => row).SequenceEqual(new byte[130]),
-            "start stock"
-        );
+        Assert.IsFalse(made.StartStock.SelectMany(row => row.Values).All(count => count == 0), "start stock");
         Assert.IsFalse(made.StepTimes.SequenceEqual(empty.StepTimes), "step times");
         Assert.IsFalse(made.DoorSpeeds.SequenceEqual(empty.DoorSpeeds), "door speeds");
         Assert.IsFalse(made.ScanWindows.SequenceEqual(empty.ScanWindows), "scan windows");
@@ -155,9 +152,9 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.AreEqual(240, tables.PlankRankBase);
         Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.Sawmill));
         Assert.AreEqual(2, tables.NeedsOf(BuildingType.Sawmill).Stones);
-        Assert.AreEqual(21, tables.WorkerOf(BuildingType.Woodcutter)!.Tool.Code, "the hatchet");
+        Assert.AreEqual("hatchet", tables.WorkerOf(BuildingType.Woodcutter)!.Tool.Name, "the hatchet");
         Assert.AreEqual(4096, tables.BlowStep(BuildingType.Woodcutter, late: false), "32768 over eight blows");
-        Assert.AreEqual(12, tables.StartStock[0][7], "the plank of the first start stock level");
+        Assert.AreEqual(12, tables.StartStock[0][Good.Plank], "the plank of the first start stock level");
         Assert.AreEqual(180, tables.Get<PigFarmRates>(new PigFarmer()).RankBase);
         Assert.AreEqual(58982, tables.Get<PigFarmRates>(new PigFarmer()).Growth[0], "90 percent of the 16-bit draw");
     }
@@ -169,7 +166,7 @@ public sealed partial class OpenSettlersRuleTablesTests
 
         foreach (var entry in tables.Catalog.Goods)
         {
-            var good = new Good { Code = 1, Name = entry.Name };
+            var good = new Good { Name = entry.Name };
 
             Assert.AreEqual(entry.HandoverCounter, tables.FillCounterOf(good), $"the counts of {entry.Name}");
         }
@@ -186,7 +183,7 @@ public sealed partial class OpenSettlersRuleTablesTests
         Assert.AreEqual(26, tables.Catalog.Goods.Length);
         foreach (var entry in tables.Catalog.Goods)
         {
-            var good = new Good { Code = 1, Name = entry.Name };
+            var good = new Good { Name = entry.Name };
 
             Assert.AreEqual(
                 low.Contains(entry.Name) ? FillCounter.Low : FillCounter.High,

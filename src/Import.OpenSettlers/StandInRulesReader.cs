@@ -72,9 +72,10 @@ static class StandInRulesReader
         .Select((name, at) => (name, direction: new Direction { Value = at }))
         .ToDictionary(entry => entry.name, entry => entry.direction);
 
-    static readonly IReadOnlyDictionary<string, Good> GoodTerms = GoodNames
-        .Select((name, at) => (name, good: new Good { Code = at + 1, Name = name }))
-        .ToDictionary(entry => entry.name, entry => entry.good);
+    static readonly IReadOnlyDictionary<string, Good> GoodTerms = GoodNames.ToDictionary(
+        name => name,
+        name => new Good { Name = name }
+    );
 
     static readonly IReadOnlyDictionary<string, FillCounter> CounterTerms = new Dictionary<string, FillCounter>
     {

@@ -58,10 +58,14 @@ public sealed record Thing
     static string Hex(int value) => $"0x{value:x2}";
 
     /// <summary>The settler as a thing: every value the engine holds for it, and its job and state names where there are some.</summary>
-    public static Thing Of(Settler settler)
+    public static Thing Of(Settler settler, ContentCatalog catalog)
     {
         // The readout shows the original's own encoding of the settler beside the names (INV-0006).
-        var raw = SettlerEncoder.Fields(settler);
+        var raw = SettlerEncoder.Fields(settler, catalog);
+
+        // A mode that is the exporter word of a good with no original code is a hash: the readout leaves it out and shows the good by
+        // name (INV-0006).
+        var codeless = GoodWords.IsCodelessWord(catalog, raw.Mode);
 
         return new()
         {
@@ -73,7 +77,7 @@ public sealed record Thing
                 ("job", settler.Job.ToString()),
                 ("state", Hex(raw.State)),
                 ("player", settler.Player.ToString(CultureInfo.InvariantCulture)),
-                ("mode", Hex(raw.Mode)),
+                .. codeless ? [] : new[] { ("mode", Hex(raw.Mode)) },
                 ("target", raw.Target.ToString(CultureInfo.InvariantCulture)),
                 ("next", Hex(raw.Next)),
                 ("heading", raw.Heading.ToString(CultureInfo.InvariantCulture)),
@@ -179,9 +183,8 @@ public sealed record Thing
         ];
     }
 
-    // The name the name table gives a good, or its number where it names none.
-    static string GoodText(Good good) =>
-        NameTable.GoodName(good.Code) ?? good.Code.ToString(CultureInfo.InvariantCulture);
+    // A good is shown by its stable name, with no raw value beside it (INV-0006).
+    static string GoodText(Good good) => good.Name;
 
     // The goods that lie on the places of a flag, named and in the order of the places, as one value; none where the flag holds none.
     static (string, string)[] GoodsOf(Flag flag)
@@ -191,15 +194,19 @@ public sealed record Thing
         return goods.Length == 0 ? [] : [("goods", string.Join(",", goods))];
     }
 
-    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load, the settler who steps out
+    // The good a settler carries, named, as one value; none where he carries none (a carrier with a load or handing it over, the settler who steps out
     // with a good or puts it down).
     static (string, string)[] CarriedGood(Settler settler) =>
+        Load(settler) is { } good ? [("carrying", GoodText(good))] : [];
+
+    static Good? Load(Settler settler) =>
         settler.Activity switch
         {
-            WalksRoad { Load: { Good.IsNone: false } load } => [("carrying", GoodText(load.Good))],
-            StepsOutWithGood stepping => [("carrying", GoodText(stepping.Good))],
-            PutsDownGood putting => [("carrying", GoodText(putting.Good))],
-            _ => [],
+            WalksRoad { Load: { Good.IsNone: false } load } => load.Good,
+            HandsOver { Load: { Good.IsNone: false } load } => load.Good,
+            StepsOutWithGood { Good.IsNone: false } stepping => stepping.Good,
+            PutsDownGood { Good.IsNone: false } putting => putting.Good,
+            _ => null,
         };
 
     // The settler with the ID of its slot, and the flag its state makes the target (state 0x42 waits next to it; state 2 walks to it
@@ -207,7 +214,7 @@ public sealed record Thing
     // slot in the target.
     static Thing Of(Game game, Settler settler, int slot)
     {
-        var thing = Of(settler);
+        var thing = Of(settler, game.Tables.Catalog);
         var flag = settler.Activity switch
         {
             WaitsAtFlag waiting => FlagLink(game, waiting.Flag),

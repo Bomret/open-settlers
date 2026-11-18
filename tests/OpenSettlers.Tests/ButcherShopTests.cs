@@ -60,7 +60,7 @@ public sealed class ButcherShopTests
         ButcherInside(game);
         var pigs = game.CastleStock.Count(Good.Pig);
         var meat = game.CastleStock.Count(Good.Meat);
-        game.Goods.LayGood(CastleFlag, 0, Good.Pig.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Pig);
 
         ConstructionWorld.Run(game, 12000);
 
@@ -76,10 +76,10 @@ public sealed class ButcherShopTests
         ButcherInside(game);
         for (var place = 0; place < 8; place++)
         {
-            game.Goods.LayGood(1, place, Good.Pig.Code);
+            game.Goods.LayGood(1, place, Good.Pig);
         }
 
-        game.Goods.LayGood(2, 0, Good.Pig.Code);
+        game.Goods.LayGood(2, 0, Good.Pig);
 
         ConstructionWorld.Run(game, 100);
 
@@ -130,7 +130,7 @@ public sealed class ButcherShopTests
         var butcher = ButcherInside(game);
         var stones = game.CastleStock.Count(Good.Stone);
         var meat = game.CastleStock.Count(Good.Meat);
-        game.Goods.LayGood(CastleFlag, 0, Good.Pig.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Pig);
         var laid = 0;
         var tick = 0;
         while (butcher.Activity is not StepsOutWithGood && tick++ < 12000)
@@ -139,7 +139,7 @@ public sealed class ButcherShopTests
             {
                 if (game.Flags[ShopFlag].Places[place].IsEmpty)
                 {
-                    game.Goods.LayGood(ShopFlag, place, Good.Stone.Code);
+                    game.Goods.LayGood(ShopFlag, place, Good.Stone);
                     laid++;
                 }
             }

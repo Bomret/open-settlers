@@ -16,7 +16,6 @@ public sealed class ContentCatalog
     const int ClassesPerWord = 8;
 
     readonly Dictionary<string, GoodEntry> _byName;
-    readonly Dictionary<int, GoodEntry> _byCode;
 
     /// <summary>
     /// Creates the catalog from its goods. Throws an <see cref="ArgumentException"/> that names the entry and builds nothing for a duplicate
@@ -28,7 +27,7 @@ public sealed class ContentCatalog
     {
         var ordered = goods.OrderBy(good => good.Name, StringComparer.Ordinal).ToList();
         _byName = [];
-        _byCode = [];
+        Dictionary<int, GoodEntry> byCode = [];
         var byRank = new Dictionary<int, string>();
         foreach (var good in ordered)
         {
@@ -42,9 +41,9 @@ public sealed class ContentCatalog
                 throw Refuse(good, "another good has this stable name");
             }
 
-            if (good.OriginalCode is { } code && !_byCode.TryAdd(code, good))
+            if (good.OriginalCode is { } code && !byCode.TryAdd(code, good))
             {
-                throw Refuse(good, $"{_byCode[code].Name} has this original code, {code}");
+                throw Refuse(good, $"{byCode[code].Name} has this original code, {code}");
             }
 
             if (good.TransportRank < 1)
@@ -76,23 +75,19 @@ public sealed class ContentCatalog
     public ImmutableArray<GoodEntry> Goods { get; }
 
     /// <summary>
-    /// The entry of <paramref name="good"/>: the one with its stable name, else the one with its code as original code; null for no
-    /// good and for a good the catalog lacks.
+    /// The entry of <paramref name="good"/>, the one with its stable name; null for no good and for a good the catalog lacks.
     /// </summary>
-    public GoodEntry? EntryOf(Good good)
-    {
-        if (good.IsNone)
-        {
-            return null;
-        }
+    public GoodEntry? EntryOf(Good good) => good.IsNone ? null : _byName.GetValueOrDefault(good.Name);
 
-        if (good.Name.Length != 0 && _byName.TryGetValue(good.Name, out var named))
-        {
-            return named;
-        }
-
-        return _byCode.GetValueOrDefault(good.Code);
-    }
+    /// <summary>
+    /// The entry of <paramref name="good"/>. Throws an <see cref="InvalidOperationException"/> that names the good where the catalog
+    /// lacks it: a rule that meets a good its game's catalog lacks stops there. No good is no entry and throws too.
+    /// </summary>
+    public GoodEntry Require(Good good) =>
+        EntryOf(good)
+        ?? throw new InvalidOperationException(
+            $"The good '{good.Name}' is no entry of the content catalog, which holds: {string.Join(", ", Goods.Select(entry => entry.Name))}."
+        );
 
     static bool IsNameCharacter(char character) => character is >= 'a' and <= 'z' or >= '0' and <= '9' or '-';
 
