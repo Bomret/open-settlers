@@ -50,7 +50,7 @@ public sealed class TerrainTests
     public void EveryTileOfAGeneratedMapGivesTwoTriangles()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new Seed
             {
                 W0 = 1,
@@ -69,7 +69,7 @@ public sealed class TerrainTests
     public void TrianglesFollowTheRowsFromNorthToSouthSoLaterOnesPaintOver()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new Seed
             {
                 W0 = 1,
@@ -92,7 +92,7 @@ public sealed class TerrainTests
     public void TheUpperTriangleHangsFromItsNodeAndTheLowerRisesToTheNodeBelowEast()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new Seed
             {
                 W0 = 1,

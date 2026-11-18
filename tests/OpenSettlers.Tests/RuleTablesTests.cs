@@ -12,7 +12,7 @@ public sealed class RuleTablesTests
     [TestMethod]
     public void TablesGivenNoJobDataHoldNoneAndAnyJobIsAnError()
     {
-        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], MadeProgram.MadeStartStock());
 
         Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<FigureAdds>(new Woodcutter()));
         Assert.ThrowsExactly<InvalidOperationException>(() => tables.Get<BuilderFigureAdds>(Job.Of(99)));
@@ -37,7 +37,7 @@ public sealed class RuleTablesTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
 
-        var tables = new RuleTables(classes, TestProgram.MadeStartStock());
+        var tables = new RuleTables(classes, MadeProgram.MadeStartStock());
 
         Assert.IsTrue(tables.ClassOf(MapObject.Flag).IsFlag);
         Assert.IsTrue(tables.ClassOf(MapObject.None).IsEmpty);
@@ -54,7 +54,7 @@ public sealed class RuleTablesTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             walkRows: rows
         );
 
@@ -76,7 +76,7 @@ public sealed class RuleTablesTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             goodKinds: kinds
         );
 
@@ -93,7 +93,7 @@ public sealed class RuleTablesTests
         ranks[0] = 26;
         ranks[25] = 1;
 
-        var tables = TestProgram.Made(ranks);
+        var tables = MadeProgram.Made(ranks);
 
         Assert.AreEqual(26, tables.TransportPriority(new Good { Code = 1 }));
         Assert.AreEqual(1, tables.TransportPriority(new Good { Code = 26 }));
@@ -113,7 +113,7 @@ public sealed class RuleTablesTests
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             buildingSizes: sizes,
             buildingNeeds: needs
         );
@@ -128,7 +128,7 @@ public sealed class RuleTablesTests
     [TestMethod]
     public void ATypeOutsideTheTablesIsNoSizeAndNeedsNothing()
     {
-        var tables = TestProgram.Made();
+        var tables = MadeProgram.Made();
 
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Castle));
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.None));
@@ -146,7 +146,7 @@ public sealed class RuleTablesTests
     }
 
     static RuleTables WithJobData(params (Job, object)[] data) =>
-        new(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock(), jobData: data);
+        new(new ObjectClass[RuleTables.ClassCount], MadeProgram.MadeStartStock(), jobData: data);
 
     [TestMethod]
     public void JobDataIsKeptByJobAndByType()
@@ -256,7 +256,7 @@ public sealed class RuleTablesTests
         };
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             distribution: order
         );
 
@@ -268,14 +268,14 @@ public sealed class RuleTablesTests
     [TestMethod]
     public void TheMadeUpJobDataHoldsExactlyTheDataTheJobTypesDeclare()
     {
-        var declared = TestProgram.Jobs().SelectMany(job => job.Data.Select(type => (job, type)));
-        var made = TestProgram.MadeJobData().Select(entry => (entry.Job, entry.Data.GetType()));
+        var declared = MadeProgram.Jobs().SelectMany(job => job.Data.Select(type => (job, type)));
+        var made = MadeProgram.MadeJobData().Select(entry => (entry.Job, entry.Data.GetType()));
 
         CollectionAssert.AreEquivalent(declared.ToList(), made.ToList());
         Assert.IsTrue(declared.Any(), "the jobs declare data");
         Assert.AreEqual(
             new WorkerRequest { Job = new Builder(), Tool = Good.None },
-            TestProgram.Made().Get<WorkerRequest>(new Builder())
+            MadeProgram.Made().Get<WorkerRequest>(new Builder())
         );
     }
 }

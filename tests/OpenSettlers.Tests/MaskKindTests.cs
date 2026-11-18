@@ -45,7 +45,7 @@ public sealed class MaskKindTests
     }
 
     // A 2 x 1 mask that covers its second pixel.
-    static byte[] Mask() => MaskFileTests.Entry(2, 1, 1, 1, 0, 0);
+    static byte[] Mask() => GraphicEntries.MaskEntry(2, 1, 1, 1, 0, 0);
 
     static MaskKind Kind => new();
 
@@ -187,7 +187,7 @@ public sealed class MaskKindTests
                 new Dictionary<int, byte[]>
                 {
                     [3] = Palette(),
-                    [60] = MaskFileTests.Entry(2, 1, 1, 2, 0, 0),
+                    [60] = GraphicEntries.MaskEntry(2, 1, 1, 2, 0, 0),
                     [61] = Mask(),
                 }
             )
@@ -207,7 +207,7 @@ public sealed class MaskKindTests
         using var fake = InstallWith(
             ArchiveBytes.Build(
                 2000,
-                new Dictionary<int, byte[]> { [3] = Palette(), [1500] = MaskFileTests.Entry(2, 2, 0, 2, 0, 0) }
+                new Dictionary<int, byte[]> { [3] = Palette(), [1500] = GraphicEntries.MaskEntry(2, 2, 0, 2, 0, 0) }
             )
         );
 
@@ -237,7 +237,7 @@ public sealed class MaskKindTests
                 new Dictionary<int, byte[]>
                 {
                     [3] = Palette(),
-                    [60] = MaskFileTests.Entry(2, 1, 1, 2, 0, 0),
+                    [60] = GraphicEntries.MaskEntry(2, 1, 1, 2, 0, 0),
                     [61] = Mask(),
                 }
             )
@@ -274,7 +274,7 @@ public sealed class MaskKindTests
                 new Dictionary<int, byte[]>
                 {
                     [3] = Palette(),
-                    [260] = GraphicFileTests.Entry(1, 0, 2, 1, 0, 0, [0x40, 1]),
+                    [260] = GraphicEntries.Entry(1, 0, 2, 1, 0, 0, [0x40, 1]),
                 }
             )
         );
@@ -291,7 +291,7 @@ public sealed class MaskKindTests
         using var fake = InstallWith(
             ArchiveBytes.Build(
                 400,
-                new Dictionary<int, byte[]> { [3] = Palette(), [300] = GraphicFileTests.Entry(1, 0, 2, 2, 0, 0, [1]) }
+                new Dictionary<int, byte[]> { [3] = Palette(), [300] = GraphicEntries.Entry(1, 0, 2, 2, 0, 0, [1]) }
             )
         );
 

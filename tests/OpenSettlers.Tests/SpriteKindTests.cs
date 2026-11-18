@@ -14,7 +14,7 @@ public sealed class SpriteKindTests
     static readonly string[] Files = ["loca/SPAD.PA", "loca/SPAE.PA", "loca/SPAF.PA"];
 
     // Width 2, height 1: one drawn pixel of index 1 on the right, offsets -5 and -6.
-    static byte[] Sprite() => GraphicFileTests.Entry(1, 0, 2, 1, -5, -6, [1, 1, 1, 0, 0]);
+    static byte[] Sprite() => GraphicEntries.Entry(1, 0, 2, 1, -5, -6, [1, 1, 1, 0, 0]);
 
     static FakeInstall InstallWith(byte[] archive)
     {
@@ -197,11 +197,7 @@ public sealed class SpriteKindTests
         using var fake = InstallWith(
             ArchiveBytes.Build(
                 4000,
-                new Dictionary<int, byte[]>
-                {
-                    [3010] = GraphicFileTests.Entry(1, 0, 2, 1, 0, 0, [0, 0]),
-                    [3] = Palette(),
-                }
+                new Dictionary<int, byte[]> { [3010] = GraphicEntries.Entry(1, 0, 2, 1, 0, 0, [0, 0]), [3] = Palette() }
             )
         );
 
@@ -245,7 +241,7 @@ public sealed class SpriteKindTests
     [TestMethod]
     public void ARowThatOverrunsTheWidthIsUnreadableWithFileEntryAndReasonAndTheNextSpriteStillLoads()
     {
-        var overrun = GraphicFileTests.Entry(1, 0, 1, 1, 0, 0, [0, 2, 1, 1, 0, 0]);
+        var overrun = GraphicEntries.Entry(1, 0, 1, 1, 0, 0, [0, 2, 1, 1, 0, 0]);
         using var fake = InstallWith(
             ArchiveBytes.Build(
                 700,
@@ -268,7 +264,7 @@ public sealed class SpriteKindTests
     [TestMethod]
     public void TheCheckReportsAStreamPastTheEndOfTheEntryWithFileEntryAndReasonAndStillReadsTheRest()
     {
-        var cut = GraphicFileTests.Entry(1, 0, 4, 1, 0, 0, [0, 3, 1]);
+        var cut = GraphicEntries.Entry(1, 0, 4, 1, 0, 0, [0, 3, 1]);
         using var fake = InstallWith(
             ArchiveBytes.Build(
                 700,

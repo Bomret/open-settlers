@@ -12,6 +12,12 @@
     <Project Path="src/Assets/OpenSettlers.Assets.csproj" />
     <Project Path="src/Generators/OpenSettlers.Generators.csproj" />
     <Project Path="src/Testing/OpenSettlers.Testing.csproj" />
+    <Project Path="src/Domain.Testing/OpenSettlers.Domain.Testing.csproj" />
+    <Project Path="src/Import.Testing/OpenSettlers.Import.Testing.csproj" />
+    <Project Path="src/Import.HistoryEdition.Testing/OpenSettlers.Import.HistoryEdition.Testing.csproj" />
+    <Project Path="src/Application.Testing/OpenSettlers.Application.Testing.csproj" />
+    <Project Path="src/Adapters.Testing/OpenSettlers.Adapters.Testing.csproj" />
+    <Project Path="src/MapView.Testing/OpenSettlers.MapView.Testing.csproj" />
   </Folder>
   <Project Path="OpenSettlers.Tests/OpenSettlers.Tests.csproj" />
   <Folder Name="/tests/">

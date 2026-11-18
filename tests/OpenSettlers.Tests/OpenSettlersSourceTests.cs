@@ -1750,7 +1750,7 @@ public sealed class OpenSettlersSourceTests
     {
         var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -1761,7 +1761,7 @@ public sealed class OpenSettlersSourceTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -1930,7 +1930,7 @@ public sealed class OpenSettlersSourceTests
     {
         var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -2003,7 +2003,7 @@ public sealed class OpenSettlersSourceTests
         // Every job the item's byte 0 can carry (bits 2 to 6): a job the History Edition's tables hold a figure handler for must
         // have a figure in the content set for every activity it is drawn in, and a job without one none, so the two sources draw
         // the same jobs.
-        var handlers = SettlerFiguresTests.TablesOf([], [], []);
+        var handlers = SettlerTables.TablesOf([], [], []);
         var jobsDrawn = 0;
         for (var code = 0; code < 32; code++)
         {

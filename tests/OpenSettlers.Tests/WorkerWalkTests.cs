@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Adapters.Testing.WorkerBytes;
 
 namespace OpenSettlers.Tests;
 
@@ -62,39 +63,6 @@ public sealed class WorkerWalkTests
         }
 
         return scenarios;
-    }
-
-    // The settler's 16 bytes as the original's item holds them (Table16): the job and player, the frame, the timer, the
-    // node's offset (four bytes for each node, and the original's row holds the two records of its nodes, so a row is
-    // twice the map's width), the stamp, the state, the mode, the target, the heading, and the next state.
-    internal static string Hex(Settler s, int width)
-    {
-        var raw = SettlerEncoder.Fields(s);
-        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
-        bytes.AddRange(BitConverter.GetBytes(s.Timer));
-        bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
-        bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
-        bytes.AddRange([(byte)raw.State, (byte)raw.Mode]);
-        bytes.AddRange(BitConverter.GetBytes((ushort)raw.Target));
-        bytes.AddRange([(byte)raw.Heading, (byte)raw.Next]);
-
-        return Convert.ToHexString([.. bytes]);
-    }
-
-    // The hut's 18 bytes (Table18): the node's offset, the type byte, the status, the flag slot, bytes 8 and 9, the worker's
-    // slot, the progress, and the pointer to a storage item, which a hut has none.
-    internal static string Hex(Building b, int width)
-    {
-        var bytes = new List<byte>();
-        bytes.AddRange(BitConverter.GetBytes((b.Y * 2 * width + b.X) * 4));
-        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(b) << 2), (byte)BuildingEncoder.Status(b)]);
-        bytes.AddRange(BitConverter.GetBytes((ushort)b.Flag));
-        bytes.AddRange([0, 0]);
-        bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(b)));
-        bytes.AddRange(BitConverter.GetBytes(b.Progress));
-        bytes.AddRange([0, 0, 0, 0]);
-
-        return Convert.ToHexString([.. bytes]);
     }
 
     static List<int[]> Points(string list) =>

@@ -7,7 +7,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The play script's fast-forward step: how it reads, and how it runs on a game (castle 15,5 with a woodcutter's hut at
-// 16,2, as WoodcuttingTests builds it).
+// 16,2, as WoodcuttingWorld builds it).
 [TestClass]
 public sealed class FastForwardTests
 {
@@ -40,7 +40,7 @@ public sealed class FastForwardTests
     // The tick the woodcutter first cuts at, found on a game of its own.
     static long FirstCut()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         while (!Cutting(game))
         {
             game.Tick();
@@ -138,9 +138,9 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AStonecutterCarriesTheStoneOnTheWayBackToTheHut()
     {
-        var reference = StonecuttingTests.World(0x4d, out _);
+        var reference = StonecuttingWorld.World(0x4d, out _);
         TickUntil(reference, CarriesAStone, 6000, "a stonecutter carrying a stone");
-        var game = StonecuttingTests.World(0x4d, out _);
+        var game = StonecuttingWorld.World(0x4d, out _);
 
         var problem = Step("fast-forward stonecutter carrying max 6000").Run(game, Unread);
 
@@ -156,11 +156,11 @@ public sealed class FastForwardTests
             s.Job == new Sawmiller() && s.Activity is StepsOutWithGood or WaitsOutStep { Then: PutsDownGood }
         );
 
-    // A sawmill with a log laid at the castle's flag, its sawmiller waiting inside (SawmillTests' world).
+    // A sawmill with a log laid at the castle's flag, its sawmiller waiting inside (the world of SawmillWorld).
     static Game SawmillWithALog()
     {
-        var (game, _) = SawmillTests.World();
-        SawmillTests.SawmillerInside(game);
+        var (game, _) = SawmillWorld.World();
+        SawmillWorld.SawmillerInside(game);
         game.Goods.LayGood(0, 0, Good.Log.Code);
 
         return game;
@@ -184,9 +184,9 @@ public sealed class FastForwardTests
     public void ABuilderIsInStateNineAtTheFirstTickItBuilds()
     {
         static bool Builds(Game game) => game.Settlers.Any(s => s.Job == new Builder() && s.Activity.Code == 9);
-        var (reference, _) = BuilderTests.World();
+        var (reference, _) = BuilderWorld.World();
         TickUntil(reference, Builds, 3000, "a builder in state 9");
-        var (game, _) = BuilderTests.World();
+        var (game, _) = BuilderWorld.World();
 
         var problem = Step("fast-forward builder state 9 max 3000").Run(game, Unread);
 
@@ -256,7 +256,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AFailureNamesTheStepAsWritten()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
 
         var problem = Step("fast-forward woodcutter state 17 max 0").Run(game, Unread);
 
@@ -266,7 +266,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AfterAFastForwardNoTickIsDueUntilTheNextShotIsTaken()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var pacer = new TickPacer();
 
         var problem = Step("fast-forward woodcutter state 0x11 max 5000").Apply(game, true, pacer, Unread);
@@ -331,7 +331,7 @@ public sealed class FastForwardTests
     public void TheGameStopsAtTheFirstTickTheConditionHolds()
     {
         var first = FirstCut();
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var start = game.TickCount;
 
         var problem = Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
@@ -344,7 +344,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AConditionThatHoldsAlreadyRunsNoTick()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
         var at = game.TickCount;
 
@@ -357,7 +357,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void ReachingTheLimitFailsNamingTheStepAndTheTicks()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var start = game.TickCount;
 
         var problem = Step("fast-forward woodcutter state 0x11 max 3").Run(game, Unread);
@@ -369,7 +369,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AWoodcutterCarriesTheLogOnTheWayBackToTheHut()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
 
         var problem = Step("fast-forward woodcutter carrying max 6000").Run(game, Unread);
 
@@ -380,7 +380,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void ACarrierCarriesAGoodOnItsRoad()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
 
         var problem = Step("fast-forward carrier carrying max 6000").Run(game, Unread);
 
@@ -465,7 +465,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUntilStepOnAGameFieldListsNoThingsAndRunsUntilTheLogReachesTheCastle()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var logs = game.CastleStock.Logs;
         var asked = new System.Collections.Generic.List<bool>();
 
@@ -490,13 +490,13 @@ public sealed class FastForwardTests
     public void AnUntilFlagGoodsStepStopsAtTheFirstTickTheFlagHoldsTheCount()
     {
         static bool Holds(Game game) => game.Flags[3].Places.Any(place => !place.IsEmpty);
-        var reference = WoodcuttingTests.World(true, out _);
+        var reference = WoodcuttingWorld.World(true, out _);
         while (!Holds(reference))
         {
             reference.Tick();
         }
 
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var flag = game.Flags[3];
 
         var problem = Step($"fast-forward until flag-goods:{flag.X},{flag.Y} = 1 max 6000")
@@ -530,7 +530,7 @@ public sealed class FastForwardTests
     public void AnUntilCountSeesTheThingsAtEachTickAndStopsAtTheFirstTickTheCountHolds()
     {
         var first = FirstCut();
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var asked = new System.Collections.Generic.List<bool>();
 
         var problem = Step("fast-forward until count cuts-tree >= 1 max 5000")
@@ -544,7 +544,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUntilCountBelowStopsWhenTheCountDropsAndNotAtOnce()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         Step("fast-forward woodcutter state 0x11 max 5000").Run(game, Unread);
         var cutting = game.TickCount;
         var asked = new System.Collections.Generic.List<bool>();
@@ -567,7 +567,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUntilConditionThatHoldsAlreadyRunsNoTickAndBuildsOneState()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
         var start = game.TickCount;
         var asked = new System.Collections.Generic.List<bool>();
 
@@ -582,7 +582,7 @@ public sealed class FastForwardTests
     [TestMethod]
     public void AnUntilMissNamesTheStepAndTheTicks()
     {
-        var game = WoodcuttingTests.World(true, out _);
+        var game = WoodcuttingWorld.World(true, out _);
 
         var problem = Step("fast-forward until logs >= 99 max 3").Run(game, _ => Observed(game));
 
@@ -610,7 +610,7 @@ public sealed class FastForwardTests
 
         Assert.AreEqual(
             "fast-forward needs the game view, use --game-view",
-            step.Apply(WoodcuttingTests.World(true, out _), false, new TickPacer(), State)
+            step.Apply(WoodcuttingWorld.World(true, out _), false, new TickPacer(), State)
         );
         Assert.AreEqual("fast-forward: no game is running", step.Apply(null, true, new TickPacer(), State));
         Assert.AreEqual(0, built);

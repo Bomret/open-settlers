@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Testing.GraphicEntries;
+using static OpenSettlers.Tests.SettlerTables;
 
 namespace OpenSettlers.Tests;
 
@@ -12,27 +14,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class SettlerFiguresTests
 {
-    // Entry 2: a dword, then 200 big-endian offsets from the first byte after that dword. The sequence of frame 7 holds
-    // three triples (figure byte, dx, dy): (3, 1, 2), (4, -1, 0), (5, 0, 0); the sequence of frame 8 holds (0x81, 0, 0), a
-    // figure byte from 0x80 as the cut's frames hold.
-    internal static byte[] Sequences()
-    {
-        var data = new byte[4 + 200 * 4 + 12];
-        var at = 4 + 200 * 4;
-        for (var i = 0; i < 12; i++)
-        {
-            data[at + i] = new byte[] { 3, 1, 2, 4, 0xff, 0, 5, 0, 0, 0x81, 0, 0 }[i];
-        }
-
-        var offset = at - 4;
-        data[4 + 7 * 4 + 2] = (byte)(offset >> 8);
-        data[4 + 7 * 4 + 3] = (byte)offset;
-        data[4 + 8 * 4 + 2] = (byte)((offset + 9) >> 8);
-        data[4 + 8 * 4 + 3] = (byte)(offset + 9);
-
-        return data;
-    }
-
     // The adds of the woodcutter's handler (0x43fb6b): the high byte of the figure word is 0x0b for the walk, 0x10 for the
     // way back with the log, and 0x0f for a figure byte from 0x80.
     static readonly FigureAdds Adds = new()
@@ -153,56 +134,6 @@ public sealed class SettlerFiguresTests
             pigFarmer: PigFarmerAdds
         );
     }
-
-    // Figure tables over made-up job data: the given adds of each job, all 0 (the carrier's row) for the ones not given, and the figure
-    // bases, offsets, and waiting carriers' tables given apart from the rule tables.
-    internal static SettlerFigureTables TablesOf(
-        short[] bases,
-        short[] offsets,
-        byte[] sequences,
-        short[]? carried = null,
-        FigureAdds woodcutter = default,
-        FisherFigureAdds typeOneHut = default,
-        (short[] Phases, short[] Figures, sbyte[] Offsets)? idle = null,
-        BuilderFigureAdds builder = default,
-        FigureAdds stonecutter = default,
-        ForesterFigureAdds forester = default,
-        FigureAdds digger = default,
-        SawmillerFigureAdds sawmiller = default,
-        FoodHutFigureAdds miller = default,
-        FarmerFigureAdds farmer = default,
-        FoodHutFigureAdds baker = default,
-        FoodHutFigureAdds butcher = default,
-        FoodHutFigureAdds pigFarmer = default
-    ) =>
-        new(
-            new RuleTables(
-                new ObjectClass[RuleTables.ClassCount],
-                TestProgram.MadeStartStock(),
-                figureBases: bases,
-                figureOffsets: offsets,
-                carriedFigures: carried ?? [],
-                idlePhases: idle?.Phases,
-                idleFigures: idle?.Figures,
-                idleOffsets: idle?.Offsets,
-                jobData:
-                [
-                    (new Woodcutter(), woodcutter),
-                    (new Stonecutter(), stonecutter),
-                    (new Digger(), digger),
-                    (new Builder(), builder),
-                    (new Forester(), forester),
-                    (new Sawmiller(), sawmiller),
-                    (new Miller(), miller),
-                    (new Fisher(), typeOneHut),
-                    (new Farmer(), farmer),
-                    (new Baker(), baker),
-                    (new Butcher(), butcher),
-                    (new PigFarmer(), pigFarmer),
-                ]
-            ),
-            sequences
-        );
 
     // The adds of the sawmiller's handler (0x43fc21), made up: 0x1900 for a figure byte below 0x80, 0x1a00 for the step that takes the
     // plank out, and 0x1b80 from 0x80 on.
@@ -378,7 +309,7 @@ public sealed class SettlerFiguresTests
 
     static Map Map() =>
         MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

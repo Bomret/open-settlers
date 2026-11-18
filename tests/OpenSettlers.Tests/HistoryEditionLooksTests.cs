@@ -27,7 +27,7 @@ public sealed class HistoryEditionLooksTests
             carriedFigures: carried,
             jobData:
             [
-                .. TestProgram.MadeJobData(),
+                .. MadeProgram.MadeJobData(),
                 (new Stonecutter(), Adds),
                 (new Forester(), new ForesterFigureAdds { Walk = 1, Work = 4 }),
                 (

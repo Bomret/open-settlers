@@ -147,7 +147,7 @@ public sealed class StorageDistributionTests
     public void AFoodStepHandsOutTheFoodGoodTheCastleHoldsMostOf()
     {
         var food = new GoodClass { Class = 7, Word = RequestWord.First };
-        var tables = LayoutSettlersTests.MadeTables(
+        var tables = MadeProgram.MadeTables(
             distribution:
             [
                 [

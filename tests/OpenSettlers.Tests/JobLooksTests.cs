@@ -29,7 +29,7 @@ public sealed class JobLooksTests
         new(
             [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
             NoStock(),
-            jobData: TestProgram.MadeJobData()
+            jobData: MadeProgram.MadeJobData()
         );
 
     static byte[][] NoStock() =>

@@ -185,7 +185,7 @@ public sealed class MapLaunchTests
     {
         using var fake = new FakeInstall();
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".jsonc");
-        File.WriteAllText(path, LayoutTests.Text());
+        File.WriteAllText(path, LayoutText.Text());
         try
         {
             var open = (MapLaunch.Open)Decide(Args("--layout", path, "--game", fake.Root), layout: LoadsFine);
@@ -284,7 +284,7 @@ public sealed class MapLaunchTests
     [TestMethod]
     public void AValidLayoutOnTheBasicSetOpensWithNoInstall()
     {
-        var read = Layout.Read(LayoutTests.Text(), "l.jsonc");
+        var read = Layout.Read(LayoutText.Text(), "l.jsonc");
         Assert.IsNotNull(read.Layout, string.Join("; ", read.Problems));
 
         var open = (MapLaunch.Open)DecideOnTheBasicSet(["--layout", "l.jsonc"], layout: _ => (0, read.Layout, null));
@@ -298,7 +298,7 @@ public sealed class MapLaunchTests
     [TestMethod]
     public void ALayoutEntryTheBasicRulesRefuseExitsFourWithTheLayoutsProblem()
     {
-        var text = LayoutTests.Text(
+        var text = LayoutText.Text(
             extra: "\"castle\":{\"x\":15,\"y\":10},\"buildings\":[{\"type\":\"woodcutter\",\"x\":15,\"y\":10}]"
         );
         var read = Layout.Read(text, "refused.jsonc");

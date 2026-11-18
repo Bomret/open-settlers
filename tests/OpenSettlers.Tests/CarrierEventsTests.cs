@@ -14,7 +14,7 @@ public sealed class CarrierEventsTests
     static Game NewGame()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

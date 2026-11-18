@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Testing.FlagWords;
 
 namespace OpenSettlers.Tests;
 
@@ -88,24 +89,6 @@ public sealed class WoodcutterTests
                 .Where(index => now[index] != before[index])
                 .Select(index => $"{index % width},{index / width}:{before[index]:X2}>{now[index]:X2}")
         );
-    }
-
-    // The verb goods numbers the flags one higher than the engine (the dummy of the original's game start, docs/rules/goods.md).
-    // The word of the bytes at the hex offset holds a flag in the settler's states that walk to a flag (2, 5, 6, 0xf)
-    // and in the hut's item; there it is the engine's slot plus one, and 0 where there is none. A word beyond the
-    // flags (the engine has flagCount) is no flag, and neither is the word of a settler in another state.
-    internal static string InEngineNumbers(string bytes, int offset, int flagCount)
-    {
-        var isFlagWord = offset == 12 || Convert.ToInt32(bytes[20..22], 16) is 2 or 5 or 6 or 0xf;
-        var word = Convert.ToInt32(string.Concat(bytes.AsSpan(offset + 2, 2), bytes.AsSpan(offset, 2)), 16);
-
-        return isFlagWord && word >= 1 && word <= flagCount
-            ? string.Concat(
-                bytes.AsSpan(0, offset),
-                (word - 1).ToString("X2", CultureInfo.InvariantCulture),
-                bytes.AsSpan(offset + 2)
-            )
-            : bytes;
     }
 
     static Game Start(string command, out Map map, out int hutFlag, out int passes)
@@ -213,7 +196,7 @@ public sealed class WoodcutterTests
                 // The word at 12 holds the hut's flag while the worker walks to it or from it.
                 Assert.AreEqual(
                     InEngineNumbers(worker, 24, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Settlers[WorkerSlot], width),
+                    WorkerBytes.Hex(game.Settlers[WorkerSlot], width),
                     $"{name}: the worker after pass {pass}"
                 );
             }
@@ -222,7 +205,7 @@ public sealed class WoodcutterTests
             {
                 Assert.AreEqual(
                     InEngineNumbers(hut, 12, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Buildings[HutSlot], width),
+                    WorkerBytes.Hex(game.Buildings[HutSlot], width),
                     $"{name}: the hut after pass {pass}"
                 );
             }
@@ -246,7 +229,7 @@ public sealed class WoodcutterTests
                 {
                     Assert.AreEqual(
                         bytes,
-                        WorkerWalkTests.Hex(game.Settlers[knight], width),
+                        WorkerBytes.Hex(game.Settlers[knight], width),
                         $"{name}: the knight of slot {knight} after pass {pass}"
                     );
                 }

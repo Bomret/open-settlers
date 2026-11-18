@@ -165,7 +165,7 @@ public sealed class RoadCursorTests
     [TestMethod]
     public void JudgingTheVerdictsLeavesTheMapAndTheGameUnchanged()
     {
-        var game = RoadsTests.TwoFlags();
+        var game = RoadWorld.TwoFlags();
         var digest = game.Digest();
         var roads = Enumerable.Range(0, game.Map.Count).Select(index => game.Map.At(index).Roads).ToArray();
 

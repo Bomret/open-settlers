@@ -16,7 +16,7 @@ public sealed class RoadLoopTests
     static Game Started()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -25,7 +25,7 @@ public sealed class RoadLoopTests
             },
             MapSize.Offered[0]
         );
-        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(MadeProgram.RemovalTables(), map);
         Apply(game, CommandKind.PlaceCastle, 15, 5);
 
         return game;

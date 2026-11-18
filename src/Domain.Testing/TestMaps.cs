@@ -1,9 +1,9 @@
 using System.Linq;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Domain.Testing;
 
 /// <summary>Reads of the typed map that several tests share.</summary>
-static class TestMaps
+public static class TestMaps
 {
     /// <summary>The object on each node, in row-major node order.</summary>
     public static MapObject[] Objects(Map map) =>

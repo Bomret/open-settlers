@@ -211,8 +211,8 @@ public sealed class FarmerTests
                 var slot = Enumerable.Range(0, game.Settlers.Count).Single(at => game.Settlers[at].Job is Farmer);
                 Assert.AreEqual(WorkerSlot, slot, $"{name}: the castle makes its slot {WorkerSlot} settler the farmer");
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(worker, 24, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Settlers[slot], width),
+                    FlagWords.InEngineNumbers(worker, 24, game.Flags.Count),
+                    WorkerBytes.Hex(game.Settlers[slot], width),
                     $"{name}: the farmer after pass {pass}"
                 );
             }
@@ -220,8 +220,8 @@ public sealed class FarmerTests
             if (line.TryGetValue("b", out var farmBytes))
             {
                 Assert.AreEqual(
-                    WoodcutterTests.InEngineNumbers(farmBytes, 12, game.Flags.Count),
-                    WorkerWalkTests.Hex(game.Buildings[HutSlot], width),
+                    FlagWords.InEngineNumbers(farmBytes, 12, game.Flags.Count),
+                    WorkerBytes.Hex(game.Buildings[HutSlot], width),
                     $"{name}: the farm after pass {pass}"
                 );
             }

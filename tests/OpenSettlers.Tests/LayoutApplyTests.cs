@@ -25,7 +25,7 @@ public sealed class LayoutApplyTests
 
     static Layout Read(string extra)
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + extra), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
 
         return read.Layout!;
@@ -39,8 +39,8 @@ public sealed class LayoutApplyTests
         classes[MapObject.Flag.Code] = 3;
         var tables = new RuleTables(
             classes,
-            TestProgram.MadeStartStock(),
-            workers: TestProgram.MadeWorkers(stonecutter: true)
+            MadeProgram.MadeStartStock(),
+            workers: MadeProgram.MadeWorkers(stonecutter: true)
         );
 
         return GameFactory.Create(tables, layout.BuildMap());
@@ -146,9 +146,9 @@ public sealed class LayoutApplyTests
         return GameFactory.Create(
             new RuleTables(
                 classes,
-                TestProgram.MadeStartStock(),
+                MadeProgram.MadeStartStock(),
                 buildingSizes: sizes,
-                workers: TestProgram.MadeWorkers(stonecutter: true)
+                workers: MadeProgram.MadeWorkers(stonecutter: true)
             ),
             layout.BuildMap()
         );
@@ -184,7 +184,7 @@ public sealed class LayoutApplyTests
         var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter", "farm"));
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Farm.Code] = 2;
-        var workers = TestProgram.MadeWorkers();
+        var workers = MadeProgram.MadeWorkers();
         var scythe = new Good { Code = 20 };
         workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = scythe };
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -193,10 +193,10 @@ public sealed class LayoutApplyTests
             GameFactory.Create(
                 new RuleTables(
                     classes,
-                    TestProgram.MadeStartStock(),
+                    MadeProgram.MadeStartStock(),
                     buildingSizes: sizes,
                     workers: workers,
-                    jobData: TestProgram.MadeJobData()
+                    jobData: MadeProgram.MadeJobData()
                 ),
                 of.BuildMap()
             );
@@ -235,7 +235,7 @@ public sealed class LayoutApplyTests
     public void AnEntryThatNamesATypeNoSliceBuildsFailsTheReadNamingTheTypes(string name)
     {
         var entry = $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """;
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + entry), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + entry), "test.jsonc");
 
         Assert.IsTrue(
             read.Problems.Any(problem =>
@@ -252,7 +252,7 @@ public sealed class LayoutApplyTests
     [TestMethod]
     public void AnEntryWithNoTypeFailsTheReadNamingTheShape()
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + """ "buildings": [{"x": 13, "y": 10}] """), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + """ "buildings": [{"x": 13, "y": 10}] """), "test.jsonc");
 
         Assert.IsTrue(
             read.Problems.Any(problem =>
@@ -339,7 +339,7 @@ public sealed class LayoutApplyTests
 
         foreach (var (extra, entry) in new[] { (flags + huts, "flags"), (roads + huts, "roads"), (huts, "buildings") })
         {
-            var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
+            var read = Layout.Read(LayoutText.Text(extra: "\n" + extra), "test.jsonc");
 
             Assert.IsTrue(
                 read.Problems.Any(problem =>
@@ -353,7 +353,7 @@ public sealed class LayoutApplyTests
     [TestMethod]
     public void AMalformedEntryFailsTheReadNamingIt()
     {
-        var read = Layout.Read(LayoutTests.Text(extra: """ "roads": [{"x": 1, "y": 2}] """), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: """ "roads": [{"x": 1, "y": 2}] """), "test.jsonc");
 
         Assert.IsTrue(read.Problems.Any(problem => problem.StartsWith("test.jsonc: roads[0]: ")));
     }

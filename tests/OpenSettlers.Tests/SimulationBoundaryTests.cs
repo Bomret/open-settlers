@@ -128,12 +128,12 @@ public sealed class SimulationBoundaryTests
         var windows = new ushort[RuleTables.ScanWindowCount];
         Array.Fill(windows, (ushort)16);
         windows[MapSize.Offered[0].Value] = (ushort)window;
-        var tables = LayoutSettlersTests.MadeTables(scanWindows: windows);
+        var tables = MadeProgram.MadeTables(scanWindows: windows);
 
         return GameFactory.Create(
             tables,
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,

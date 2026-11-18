@@ -42,7 +42,7 @@ public sealed class PlayNamedThingTests
     // The castle at 15,5 (flag#0.1 at 16,6) and a flag#1.1 at 18,6.
     static Game Castle()
     {
-        var game = ThingHistoryTests.NewGame();
+        var game = HistoryWorld.NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 18, 6);
 
@@ -257,7 +257,7 @@ public sealed class PlayNamedThingTests
     [TestMethod]
     public void ExpectEventBuildsPassesOnTheBuilderOnceHeHasWorked()
     {
-        var (game, _) = BuilderTests.World();
+        var (game, _) = BuilderWorld.World();
         Settler? builder = null;
         for (var tick = 0; tick < 3000 && builder is null; tick++)
         {
@@ -587,7 +587,7 @@ public sealed class PlayNamedThingTests
     [TestMethod]
     public void NameOfAThingWithNoThingIdIsRefusedForARoadNodeAndAMapObject()
     {
-        var game = ThingHistoryTests.NewGame();
+        var game = HistoryWorld.NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 20, 6);
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]);
@@ -612,7 +612,7 @@ public sealed class PlayNamedThingTests
             _ => null
         );
         run.Advance(0);
-        current = ThingHistoryTests.NewGame();
+        current = HistoryWorld.NewGame();
         run.Advance(1.0);
 
         StringAssert.Contains(Problem(run), "is gone, it has no event");
@@ -664,7 +664,7 @@ public sealed class PlayNamedThingTests
             _ => null
         );
         run.Advance(0);
-        current = ThingHistoryTests.NewGame();
+        current = HistoryWorld.NewGame();
         current.Tick();
         current.Tick();
         run.Advance(1.0);
@@ -749,7 +749,7 @@ public sealed class PlayNamedThingTests
     [TestMethod]
     public void AnEventsLineOfACarrierNamesTheFlagItWaitsAtAsOther()
     {
-        var game = ThingHistoryTests.Laid();
+        var game = LaidGame.Laid();
         var waiting = game.History.Events.All.Single(e =>
             e.Type == EventType.LayoutWaitingOnRoad
             && e.Thing.Kind == ThingId.SettlerKind
@@ -769,7 +769,7 @@ public sealed class PlayNamedThingTests
     [TestMethod]
     public void AnEventsLineCarriesOtherOnlyForAnEventWithAnotherThing()
     {
-        var game = ThingHistoryTests.NewGame();
+        var game = HistoryWorld.NewGame();
         Do(game, CommandKind.PlaceCastle, 15, 5);
         Do(game, CommandKind.PlaceFlag, 20, 6);
         Do(game, CommandKind.BuildRoad, 16, 6, [0, 0, 0, 0]);

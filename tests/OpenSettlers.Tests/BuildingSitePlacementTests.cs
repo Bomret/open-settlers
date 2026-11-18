@@ -16,7 +16,7 @@ public sealed class BuildingSitePlacementTests
 {
     [TestMethod]
     public void ABuildingSiteOfEachTypeHoldsTheBytesTheOriginalWrites() =>
-        RemovalTests.Replay(
+        RemovalReplay.Replay(
             "building-sites.txt",
             "sites-four-types",
             (_, _) => [CommandKind.PlaceBuilding],
@@ -33,7 +33,7 @@ public sealed class BuildingSitePlacementTests
     [DataRow("food-pig-farm")]
     [DataRow("food-baker")]
     public void AFoodSiteHoldsTheBytesTheOriginalWrites(string scenario) =>
-        RemovalTests.Replay("food-sites.txt", scenario, (_, _) => [CommandKind.PlaceBuilding], line => false);
+        RemovalReplay.Replay("food-sites.txt", scenario, (_, _) => [CommandKind.PlaceBuilding], line => false);
 
     // On the emulator's game at its pass 40 the evaluator gives eight nodes the state and site of "food-evaluated". The engine's
     // evaluator gives the same, and a food type is placed on a node of site 4 for a large type (the farm, butcher, pig farm, baker)
@@ -41,7 +41,7 @@ public sealed class BuildingSitePlacementTests
     [TestMethod]
     public void AFoodTypeIsRefusedOnANodeWhoseEmulatedSiteIsTooSmallForItsSize()
     {
-        var scenario = RemovalTests.Load("food-sites.txt").Single(candidate => candidate.Name == "food-evaluated");
+        var scenario = EmulatorFixture.Load("food-sites.txt").Single(candidate => candidate.Name == "food-evaluated");
         var parts = scenario.Command.Split(':');
         var nodes = scenario
             .Lines[0]["classes"]
@@ -67,7 +67,7 @@ public sealed class BuildingSitePlacementTests
 
         foreach (var type in types)
         {
-            var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts));
+            var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts));
             for (var pass = 0; pass < int.Parse(parts[8], CultureInfo.InvariantCulture); pass++)
             {
                 game.Tick();

@@ -11,7 +11,7 @@ public sealed class CommandHandlerTests
 {
     static Game NewGame()
     {
-        var tables = TestProgram.Made();
+        var tables = MadeProgram.Made();
 
         return GameFactory.Create(
             tables,
@@ -45,7 +45,7 @@ public sealed class CommandHandlerTests
         {
             for (var x = 0; x < game.Map.Size.Width; x++)
             {
-                if (wanted(BuildSite.Evaluate(TestProgram.Made(), game.Map, x, y, 0, hasCastle)))
+                if (wanted(BuildSite.Evaluate(MadeProgram.Made(), game.Map, x, y, 0, hasCastle)))
                 {
                     return (x, y);
                 }

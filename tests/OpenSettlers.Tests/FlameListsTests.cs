@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using static OpenSettlers.Testing.ProgramImage;
+using static OpenSettlers.Tests.FlameListImage;
 
 namespace OpenSettlers.Tests;
 
@@ -11,53 +13,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class FlameListsTests
 {
-    const int ImageBase = 0x400000;
-    const int SectionStart = 0x4e000;
-    const int RawStart = 0x200;
-
-    // A PE32 file with one section that holds the addresses from 0x44e000 on, `size` bytes of it, at the file offset 0x200.
-    internal static byte[] Executable(Action<byte[]> fill, int size = 0x400)
-    {
-        var exe = new byte[RawStart + size];
-        exe[0] = (byte)'M';
-        exe[1] = (byte)'Z';
-        BitConverter.GetBytes(0x40).CopyTo(exe, 0x3c);
-        BitConverter.GetBytes(0x4550).CopyTo(exe, 0x40);
-        BitConverter.GetBytes((ushort)1).CopyTo(exe, 0x40 + 6);
-        BitConverter.GetBytes((ushort)0xe0).CopyTo(exe, 0x40 + 20);
-        BitConverter.GetBytes(ImageBase).CopyTo(exe, 0x40 + 24 + 28);
-        var header = 0x40 + 24 + 0xe0;
-        BitConverter.GetBytes(SectionStart).CopyTo(exe, header + 12);
-        BitConverter.GetBytes(size).CopyTo(exe, header + 16);
-        BitConverter.GetBytes(RawStart).CopyTo(exe, header + 20);
-        fill(exe);
-
-        return exe;
-    }
-
-    internal static int At(int address) => address - ImageBase - SectionStart + RawStart;
-
-    // Every list holds one small flame at (0, 0), but list 2 holds a small flame at (-3, 5) and a large one at (4, -12), and
-    // list 0 a large one at (1, -2). Types 7 and 8 point to one list.
-    internal static void Lists(byte[] exe)
-    {
-        var header = At(FlameLists.Address);
-        var common = 50;
-        for (var list = 0; list < FlameLists.ListCount; list++)
-        {
-            BitConverter.GetBytes((short)common).CopyTo(exe, header + 2 * list);
-        }
-
-        exe[header + common + 3] = 0xff;
-        BitConverter.GetBytes((short)60).CopyTo(exe, header);
-        new byte[] { 8, 1, 0xfe, 0xff }.CopyTo(exe, header + 60);
-        BitConverter.GetBytes((short)70).CopyTo(exe, header + 2 * 2);
-        new byte[] { 0, 0xfd, 5, 8, 4, 0xf4, 0x80 }.CopyTo(exe, header + 70);
-        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 7);
-        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 8);
-        new byte[] { 8, 2, 3, 0xff }.CopyTo(exe, header + 80);
-    }
-
     static Flame Small(int x, int y) =>
         new()
         {

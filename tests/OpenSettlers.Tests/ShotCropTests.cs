@@ -17,7 +17,7 @@ public sealed class ShotCropTests
     // heights, which the seed gives.
     static Map? _map;
 
-    static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
+    static Map Map => _map ??= MapViewState.Open(MadeProgram.Made(), "1234567812345678", 1).Map!;
 
     static string? Box(
         (double X, double Y) camera,

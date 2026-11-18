@@ -24,9 +24,9 @@ public sealed class GoodsHistoryTests
     // Runs the carry until the castle holds a delivered log, or fails.
     static Game Carried()
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + Carry), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + Carry), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
-        var game = LayoutSettlersTests.NewGame(read.Layout!);
+        var game = LayoutGames.NewGame(read.Layout!);
         Assert.IsNull(read.Layout!.Apply(game));
         for (var i = 0; i < 4000 && game.History.Events.All.All(e => e.Type != EventType.Handover); i++)
         {
@@ -102,8 +102,8 @@ public sealed class GoodsHistoryTests
     [TestMethod]
     public void TheStateOfTheCarrierAtEveryTickOfTheCarryIsTheEnginesStateThen()
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + Carry), "test.jsonc");
-        var game = LayoutSettlersTests.NewGame(read.Layout!);
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + Carry), "test.jsonc");
+        var game = LayoutGames.NewGame(read.Layout!);
         Assert.IsNull(read.Layout!.Apply(game));
         var id = Carrier(game);
         var ticks = 0;

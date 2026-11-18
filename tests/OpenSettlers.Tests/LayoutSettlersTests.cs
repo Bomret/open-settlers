@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Adapters.Testing.LayoutGames;
+using static OpenSettlers.Domain.Testing.MadeProgram;
 
 namespace OpenSettlers.Tests;
 
@@ -36,101 +38,14 @@ public sealed class LayoutSettlersTests
 
     static Layout Read(string extra, string objects = "[]")
     {
-        var read = Layout.Read(LayoutTests.Text(objects: objects, extra: "\n" + extra), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(objects: objects, extra: "\n" + extra), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
 
         return read.Layout!;
     }
 
     static string[] Problems(string extra) =>
-        [.. Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc").Problems];
-
-    // The direction each heading class (0x437072) takes first, as in WoodcuttingTests: a step that cuts the vector.
-    static readonly byte[] FirstDirections = [20, 20, 20, 20, 16, 12, 12, 8, 8, 4, 4, 24];
-
-    // Made-up tables as the hut and carrier tests have them: every step takes 100 clock units, the flag's object class is 3,
-    // and the walk's direction rows hold the heading class's own first direction first.
-    internal static Game NewGame(Layout layout) => GameFactory.Create(MadeTables(), layout.BuildMap());
-
-    // The object class of the building's code (2) is 0 unless `buildingClass` names one: the removal click (0x44b6e6)
-    // takes a building for class 4.
-    internal static RuleTables MadeTables(
-        byte buildingClass = 0,
-        byte[]? transportPriorities = null,
-        byte[]? buildingSizes = null,
-        byte[]? buildingNeeds = null,
-        GoodClass?[]? goodClasses = null,
-        DistributionStep[][]? distribution = null,
-        byte plankRankBase = 0,
-        byte millRankBase = 0,
-        WorkerRequest?[]? workers = null,
-        WorkerRequest? builderRequest = null,
-        ushort[]? materialOrder = null,
-        ushort[]? blowSteps = null,
-        ushort stepTime = 100,
-        WorkerRequest? diggerRequest = null,
-        ushort[]? scanWindows = null,
-        byte[]? goodKinds = null,
-        IEnumerable<(Job Job, object Data)>? jobData = null
-    )
-    {
-        var classes = new ObjectClass[RuleTables.ClassCount];
-        classes[MapObject.Flag.Code] = 3;
-        classes[2] = buildingClass;
-        var rows = new byte[RuleTables.WalkRowCount * RuleTables.WalkRowSize];
-        for (var row = 0; row < RuleTables.WalkRowCount; row++)
-        {
-            var first = row < 12 ? (byte)4 : FirstDirections[row - 12];
-            new[] { first }
-                .Concat(new byte[] { 4, 8, 12, 16, 20, 24 }.Where(code => code != first))
-                .ToArray()
-                .CopyTo(rows, row * RuleTables.WalkRowSize);
-        }
-
-        return new RuleTables(
-            classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
-            [.. Enumerable.Repeat(stepTime, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-            scanWindows ?? [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            walkRows: rows,
-            transportPriorities: transportPriorities,
-            buildingSizes: buildingSizes,
-            buildingNeeds: buildingNeeds,
-            goodKinds: goodKinds ?? KindsOf(goodClasses),
-            goodClasses: goodClasses,
-            distribution: distribution,
-            plankRankBase: plankRankBase,
-            millRankBase: millRankBase,
-            workers: workers ?? TestProgram.MadeWorkers(stonecutter: true, fisher: true),
-            materialOrder: materialOrder,
-            blowSteps: blowSteps,
-            // A request a test gives replaces the made-up one of the same job.
-            jobData:
-            [
-                (new Builder(), builderRequest ?? new WorkerRequest { Job = new Builder(), Tool = Good.None }),
-                (new Digger(), diggerRequest ?? new WorkerRequest { Job = new Digger(), Tool = Good.None }),
-                .. jobData ?? [],
-            ]
-        );
-    }
-
-    // The made-up kind table of a made-up class table: a good counts in the byte of the word that asks for it (the first word's low
-    // byte, the second's high), and a good that no word asks for counts in none, as the program's table does.
-    static byte[]? KindsOf(GoodClass?[]? classes) =>
-        classes is null
-            ? null
-            :
-            [
-                .. classes.Select(asked => asked is { } c ? (byte)(c.Word == RequestWord.First ? 0 : 1) : (byte)0xff),
-                .. new byte[RuleTables.GoodKindCount - classes.Length],
-            ];
+        [.. Layout.Read(LayoutText.Text(extra: "\n" + extra), "test.jsonc").Problems];
 
     static Game Applied(string extra, string objects = "[]")
     {
@@ -175,7 +90,7 @@ public sealed class LayoutSettlersTests
         var layout = Read(Built.Replace("\"woodcutter\"", "\"mill\""));
         var game = GameFactory.Create(
             MadeTables(
-                workers: TestProgram.MadeWorkers(mill: true),
+                workers: MadeProgram.MadeWorkers(mill: true),
                 goodClasses: ConstructionTables.Classes(),
                 millRankBase: ConstructionTables.MillRankBase
             ),
@@ -215,7 +130,7 @@ public sealed class LayoutSettlersTests
     {
         var layout = Read(Built.Replace("\"woodcutter\"", "\"baker\""));
         var game = GameFactory.Create(
-            MadeTables(workers: TestProgram.MadeWorkers(baker: true), goodClasses: ConstructionTables.Classes()),
+            MadeTables(workers: MadeProgram.MadeWorkers(baker: true), goodClasses: ConstructionTables.Classes()),
             layout.BuildMap()
         );
 
@@ -236,7 +151,7 @@ public sealed class LayoutSettlersTests
     public void AFinishedButcherEntryStandsAButcherMadeOfASettlerWithoutAJobAndTheKnifeFromTheCastlesStock()
     {
         var knife = new Good { Code = 19 };
-        var workers = TestProgram.MadeWorkers();
+        var workers = MadeProgram.MadeWorkers();
         workers[BuildingType.Butcher.Code] = new WorkerRequest { Job = new Butcher(), Tool = knife };
         var layout = Read(Built.Replace("\"woodcutter\"", "\"butcher\""));
         var game = GameFactory.Create(
@@ -245,7 +160,7 @@ public sealed class LayoutSettlersTests
         );
 
         var control = GameFactory.Create(
-            MadeTables(workers: TestProgram.MadeWorkers(), goodClasses: ConstructionTables.Classes()),
+            MadeTables(workers: MadeProgram.MadeWorkers(), goodClasses: ConstructionTables.Classes()),
             layout.BuildMap()
         );
         Assert.IsNull(layout.Apply(control));
@@ -274,7 +189,7 @@ public sealed class LayoutSettlersTests
         var layout = Read(Built.Replace("\"woodcutter\"", "\"pig-farm\""));
         var game = GameFactory.Create(
             MadeTables(
-                workers: TestProgram.MadeWorkers(pigFarm: true),
+                workers: MadeProgram.MadeWorkers(pigFarm: true),
                 goodClasses: ConstructionTables.Classes(),
                 jobData: ConstructionTables.PigData()
             ),

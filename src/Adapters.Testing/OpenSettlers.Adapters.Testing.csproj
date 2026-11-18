@@ -1,0 +1,12 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- The helpers of the tests that name the adapters' types. It references the adapters and the helpers of the
+         libraries they reference, and holds no test (INV-0012). -->
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Adapters/OpenSettlers.Adapters.csproj" />
+    <ProjectReference Include="../Application.Testing/OpenSettlers.Application.Testing.csproj" />
+    <ProjectReference Include="../Import.HistoryEdition.Testing/OpenSettlers.Import.HistoryEdition.Testing.csproj" />
+  </ItemGroup>
+</Project>

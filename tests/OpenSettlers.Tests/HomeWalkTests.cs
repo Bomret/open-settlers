@@ -315,7 +315,7 @@ public sealed class HomeWalkTests
             );
             Assert.AreEqual(
                 settler,
-                WorkerWalkTests.Hex(game.Settlers[slot], map.Size.Width),
+                WorkerBytes.Hex(game.Settlers[slot], map.Size.Width),
                 $"{name}: the settler after pass {pass}"
             );
             // A carrier in state 0x42 holds a pointer to the flag's item in its last four bytes, where the engine keeps the slot.
@@ -323,7 +323,7 @@ public sealed class HomeWalkTests
             {
                 Assert.AreEqual(
                     other,
-                    WorkerWalkTests.Hex(game.Settlers[watched], map.Size.Width),
+                    WorkerBytes.Hex(game.Settlers[watched], map.Size.Width),
                     $"{name}: the settler it meets after pass {pass}"
                 );
             }

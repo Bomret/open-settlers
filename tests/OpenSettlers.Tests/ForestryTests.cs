@@ -52,7 +52,7 @@ public sealed class ForestryTests
     {
         var hut = type ?? BuildingType.Forester;
         var made = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -77,7 +77,10 @@ public sealed class ForestryTests
 
         map = made;
 
-        var game = GameFactory.Create(WoodcuttingTests.Made(hut == BuildingType.Forester ? Workers() : null), made);
+        var game = GameFactory.Create(
+            MadeProgram.WoodcuttingTables(hut == BuildingType.Forester ? Workers() : null),
+            made
+        );
         game.Enqueue(
             new Command
             {

@@ -18,7 +18,7 @@ public sealed class RoadSplitGameTests
     static Game Started(Action<Map>? beforeRoad, int castleX, int castleY, int endX, int endY, params int[] road)
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -27,7 +27,7 @@ public sealed class RoadSplitGameTests
             },
             MapSize.Offered[0]
         );
-        var game = GameFactory.Create(RemovalLogicTests.Made(), map);
+        var game = GameFactory.Create(MadeProgram.RemovalTables(), map);
         Apply(game, CommandKind.PlaceCastle, castleX, castleY);
         Apply(game, CommandKind.PlaceFlag, endX, endY);
         beforeRoad?.Invoke(map);
@@ -372,7 +372,7 @@ public sealed class RoadSplitGameTests
         var game = EastRoad();
         game.Map.At(17, 5).Upper = new Terrain { Code = 0 };
         game.Map.At(17, 5).Lower = new Terrain { Code = 0 };
-        var site = BuildSite.Evaluate(TestProgram.Made(), game.Map, 17, 5, 0, hasCastle: true);
+        var site = BuildSite.Evaluate(MadeProgram.Made(), game.Map, 17, 5, 0, hasCastle: true);
         Assert.AreEqual((6, 1), (site.Node, site.Site), "a road on the flag node, a site for a flag only");
         var digest = game.Digest();
 

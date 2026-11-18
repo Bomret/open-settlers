@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
+using OpenSettlers.Domain;
+using OpenSettlers.Import;
 using OpenSettlers.MapView;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.MapView.Testing;
 
 // The terms the road pass of the views (TerrainQuads.Edges) hands its source, in the order it hands them: every road
 // strip and every border post of the map.
-static class EdgeTerms
+public static class EdgeTerms
 {
     public static List<object> Of(Map map)
     {

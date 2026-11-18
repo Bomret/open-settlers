@@ -38,7 +38,7 @@ public sealed class GameThingTests
     static Game World()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -98,7 +98,7 @@ public sealed class GameThingTests
     }
 
     static List<string> Lines(Game game) =>
-        [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
+        [.. Thing.Of(game, new NameTable(MadeProgram.Made())).Select(thing => thing.Line())];
 
     [TestMethod]
     public void EachFlagShowsItsSlotAtItsNode()
@@ -222,7 +222,7 @@ public sealed class GameThingTests
     public void TheMapViewListsTheMapObjectsWithTheirNames()
     {
         var game = World();
-        var names = new NameTable(TestProgram.Made());
+        var names = new NameTable(MadeProgram.Made());
 
         var listed = Thing.Listed(false, game, game.Map, names);
 
@@ -246,7 +246,7 @@ public sealed class GameThingTests
         var game = World();
 
         var lines = Thing
-            .Listed(true, game, game.Map, new NameTable(TestProgram.Made()))
+            .Listed(true, game, game.Map, new NameTable(MadeProgram.Made()))
             .Select(thing => thing.Line())
             .ToList();
 
@@ -333,7 +333,7 @@ public sealed class GameThingTests
     // Runs the checks of script over the things the game view lists of game; the problems they report, one a line.
     static string Checks(Game game, string script)
     {
-        var things = Thing.Listed(true, game, game.Map, new NameTable(TestProgram.Made()));
+        var things = Thing.Listed(true, game, game.Map, new NameTable(MadeProgram.Made()));
         var state = new PlayState
         {
             CameraX = 0,

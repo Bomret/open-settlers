@@ -85,7 +85,7 @@ public sealed class HeadOnPassTests
     static Meeting Meet(int direction = East)
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Adapters.Testing.RoadWorld;
 
 namespace OpenSettlers.Tests;
 
@@ -9,67 +10,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class RoadsTests
 {
-    // The castle of the seed's map stands at 15,5 and its flag at 16,6; a flag goes on 18,6, two nodes east.
-    const int CastleX = 15;
-    const int CastleY = 5;
-
-    static RuleTables Made()
-    {
-        var classes = new ObjectClass[RuleTables.ClassCount];
-        classes[1] = 3;
-
-        return new RuleTables(
-            classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ]
-        );
-    }
-
-    internal static Game TwoFlags()
-    {
-        var map = MapGenerator.Generate(
-            TestProgram.Made(),
-            new MapSeed
-            {
-                W0 = 0x1234,
-                W1 = 0x5678,
-                W2 = 0x9ABC,
-            },
-            MapSize.Offered[0]
-        );
-        var game = GameFactory.Create(Made(), map);
-        game.Enqueue(
-            new Command
-            {
-                Tick = 0,
-                Player = 0,
-                Kind = CommandKind.PlaceCastle,
-                X = CastleX,
-                Y = CastleY,
-            }
-        );
-        game.Tick();
-        game.Enqueue(
-            new Command
-            {
-                Tick = game.TickCount,
-                Player = 0,
-                Kind = CommandKind.PlaceFlag,
-                X = 18,
-                Y = 6,
-            }
-        );
-        game.Tick();
-        Assert.AreEqual(2, game.Flags.Count);
-
-        return game;
-    }
-
     static void Build(Game game, params int[] directions)
     {
         game.Enqueue(
@@ -189,9 +129,9 @@ public sealed class RoadsTests
         var game = TwoFlags();
         var same = TwoFlags();
         var fresh = GameFactory.Create(
-            Made(),
+            MadeProgram.FlagClassTables(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,
@@ -249,9 +189,9 @@ public sealed class RoadsTests
         );
         fresh.Tick();
         var freshSame = GameFactory.Create(
-            Made(),
+            MadeProgram.FlagClassTables(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,

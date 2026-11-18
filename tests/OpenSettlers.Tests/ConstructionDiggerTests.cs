@@ -27,7 +27,7 @@ public sealed class ConstructionDiggerTests
     [DataRow("digger-busy-node")]
     public void TheDiggerLevelsTheSiteAsTheOriginalDoes(string name)
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == name);
         // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
         var parts = scenario.Command.Split(':');
         // PASS,FLAG,PLACE,GOOD,DEST: a good laid on a flag before the pass, the slots the original's (one higher than the engine's).
@@ -35,9 +35,9 @@ public sealed class ConstructionDiggerTests
             parts.Length > 11
                 ? parts[11].Split(';').Select(text => text.Split(',').Select(int.Parse).ToArray()).ToList()
                 : [];
-        var map = RemovalTests.MapOf(parts);
+        var map = RemovalGame.MapOf(parts);
         var width = map.Size.Width;
-        var game = RemovalTests.Started(parts, map, handsOutGoods: true);
+        var game = RemovalGame.Started(parts, map, handsOutGoods: true);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         var linesOf = scenario.Lines.ToDictionary(line => int.Parse(line["pass"], CultureInfo.InvariantCulture));
@@ -75,7 +75,7 @@ public sealed class ConstructionDiggerTests
                 {
                     Assert.AreEqual(
                         building,
-                        RemovalTests.BuildingBytes(game.Buildings[SiteSlot - 1], width)[..building.Length],
+                        RemovalGame.BuildingBytes(game.Buildings[SiteSlot - 1], width)[..building.Length],
                         $"{when}: the site"
                     );
                 }
@@ -120,7 +120,7 @@ public sealed class ConstructionDiggerTests
     [DataRow("sweep-site-flat")]
     public void ANodeNextToALargeSiteThatWaitsForItsDiggerIsJudgedAsTheOriginalJudgesIt(string name)
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == name);
         var game = Clicked(scenario.Command.Split(':'), withSite: true);
 
         AssertJudgedAsTheOriginalJudges(game, scenario);
@@ -131,9 +131,9 @@ public sealed class ConstructionDiggerTests
     [TestMethod]
     public void ANodeNextToALargeSiteTheDiggerHasStartedIsJudgedAsTheOriginalJudgesIt()
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-started");
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-started");
         var parts = scenario.Command.Split(':');
-        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts), handsOutGoods: true);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var sweep = int.Parse(parts[10].Split(';')[1].Split('=')[0], CultureInfo.InvariantCulture);
         for (var pass = 0; pass < sweep; pass++)
@@ -156,7 +156,7 @@ public sealed class ConstructionDiggerTests
         AssertJudgedAsTheOriginalJudges(game, scenario);
     }
 
-    static void AssertJudgedAsTheOriginalJudges(Game game, RemovalTests.Scenario scenario)
+    static void AssertJudgedAsTheOriginalJudges(Game game, EmulatorFixture.Scenario scenario)
     {
         var expected = scenario
             .Lines[0]["verdicts"]
@@ -185,7 +185,7 @@ public sealed class ConstructionDiggerTests
     [TestMethod]
     public void ALargeBuildingIsRefusedWhereTheWaitingSiteWidensTheRangeOfTheHeightsAndPlacedWhereNoSiteDoes()
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-flat");
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-flat");
         var parts = scenario.Command.Split(':');
 
         foreach (var (withSite, placed) in new[] { (true, false), (false, true) })
@@ -222,7 +222,7 @@ public sealed class ConstructionDiggerTests
     [DataRow("finished", true)]
     public void ALargeBuildingInTheThirdRingWidensTheRangeOnlyWhileItWaitsForItsDigger(string state, bool placed)
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-flat");
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == "sweep-site-flat");
         var game = Clicked(scenario.Command.Split(':'), withSite: true);
         var site = game.Buildings[SiteSlot - 1];
         Assert.IsTrue(site.Constructing);
@@ -259,7 +259,7 @@ public sealed class ConstructionDiggerTests
     static Game Clicked(string[] parts, bool withSite)
     {
         // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS
-        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts), handsOutGoods: true);
+        var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts), handsOutGoods: true);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         for (var pass = 0; pass < int.Parse(parts[9], CultureInfo.InvariantCulture); pass++)
         {
@@ -335,7 +335,7 @@ public sealed class ConstructionDiggerTests
     // engine's, the dummies of the original's tables; the digger's work holds the site's height and a node index in that word, no slot.
     static string Settler(Settler settler, int width)
     {
-        var bytes = Convert.FromHexString(WorkerWalkTests.Hex(settler, width));
+        var bytes = Convert.FromHexString(WorkerBytes.Hex(settler, width));
         if (
             settler.Activity
             is Leaving

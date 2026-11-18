@@ -17,7 +17,7 @@ public sealed class MapPickingTests
     // heights, which the seed gives.
     static Map? _map;
 
-    static Map Map => _map ??= MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
+    static Map Map => _map ??= MapViewState.Open(MadeProgram.Made(), "1234567812345678", 1).Map!;
 
     public static IEnumerable<object[]> Scales =>
         new[] { 0.25, 0.8, 1, 2.5, 4 }.Select(scale => new object[] { scale });
@@ -336,7 +336,7 @@ public sealed class MapPickingTests
     [DynamicData(nameof(Scales))]
     public void AClickOnAFlagAsItIsDrawnPicksTheFlagsNode(double scale)
     {
-        var map = MapViewState.Open(TestProgram.Made(), "1234567812345678", 1).Map!;
+        var map = MapViewState.Open(MadeProgram.Made(), "1234567812345678", 1).Map!;
         var (column, row) = (12, 9);
         map.At(column, row).Object = MapObject.Flag;
         var (x, y) = DrawnPoint(column, row);

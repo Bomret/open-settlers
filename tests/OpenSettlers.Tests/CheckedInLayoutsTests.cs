@@ -14,21 +14,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class CheckedInLayoutsTests
 {
-    internal static string LayoutsFolder()
-    {
-        var folder = new DirectoryInfo(AppContext.BaseDirectory);
-        while (folder is not null && !File.Exists(Path.Combine(folder.FullName, "OpenSettlers.csproj")))
-        {
-            folder = folder.Parent;
-        }
-
-        return Path.Combine(
-            folder?.FullName
-                ?? throw new InvalidOperationException("OpenSettlers.csproj not found above the test output"),
-            "layouts"
-        );
-    }
-
     // The first problem of a layout's text, or null when it reads and every entry applies.
     static string? Problem(string text, string file)
     {
@@ -47,7 +32,7 @@ public sealed class CheckedInLayoutsTests
     [TestMethod]
     public void EveryLayoutOfTheRepositoryLoadsAndApplies()
     {
-        var files = Directory.GetFiles(LayoutsFolder(), "*.jsonc");
+        var files = Directory.GetFiles(LayoutFiles.Folder(), "*.jsonc");
         Assert.IsTrue(files.Length >= 2, "layouts/ holds the woodcutter and carrier layouts");
 
         var problems = files.Select(file => Problem(File.ReadAllText(file), Path.GetFileName(file))).OfType<string>();
@@ -58,7 +43,7 @@ public sealed class CheckedInLayoutsTests
     [TestMethod]
     public void TheForesterPlayScriptReadsWithoutAProblem()
     {
-        var path = Path.Combine(Path.GetDirectoryName(LayoutsFolder())!, "play", "forester.play");
+        var path = Path.Combine(Path.GetDirectoryName(LayoutFiles.Folder())!, "play", "forester.play");
 
         var script = OpenSettlers.MapView.PlayScript.Parse(File.ReadAllText(path), "play/forester.play");
 
@@ -68,7 +53,7 @@ public sealed class CheckedInLayoutsTests
     [TestMethod]
     public void TheFarmPlayScriptReadsWithoutAProblem()
     {
-        var path = Path.Combine(Path.GetDirectoryName(LayoutsFolder())!, "play", "farm.play");
+        var path = Path.Combine(Path.GetDirectoryName(LayoutFiles.Folder())!, "play", "farm.play");
 
         var script = OpenSettlers.MapView.PlayScript.Parse(File.ReadAllText(path), "play/farm.play");
 
@@ -84,7 +69,7 @@ public sealed class CheckedInLayoutsTests
     [TestMethod]
     public void ALayoutWhoseEntryTheGameRefusesIsAProblemNamingTheFileAndEntry()
     {
-        var text = LayoutTests.Text(
+        var text = LayoutText.Text(
             extra: "\n\"castle\": {\"x\": 10, \"y\": 10}, \"buildings\": [{\"x\": 0, \"y\": 0}]"
         );
 

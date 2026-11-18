@@ -22,7 +22,7 @@ public sealed class ConstructionDeliveryTests
     static Game Started(bool carrier = true)
     {
         var read = OpenSettlers.Simulation.Layout.Read(
-            LayoutTests.Text(extra: "\n" + Layout + (carrier ? $"\"settlers\": [{Carrier}]," : "")),
+            LayoutText.Text(extra: "\n" + Layout + (carrier ? $"\"settlers\": [{Carrier}]," : "")),
             "test.jsonc"
         );
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));

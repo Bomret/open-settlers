@@ -39,7 +39,7 @@ public sealed class ConstructionRemovalTests
         Replay(name, construct: true);
 
     static void Replay(string name, bool construct) =>
-        RemovalTests.Replay(
+        RemovalReplay.Replay(
             Fixture,
             name,
             (click, _) => click == 'b' ? [CommandKind.PlaceBuilding] : [CommandKind.RemoveBuilding],
@@ -57,10 +57,10 @@ public sealed class ConstructionRemovalTests
     [TestMethod]
     public void ALargeSiteTakenDownWidensTheHeightsOfItsRingByTheClockItHoldsAsTheOriginalDoes()
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == "sweep-removed-site");
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == "sweep-removed-site");
         // remove:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:b@x,y,T;N=f@x,y;N=v@0,0
         var parts = scenario.Command.Split(':');
-        var game = RemovalTests.Started(parts, RemovalTests.MapOf(parts));
+        var game = RemovalGame.Started(parts, RemovalGame.MapOf(parts));
         var clicks = parts[10].Split(';');
         var sweepAt = int.Parse(clicks[2].Split('=')[0], CultureInfo.InvariantCulture);
         var removeAt = int.Parse(clicks[1].Split('=')[0], CultureInfo.InvariantCulture);
@@ -136,7 +136,7 @@ public sealed class ConstructionRemovalTests
     // leaves the site with the word the work held, which numbers the flag one higher than the engine's table).
     static string Settler(OpenSettlers.Domain.Settler settler, int width)
     {
-        var bytes = Convert.FromHexString(ConstructionBuilderTests.Settler(settler, width));
+        var bytes = Convert.FromHexString(WorkerBytes.BuilderHex(settler, width));
         if (settler.Job == new Builder() && bytes[10] is 0x19 or 0x1c)
         {
             var target = BitConverter.ToUInt16(bytes, 12) + 1;

@@ -146,7 +146,7 @@ public sealed class SettlerSupplyRecordingTests
                 var slot = int.Parse(key[1..], CultureInfo.InvariantCulture);
                 Assert.AreEqual(
                     line[key],
-                    WorkerWalkTests.Hex(game.Settlers[slot], map.Size.Width),
+                    WorkerBytes.Hex(game.Settlers[slot], map.Size.Width),
                     $"{name}: the new settler {slot} after pass {pass}"
                 );
             }

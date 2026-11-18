@@ -46,7 +46,7 @@ public sealed class SettlerSpritesLoadTests
     }
 
     // The rule tables are read only after the three entries, so a load that fails on an entry never reaches them.
-    static RuleTables Tables() => new(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
+    static RuleTables Tables() => new(new ObjectClass[RuleTables.ClassCount], MadeProgram.MadeStartStock());
 
     static InvalidDataException Refused(Dictionary<int, byte[]> payloads)
     {
@@ -58,7 +58,7 @@ public sealed class SettlerSpritesLoadTests
     [TestMethod]
     public void AnAbsentPaletteNamesItsEntry()
     {
-        var failure = Refused(new Dictionary<int, byte[]> { [2] = SettlerFiguresTests.Sequences() });
+        var failure = Refused(new Dictionary<int, byte[]> { [2] = GraphicEntries.Sequences() });
 
         StringAssert.Contains(failure.Message, "the palette (entry 3) of loca/SPAD.PA is unreadable");
     }
@@ -77,7 +77,7 @@ public sealed class SettlerSpritesLoadTests
         var failure = Refused(
             new Dictionary<int, byte[]>
             {
-                [2] = SettlerFiguresTests.Sequences(),
+                [2] = GraphicEntries.Sequences(),
                 [3] = new byte[768],
                 [4] = [1, 2, 3],
             }

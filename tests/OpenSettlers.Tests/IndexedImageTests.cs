@@ -68,7 +68,7 @@ public sealed class IndexedImageTests
     [TestMethod]
     public void ARawImageConvertsThroughItsPixels()
     {
-        var image = GraphicFile.ReadRaw(GraphicFileTests.Entry(1, 0, 2, 1, 0, 0, [1, 2]));
+        var image = GraphicFile.ReadRaw(GraphicEntries.Entry(1, 0, 2, 1, 0, 0, [1, 2]));
 
         var rgba = IndexedImage.ToRgba(image.Pixels.Span, Palette());
 

@@ -42,7 +42,7 @@ public sealed class MapImporterTests
         MapLayers? generated = null;
         var snapshot = new Dictionary<MapLayer, byte[]>();
         MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             seed,
             size,
             (pass, layers, _) =>

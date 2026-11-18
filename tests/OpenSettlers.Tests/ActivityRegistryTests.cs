@@ -16,9 +16,9 @@ public sealed class ActivityRegistryTests
 
     static Game NewGame() =>
         GameFactory.Create(
-            LayoutSettlersTests.MadeTables(),
+            MadeProgram.MadeTables(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,

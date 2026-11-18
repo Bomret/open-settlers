@@ -3,27 +3,13 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Formats;
+using static OpenSettlers.Testing.GraphicEntries;
 
 namespace OpenSettlers.Tests;
 
 [TestClass]
 public sealed class GraphicFileTests
 {
-    /// <summary>A graphic entry: the 10-byte header, then the body.</summary>
-    public static byte[] Entry(sbyte first, sbyte second, ushort width, ushort height, short x, short y, byte[] body)
-    {
-        var bytes = new byte[10 + body.Length];
-        bytes[0] = (byte)first;
-        bytes[1] = (byte)second;
-        BitConverter.TryWriteBytes(bytes.AsSpan(2), width);
-        BitConverter.TryWriteBytes(bytes.AsSpan(4), height);
-        BitConverter.TryWriteBytes(bytes.AsSpan(6), x);
-        BitConverter.TryWriteBytes(bytes.AsSpan(8), y);
-        body.CopyTo(bytes, 10);
-
-        return bytes;
-    }
-
     [TestMethod]
     public void TheHeaderHoldsTwoSignedBytesTheSizeAndTheSignedOffsets()
     {

@@ -22,7 +22,7 @@ public sealed class WoodcuttingHistoryTests
         var path = Path.Combine(folder!.FullName, "layouts", "woodcutter.jsonc");
         var read = Layout.Read(File.ReadAllText(path), "woodcutter.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
-        var game = LayoutSettlersTests.NewGame(read.Layout!);
+        var game = LayoutGames.NewGame(read.Layout!);
         Assert.IsNull(read.Layout!.Apply(game));
 
         return game;

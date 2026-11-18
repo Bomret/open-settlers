@@ -53,18 +53,18 @@ public sealed class BuildingSiteTests
 
         return new RuleTables(
             classes,
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             buildingSizes: sizes,
             buildingNeeds: needs,
-            workers: TestProgram.MadeWorkers(),
-            jobData: TestProgram.MadeJobData()
+            workers: MadeProgram.MadeWorkers(),
+            jobData: MadeProgram.MadeJobData()
         );
     }
 
     static Game World()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

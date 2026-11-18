@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using OpenSettlers.Domain;
-using OpenSettlers.Simulation;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Domain.Testing;
 
 // Tables of made-up values for the rules of the materials that reach a building site (docs/rules/construction-materials.md): the classes,
 // the request words, the order a storage serves in, and the rank the planks start from are chosen so that they differ from the program's
 // own and from one another. The program's own values are in ConstructionMaterialsTests and ProgramTablesTests.
-static class ConstructionTables
+public static class ConstructionTables
 {
     // The made-up classes: the plank asks class 3 of the first word, the stone class 6 of the second, the log class 2 of the second;
     // every other good goes to storage at once.
@@ -163,7 +161,7 @@ static class ConstructionTables
         byte[]? goodKinds = null,
         IEnumerable<(Job Job, object Data)>? jobData = null
     ) =>
-        LayoutSettlersTests.MadeTables(
+        MadeProgram.MadeTables(
             stepTime: stepTime,
             workers: workers ?? Workers(),
             builderRequest: new WorkerRequest { Job = new Builder(), Tool = BuilderTool },

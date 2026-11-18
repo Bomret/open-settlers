@@ -18,7 +18,7 @@ public sealed class SettlerSupplyTests
     static Game Town(bool supply = true, int rate = RateForty, bool castle = true)
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -35,7 +35,7 @@ public sealed class SettlerSupplyTests
             }
         }
 
-        var game = GameFactory.Create(TestProgram.Made(), map, settlerSupply: supply, settlerRate: rate);
+        var game = GameFactory.Create(MadeProgram.Made(), map, settlerSupply: supply, settlerRate: rate);
         if (castle)
         {
             Do(game, CommandKind.PlaceCastle, 15, 5);

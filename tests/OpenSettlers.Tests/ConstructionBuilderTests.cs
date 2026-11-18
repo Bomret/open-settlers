@@ -29,12 +29,12 @@ public sealed class ConstructionBuilderTests
     [DataRow("builder-waits-at-the-door")]
     public void TheBuilderBuildsTheSiteAsTheOriginalDoes(string name)
     {
-        var scenario = RemovalTests.Load(Fixture).Single(candidate => candidate.Name == name);
+        var scenario = EmulatorFixture.Load(Fixture).Single(candidate => candidate.Name == name);
         // construct:N:SEED:L:cx,cy:FLAGS:ROADS:HUTS:AT:PASSES:CLICKS[:PUTS]
         var parts = scenario.Command.Split(':');
-        var map = RemovalTests.MapOf(parts);
+        var map = RemovalGame.MapOf(parts);
         var width = map.Size.Width;
-        var game = RemovalTests.Started(parts, map, handsOutGoods: true);
+        var game = RemovalGame.Started(parts, map, handsOutGoods: true);
         var at = int.Parse(parts[8], CultureInfo.InvariantCulture);
         var passes = int.Parse(parts[9], CultureInfo.InvariantCulture);
         var linesOf = scenario
@@ -53,7 +53,7 @@ public sealed class ConstructionBuilderTests
                     : (Pass: at, Click: spec)
             )
             .ToList();
-        // PASS,FLAG,PLACE,GOOD,DEST: a good laid by hand on a place of the flag of that slot before that pass, as RemovalTests lays it.
+        // PASS,FLAG,PLACE,GOOD,DEST: a good laid by hand on a place of the flag of that slot before that pass, as RemovalReplay lays it.
         var puts =
             parts.Length > 11
                 ? parts[11]
@@ -123,19 +123,9 @@ public sealed class ConstructionBuilderTests
             game.Tick();
             foreach (var line in linesOf.GetValueOrDefault(pass) ?? [])
             {
-                Apply(game, line);
+                RemovalGame.ApplyFills(game, line);
                 Check(game, line, width, $"{name}: after pass {pass}");
             }
-        }
-    }
-
-    // A line "fill<slot>+=NN" adds to byte 8 of the building in that slot: a good the original has handed out or delivered.
-    internal static void Apply(Game game, Dictionary<string, string> line)
-    {
-        foreach (var (key, value) in line.Where(pair => pair.Key.StartsWith("fill", StringComparison.Ordinal)))
-        {
-            var building = game.Buildings[int.Parse(key[4..^1], CultureInfo.InvariantCulture) - 1];
-            building.SetFill(FillCounter.Low, building.FillLow + Convert.ToInt32(value, 16));
         }
     }
 
@@ -160,16 +150,16 @@ public sealed class ConstructionBuilderTests
                     {
                         // A carrier that walks his road with no good keeps in the word at 12 the low word of the pointer to the flag item he
                         // waited for (0x46 for each slot); the engine keeps no such word.
-                        expected = value[..24] + Settler(settler, width)[24..28] + value[28..];
+                        expected = value[..24] + WorkerBytes.BuilderHex(settler, width)[24..28] + value[28..];
                     }
 
-                    Assert.AreEqual(expected, Settler(settler, width), $"{when}: the settler {slot}");
+                    Assert.AreEqual(expected, WorkerBytes.BuilderHex(settler, width), $"{when}: the settler {slot}");
                     break;
                 case ('b', true):
                     var site = int.Parse(key[1..], CultureInfo.InvariantCulture);
                     Assert.AreEqual(
                         value,
-                        RemovalTests.BuildingBytes(game.Buildings[site - 1], width)[..value.Length],
+                        RemovalGame.BuildingBytes(game.Buildings[site - 1], width)[..value.Length],
                         $"{when}: the building {site}"
                     );
                     break;
@@ -192,28 +182,6 @@ public sealed class ConstructionBuilderTests
                     break;
             }
         }
-    }
-
-    // The settler's 16 bytes as the original's item holds them. The slots the item names (a flag or a building) are one higher than the
-    // engine's, the dummies of the original's tables.
-    internal static string Settler(Settler settler, int width)
-    {
-        var bytes = Convert.FromHexString(WorkerWalkTests.Hex(settler, width));
-        var slot = settler.Activity switch
-        {
-            Builds => true,
-            Leaving or Walks { Errand: not ToStorage } => true,
-            WaitsOutStep { Then: Walks { Errand: not ToStorage } } => true,
-            _ => false,
-        };
-        if (slot)
-        {
-            var target = BitConverter.ToUInt16(bytes, 12) + 1;
-            bytes[12] = (byte)target;
-            bytes[13] = (byte)(target >> 8);
-        }
-
-        return Convert.ToHexString(bytes);
     }
 
     // The emulator's class byte of a request word: bit k set asks for the class k.

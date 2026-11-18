@@ -72,7 +72,7 @@ public sealed class MapGeneratorTests
         var passes = 0;
 
         var generated = MapGenerator.TryGenerate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 1,
@@ -137,7 +137,7 @@ public sealed class MapGeneratorTests
         var passes = 0;
 
         var generated = MapGenerator.TryGenerate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 1,
@@ -172,7 +172,7 @@ public sealed class MapGeneratorTests
         foreach (var size in MapSize.Offered)
         {
             var refusal = Assert.ThrowsExactly<InvalidOperationException>(
-                () => MapGenerator.Generate(TestProgram.Made(), noLand, size),
+                () => MapGenerator.Generate(MadeProgram.Made(), noLand, size),
                 $"size {size.Value}"
             );
             Assert.AreEqual("no land mass covers a quarter of the map", refusal.Message, $"size {size.Value}");
@@ -202,7 +202,7 @@ public sealed class MapGeneratorTests
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MadeCode] = (byte)objectClass;
-        var tables = new RuleTables(classes, TestProgram.MadeStartStock());
+        var tables = new RuleTables(classes, MadeProgram.MadeStartStock());
         var tile = -1;
 
         var map = MapGenerator.Generate(
@@ -236,8 +236,8 @@ public sealed class MapGeneratorTests
         var seed = ParseSeed(Seeds[0]);
         var size = MapSize.Offered[1];
 
-        var first = MapGenerator.Generate(TestProgram.Made(), seed, size);
-        var second = MapGenerator.Generate(TestProgram.Made(), seed, size);
+        var first = MapGenerator.Generate(MadeProgram.Made(), seed, size);
+        var second = MapGenerator.Generate(MadeProgram.Made(), seed, size);
 
         foreach (var layer in Enum.GetValues<MapLayer>())
         {
@@ -251,7 +251,7 @@ public sealed class MapGeneratorTests
         var seen = new List<MapPass>();
 
         MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 1,
@@ -278,7 +278,7 @@ public sealed class MapGeneratorTests
         var lakes = 0;
 
         MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             ParseSeed(Seeds[0]),
             size,
             (pass, map, generator) =>

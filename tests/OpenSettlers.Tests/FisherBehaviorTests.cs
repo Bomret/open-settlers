@@ -32,7 +32,7 @@ public sealed class FisherBehaviorTests
         List<(int Flag, int Place, int Good)> Laid
     ) Land(params ushort[] draws)
     {
-        var (bench, behaviour, laid, causes, parts) = HutWorkTests.Hut(draws);
+        var (bench, behaviour, laid, causes, parts) = HutBench.Hut(draws);
         for (var index = 0; index < bench.Map.Count; index++)
         {
             bench.Map.At(index).Upper = Terrain.Lowland;
@@ -41,7 +41,7 @@ public sealed class FisherBehaviorTests
 
         bench.Map.At(HutX + 1, HutY).Object = MapObject.None;
 
-        return (bench, parts, HutWorkTests.Registry(bench, behaviour, parts, causes), laid);
+        return (bench, parts, HutRegistry.Registry(bench, behaviour, parts, causes), laid);
     }
 
     // The lower triangle of the node is water: with a land triangle above its north-west neighbour the east cast fits the node.

@@ -37,7 +37,7 @@ public sealed class CarrierTests
         var game = GameFactory.Create(
             Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,

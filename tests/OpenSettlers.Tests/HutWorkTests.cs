@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Application.Testing.HutBench;
+using static OpenSettlers.Tests.HutRegistry;
 
 namespace OpenSettlers.Tests;
 
@@ -11,80 +13,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class HutWorkTests
 {
-    const int HutX = 4;
-    const int HutY = 4;
-
-    // The hut at (4, 4) with its flag south-east of it at (5, 5), and a tree at (5, 4): the first entry of the spiral around the
-    // hut (an offset of 1 east) that the draw 0 names.
-    internal static (
-        BehaviourBench Bench,
-        HutWork Behaviour,
-        List<(int Flag, int Place, int Good)> Laid,
-        Causes Causes,
-        JobParts Parts
-    ) Hut(params ushort[] draws)
-    {
-        var bench = new BehaviourBench(draws);
-        var flag = bench.Flags.Add(HutX + 1, HutY + 1);
-        bench.Buildings.Add(new Building(BuildingType.Woodcutter, HutX, HutY, flag));
-        bench.Map.At(HutX, HutY).LinkTo(0);
-        bench.Map.At(HutX, HutY).Object = MapObject.Hut;
-        bench.Map.At(HutX + 1, HutY + 1).LinkTo(flag);
-        bench.Map.At(HutX + 1, HutY).Object = new MapObject { Code = 8 };
-        var laid = new List<(int, int, int)>();
-        var walkHome = new WalkHomeBehavior(
-            bench.Movement,
-            bench.Buildings,
-            bench.Flags,
-            bench.Roads,
-            bench.History,
-            bench.Draws,
-            (_, _) => -1
-        );
-        Action<int, int, int> layGood = (flagSlot, place, good) => laid.Add((flagSlot, place, good));
-        var behaviour = new HutWork(
-            bench.Movement,
-            bench.Settlers,
-            bench.Flags,
-            bench.History,
-            bench.Draws,
-            walkHome,
-            layGood,
-            () => false
-        );
-        var parts = new JobParts
-        {
-            Movement = bench.Movement,
-            Buildings = bench.Buildings,
-            Flags = bench.Flags,
-            History = bench.History,
-            Draws = bench.Draws,
-            LayGood = layGood,
-            Hut = behaviour,
-        };
-
-        return (bench, behaviour, laid, new Causes(bench.History, bench.Buildings, walkHome), parts);
-    }
-
-    // The registry of the hut work's activities and the modules' (the woodcutter's among them), and the wait of a step that the game's
-    // own walk behaviour handles.
-    internal static ActivityRegistry Registry(BehaviourBench bench, HutWork behaviour, JobParts parts, Causes causes)
-    {
-        var registry = new ActivityRegistry();
-        behaviour.Register(registry);
-        foreach (var module in JobModules.Build(parts))
-        {
-            behaviour.RegisterModule(module);
-            module.Register(registry);
-        }
-
-        registry.Register<WaitsOutStep>(
-            (slot, settler, _) => WalkBehavior.WaitOutStep(bench.Movement, bench.History, causes, slot, settler)
-        );
-
-        return registry;
-    }
-
     [TestMethod]
     public void AWoodcutterSearchesCutsAndCarriesALogToTheFlagWithOneDraw()
     {
@@ -151,7 +79,7 @@ public sealed class HutWorkTests
     public void TheGameRunsTheObjectPassOncePerPass()
     {
         const int Passes = 50;
-        var game = StonecuttingTests.World(null, out var map);
+        var game = StonecuttingWorld.World(null, out var map);
         map.At(9, 20).Object = MapObject.Falling(5, secondVariant: false);
         var runs = 0;
         var stamp = game.Hut.ObjectPassState.Stamp;
@@ -171,7 +99,7 @@ public sealed class HutWorkTests
     [TestMethod]
     public void TheObjectPassOfTheGameReachesAFallingTree()
     {
-        var game = StonecuttingTests.World(null, out var map);
+        var game = StonecuttingWorld.World(null, out var map);
         map.At(9, 20).Object = MapObject.Falling(5, secondVariant: false);
 
         for (var pass = 0; pass < 40000 && map.At(9, 20).Object.Kind == MapObjectKind.FallingTree; pass++)

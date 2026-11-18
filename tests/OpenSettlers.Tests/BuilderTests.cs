@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Adapters.Testing.BuilderWorld;
 
 namespace OpenSettlers.Tests;
 
@@ -13,21 +14,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class BuilderTests
 {
-    const int SiteX = 17;
-    const int SiteY = 5;
-
-    // A game with a forester's site at 17,5 whose planks lie on site: the hand-out of the castle is not part of these tests. A step takes
-    // 300 clock units, more than the 128 between two turns of a settler, so a builder's turn makes one blow at most.
-    internal static (Game Game, Building Site) World(int planksOnSite = 2, bool everyPassTurns = false)
-    {
-        var game = ConstructionWorld.Create(ConstructionTables.Tables(stepTime: 300), everyPassTurns: everyPassTurns);
-        ConstructionWorld.Site(game, BuildingType.Forester, SiteX, SiteY);
-        var site = game.Buildings[1];
-        site.FillLow = planksOnSite << 4;
-
-        return (game, site);
-    }
-
     static string Words(IEnumerable<ushort> words) => string.Join(",", words.Select(word => word.ToString("x4")));
 
     // The distinct values of the site's progress word the ticks give, in order.

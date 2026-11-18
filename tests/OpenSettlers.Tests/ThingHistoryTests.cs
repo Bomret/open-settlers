@@ -4,6 +4,8 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Adapters.Testing.HistoryWorld;
+using static OpenSettlers.Tests.LaidGame;
 
 namespace OpenSettlers.Tests;
 
@@ -12,51 +14,6 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class ThingHistoryTests
 {
-    static RuleTables Made()
-    {
-        var classes = new ObjectClass[RuleTables.ClassCount];
-        classes[1] = 3;
-        classes[2] = 4;
-
-        return new RuleTables(
-            classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
-            [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: TestProgram.MadeWorkers()
-        );
-    }
-
-    internal static Game NewGame()
-    {
-        var map = MapGenerator.Generate(
-            TestProgram.Made(),
-            new MapSeed
-            {
-                W0 = 0x1234,
-                W1 = 0x5678,
-                W2 = 0x9ABC,
-            },
-            MapSize.Offered[0]
-        );
-        for (var index = 0; index < map.Count; index++)
-        {
-            if (map.At(index).Object.Kind == MapObjectKind.Tree)
-            {
-                map.At(index).Object = MapObject.None;
-            }
-        }
-
-        return GameFactory.Create(Made(), map);
-    }
-
     static void Do(Game game, int kind, int x, int y, int[]? directions = null)
     {
         game.Enqueue(
@@ -358,25 +315,6 @@ public sealed class ThingHistoryTests
         Assert.ThrowsExactly<ArgumentException>(() => game.History.CarryCause(5, Cause.Woodcutting));
     }
 
-    const string Built = """
-        "castle": {"x": 10, "y": 10},
-        "flags": [{"x": 14, "y": 11}],
-        "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
-        "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
-        "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
-        """;
-
-    internal static Game Laid(string extra = Built)
-    {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
-        Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
-        var game = LayoutSettlersTests.NewGame(read.Layout!);
-        Assert.IsNull(read.Layout!.Apply(game));
-
-        return game;
-    }
-
     static string Text(Game game) =>
         string.Join(
             "\n",
@@ -417,7 +355,7 @@ public sealed class ThingHistoryTests
     }
 
     static List<string> Lines(Game game) =>
-        [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
+        [.. Thing.Of(game, new NameTable(MadeProgram.Made())).Select(thing => thing.Line())];
 
     [TestMethod]
     public void EveryFlagLineEndsWithItsId()

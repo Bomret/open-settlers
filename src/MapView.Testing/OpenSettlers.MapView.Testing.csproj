@@ -1,0 +1,11 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- The helpers of the tests that name the map view's types. It references the map view and the helpers of the
+         libraries it references, and holds no test (INV-0012). -->
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MapView/OpenSettlers.MapView.csproj" />
+    <ProjectReference Include="../Adapters.Testing/OpenSettlers.Adapters.Testing.csproj" />
+  </ItemGroup>
+</Project>
