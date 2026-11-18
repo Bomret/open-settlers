@@ -65,7 +65,7 @@ State `0x18` (`0x4359fe`) has two parts, which byte 11 selects:
 
 The routine at `0x43e1d0` counts the good of byte 11 in the player's block. That count of goods made is **not ported**. The routine takes state `0xb` and runs its body at `0x43e228`. The body is the step of state 7 from the building's node onto the flag south-east of it ([Woodcutting](woodcutting.md#the-start-at-the-hut)). It adds one condition: the flag item's eight places, bytes `0xc` to `0x13`, must not all hold goods.
 
-A settler on either node, or a full flag, gives the frame `0x52` and the timer 0. He tries again at his next turn. In the first emulated game he waits about 100 passes for a carrier to leave the flag's node. In `flag-full` of `saw-walks.txt` he waits about 240 passes while eight goods lie on the flag.
+A settler on either node, or a full flag, gives the frame `0x52` and the timer 0. He tries again at his next turn. In the first emulated game he waits about 100 passes for a carrier to leave the flag's node. In `flag-full` of `saw-walks.txt` eight goods lie on the flag from the pass 1362, and he steps out at the pass 1693, once the road's second carrier ([Carriers](carriers.md#a-busy-road)) has left the flag's node.
 
 Otherwise he takes the flag's node. The frame is `0x0d` plus the height reached less the height left. The timer is the step's time scaled by the door's speed. He waits it out in state 5, which goes on in state `0xd` through byte 15.
 

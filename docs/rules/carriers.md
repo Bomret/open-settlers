@@ -30,13 +30,16 @@ request clears the job bits (`0x42bbea`, `& 0x83`) and no tool is taken from the
 flags in use whose slot divided by 32 is the phase, in the order of their slots. A flag is therefore handled once for each phase
 cycle: 33 passes in a game with 33 phases, 33 to 49 passes in a game with 49
 ([Timing](timing.md#rules-that-count-passes)). The first flags, slots 0 to 31, belong to phase 0. In a game with 33 phases,
-they are handled in the pass with the number 32 of a game. For a flag with no goods it
-reaches `0x464c36`, which looks at each direction from north (5) to east (0) that holds a road:
+they are handled in the pass with the number 32 of a game. After the flag's goods it
+reaches `Flag_VisitRoads` at `0x464c36`, which looks at each direction from north (5) to east (0) that holds a road. The
+rules below are for a road that is not busy (fewer than three of the flag's goods head along it); a busy road is
+[below](#a-busy-road).
 
 - The road byte (flag item byte `6 + direction`) holds the length class in bits 4 to 6, bit 7 while a carrier is on the way to
   the road, and the number of carriers on the road in the low nibble. The commit of a road writes the class
   (`0x4454e7`: [Roads](roads.md#drawing-a-road)) and clears the rest, at both ends.
-- A road with a carrier on it (low nibble not 0) sets bit `direction` of the flag's status byte (byte 5).
+- A road with a carrier on it (low nibble not 0) sets bit `direction` of the flag's status byte (byte 5), whether or not
+  another carrier is on the way to it.
 - A road whose byte is the class alone (no carrier on it or on the way), at a flag whose status bit 7 is clear, asks for one
   (`0x42b455`, for a land road; a water road asks `0x42b4bc`). A request that finds no carrier sets status bit 7, so the flag
   makes no more requests, for any of its roads, until the retry scan has cleared the bit.
@@ -47,8 +50,33 @@ reaches `0x464c36`, which looks at each direction from north (5) to east (0) tha
 A road split by a flag ([Roads](roads.md#a-flag-on-a-road)) leaves the half without the old carrier with its road bytes at the
 class alone, so this loop asks for a carrier for it like for a new road.
 
-The goods part of `0x46414d` (a good's destination and direction, the second carrier of a busy road) is in
-[Goods at a flag](goods.md); it runs before this road loop at the flag's turn.
+The goods part of `0x46414d` (a good's destination and direction) is in [Goods at a flag](goods.md); it runs before this road
+loop at the flag's turn and hands it the load of the flag's directions and the count of its goods.
+
+## A busy road
+
+**Status:** confirmed (`0x464c36`, the capacity read at `0x465189`, the clear at `0x46520b`). **Emulated** (`mill-walks.txt`,
+`butcher-walks.txt`, `saw-walks.txt`, the scenario `flag-full` of each): a road whose flag holds eight stones for the castle
+gets a second carrier, a settler without a job of the castle (in the mill's game it takes job 0 at the pass 1484 and enters
+the road at the pass 1519), and the worker at that flag steps out at the original's pass.
+
+A road is **busy** at a flag's turn when three or more of the flag's goods head along it (byte 2 of the load the goods part
+builds, [Goods at a flag](goods.md#the-turn-of-a-flags-goods)). For a busy road the loop does this:
+
+- It sets no bit in the status. A bit an earlier turn set stays.
+- With a carrier on the way to it, it asks for nothing.
+- Else it compares the carriers on the road with the byte `Road_CarrierCapacities` at `0x462acd` holds for the road's length
+  class (1, 2, 3, 4, 6, 8, 11, and 15 for the classes 0 to 7). A road whose carriers **equal** that number asks for nothing.
+  A road with fewer, or with more, asks for another carrier as a road with none does. A land road asks
+  `Road_RequestCarrier` (`0x42b455`) and a water road asks `0x42b4bc`. Either asks only while status bit 7 is clear, and a
+  request that finds none sets bit 7. The carrier the request sends counts as on the way at both ends, and enters the road
+  as the first did.
+
+At a flag whose count of goods is 7 or more (counted only on a turn that routed its goods,
+[Goods at a flag](goods.md#the-turn-of-a-flags-goods)), the turn then clears the status bit of every busy road and of every
+road that asked for a carrier in this turn (`0x46520b`). The flag writes only its own status; the flag at the far end keeps its
+bit. The direction search and the storage search seed and follow only roads whose bit is set
+([Goods at a flag](goods.md#the-turn-of-a-flags-goods)), so new goods at a crowded flag do not go along its busy roads.
 
 ## The request
 
@@ -98,15 +126,28 @@ a later cycle: with two roads at the castle's flag, the road in the higher direc
   its node: its timer takes 0x3f, its frame `0x6e` plus its heading, the low byte of its stamp the heading less 6, its mode the
   direction in which the road leaves that flag (the heading before it) and the dword at 12 a pointer to that flag's item (the
   engine keeps the slot as the target); the node's settler word is cleared, so the carrier does not hold the node against
-  others; and it takes **state 0x42**. At a road that already holds two carriers (the road's byte, low nibble; two come about where two
-  roads are joined, [Removal](removal.md#taking-a-flag-down)) the carrier does not wait: its timer takes 0x3f, its frame is the heading's,
-  its heading goes down by 6 as for any step that is tried again, and it counts the turn in byte 15 (the next state). The heading held the
-  direction back along the road, so at its next turn the carrier steps back the way it came and walks to its next turn next to the flag at
-  the other end; the count outlasts those steps. At the fourth turn the count
-  starts again, and if the road still holds two the carrier leaves it: both ends' road bytes count one carrier less and byte 15 takes `0xff`
-  (`0x43bc52`). With a good waiting at the flag at the far end the carrier does nothing more than set the timer, frame, and heading.
-  **Emulated** for the two carriers of a joined road (the game `join`, [Removal](removal.md)); the fourth turn and the far end's
-  waiting good are read from the code (**inferred**).
+  others; and it takes **state 0x42**. At a road that already holds two carriers the carrier does not wait. The road's byte holds the count in its low nibble.
+  Two come about on a [busy road](#a-busy-road) and where two roads are joined ([Removal](removal.md#taking-a-flag-down)).
+  The carrier's timer takes 0x3f and its frame is the heading's. Its heading goes down by 6 as for any step that is tried
+  again, and it counts the turn in byte 15 (the next state). The heading held the direction back along the road. At its next
+  turn the carrier therefore steps back the way it came and walks to its next turn next to the flag at the other end. The
+  count outlasts those steps. At the fourth turn the count starts again. If the road still holds two, the carrier leaves it:
+  both ends' road bytes count one carrier less and byte 15 takes `0xff` (`0x43bc52`). The count goes back to 0 where the carrier takes a good in the exchange, delivers one, or is told to fetch one
+  (`0x43001a`), so only four turns in a row with nothing to take release it. With a good waiting at the flag at the far end the
+  carrier does nothing more than set the timer, frame, and heading.
+  **Emulated** for the two carriers of a joined road (the game `join`, [Removal](removal.md)) and for a busy road that drains
+  (`busy-road-walks.txt`, `drain`). In `drain`, four stones make the mill's road busy and the second carrier joins it at the
+  pass 1519. Once the goods are gone, the carrier of slot 2 reaches its fourth empty turn at the pass 2674. The far end's
+  waiting good is read from the code (**inferred**).
+- **Marked to go.** A carrier whose byte 15 is negative that steps onto a flag leaves for a storage before anything else at that
+  flag (`0x43aea4`, in `Settler_WalkRoad`): it takes state 2, mode `0xfe`, byte 15 0, the word at 12 0, and the timer 0, keeps its
+  frame and heading, and steps no further in that turn. It neither delivers the good it may carry nor takes or leaves a good at
+  the flag. The walk to the storage is the walk home of [Settlers](settlers.md#walking-home). **Emulated** (`drain`): the
+  released carrier reaches the castle's flag at the pass 2806 and the castle's door at the pass 2971. A carrier the removal of
+  its road marks ([Removal](removal.md#taking-a-road-down)) takes the same branch at the next flag it reaches. A carrier that
+  the removal marks while it hands a good over (state 0xe) is the exception. The second half of the handover
+  (`Settler_DeliverGood`, `0x43c4ea`) reads byte 15 not 0 as its own mark and sets it to 0. The carrier then goes on along its
+  road in state 3, with no walk to a storage. Confirmed, read from the code.
 - **State 0x42** (`0x42ff81`): the item does not change while no good waits to go along the carrier's road (in over 20 turns of the
   emulator, 350 passes). With a good at either end of the road the carrier is told to fetch it and takes state 3 again:
   [Goods at a flag](goods.md#the-carrier-told-to-fetch).
@@ -151,7 +192,7 @@ node is the middle of the road.
 
 ## Open leads
 
-- The second carrier of a busy road (`0x462acd`) is read and not ported. The goods part of `0x46414d`, the carrier's turns in
+- The goods part of `0x46414d`, the carrier's turns in
   state 0x42 and 3 with a good, and the castle's handover (state 0xe) are in [Goods at a flag](goods.md). `0x42abed` is no
   storage handover: it is the player block's per-turn warning check (it posts messages 10 and 11 through `Msg_Post` from
   counters at `+0x14` and `+0x18` of a 120-byte item).
@@ -159,11 +200,21 @@ node is the middle of the road.
 - The passing of two settlers on a road (ported: [Settlers](settlers.md#walking-home)), and a carrier that goes home when its road goes
   away (ported: [Removal](removal.md#taking-a-road-down)).
 - Which flags' carriers a flag pass of a player with a computer opponent sees: the phase count (33) is inferred.
+- A carrier released from a busy road whose road is taken down before it reaches a flag: the removal's gather skips a marked
+  carrier, and what the original does with it is not recovered.
+- A joined road with more settlers than its length class holds (the join of [Removal](removal.md#taking-a-flag-down),
+  **inferred**): a carrier that the removal marks while it hands a good over keeps working the joined road (state 0xe, above).
+  The counts of both ends leave it out. Its turns next to a flag then see fewer than two carriers, so no fourth empty turn
+  releases it. The road holds one carrier more than it counts. Not confirmed by a run and not handled by the engine.
+- What a carrier that walked home does in the castle after it enters: in `drain` it comes out and goes in again every 82 passes
+  (states 4, 0x19, 0x10, 2), which no rule note covers yet.
 
 ## In the engine
 
 `src/Application/CarrierBehavior.cs` (`Game.Carriers`): `FlagPass`, `VisitFlag`, `RequestCarrier`, `EnterRoad`, `WalkRoad`, and
-`Wait` port the above.
+`Wait` port the above. `GoodsTransport.Turn` hands `VisitFlag` a `GoodsLoad`: `Busy`, the directions three or more goods head,
+and `Crowded`, a count of 7 or more goods on a turn that routed them. A water road asks for no carrier, busy or not, since its
+boatman is not ported.
 The flag's typed state is `Flag` (`CarrierRequestFailed`, the status byte's bit 7) with a `FlagSide` for each direction
 (`Length`, `CarrierOnTheWay`, `Carriers`, `HoldsCarrier`, `FarDirection`). The `FlagTable` that `Game.Flags` returns keeps them.
 `FlagEncoder.Status` and `FlagEncoder.RoadByte` write them as the flag item's bytes. `Carrier` is job 0. The
