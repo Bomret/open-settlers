@@ -248,7 +248,12 @@ public sealed class BasicContentSetPlayTests
     // The farm's flag at 19,14 three steps north to the mill's flag at 19,11.
     static readonly (int X, int Y, int[] Directions) FarmNorth = (19, 14, [5, 5, 5]);
 
-    static readonly (string Type, int X, int Y)[] BreadBuildings = [("farm", 18, 13), ("mill", 18, 10), ("baker", 21, 10)];
+    static readonly (string Type, int X, int Y)[] BreadBuildings =
+    [
+        ("farm", 18, 13),
+        ("mill", 18, 10),
+        ("baker", 21, 10),
+    ];
 
     static readonly (int X, int Y, int[] Directions)[] BreadRoads = [CastleEast, NextEast, FarmNorth];
 
