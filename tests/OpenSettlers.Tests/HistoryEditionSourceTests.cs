@@ -1012,6 +1012,35 @@ public sealed class HistoryEditionSourceTests
         Assert.IsNotNull(source.Draw(Flat(new Terrain { Code = 5 })));
     }
 
+    // A program whose flame lists' header points past its image: list 3 starts at 0x7000.
+    static byte[] BadFlameListsProgram() =>
+        FlameListsTests.Executable(exe =>
+        {
+            FlameListsTests.Lists(exe);
+            BitConverter.GetBytes((short)0x7000).CopyTo(exe, FlameListsTests.At(FlameLists.Address) + 2 * 3);
+        });
+
+    [TestMethod]
+    public void UnreadableFlameListsPlaceNoFlamesAndNameTheProblem()
+    {
+        using var fake = ObjectFake().Put(Install.Program, BadFlameListsProgram());
+
+        var source = OpenWithSettlers(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "flame lists");
+        Assert.IsEmpty(source.Flames(BuildingType.Woodcutter, earlySite: false));
+    }
+
+    [TestMethod]
+    public void UnreadableFlameListsStayNamedWhereTheObjectsFailToo()
+    {
+        using var fake = Fake().Put(Install.Program, BadFlameListsProgram());
+
+        var source = OpenWithSettlers(fake);
+
+        StringAssert.Contains(source.ObjectsProblem!, "flame lists");
+    }
+
     // The settlers: tables whose row 0 holds the figure base 100 and the second base 50 and whose offsets are all 0, so a
     // carrier's figure is the entry 1950, its overlay 2600, and its second figure 3200 whatever its figure byte. The
     // sequences are those of SettlerFiguresTests (the frame 7 holds the figure byte 3).

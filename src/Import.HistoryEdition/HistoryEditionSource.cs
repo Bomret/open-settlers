@@ -61,7 +61,10 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <summary>Why the road graphics did not load, or null. The source draws no road then and still draws the terrain.</summary>
     public string? RoadsProblem { get; }
 
-    /// <summary>Why the object graphics did not load, or null. The source draws no object then and still draws the terrain.</summary>
+    /// <summary>
+    /// Why the object graphics or the flame lists did not load, or null. The source draws no object, or places no flame,
+    /// then and still draws the terrain.
+    /// </summary>
     public string? ObjectsProblem { get; }
 
     /// <summary>Why the settler graphics did not load, or null. The source draws no settler then and still draws the rest.</summary>
@@ -73,8 +76,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/>, unreadable object graphics
     /// <see cref="ObjectsProblem"/>, and unreadable settler graphics <see cref="SettlersProblem"/>, instead. The settlers are
     /// drawn by the figure tables of the exe's <paramref name="tables"/>; with none the source draws no settler. With
-    /// <paramref name="tables"/>, the source also reads the flame lists from the exe; lists it cannot read set
-    /// <see cref="ObjectsProblem"/> where the objects loaded, and the source places no flames then.
+    /// <paramref name="tables"/>, the source also reads the flame lists from the exe; lists it cannot read add their
+    /// reason, after the objects' own where those failed too, to <see cref="ObjectsProblem"/>, and the source places no
+    /// flames then.
     /// </summary>
     public static HistoryEditionSource Load(Install install, RuleTables? tables = null)
     {
@@ -87,13 +91,16 @@ public sealed class HistoryEditionSource : IGraphicsSource
         var flames = tables is null
             ? null
             : Try(() => FlameLists.Read(install.ReadAll(Install.Program)), out flamesProblem);
+        flamesProblem = flamesProblem is null ? null : $"no flame lists: {flamesProblem}";
 
         return new HistoryEditionSource(
             terrain,
             roads,
             roadsProblem,
             objects,
-            objectsProblem ?? flamesProblem,
+            objectsProblem is null ? flamesProblem
+                : flamesProblem is null ? objectsProblem
+                : $"{objectsProblem}; {flamesProblem}",
             settlers,
             settlersProblem,
             flames
