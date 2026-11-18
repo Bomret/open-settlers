@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 public sealed class GameSurfaceTests
 {
     [TestMethod]
-    public void TheGamePublishesOnlyEnqueueTickAndDigestAsMethods()
+    public void TheGamePublishesOnlyTheCommandTheTickTheDigestTheSetupOperationsAndTheRemovalQueryAsMethods()
     {
         var methods = typeof(Game)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -19,7 +19,21 @@ public sealed class GameSurfaceTests
             .Select(method => method.Name)
             .Order();
 
-        CollectionAssert.AreEqual(new[] { "Digest", "Enqueue", "Tick" }, methods.ToArray());
+        string[] expected =
+        [
+            "ApplyCommands",
+            "Digest",
+            "Enqueue",
+            "PlaceCarrierOnRoad",
+            "PlaceFinishedBuilding",
+            "PlaceGood",
+            "RemovalCommandAt",
+            "SetLayoutMode",
+            "StandWorkerInFinishedHut",
+            "Tick",
+        ];
+
+        CollectionAssert.AreEqual(expected, methods.ToArray());
     }
 
     [TestMethod]
@@ -42,21 +56,66 @@ public sealed class GameSurfaceTests
             .Order();
         string[] expected =
         [
+            "AppliedCommands",
             "Buildings",
+            "CarrierFlagCursor",
+            "CastleLeavingCount",
             "CastleStock",
+            "CastleWaitingList",
             "Clock",
             "Flags",
             "History",
+            "HutPassState",
             "Map",
             "Network",
+            "OccupiedMovementSlots",
+            "PassPhase",
+            "PassScanCursor",
+            "RandomState",
             "Revision",
             "RoadPlanner",
             "Settlers",
+            "SupplyState",
             "Tables",
             "TickCount",
         ];
 
         CollectionAssert.AreEqual(expected.Order().ToArray(), properties.ToArray());
+    }
+
+    [TestMethod]
+    public void NoPublicMemberOfTheGameReturnsOneOfItsBehaviorObjects()
+    {
+        System.Type[] behaviors =
+        [
+            typeof(CarrierBehavior),
+            typeof(MainPass),
+            typeof(CastleRoster),
+            typeof(HutWork),
+            typeof(SettlerMovement),
+            typeof(SettlerSupply),
+            typeof(GoodsTransport),
+            typeof(Removal),
+            typeof(WalkBehavior),
+            typeof(WalkHomeBehavior),
+            typeof(ActivityRegistry),
+            typeof(Causes),
+        ];
+
+        var leaking = typeof(Game)
+            .GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Select(member =>
+                member switch
+                {
+                    PropertyInfo property => (member.Name, Type: property.PropertyType),
+                    MethodInfo method => (member.Name, Type: method.ReturnType),
+                    _ => (member.Name, Type: typeof(void)),
+                }
+            )
+            .Where(member => behaviors.Contains(member.Type))
+            .Select(member => member.Name);
+
+        CollectionAssert.AreEqual(System.Array.Empty<string>(), leaking.ToArray());
     }
 
     [TestMethod]

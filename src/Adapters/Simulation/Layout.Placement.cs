@@ -10,8 +10,8 @@ public sealed partial class Layout
 {
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
-    // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
-    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
+    // its Place puts it in the game directly (Game.PlaceFinishedBuilding, Game.StandWorkerInFinishedHut,
+    // Game.PlaceCarrierOnRoad, Game.PlaceGood) and returns why it refused, or null.
     sealed record Step
     {
         public required string Name { get; init; }
@@ -30,14 +30,14 @@ public sealed partial class Layout
     /// </summary>
     public string? Apply(Game game)
     {
-        game.Causes.InLayout = true;
+        game.SetLayoutMode(true);
         try
         {
             return Build(game);
         }
         finally
         {
-            game.Causes.InLayout = false;
+            game.SetLayoutMode(false);
         }
     }
 
@@ -250,9 +250,9 @@ public sealed partial class Layout
                     Name = name,
                     Command = command,
                     Place = game =>
-                        !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
-                        : game.Walks.StandsWorker(type) ? game.Walks.StandWorkerInHut(x, y)
-                        : null,
+                        !game.PlaceFinishedBuilding(type, x, y)
+                            ? BuildingRefusal
+                            : game.StandWorkerInFinishedHut(type, x, y),
                 }
             );
 
@@ -316,7 +316,7 @@ public sealed partial class Layout
                 {
                     Name = name,
                     Command = default,
-                    Place = game => game.Carriers.PlaceCarrierOnRoad(x, y, direction),
+                    Place = game => game.PlaceCarrierOnRoad(x, y, direction),
                 }
             );
 
@@ -363,7 +363,7 @@ public sealed partial class Layout
                 {
                     Name = name,
                     Command = default,
-                    Place = game => game.Goods.PlaceGood(x, y, place, good),
+                    Place = game => game.PlaceGood(x, y, place, good),
                 }
             );
 

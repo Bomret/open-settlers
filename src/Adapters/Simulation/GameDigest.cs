@@ -29,7 +29,7 @@ public sealed class GameDigest : IGameDigest
             hash = Mix(hash, item);
         }
 
-        hash = Mix(hash, game.Carriers.FlagCursor);
+        hash = Mix(hash, game.CarrierFlagCursor);
 
         foreach (var road in game.Network.Roads)
         {
@@ -54,7 +54,7 @@ public sealed class GameDigest : IGameDigest
         }
 
         // A game without the supply mixes nothing for it, so its digest stays as it was.
-        if (game.Supply is { } supply)
+        if (game.SupplyState is { } supply)
         {
             hash = Mix(hash, supply.Period);
             hash = Mix(hash, supply.Countdown);
@@ -73,7 +73,7 @@ public sealed class GameDigest : IGameDigest
     static ulong Applied(Game game)
     {
         var applied = FnvOffset;
-        foreach (var command in game.Applied)
+        foreach (var command in game.AppliedCommands)
         {
             applied = Mix(
                 Mix(Mix(Mix(Mix(applied, command.Tick), command.Player), command.Kind), command.X),
@@ -100,9 +100,9 @@ public sealed class GameDigest : IGameDigest
             hash = Mix(hash, word);
         }
 
-        var random = game.Draws.Generator;
+        var random = game.RandomState;
         hash = Mix(Mix(Mix(hash, random.W0), random.W1), random.W2);
-        var (stamp, timer, x, y, decay) = game.Hut.ObjectPassState;
+        var (stamp, timer, x, y, decay) = game.HutPassState;
         hash = Mix(Mix(Mix(Mix(Mix(hash, stamp), timer), x), y), decay);
         foreach (var good in FlagEncoder.Places(game.Flags))
         {
@@ -117,10 +117,7 @@ public sealed class GameDigest : IGameDigest
 
     static void MixSettlers(Game game, ref ulong hash)
     {
-        hash = Mix(
-            Mix(Mix(Mix(hash, game.Clock.Now), game.Pass.Phase), game.Pass.ScanCursor),
-            game.Roster.LeavingCount
-        );
+        hash = Mix(Mix(Mix(Mix(hash, game.Clock.Now), game.PassPhase), game.PassScanCursor), game.CastleLeavingCount);
         foreach (var building in game.Buildings)
         {
             foreach (
@@ -172,12 +169,12 @@ public sealed class GameDigest : IGameDigest
             }
         }
 
-        foreach (var slot in game.Roster.WaitingList)
+        foreach (var slot in game.CastleWaitingList)
         {
             hash = Mix(hash, slot);
         }
 
-        foreach (var (index, slot) in game.Movement.Occupied)
+        foreach (var (index, slot) in game.OccupiedMovementSlots)
         {
             hash = Mix(Mix(hash, index), slot);
         }

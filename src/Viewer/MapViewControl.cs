@@ -749,7 +749,7 @@ public partial class MapViewControl(
             Flag = _flagButton.ButtonPressed,
             Buildings = _buildButtons.Where(entry => entry.Button.ButtonPressed).Select(entry => entry.Type).ToList(),
         };
-        if (ClickDecision.Decide(mode, _game, _state.Map, _drawing, _game.Removal.CommandAt, x, y) is { } command)
+        if (ClickDecision.Decide(mode, _game, _state.Map, _drawing, _game.RemovalCommandAt, x, y) is { } command)
         {
             _game.Enqueue(command);
         }
