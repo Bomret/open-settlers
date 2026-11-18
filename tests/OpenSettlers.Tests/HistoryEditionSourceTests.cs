@@ -713,6 +713,37 @@ public sealed class HistoryEditionSourceTests
         );
     }
 
+    // The castle under construction (0x44fd2f, 0x44fee2): the finished castle's sprite grown by the progress word itself over its whole shadow;
+    // once it stands, the castle whole.
+    [TestMethod]
+    public void TheCastleUnderConstructionGrowsTheFinishedCastleOverItsWholeShadow()
+    {
+        using var fake = ObjectFake(payloads =>
+        {
+            payloads[ObjectSprites.CastleEntry] = ObjectGraphicsTests.Square(30, 3);
+            payloads[ObjectSprites.CastleEntry + 250] = ObjectGraphicsTests.ShadowMask();
+        });
+        var source = Open(fake);
+        BuildingDraw Castle(ushort? progress) =>
+            new()
+            {
+                Row = 0,
+                X = 0,
+                Y = 0,
+                Type = BuildingType.Castle,
+                SiteProgress = progress,
+            };
+
+        var placed = source.Draw(Castle(0))!;
+        var whole = source.Draw(Castle(null))!;
+
+        // (0 * 2 >> 16) + 1 = 1 row of the castle's 2 at the placement (0x406350).
+        Assert.AreEqual((1, 2), (placed.Image!.Height, whole.Image!.Height));
+        Assert.AreEqual(30, placed.Image.OffsetX, "the castle's own sprite, with no site layer under it");
+        Assert.AreSame(whole.Shadow, placed.Shadow, "the castle's whole shadow");
+        Assert.IsNotNull(placed.Shadow);
+    }
+
     // The install's own archive holds the scaffold and the finished building of each type, so a site draws its stages as it grows: the
     // drawing of a larger progress word covers at least the rows of a smaller one's, and the last one covers the finished building.
     [TestMethod]

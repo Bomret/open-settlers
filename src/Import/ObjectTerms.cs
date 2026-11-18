@@ -36,16 +36,17 @@ public sealed record MapObjectDraw : ObjectTerm
 }
 
 /// <summary>
-/// A building, by its type: the castle, a finished building of one of the four types of M4, or a building site. A site carries
-/// the progress word of its building (<c>SiteProgress</c>, null for a finished building), which picks the drawing of its
-/// construction stage: a source draws the stage a site that has not started shows (<c>docs/rules/build-sites.md</c>).
+/// A building, by its type: the castle, a finished building of one of the four types of M4, or a building site. A site and the
+/// castle under construction carry the progress word of their building (<c>SiteProgress</c>, null for a building that stands), which
+/// picks the drawing of the construction stage: a source draws the stage a site that has not started shows
+/// (<c>docs/rules/build-sites.md</c>), and the castle grown by the word (<c>docs/rules/construction.md</c>).
 /// </summary>
 public sealed record BuildingDraw : ObjectTerm
 {
     /// <summary>The building's type.</summary>
     public required BuildingType Type { get; init; }
 
-    /// <summary>The progress word of the site's building, which picks the drawing of its construction stage; null for a finished building.</summary>
+    /// <summary>The progress word of the site's building or of the castle under construction, which picks the drawing of its construction stage; null for a building that stands.</summary>
     public ushort? SiteProgress { get; init; } = null;
 
     /// <inheritdoc />

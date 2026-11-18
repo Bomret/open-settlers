@@ -301,6 +301,12 @@ A building that a person placed and that is not finished yet. It waits for a dig
 only), for the planks and stones its type needs, and for a builder who builds it from them.
 _Avoid_: construction site, site (alone), unfinished building
 
+**Castle under construction**
+The castle from its placement until it stands, while its first settler raises its progress word. It is no building
+site: no digger, no builder, and no planks or stones come to it. The engine draws it through the site drawing types
+(`BuildingDraw.SiteProgress`, `SitePart`, `SiteLayer`, `SiteDrawings`).
+_Avoid_: castle site (a node where the castle may be placed), unfinished castle
+
 **Request**
 A building's standing ask, held at its flag, for one kind of good, with a rank that falls as goods of that kind
 arrive or are on their way. A good without a destination goes to a building that the request search finds asking

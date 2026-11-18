@@ -53,8 +53,8 @@ public static class ObjectDraws
     /// tile's node with the node's height taken off, where its roads meet (<c>docs/rules/map-objects.md</c>); the
     /// sprite's own header offsets apply where the sprite is drawn. Every object is a term, and a source that has no
     /// image for one draws nothing for it. Resources are no objects and are never drawn. With a
-    /// <paramref name="castle"/>, it is drawn at its node, and each woodcutter's hut of <paramref name="buildings"/>
-    /// likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>.
+    /// <paramref name="castle"/>, it is drawn at its node, by the progress word of its building (slot 0 of <paramref name="buildings"/>)
+    /// while it is under construction, and each woodcutter's hut of <paramref name="buildings"/> likewise. An animated object draws its frame at the frame counter <paramref name="counter"/>.
     /// </summary>
     public static List<ObjectTerm> Of(
         Map map,
@@ -104,6 +104,7 @@ public static class ObjectDraws
                     X = x,
                     Y = y - height * TerrainTriangles.HeightStep,
                     Type = BuildingType.Castle,
+                    SiteProgress = CastleProgress(buildings),
                 }
             );
         }
@@ -167,6 +168,11 @@ public static class ObjectDraws
 
         return draws;
     }
+
+    // The castle under construction is drawn by its progress word (0x44fd2f jumps to 0x44fee2, docs/rules/construction.md), which its
+    // building, slot 0 of the game's buildings, holds until it stands. Without the game's buildings the castle is drawn whole.
+    static ushort? CastleProgress(IReadOnlyList<Building>? buildings) =>
+        buildings is [{ Constructing: true } castle, ..] && castle.Type == BuildingType.Castle ? castle.Progress : null;
 
     static void AddGoods(List<ObjectTerm> draws, IReadOnlyList<Good>? goods, int row, int x, int y, int from, int to)
     {

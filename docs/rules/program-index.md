@@ -301,7 +301,7 @@ Sites:
 - `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d`: call `Gfx_DrawSpriteBase320` with an object byte masked to 0 to 31, entries 320 to 351 (in `Render_DrawFlag`).
 - `0x44de86`: draws raw image 870 plus a tile index through `Gfx_DrawSprite` (in `0x44de56`).
 - `0x44e0d1`: calls `Gfx_DrawSpriteBase320` with a sprite-list entry (0 or 8, from the 25 inline lists at `0x44e114`) plus a phase of 0 to 7 plus 136, entries 456 to 471. Lies in code after `Gfx_DrawSpriteBase320` and before `0x44e329` that no Ghidra function covers; the containing routine's entry was not established (REA rizin unavailable).
-- `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`). Code not covered by a Ghidra function, between `Sound_Request` and `Gfx_DrawPhaseSprite`; entry `0x44fee2` (jumped to at `0x44fc70`) is a candidate routine, not verified.
+- `0x44ff24`, `0x44ff3f`: forms the shadow entry (index plus 1500, drawn by `0x406210` at `0x44ff2a`), then the sprite entry (index plus 1250, drawn by `Gfx_DrawSpriteGrowing` at `0x44ff45`), in `Gfx_DrawGrowingWithShadow` (`0x44fee2`).
 - `0x45006a`: stores shadow entry 4 for the call to `Gfx_DrawShadow` at `0x45007d`; `0x450128` to `0x45014c`: adds a word of the table `Settler_FigureOffsets` to both entry fields (in `Gfx_DrawSettlerRecords`).
 - `0x450ada` (in `0x450a8f`): calls `Gfx_DrawSpriteBase320` with a run-time list word; not bounded. The routine is called from `Render_DrawViewLayers`.
 - `0x450fc5` (in `Render_DrawCursorList`): calls `Gfx_DrawSpriteBase320` with a word of the road cursor's list: 32 or 33, 44, 45, or 39 plus a height difference, the entries 352, 353, 364, 365, and 355 to 363 for a difference up to 4 either way ([Roads](roads.md#the-road-markers)).
@@ -497,6 +497,9 @@ entries per phase (see "Item tables").
 | `0x42fca1` | `Settler_StateJumpTable` | Data: the jump table of `Settler_Dispatch`: 8 bytes for each value of the settler's state byte, each a `jmp` to the state's routine. | confirmed | game | Read by `Settler_Dispatch` (`0x42fc81`). |
 | `0x43ca54` | `Settler_JobStartTable` | Data: the jump table of the job's start routine that `Settler_PassDoor` runs, 8 bytes for each job. | confirmed | game | Read by `Settler_PassDoor` (`0x43c96b`). |
 | `0x44e3aa` | `Building_DrawJumpTable` | Data: the jump table of the building draw routine `0x44e329`: 8 bytes for each value of byte 4 of the building's item with its low two bits cleared (the type shifted left 2, with bit 7 while under construction), each a `jmp` to a stub that stores the object number. | confirmed | game | Read by `0x44e329`; the stubs lie from `0x44e62b`. [Build sites](build-sites.md#the-building-types). |
+| `0x44f91d` | `Gfx_DrawCastle` | The draw stub of the castle that stands (byte 4 `0x60`): object 178 drawn whole, with its shadow ([the castle under construction](construction.md#the-castle-under-construction)). | confirmed | graphics | Entry `0x60` of `0x44e3aa`; the emulator's `castle-site` run (`site-draws.txt`) after the castle stands. Not a Ghidra function. |
+| `0x44fd2f` | `Gfx_DrawCastleGrowing` | The draw stub of the castle under construction (byte 4 `0xe0`): stores object 178 and the progress word (`+0xc`) as the fraction and jumps to `0x44fee2`; it never reaches `0x44fa79` ([the castle under construction](construction.md#the-castle-under-construction)). | confirmed | graphics | Entry `0xe0` of `0x44e3aa` (the jump at `0x44e56a`); the emulator's `castle-site` run (`site-draws.txt`). Not a Ghidra function. |
+| `0x44fee2` | `Gfx_DrawGrowingWithShadow` | Draws an object's shadow whole (the object plus 1500, through `0x406210`) and then its sprite (the object plus 1250) through `Gfx_DrawSpriteGrowing` by the fraction stored before it ([the castle under construction](construction.md#the-castle-under-construction)). | confirmed | graphics | Jumped to from `0x44fd2f` and at `0x44fc70`; the emulator's `castle-site` run (`site-draws.txt`). |
 | `0x44fa79` | — | The common part of the draw of a building under construction: tests the progress word at `+0xc` of its item (0 draws the object 144, `0x44fa69`), draws the goods delivered, then the stage. Entry inferred. | inferred | game | Jumped to by the stubs of the types with bit 7 set, from `0x44f92e`. |
 | `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `Rng_Step`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the saplings `0x67` and `0x68` grow into trees ([Forestry](forestry.md#growth)), the codes from `0x69` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `Rng_Step`. [Woodcutting](woodcutting.md#the-object-pass). |
@@ -736,8 +739,9 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 
 Sites:
 
-- `0x44e329` draws a finished building by its type through the jump table at `0x44e3aa`. The type `0xe0` of a
-  castle reaches the stub at `0x44fd2f`, which stores the object number 178; its sprite is entry 1428.
+- `0x44e329` draws a building by byte 4 of its item through the jump table at `0x44e3aa`. The castle that stands
+  (`0x60`) reaches `Gfx_DrawCastle` (`0x44f91d`) and the castle under construction (`0xe0`) reaches
+  `Gfx_DrawCastleGrowing` (`0x44fd2f`); both draw object 178, entry 1428 ([the castle under construction](construction.md#the-castle-under-construction)).
 - `0x45f402` sets two border bits of the new flag from the owners around it; not ported.
 - `0x41f2d2`: places a group of 3, 6, or 12 settlers on the start node of a mission start; not recovered further.
 - `0x44e62b` to `0x44fd2f`: the building stubs that the jump table at `0x44e3aa` in `0x44e329` reaches; each stores an object number and jumps or calls into `Gfx_DrawObjectSprite` or `Gfx_DrawSpriteBase320`. `0x44e62b` stores object 0xa7 (entry 1417), `0x44e63b` object 0xa8 (entry 1418); `0x44e636` and on to `0x44f928` are the jumps into `Gfx_DrawObjectSprite` for objects 152 to 171 and 174; `0x44e653` tests object byte 9 before `0x44e6c5` draws byte 9 plus 174 plus 320; `0x44e720`, `0x44e86d`, `0x44e9ba`, `0x44eb07` and `0x44e781`, `0x44e8ce`, `0x44ea1b`, `0x44eb68` draw 152 and 153 plus 320; `0x44ecfc`, `0x44f6aa`, `0x44f79a`, `0x44f82d` draw entries 502 to 517; `0x44ee56`, `0x44eeda`, `0x44ef5e`, `0x44efd8`, `0x44f05c`, `0x44f0e0`, `0x44f160`, `0x44f1e3` draw the first byte of a pair of the table `0x44f225` plus 320 (data after the jump at `0x44f220`, code again at `0x44f325`); `0x44f42e` and `0x44f528`, `0x44f5c8`, `0x44f908` are tail jumps for 474 to 481 and 448 to 455; `0x44f3a8` forms 188 plus 0 to 3 and jumps at `0x44f3ae`; `0x44ec2a` jumps with 192; `0x44f933` to `0x44fa5d` store an index of 1 to 23 for the table that `0x44fc87` reads before the call at `0x44fcac`; `0x44fa74` jumps for object 144; `0x44faf3`, `0x44fba7` draw 330 and 328. Source: [Graphics archives](graphics-archives.md#entries-no-routine-reads), [Graphics images](graphics-images.md).
@@ -1414,10 +1418,13 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x44e3aa` | `Building_DrawJumpTable` | confirmed | Simulation |
 | `0x44ed02` | `Gfx_DrawFarm` | confirmed | Simulation |
 | `0x44f225` | `Gfx_BuildingPairTable` | confirmed | Graphics images |
+| `0x44f91d` | `Gfx_DrawCastle` | confirmed | Simulation |
 | `0x44fa79` | `Gfx_DrawBuildingSite` | confirmed | Simulation |
 | `0x44fd16` | `Gfx_ObjectNumberTable` | confirmed | Graphics images |
+| `0x44fd2f` | `Gfx_DrawCastleGrowing` | confirmed | Simulation |
 | `0x44fd4a` | `Gfx_DrawSpriteBase320Low` | confirmed | Graphics images |
 | `0x44fd5f` | `Sound_Request` | inferred | Sound |
+| `0x44fee2` | `Gfx_DrawGrowingWithShadow` | confirmed | Simulation |
 | `0x44ff59` | `Gfx_DrawPhaseSprite` | confirmed | Graphics images |
 | `0x44ffe7` | `Render_DrawRowSettlers` | confirmed | Graphics images |
 | `0x44fff3` | `Gfx_DrawSettlerRecords` | confirmed | Graphics images |
@@ -1583,7 +1590,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 405 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 357 confirmed, 67 inferred, 47 unknown.
+Coverage: the index names 408 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 360 confirmed, 67 inferred, 47 unknown.
 <!-- coverage:end -->
 
 Open anchors:
