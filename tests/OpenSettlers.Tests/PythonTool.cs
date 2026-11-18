@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
@@ -113,7 +114,7 @@ static class PythonTool
 
     /// <summary>
     /// Runs <paramref name="git"/> with the arguments in <paramref name="workingDirectory"/>, with every <c>GIT_*</c> variable
-    /// of the host removed, and returns its exit status and output.
+    /// of the host removed, and returns its exit status and output, read as UTF-8.
     /// </summary>
     public static ToolRun Git(string git, string workingDirectory, params string[] arguments)
     {
@@ -122,6 +123,9 @@ static class PythonTool
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            // git writes paths in UTF-8; a console code page of the host must not decode them.
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
         };
         foreach (var argument in arguments)
         {
