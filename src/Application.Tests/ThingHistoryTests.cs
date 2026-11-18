@@ -2,19 +2,18 @@ using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
-using static OpenSettlers.Adapters.Testing.HistoryWorld;
 
 namespace OpenSettlers.Tests;
 
-// The causes a settler's events carry, which the game's history records through members internal to the application. They
-// build their game through the adapters, so no test pair holds them (INV-0013): the rest of this class is in
-// src/MapView.Tests. The map of the seed 1234,5678,9ABC with the castle at 15,5 (its flag at 16,6).
+// The causes a settler's events carry, which the game's history records through members internal to the application: the
+// bench's game on its flat map with the castle at 15,5 (its flag at 16,6) and HistoryWorld's made-up tables. The rest of this
+// class is in src/MapView.Tests.
 [TestClass]
 public sealed class ThingHistoryTests
 {
     static Game Castle()
     {
-        var game = NewGame();
+        var game = GameBench.Create(MadeProgram.HistoryTables(), GameBench.Flat());
         game.Enqueue(
             new Command
             {

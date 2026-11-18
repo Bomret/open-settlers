@@ -5,14 +5,16 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The events of the walk home (ADR 0011): the claim of the node, the search, the arrival, and the entry into the castle, on the
-// game of HomeWalkTests with a settler sent home as the teardown of a building sends it (state 0x1c).
+// game of HomeWalkTests with a settler sent home as the teardown of a building sends it (state 0x1c). The settler carries no command
+// cause here: the carry of the razed cause along the walk is in the class of the same name in src/Application.Tests, on made-up
+// tables, since the carry is set through the history's members internal to the application.
 [TestClass]
 [TestCategory(Needs.Install)]
 public sealed class HomeWalkHistoryTests
 {
     const int Sent = 12;
 
-    static Game SentHome(Cause? carried)
+    static Game SentHome()
     {
         MapSize.TryFromValue(1, out var size, out _);
         var map = MapGenerator.Generate(
@@ -63,11 +65,6 @@ public sealed class HomeWalkHistoryTests
         }
 
         game.Settlers[Sent].Activity = new ClaimsHomeNode();
-        if (carried is not null)
-        {
-            game.History.CarryCause(Sent, carried);
-        }
-
         for (var pass = 0; pass < 400 && game.Settlers[Sent].Activity is not WaitsInCastle; pass++)
         {
             game.Tick();
@@ -84,7 +81,7 @@ public sealed class HomeWalkHistoryTests
     [TestMethod]
     public void ASettlerWalkingHomeRecordsEachChangeWithTheWalkHomeCause()
     {
-        var walk = Walk(SentHome(null));
+        var walk = Walk(SentHome());
         var types = walk.Select(e => e.Type).Distinct().ToList();
 
         CollectionAssert.IsSubsetOf(
@@ -97,43 +94,25 @@ public sealed class HomeWalkHistoryTests
         Assert.AreEqual(1, walk[^1].State.Get("state"));
     }
 
+    // The install's half: the arrival names the castle and the road walk is recorded. The razed cause on every change is in
+    // src/Application.Tests.
     [TestMethod]
     public void ARazedSettlerKeepsTheRazedCauseUntilItIsInTheCastle()
     {
-        var razed = Cause.Razed(
-            new ThingId
-            {
-                Kind = ThingId.BuildingKind,
-                Slot = 3,
-                Fill = 1,
-            }
-        );
-        var game = SentHome(razed);
+        var game = SentHome();
         var walk = Walk(game);
 
         var arrived = walk.Single(e => e.Type == EventType.ArrivedHome);
-        Assert.AreEqual(razed, arrived.Cause);
         Assert.AreEqual(game.History.BuildingId(0).ToString(), arrived.Other);
         Assert.IsTrue(walk.Any(e => e.Type == EventType.Walked), "the road walk is recorded");
-        Assert.IsTrue(
-            walk.All(e => e.Cause == razed),
-            "every change, the road steps and the entry included, carries razed"
-        );
     }
 
     // A free walk home that ends on a node that is no flag with a road: the arrival names no storage and the settler searches again.
+    // The install's half: the arrival and the search again. The carry of the razed cause through them is in src/Application.Tests.
     [TestMethod]
     public void ArrivingOnANodeThatIsNoHomeFlagSearchesAgainAndKeepsTheCarry()
     {
-        var razed = Cause.Razed(
-            new ThingId
-            {
-                Kind = ThingId.BuildingKind,
-                Slot = 3,
-                Fill = 1,
-            }
-        );
-        var game = SentHome(razed);
+        var game = SentHome();
         var settler = game.Settlers[Sent];
         settler.X = 30;
         settler.Y = 30;
@@ -147,7 +126,6 @@ public sealed class HomeWalkHistoryTests
             },
         };
         settler.Timer = 0;
-        game.History.CarryCause(Sent, razed);
         for (var pass = 0; pass < 200 && settler.Activity is WalksFree; pass++)
         {
             game.Tick();
@@ -156,15 +134,12 @@ public sealed class HomeWalkHistoryTests
         var arrived = game.History.EventsOf(game.History.SettlerId(Sent)).Last(e => e.Type == EventType.ArrivedHome);
         Assert.IsNull(arrived.Other);
         Assert.AreEqual(0x19, arrived.State.Get("state"));
-        Assert.AreEqual(razed, arrived.Cause);
-        game.Tick();
-        Assert.AreEqual(razed, game.History.EventsOf(game.History.SettlerId(Sent)).Last().Cause, "the carry goes on");
     }
 
     [TestMethod]
     public void AKnightSearchingHomeTakesState0x35()
     {
-        var game = SentHome(null);
+        var game = SentHome();
         var knight = game.Settlers.First(s => s.Job == new Knight(0));
         var slot = game.Settlers.ToList().IndexOf(knight);
         knight.Activity = new ClaimsHomeNode();

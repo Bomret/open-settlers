@@ -3,8 +3,8 @@ using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
 
-// The deposit move of the flag placement on a hand-made map (the emulator-backed cases are in the root tests' class of the
-// same name).
+// The deposit move of the flag placement on a hand-made map (the emulator-backed cases are in the class of the same name in
+// src/Adapters.Tests).
 [TestClass]
 public sealed class FlagPlacementTests
 {

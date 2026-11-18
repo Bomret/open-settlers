@@ -202,4 +202,104 @@ public sealed class OpenSettlersSourceTests
         Assert.IsTrue(waiting.Any(term => term.Part == SettlerPart.Figure));
         Assert.IsTrue(waiting.Where(term => term.Part == SettlerPart.Figure).All(term => term.Ask(source) is not null));
     }
+
+    static TerrainTriangle Triangle(int code, bool upper) =>
+        new()
+        {
+            Column = 0,
+            Row = 0,
+            Upper = upper,
+            Terrain = new Terrain { Code = code },
+            Apex = 0,
+            Left = 0,
+            Right = 0,
+            X = 100,
+            Y = 50,
+        };
+
+    // Every term the shared builders can emit, drawn through the checked-in set. A term the set has no entry for fails
+    // here, whether a builder gained a term or the manifest lost a key.
+    [TestMethod]
+    public void TheCheckedInContentSetCoversEveryObjectTermTheBuildersEmit()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
+        var map = MapGenerator.Generate(
+            MadeProgram.Made(),
+            new MapSeed
+            {
+                W0 = 0x1234,
+                W1 = 0x5678,
+                W2 = 0x9ABC,
+            },
+            MapSize.Offered[0]
+        );
+        var classes = new ObjectClass[RuleTables.ClassCount];
+        classes[1] = 3;
+        var game = GameFactory.Create(
+            new RuleTables(classes, MadeProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
+            map
+        );
+        game.Enqueue(
+            new Command
+            {
+                Tick = 0,
+                Player = 0,
+                Kind = CommandKind.PlaceCastle,
+                X = 15,
+                Y = 5,
+            }
+        );
+        game.Tick();
+        game.Enqueue(
+            new Command
+            {
+                Tick = game.TickCount,
+                Player = 0,
+                Kind = CommandKind.PlaceFlag,
+                X = 17,
+                Y = 3,
+            }
+        );
+        game.Tick();
+        Huts.PlaceAndTick(game, 16, 2);
+        var goods = Enumerable.Range(0, 8).Select(place => TestCatalog.GoodOf(place + 1)).ToList();
+        var flagGoods = new System.Collections.Generic.Dictionary<
+            (int X, int Y),
+            System.Collections.Generic.IReadOnlyList<Good>
+        >
+        {
+            [(17, 3)] = goods,
+        };
+
+        var terms = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
+
+        Assert.IsTrue(terms.OfType<BuildingDraw>().Any(draw => draw.Type == BuildingType.Castle));
+        Assert.IsTrue(terms.OfType<BuildingDraw>().Any(draw => draw.Type == BuildingType.Woodcutter));
+        Assert.IsTrue(terms.OfType<GoodAtFlag>().Any());
+        foreach (var term in terms)
+        {
+            // The codes 2 to 7 are structures the game draws from its buildings, so the set draws no object for them.
+            var drawsNothing = term is MapObjectDraw { Object.Code: < MapObject.FirstTreeCode and not 1 };
+            Assert.AreEqual(drawsNothing, term.Ask(source) is null, term.ToString());
+        }
+    }
+
+    // A flat image hangs from the triangle's apex whatever the slope, so a node that drops below the apex opens a gap
+    // the rows below the triangle must fill. The image's rows below its triangle (Camera.RowSpacing rows) cover the
+    // largest drop a node can have.
+    [TestMethod]
+    public void EveryTerrainImageCoversTheLargestDrop()
+    {
+        var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
+        const int LargestDrop = Node.MaxHeight * TerrainTriangles.HeightStep;
+
+        for (var code = 0; code < OpenSettlersSource.TerrainCodes; code++)
+        {
+            foreach (var upper in new[] { true, false })
+            {
+                var image = source.Draw(Triangle(code, upper))!;
+                Assert.IsTrue(image.Height - Camera.RowSpacing >= LargestDrop, $"{code} {upper}: skirt {image.Height}");
+            }
+        }
+    }
 }

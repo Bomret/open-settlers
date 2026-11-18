@@ -90,22 +90,26 @@ public sealed class SettlerSupplyTests
 
         Assert.AreEqual(0, Growth(game, 10000).Count);
         Assert.AreEqual(count, game.Settlers.Count);
-        Assert.IsNull(game.Supply);
+        Assert.IsNull(game.SupplyState);
     }
 
     [TestMethod]
     public void BeforeTheCastleNoSettlerIsMadeAndTheSupplyStaysAtItsStart()
     {
         var game = Town(castle: false);
-        var supply = game.Supply!;
         // The timer's state; the cap is worked out at phase 32 for a player in the game whether or not its castle stands.
-        string Timer() =>
-            $"{supply.Countdown} {supply.LastClock} {supply.KnightAccumulator} {supply.KnightsOwed} {supply.Running}";
+        string Timer()
+        {
+            var supply = game.SupplyState!;
+
+            return $"{supply.Countdown} {supply.LastClock} {supply.KnightAccumulator} {supply.KnightsOwed} {supply.Running}";
+        }
+
         var start = Timer();
 
         Assert.AreEqual(0, Growth(game, 1000).Count);
         Assert.AreEqual(start, Timer());
-        Assert.AreEqual(1000, supply.Countdown);
+        Assert.AreEqual(1000, game.SupplyState!.Countdown);
     }
 
     [TestMethod]
@@ -187,7 +191,7 @@ public sealed class SettlerSupplyTests
         Assert.AreEqual(new Knight(0), game.Settlers[count + 1].Job);
         Assert.AreEqual(swords - 1, game.CastleStock.Count(Good.Sword));
         Assert.AreEqual(shields - 1, game.CastleStock.Count(Good.Shield));
-        Assert.AreEqual(0, game.Supply!.KnightsOwed);
+        Assert.AreEqual(0, game.SupplyState!.KnightsOwed);
     }
 
     [TestMethod]
@@ -202,25 +206,24 @@ public sealed class SettlerSupplyTests
 
         Assert.AreEqual(count + 8, game.Settlers.Count);
         Assert.IsTrue(game.Settlers.Skip(count).All(settler => settler.Job == new Jobless()));
-        Assert.AreEqual(2, game.Supply!.KnightsOwed);
+        Assert.AreEqual(2, game.SupplyState!.KnightsOwed);
     }
 
-    // ConstructionWorld's two roads take two of the castle's five settlers without a job; the road from 17,3 asks for a third.
+    // The castle holds two settlers without a job (its castle command names its settlers), which ConstructionWorld's two roads take;
+    // the road from 17,3 asks for a third before the supply's first settler comes, a period after the castle stands.
     [TestMethod]
     public void ARoadThatFoundNoSettlerGetsTheNewOne()
     {
-        var game = ConstructionWorld.Create(settlerSupply: true, settlerRate: RateForty);
-        // The castle is built and the two carriers are on their roads.
-        ConstructionWorld.Run(game, 600);
+        var game = ConstructionWorld.Create(
+            settlerSupply: true,
+            settlerRate: RateForty,
+            castleSettlers: [new Jobless(), new Jobless(), .. ConstructionWorld.CastleJobsWithout(new Jobless())]
+        );
+        // The two carriers have left for their roads.
+        ConstructionWorld.Run(game, 60);
         Assert.AreEqual(2, ConstructionWorld.OfJob(game, new Carrier()).Length);
+        Assert.IsEmpty(ConstructionWorld.OfJob(game, new Jobless()), "the castle holds no settler without a job");
 
-        // The castle's settlers without a job, the new ones among them, are given another job, so the third road finds none.
-        foreach (var settler in game.Settlers.Where(settler => settler.Job == new Jobless()))
-        {
-            settler.TakeUp(Job.Of(9));
-        }
-
-        game.Roster.ClearWaiting(new Jobless());
         var count = game.Settlers.Count;
         ConstructionWorld.Do(game, CommandKind.BuildRoad, 17, 3, [0, 1]);
         ConstructionWorld.Run(game, 40);
@@ -289,7 +292,7 @@ public sealed class SettlerSupplyTests
         Assert.AreEqual(held, game.Settlers.Count);
         Assert.AreEqual(
             0x6A60, // 0x8000 and three tries of 20000, in 16 bits
-            game.Supply!.KnightAccumulator,
+            game.SupplyState!.KnightAccumulator,
             "the periods pass and feed the knight accumulator all the same"
         );
     }
@@ -298,15 +301,15 @@ public sealed class SettlerSupplyTests
     public void TheCapIsWorkedOutAtPhase32WithoutTheGoodsHandOut()
     {
         var game = Town();
-        Assert.AreEqual(0, game.Supply!.Cap, "no cap is worked out before the first phase 32");
+        Assert.AreEqual(0, game.SupplyState!.Cap, "no cap is worked out before the first phase 32");
 
-        while (game.Pass.Phase != 32)
+        while (game.PassPhase != 32)
         {
             game.Tick();
         }
 
-        Assert.AreEqual(500, game.Supply.Cap, "one player's cap is the table's size");
-        Assert.IsTrue(game.Supply.MayMake);
+        Assert.AreEqual(500, game.SupplyState!.Cap, "one player's cap is the table's size");
+        Assert.IsTrue(game.SupplyState.MayMake);
     }
 
     [TestMethod]
@@ -320,7 +323,7 @@ public sealed class SettlerSupplyTests
     [TestMethod]
     public void WithTheSupplyOffTheRateIsNotRead()
     {
-        Assert.IsNull(Town(supply: false, rate: 41, castle: false).Supply);
+        Assert.IsNull(Town(supply: false, rate: 41, castle: false).SupplyState);
     }
 
     [TestMethod]

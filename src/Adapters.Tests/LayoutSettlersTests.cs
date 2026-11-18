@@ -26,8 +26,8 @@ public sealed class LayoutSettlersTests
     // straight on over open ground.
     static readonly (int X, int Y)[] Trees =
     [
-        .. MapGenerator
-            .SpiralOffsets.Skip(1)
+        .. Spiral
+            .Offsets.Skip(1)
             .Take(128)
             .Select(o => (13 + o.Dx, 10 + o.Dy))
             .Where(n => n.Item1 >= 16 && n.Item2 is >= 10 and <= 12),
@@ -63,6 +63,10 @@ public sealed class LayoutSettlersTests
         return layout.Apply(NewGame(layout));
     }
 
+    // Whether a layout stands a worker in a finished building of the type: the game's public setup asks for one on a node with no
+    // building (0,0), which it refuses where the type's worker stands in the hut and passes over with no answer where he does not.
+    static bool StandsWorker(Game game, BuildingType type) => game.StandWorkerInFinishedHut(type, 0, 0) is not null;
+
     static void Run(Game game, int ticks)
     {
         for (var i = 0; i < ticks; i++)
@@ -81,7 +85,7 @@ public sealed class LayoutSettlersTests
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
         Assert.AreEqual(game.Settlers.ToList().IndexOf(worker), game.Buildings[1].Worker);
-        Assert.AreEqual(0, game.Roster.Waiting(new Woodcutter()));
+        Assert.AreEqual(0, game.CastleWaitingSlot(new Woodcutter()));
     }
 
     [TestMethod]
@@ -103,7 +107,7 @@ public sealed class LayoutSettlersTests
         Assert.IsInstanceOfType<Door>(miller.Activity);
         Assert.AreEqual((13, 10), (miller.X, miller.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
-        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Mill));
+        Assert.IsTrue(StandsWorker(game, BuildingType.Mill));
         Run(game, 200);
         Assert.AreEqual(new Grinds { Phase = 0 }.Code, miller.Activity.Code, "he waits for grain in the mill");
         Assert.AreEqual(ConstructionTables.GrainClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
@@ -140,7 +144,7 @@ public sealed class LayoutSettlersTests
         Assert.IsInstanceOfType<Door>(baker.Activity);
         Assert.AreEqual((13, 10), (baker.X, baker.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
-        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Baker));
+        Assert.IsTrue(StandsWorker(game, BuildingType.Baker));
         Run(game, 200);
         Assert.AreEqual(new Bakes { Phase = 0 }.Code, baker.Activity.Code, "he waits for flour in the bakery");
         Assert.AreEqual(ConstructionTables.FlourClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
@@ -176,7 +180,7 @@ public sealed class LayoutSettlersTests
         Assert.IsInstanceOfType<Door>(butcher.Activity);
         Assert.AreEqual((13, 10), (butcher.X, butcher.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
-        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.Butcher));
+        Assert.IsTrue(StandsWorker(game, BuildingType.Butcher));
         Run(game, 200);
         Assert.AreEqual(new Butchers { Working = false }.Code, butcher.Activity.Code, "he waits for a pig in the shop");
         Assert.AreEqual(ConstructionTables.PigClass, game.Flags[1].RequestOf(RequestWord.First).Asks);
@@ -202,7 +206,7 @@ public sealed class LayoutSettlersTests
         Assert.IsInstanceOfType<Door>(farmer.Activity);
         Assert.AreEqual((13, 10), (farmer.X, farmer.Y));
         Assert.IsTrue(game.Buildings[1].WorkerInside && !game.Buildings[1].WorkerOnTheWay);
-        Assert.IsTrue(game.Walks.StandsWorker(BuildingType.PigFarm));
+        Assert.IsTrue(StandsWorker(game, BuildingType.PigFarm));
         Run(game, 200);
         Assert.AreEqual(new TendsPigs { Phase = 0 }.Code, farmer.Activity.Code, "he waits for grain in the pig farm");
         Assert.AreEqual(1, game.Buildings[1].FillHigh, "the farm holds one pig");
@@ -227,7 +231,7 @@ public sealed class LayoutSettlersTests
                 BuildingType.Castle,
                 BuildingType.Storehouse,
             }
-                .Select(game.Walks.StandsWorker)
+                .Select(type => StandsWorker(game, type))
                 .ToArray()
         );
     }
@@ -260,7 +264,7 @@ public sealed class LayoutSettlersTests
             game.ApplyCommands();
         }
 
-        var waiting = game.Roster.Waiting(jobless);
+        var waiting = game.CastleWaitingSlot(jobless);
         var lowest = game
             .Settlers.ToList()
             .FindIndex(settler => settler.Job == jobless && settler.Activity is WaitsInCastle);
@@ -269,7 +273,7 @@ public sealed class LayoutSettlersTests
             $"the list names {waiting}, the lowest waiting settler is {lowest}"
         );
 
-        Assert.IsNull(game.Carriers.PlaceCarrierOnRoad(11, 11, 0));
+        Assert.IsNull(game.PlaceCarrierOnRoad(11, 11, 0));
 
         Assert.IsInstanceOfType<WaitsAtFlag>(game.Settlers[waiting].Activity);
         Assert.IsInstanceOfType<WaitsInCastle>(game.Settlers[lowest].Activity);
@@ -347,18 +351,8 @@ public sealed class LayoutSettlersTests
         Assert.AreEqual("test.jsonc: buildings[1]: the castle holds no woodcutter for the building", problem);
     }
 
-    [TestMethod]
-    [DataRow(13, 10, DisplayName = "the door")]
-    [DataRow(14, 11, DisplayName = "the flag")]
-    public void AWoodcutterEntryForAHutWithASettlerOnItsDoorOrFlagFailsTheLoad(int x, int y)
-    {
-        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}],", ""));
-        game.Movement.Occupy(game.Map.Index(x, y), 1);
-
-        var problem = Read("\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}]").Apply(game);
-
-        Assert.AreEqual("test.jsonc: buildings[0]: a settler stands on the hut's door or on its flag", problem);
-    }
+    // A woodcutter entry for a hut with a settler on its door or flag is in the class of the same name in src/Application.Tests: it
+    // stands the settler there through the settlers' movement, which is internal to the application.
 
     [TestMethod]
     [DataRow("sawmill")]
@@ -393,7 +387,7 @@ public sealed class LayoutSettlersTests
 
         Assert.AreEqual(
             "no finished woodcutter's, stonecutter's, pig farmer's, miller's, forester's, fisher's, farmer's, butcher's, or baker's building stands on the node",
-            game.Walks.StandWorkerInHut(x, y)
+            game.StandWorkerInFinishedHut(BuildingType.Woodcutter, x, y)
         );
     }
 
@@ -417,7 +411,7 @@ public sealed class LayoutSettlersTests
 
         Assert.AreEqual(
             "no finished woodcutter's, stonecutter's, pig farmer's, miller's, forester's, fisher's, farmer's, butcher's, or baker's building stands on the node",
-            game.Walks.StandWorkerInHut(13, 10)
+            game.StandWorkerInFinishedHut(BuildingType.Woodcutter, 13, 10)
         );
     }
 

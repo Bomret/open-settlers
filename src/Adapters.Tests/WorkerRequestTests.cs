@@ -82,15 +82,14 @@ public sealed class WorkerRequestTests
     [TestMethod]
     public void WithNoJoblessSettlerTheBuildingWaitsAndTheGameGoesOn()
     {
-        var game = ConstructionWorld.Create();
+        // The castle holds no settler without a job: its castle command names its settlers without them.
+        var game = ConstructionWorld.Create(castleSettlers: ConstructionWorld.CastleJobsWithout(new Jobless()));
         game.CastleStock.Add(Tool);
         var forester = PlaceForester(game);
         var failed = false;
 
         for (var tick = 0; tick < 200; tick++)
         {
-            // The settlers enter the castle's list as their turns come, so it is emptied before every tick.
-            game.Roster.ClearWaiting(new Jobless());
             game.Tick();
             failed |= forester.RequestFailed;
         }

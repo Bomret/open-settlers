@@ -51,6 +51,7 @@
     <None Include="farm-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="fish-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="food-sites.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="forester-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="grain-split-farm.txt" CopyToOutputDirectory="PreserveNewest" />
@@ -63,6 +64,7 @@
     <None Include="pig-removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="pig-walks.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="road-builds.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-splits.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-removals.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="saw-walks.txt" CopyToOutputDirectory="PreserveNewest" />

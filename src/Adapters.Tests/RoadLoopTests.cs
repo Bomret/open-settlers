@@ -166,29 +166,12 @@ public sealed class RoadLoopTests
 
         Apply(game, CommandKind.RemoveFlag, 18, 8);
 
-        Assert.IsNull(game.Removal.CommandAt(18, 8));
+        Assert.IsNull(game.RemovalCommandAt(18, 8));
         CollectionAssert.AreEquivalent(roads, game.Network.Roads.ToList());
     }
 
-    [TestMethod]
-    public void TakingDownTheFlagThatSplitTheLoopJoinsItsHalvesBackIntoTheLoop()
-    {
-        // The original's click refuses this flag, so the join is reached through the take-down itself.
-        var game = WithLoop();
-        Apply(game, CommandKind.PlaceFlag, 18, 8);
-
-        game.Removal.TakeFlagDown(game.Map.Index(18, 8));
-
-        var road = game.Network.Roads.Single();
-        Assert.AreEqual((0, 0), (road.FromSlot, road.ToSlot));
-        Assert.AreEqual(Loop.Length, road.Directions.Count);
-        CollectionAssert.AreEquivalent(
-            new[] { 0, 2 },
-            new[] { road.FromDirection.Value, road.ToDirection.Value },
-            "the joined road starts at either end"
-        );
-        Assert.AreEqual(new LengthClass { Value = 2 }, game.Flags[0].Side(0).Length);
-    }
+    // Taking down the flag that split the loop is in the class of the same name in src/Application.Tests: the original's click refuses
+    // the flag, so the join is reached through the take-down itself, which is internal to the application.
 
     [TestMethod]
     public void ARoadThatWouldCloseTheLoopInOneStepStaysImpossible()

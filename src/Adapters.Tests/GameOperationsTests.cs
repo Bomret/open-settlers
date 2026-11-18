@@ -5,8 +5,9 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The public operations of a game that the adapters and the host use in place of its behavior objects: the values the digest
-// reads, the setup of a layout, and the removal query. The map is flat grass: the castle stands at 10,10 with its flag at
-// 11,11; a flag at 14,11 is three steps east of it, and the hut at 13,10 ties to that flag.
+// reads and the setup of a layout. The map is flat grass: the castle stands at 10,10 with its flag at 11,11; a flag at 14,11 is
+// three steps east of it, and the hut at 13,10 ties to that flag. The layout mode, the removal query, and the supply's state
+// against the parts they read are in the class of the same name in src/Application.Tests.
 [TestClass]
 public sealed class GameOperationsTests
 {
@@ -75,18 +76,6 @@ public sealed class GameOperationsTests
         Assert.IsNotInstanceOfType<System.Collections.Generic.List<Command>>(game.AppliedCommands);
     }
 
-    [TestMethod]
-    public void SettingLayoutModeSetsAndClearsTheCauseOfTheEvents()
-    {
-        var game = Built();
-
-        game.SetLayoutMode(true);
-        Assert.AreEqual(Cause.Layout, CauseOfAFlagPlacedAt(game, 16, 11));
-
-        game.SetLayoutMode(false);
-        Assert.AreNotEqual(Cause.Layout, CauseOfAFlagPlacedAt(game, 18, 11));
-    }
-
     // The cause the game records for the flag its command places on the node.
     static Cause CauseOfAFlagPlacedAt(Game game, int x, int y)
     {
@@ -133,36 +122,5 @@ public sealed class GameOperationsTests
             game.StandWorkerInFinishedHut(BuildingType.Sawmill, 13, 10),
             "a sawmill's worker does not stand in it"
         );
-    }
-
-    [TestMethod]
-    public void TheRemovalQueryAnswersWhatTheRemovalGivesAtEveryNode()
-    {
-        var game = Built();
-
-        Assert.IsNull(game.RemovalCommandAt(11, 11), "the castle's flag is refused");
-        Assert.AreEqual(CommandKind.RemoveRoad, game.RemovalCommandAt(12, 11), "a node of the road is taken down");
-        Assert.AreEqual(CommandKind.RemoveRoad, game.RemovalCommandAt(13, 11), "a node of the road is taken down");
-        Assert.IsNull(game.RemovalCommandAt(0, 0), "a node that holds nothing is refused");
-    }
-
-    [TestMethod]
-    public void TheSupplyStateEqualsWhatTheSupplyHoldsAndIsNullWithoutTheSupply()
-    {
-        Assert.IsNull(Built().SupplyState, "a game built without the supply has none");
-
-        var layout = Read(Setup);
-        var game = NewGame(layout, supply: true);
-        Assert.IsNull(layout.Apply(game));
-        var states = new System.Collections.Generic.HashSet<(ushort, ushort)>();
-        for (var tick = 0; tick < 200; tick++)
-        {
-            game.Tick();
-            var state = game.SupplyState!;
-            states.Add((state.Countdown, state.LastClock));
-        }
-
-        Assert.IsTrue(game.SupplyState!.Running, "the supply runs once the castle stands");
-        Assert.IsGreaterThan(1, states.Count, "the values are live, not a constant or a stale copy");
     }
 }

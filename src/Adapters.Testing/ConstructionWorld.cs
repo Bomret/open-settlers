@@ -11,12 +11,43 @@ namespace OpenSettlers.Adapters.Testing;
 // to 18,6 and from there to 19,4, as HutTests lays them. A building at 17,5 has its flag at 18,6, which a road joins to the castle.
 public static class ConstructionWorld
 {
+    // The jobs of the castle's settlers after its first (docs/rules/castle.md), in the order of their slots.
+    static readonly Job[] CastleJobs =
+    [
+        new Jobless(),
+        new Jobless(),
+        new Jobless(),
+        new Jobless(),
+        new Jobless(),
+        new Knight(0),
+        new Knight(0),
+        new Knight(0),
+        new UnportedJob(18),
+        new Woodcutter(),
+        new Sawmiller(),
+        new Stonecutter(),
+        new Digger(),
+        new Builder(),
+        new Fisher(),
+        new UnportedJob(20),
+        new UnportedJob(20),
+        new UnportedJob(9),
+        new UnportedJob(9),
+    ];
+
+    // The castle's settlers with no settler of the jobs given: a castle that has run out of them. A castle command names them
+    // (Command.Settlers).
+    public static IReadOnlyList<Job> CastleJobsWithout(params Job[] jobs) =>
+        [.. CastleJobs.Where(job => !jobs.Contains(job))];
+
+    // With castleSettlers the castle holds those settlers after its first in place of its 20 first settlers (CastleJobsWithout).
     public static Game Create(
         RuleTables? tables = null,
         bool handsOutGoods = false,
         bool everyPassTurns = false,
         bool settlerSupply = false,
-        int settlerRate = 0
+        int settlerRate = 0,
+        IReadOnlyList<Job>? castleSettlers = null
     )
     {
         var map = MapGenerator.Generate(
@@ -53,6 +84,7 @@ public static class ConstructionWorld
                 Kind = CommandKind.PlaceCastle,
                 X = 15,
                 Y = 5,
+                Settlers = castleSettlers,
             }
         );
         game.Tick();
