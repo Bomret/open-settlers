@@ -33,7 +33,7 @@ has the focus.
 
 ## Game view
 
-The seed bar shows the tick count and the castle's log, plank, and stone counts. A new seed or size starts a new game on the new map.
+The seed bar shows the tick count and the castle's log, plank, stone, and food counts, then each good that the content set's start stock does not list and the castle holds, by its stable name. A new seed or size starts a new game on the new map.
 
 A click is a press and release of the left mouse button, or a tap on a touchpad, that does not move the view. A
 press that moves the view by more than a few pixels is a drag and places nothing. A click goes to the node whose
