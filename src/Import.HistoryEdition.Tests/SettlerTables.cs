@@ -1,7 +1,7 @@
 namespace OpenSettlers.Tests;
 
 /// <summary>
-/// Figure tables over made-up job data. They stay with the tests because <c>SettlerFigureTables</c> is internal to the
+/// Figure tables over made-up job data. They live in this test project because <c>SettlerFigureTables</c> is internal to the
 /// History Edition source.
 /// </summary>
 static class SettlerTables

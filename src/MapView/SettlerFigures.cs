@@ -14,7 +14,7 @@ namespace OpenSettlers.MapView;
 /// and from the west. A settler is drawn as three terms: its figure, then its overlay, then its second figure (a source
 /// that has no second figure for a job draws nothing for the third). A carrier that waits off its node is drawn by the tile
 /// pass (<c>0x44d77e</c>), after the settlers of its row, at its node lifted by 4 times its height.
-/// <b>Confirmed</b> by the draw runs of <c>tests/OpenSettlers.Tests/settler-draws.txt</c> for the carrier (with each good), the
+/// <b>Confirmed</b> by the draw runs of <c>src/Import.HistoryEdition.Tests/settler-draws.txt</c> for the carrier (with each good), the
 /// woodcutter, and the fisher (the settler of job 11). A carrier that waits next to a flag (state 0x42), a carrier told to go home
 /// (0x44, 0x45), a settler that claims its node (0x1c), and a settler at work (0x12, 0x1f) have no record.
 /// <b>Inferred:</b> every state the recordings hold no settler of.

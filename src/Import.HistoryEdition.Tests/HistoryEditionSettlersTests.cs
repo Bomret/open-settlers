@@ -1,37 +1,37 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OpenSettlers.Assets;
-using OpenSettlers.MapView;
-using OpenSettlers.Simulation;
-
 namespace OpenSettlers.Tests;
 
 // What the History Edition source draws for the settlers of the install: the picks of the exe's figure tables over the terms
-// of the shared placement, and the images the archive holds for them.
+// of a settler (SettlerTerms; the map view's placement of them is checked in src/MapView.Tests and, with the install, in
+// src/Launch.Tests), and the images the archive holds for them.
 [TestClass]
 public sealed class HistoryEditionSettlersTests
 {
-    static (SettlerPair Pair, HistoryEditionSource Source) Load()
+    sealed record Kit(SettlerFigureTables Tables, HistoryEditionSource Source, StepOffsets Steps);
+
+    static Kit Load()
     {
         var install = TestProgram.OpenInstall();
         var tables = TestProgram.Tables();
-        var pair = SettlerPair.Of(install, tables);
+        var archive = Formats.ArchiveFile.Read(install.ReadAll(TerrainGraphics.ArchiveFile));
+        var sequences = archive.Data(archive[2]).ToArray();
 
-        return (pair, HistoryEditionSource.Load(install, tables));
+        return new Kit(
+            SettlerFigureTables.From(tables, sequences),
+            HistoryEditionSource.Load(install, tables),
+            new StepOffsets(sequences)
+        );
     }
 
-    static Map Map() =>
-        MapGenerator.Generate(
-            MadeProgram.Made(),
-            new MapSeed
-            {
-                W0 = 0x1234,
-                W1 = 0x5678,
-                W2 = 0x9ABC,
-            },
-            MapSize.Offered[0]
-        );
+    static Map Map() => new(MapSize.Offered[0]);
+
+    static List<SettlerDraw> Terms(Kit kit, IEnumerable<Settler> settlers) =>
+        SettlerTerms.Of(kit.Steps, Map(), settlers, 0);
+
+    static int[] Entries(Kit kit, IEnumerable<Settler> settlers) =>
+        SettlerTerms.Entries(kit.Tables, Terms(kit, settlers));
 
     static Settler Woodcutter(int frame, int timer, Activity activity) =>
         new(new Woodcutter(), 0, 4, 3, 0, activity) { Frame = frame, Timer = (ushort)timer };
@@ -57,36 +57,33 @@ public sealed class HistoryEditionSettlersTests
     [TestCategory(Needs.Install)]
     public void TheWoodcuttersWalkAndCutAreDrawnWithTheEntriesTheTableRuleGives()
     {
-        var pair = Load().Pair;
-        var map = Map();
+        var kit = Load();
 
         // Frame 4 with no time left: the figure byte 7 (offsets 7, 0): 1850 + 48 + 7, 2500 + 48 + 7, 3150 + 54 + 0.
-        var walk = pair.Draws(map, [Woodcutter(4, 0, Walking)], 0).Select(d => d.Entry);
+        var walk = Entries(kit, [Woodcutter(4, 0, Walking)]);
         // The way back with the log: the same byte in the row 0x10: 1850 + 48 + 7, 2500 + 48 + 7, 3150 + 60 + 0.
-        var back = pair.Draws(map, [Woodcutter(4, 0, BackWithLog)], 0).Select(d => d.Entry);
+        var back = Entries(kit, [Woodcutter(4, 0, BackWithLog)]);
         // Frame 0x74 with 800 units left: the triple 100 holds the figure byte 0x83, the word 0x0f03: 1850 + 272 + 3, 2500 + 272 + 3.
-        var cut = pair.Draws(
-                map,
-                [
-                    Woodcutter(
-                        0x74,
-                        800,
-                        new Cuts
-                        {
-                            Back = new Vector(0, 0),
-                            SecondVariant = false,
-                            Count = 0,
-                            Memory = 0,
-                        }
-                    ),
-                ],
-                0
-            )
-            .Select(d => d.Entry);
+        var cut = Entries(
+            kit,
+            [
+                Woodcutter(
+                    0x74,
+                    800,
+                    new Cuts
+                    {
+                        Back = new Vector(0, 0),
+                        SecondVariant = false,
+                        Count = 0,
+                        Memory = 0,
+                    }
+                ),
+            ]
+        );
 
-        CollectionAssert.AreEqual(new[] { 1905, 2555, 3204 }, walk.ToArray());
-        CollectionAssert.AreEqual(new[] { 1905, 2555, 3210 }, back.ToArray());
-        CollectionAssert.AreEqual(new[] { 2125, 2775 }, cut.ToArray());
+        CollectionAssert.AreEqual(new[] { 1905, 2555, 3204 }, walk);
+        CollectionAssert.AreEqual(new[] { 1905, 2555, 3210 }, back);
+        CollectionAssert.AreEqual(new[] { 2125, 2775 }, cut);
     }
 
     static Settler LoadedCarrier(int frame, int timer = 0) =>
@@ -114,8 +111,7 @@ public sealed class HistoryEditionSettlersTests
     [TestCategory(Needs.Install)]
     public void ACarrierCarryingALogIsDrawnInEachDirectionWithTheEntriesTheCarriedRowGives()
     {
-        var pair = Load().Pair;
-        var map = Map();
+        var kit = Load();
         // The figure and the overlay entry of each direction, as the install's tables give them in the row 0x14.
         int[][] expected =
         [
@@ -129,25 +125,21 @@ public sealed class HistoryEditionSettlersTests
 
         for (var direction = 0; direction < 6; direction++)
         {
-            var entries = pair.Draws(map, [LoadedCarrier(4 + 9 * direction)], 0).Select(d => d.Entry).Take(2).ToArray();
+            var entries = Entries(kit, [LoadedCarrier(4 + 9 * direction)]).Take(2).ToArray();
 
             CollectionAssert.AreEqual(expected[direction], entries, $"direction {direction}");
         }
     }
 
     // Every term the figure tables pick an entry for has an image in the archive: the source draws what the tables pick.
-    static HashSet<(int, int)> PickedWithNoImage(
-        (SettlerPair Pair, HistoryEditionSource Source) kit,
-        IEnumerable<Settler> settlers
-    )
+    static HashSet<(int, int)> PickedWithNoImage(Kit kit, IEnumerable<Settler> settlers)
     {
-        var map = Map();
         var missing = new HashSet<(int, int)>();
         foreach (var settler in settlers)
         {
-            foreach (var term in kit.Pair.Terms(map, [settler], 0))
+            foreach (var term in Terms(kit, [settler]))
             {
-                if (kit.Pair.Pick(term) is { } pick && kit.Source.Draw(term)?.Image is null)
+                if (kit.Tables.Pick(term) is { } pick && kit.Source.Draw(term)?.Image is null)
                 {
                     missing.Add((pick.Entry, pick.Colour));
                 }
@@ -274,7 +266,6 @@ public sealed class HistoryEditionSettlersTests
     public void EveryFigureOfTheCarrierAndTheWoodcutterHasItsColourOverlay()
     {
         var kit = Load();
-        var map = Map();
         var pairs = Enumerable
             .Range(4, 55)
             .SelectMany(frame =>
@@ -282,9 +273,9 @@ public sealed class HistoryEditionSettlersTests
                     .Range(0, 128)
                     .SelectMany(step => new[] { LoadedCarrier(frame, step * 8), Woodcutter(frame, step * 8, Walking) })
             )
-            .Select(settler => kit.Pair.Terms(map, [settler], 0))
-            .Where(terms => kit.Pair.Pick(terms[0]) is not null && kit.Pair.Pick(terms[1]) is not null)
-            .Select(terms => (Figure: kit.Pair.Pick(terms[0])!.Value, Overlay: kit.Pair.Pick(terms[1])!.Value))
+            .Select(settler => Terms(kit, [settler]))
+            .Where(terms => kit.Tables.Pick(terms[0]) is not null && kit.Tables.Pick(terms[1]) is not null)
+            .Select(terms => (Figure: kit.Tables.Pick(terms[0])!.Value, Overlay: kit.Tables.Pick(terms[1])!.Value))
             .ToArray();
 
         Assert.IsNotEmpty(pairs);
@@ -301,7 +292,7 @@ public sealed class HistoryEditionSettlersTests
         var archive = Formats.ArchiveFile.Read(TestProgram.OpenInstall().ReadAll(TerrainGraphics.ArchiveFile));
         var figure = Formats.SpriteFile.Read(archive.Data(archive[1905]));
         var secondSprite = Formats.SpriteFile.Read(archive.Data(archive[3204]));
-        var terms = kit.Pair.Terms(Map(), [Woodcutter(4, 0, Walking)], 0);
+        var terms = Terms(kit, [Woodcutter(4, 0, Walking)]);
 
         var second = kit.Source.Draw(terms[2])!.Image!;
 
