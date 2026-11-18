@@ -139,12 +139,13 @@ folder stay. The caller removes the folder.
 Each output line starts with `EMU `. The header of `EmulateMapStart.java` lists the commands. Words are
 hexadecimal, without spaces.
 
-A call with commands other than `draw:` exits 0 only where every command ended: the script prints the line
-`EMU command=N ended` after the command `N` (counting from 1) returns, and `emulate.py` checks these lines and leaves
-them out of its output. A command ends without a line of its own where it prints none. A command does not end where it
-throws, where Ghidra stops before it, where the import fails, or where Ghidra exits non-zero. A failed call prints
-nothing on stdout, writes the first command that did not end (its number and its text) and the tail of Ghidra's
-output to stderr, and exits non-zero.
+A call without `draw:` commands exits 0 only where every command ended. A call that mixes `draw:` with other commands
+is refused, because `draw:` runs alone. After the command `N` returns, the script prints the line
+`EMU command=N ended`. The count starts at 1. The script `emulate.py` checks these lines and leaves them out of its
+output. A command ends without a line of its own where it prints none. A command does not end where it throws, where
+Ghidra stops before it, where the import fails, or where Ghidra exits non-zero. A failed call prints nothing on stdout
+and exits non-zero. It writes the first command that did not end to stderr, with its number and its text. It also
+writes the tail of Ghidra's output there.
 
 The `gen` command runs `MapGen_Generate` up to the end of `MapGen_CountResource1` for a size value and a map
 seed, for example `gen:3:1234,5678,9ABC` (the size value is decimal), and prints the generator words and the

@@ -172,11 +172,11 @@
 //   opponents:S0,S1,S2       FreeGame_RandomizeOpponents (0x4692d4) for a free-game seed: the 20 setting bytes
 //   peek:ADDRESS:COUNT       COUNT bytes of the program at the address (hexadecimal), for investigations
 //
-// Output lines start with "EMU " so that the caller can tell them from Ghidra's log. After the verb of the command N
-// (counting from 1) returns, the script prints "EMU command=N ended"; a command that throws prints no such line.
-// emulate.py exits 0 only where every command ended, leaves these lines out of its output, and otherwise prints nothing
-// on stdout and names the first command that did not end on stderr. EmulateDraw prints only "EMU draw " lines, so its
-// output carries none of them.
+// Output lines start with "EMU " so that the caller can tell them from Ghidra's log. The commands count from 1. After
+// the verb of the command N returns, the script prints "EMU command=N ended". A command that throws prints no such
+// line. emulate.py exits 0 only where every command ended, and it leaves these lines out of its output. Otherwise it
+// prints nothing on stdout and names the first command that did not end on stderr. EmulateDraw prints only "EMU draw "
+// lines, so its output carries none of them.
 //@category OpenSettlers
 // simplicity: EmulatorHelper is deprecated for removal in Ghidra 12.1; the pcode emulator API replaces it
 // when a Ghidra release drops it.
