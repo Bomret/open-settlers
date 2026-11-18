@@ -299,7 +299,7 @@ On this store it is an ordinary issue carrying the **Intent label** from *Config
 every other body section — the epic issue on a multi-slice feature, the lone slice issue on a single-slice
 one (`## Scope anchor` above).
 
-- **Write** (after any ledger write the snapshot would show): the anchor body with the `## Run state`
+- **Write** (once per command, at its end, per `run-state.md`'s `## Publishing run state`): the anchor body with the `## Run state`
   section folded in, through **Edit an issue's body** (*REST conventions*), the merge as its producer — the
   same rule the epic amendment under `issue-tracker-plan.md`'s *Append mode* uses. **Best-effort:** a failed write is reported once
   per run and the run continues; the ledger stays authoritative.
@@ -347,7 +347,7 @@ A **single-slice feature has no epic**: its lone issue is the scope anchor, so t
 keeps the `in-progress` label through the merge, and closes once, when `/superdev:wrap-up` runs.
 Best-effort — the run ledger drives control flow; if a label/close call fails, log it and continue.
 
-**Lite execution tier** (≤3 slices, see `plan-contract.md`) skips `in-review` for every slice regardless
+**Lite execution tier** (3 or fewer `behavior` slices, see `plan-contract.md`) skips `in-review` for every slice regardless
 of `test-applicability` — go straight from `in-progress` to closed once the slice's commit lands on the
 scope branch.
 
