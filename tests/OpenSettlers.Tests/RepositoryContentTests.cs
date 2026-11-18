@@ -206,24 +206,27 @@ public sealed class RepositoryContentTests
     }
 
     // Godot writes a .uid beside each script and shader in a folder it scans, so a Godot run leaves the working tree clean only
-    // where each of them is tracked; a .uid beside no source, or in a folder Godot skips, is stale.
+    // where each of them is tracked; a .uid beside no source, or one Godot skips, is stale.
     [TestMethod]
     [DataRow("src/Launch/A.cs", "no .uid: src/Launch/A.cs")]
     [DataRow("src/Viewer/W.gdshader", "no .uid: src/Viewer/W.gdshader")]
     [DataRow("src/Viewer/W.gdshaderinc", "no .uid: src/Viewer/W.gdshaderinc")]
     [DataRow("tools/t.gd", "no .uid: tools/t.gd")]
     [DataRow("src/Launch/Gone.cs.uid", "no source: src/Launch/Gone.cs.uid")]
-    [DataRow("src/Domain/.gdignore,src/Domain/D.cs,src/Domain/D.cs.uid", "in a skipped folder: src/Domain/D.cs.uid")]
-    [DataRow("src/Domain/.gdignore,src/Domain/Deep/D.cs.uid", "in a skipped folder: src/Domain/Deep/D.cs.uid")]
-    [DataRow(".claude/x/D.cs,.claude/x/D.cs.uid", "in a skipped folder: .claude/x/D.cs.uid")]
-    [DataRow("src/.hidden/D.cs.uid", "in a skipped folder: src/.hidden/D.cs.uid")]
+    [DataRow("src/Domain/.gdignore,src/Domain/D.cs,src/Domain/D.cs.uid", "skipped by Godot: src/Domain/D.cs.uid")]
+    [DataRow("src/Domain/.gdignore,src/Domain/Deep/D.cs.uid", "skipped by Godot: src/Domain/Deep/D.cs.uid")]
+    [DataRow(".claude/x/D.cs,.claude/x/D.cs.uid", "skipped by Godot: .claude/x/D.cs.uid")]
+    [DataRow("src/.hidden/D.cs.uid", "skipped by Godot: src/.hidden/D.cs.uid")]
+    [DataRow("src/Launch/.H.cs,src/Launch/.H.cs.uid", "skipped by Godot: src/Launch/.H.cs.uid")]
+    [DataRow("sub/project.godot,sub/S.cs,sub/S.cs.uid", "skipped by Godot: sub/S.cs.uid")]
+    [DataRow("sub/project.godot,sub/Deep/S.cs.uid", "skipped by Godot: sub/Deep/S.cs.uid")]
     [DataRow("src/Launch/A.cs,src/Launch/a.cs.uid", "no .uid: src/Launch/A.cs,no source: src/Launch/a.cs.uid")]
     public void UidPairingNamesEachOffence(string tracked, string offences)
     {
         CollectionAssert.AreEquivalent(offences.Split(','), UidOffences(tracked.Split(',')));
     }
 
-    // A script or shader with its .uid, one in a skipped folder, and a scene or resource need nothing.
+    // A script or shader with its .uid, a hidden one, one in a skipped folder, and a scene or resource need nothing.
     [TestMethod]
     public void UidPairingAcceptsPairedAndSkippedFilesAndNeedsNoneForScenes()
     {
@@ -236,6 +239,11 @@ public sealed class RepositoryContentTests
             "src/Domain/.gdignore",
             "src/Domain/Deep/D.cs",
             ".github/x.gd",
+            "src/Launch/.H.cs",
+            "project.godot",
+            "sub/project.godot",
+            "sub/S.cs",
+            "sub/Deep/S.gd",
             "scenes/main.tscn",
             "theme.tres",
             "content/basic/object/a.png",
@@ -298,21 +306,25 @@ public sealed class RepositoryContentTests
         return [.. listing.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
     }
 
-    // Godot skips a folder whose name starts with a dot, at any depth, and every folder at any depth below a .gdignore. Names
-    // match by exact case.
+    // Godot skips a file or folder whose name starts with a dot, at any depth, every folder at any depth below a .gdignore, and
+    // every folder at any depth below a project.godot other than the project's own (EditorFileSystem::_scan_new_dir and
+    // _should_skip_directory in editor/file_system/editor_file_system.cpp, DirAccessUnix::is_hidden in
+    // drivers/unix/dir_access_unix.cpp, godotengine/godot tag 4.7.2-stable). On Windows Godot reads a file's hidden attribute
+    // in place of the dot; the check follows the macOS and Linux rule. Names match by exact case.
     internal static List<string> UidOffences(IReadOnlyCollection<string> tracked)
     {
         var files = tracked.ToHashSet(StringComparer.Ordinal);
         var ignored = tracked
-            .Where(path => path == ".gdignore" || path.EndsWith("/.gdignore", StringComparison.Ordinal))
-            .Select(path => path[..^".gdignore".Length])
+            .Where(path =>
+                path == ".gdignore"
+                || path.EndsWith("/.gdignore", StringComparison.Ordinal)
+                || path.EndsWith("/project.godot", StringComparison.Ordinal)
+            )
+            .Select(path => path[..(path.LastIndexOf('/') + 1)])
             .ToList();
-        bool Skipped(string path)
-        {
-            var folders = path.Split('/')[..^1];
-            return folders.Any(folder => folder.StartsWith('.'))
-                || ignored.Any(folder => path.StartsWith(folder, StringComparison.Ordinal));
-        }
+        bool Skipped(string path) =>
+            path.Split('/').Any(name => name.StartsWith('.'))
+            || ignored.Any(folder => path.StartsWith(folder, StringComparison.Ordinal));
 
         var offences = new List<string>();
         foreach (var path in tracked.Order(StringComparer.Ordinal))
@@ -321,7 +333,7 @@ public sealed class RepositoryContentTests
             {
                 if (Skipped(path))
                 {
-                    offences.Add($"in a skipped folder: {path}");
+                    offences.Add($"skipped by Godot: {path}");
                 }
                 else if (!files.Contains(path[..^".uid".Length]))
                 {
