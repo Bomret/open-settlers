@@ -57,7 +57,7 @@ public sealed class PositionalRecordTests
         ];
 
     static IEnumerable<string> SourceFiles(string root) =>
-        new[] { "src", "tests" }
+        new[] { "src", "OpenSettlers.Tests" }
             .SelectMany(folder =>
                 Directory.EnumerateFiles(Path.Combine(root, folder), "*.cs", SearchOption.AllDirectories)
             )

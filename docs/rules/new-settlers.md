@@ -8,7 +8,7 @@ routine names are in the [Program index](program-index.md#simulation); the first
 settlers from it are in [Settlers](settlers.md#the-request) and [Carriers](carriers.md#the-request).
 
 **Emulated.** The harness verb `supply` (`tools/GhidraDump/README.md`, "Emulator harness") runs `Player_MakeSettlers`
-in a castle game with one storage, the castle. `tests/OpenSettlers.Tests/settler-supply.txt` holds its games at rate 0 and
+in a castle game with one storage, the castle. `src/Adapters.Tests/settler-supply.txt` holds its games at rate 0 and
 rate 40, each with a stock that holds swords and shields and one that holds none. The recording shows the period, the
 knights, and the knights owed below. It does not show the pick among several storages or the cap at work, because one
 player with one storage never reaches the cap.

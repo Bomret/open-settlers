@@ -31,7 +31,7 @@ engine refuses every command but `CommandKind.PlaceCastle` before the castle sta
 **Status:** confirmed for the map and the tables, **inferred** for the player fields. **Emulated:** the harness
 (`castle:N:S0,S1,S2:L:x,y`) ran `0x442704` on five generated maps after the evaluator judged the node; the engine's
 map matches it byte for byte in the six layers of the canonical form and in the number of nodes it changes, 217
-every time (`tests/OpenSettlers.Tests/castle-placements.txt`).
+every time (`src/Adapters.Tests/castle-placements.txt`).
 
 - It takes the first free slot of the storage table (`Table120`), the building table (`Table18`), and the flag
   table (`Table70`) and links them: the building holds the storage, the storage holds the building and the flag,

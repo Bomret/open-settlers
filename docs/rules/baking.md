@@ -11,7 +11,7 @@ from it ([Goods at a flag](goods.md)), and the castle's hand-out is in
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) puts a finished building of type 16 at a flag as it does for the mill; the baker's
 building is large (object code 3), and its item holds the pointer to its flag at `+0xe` that a built site leaves (`0x43ef82`), which the handler reads.
 The engine matches the baker after every change of his node, state, or stretch, the building's bytes, the flag's goods and request words, and the castle's
-flour and bread counts in two games (`tests/OpenSettlers.Tests/baker-walks.txt`): one flour, and nine flours laid at once (the bakery takes eight, the ninth goes to the
+flour and bread counts in two games (`src/Adapters.Tests/baker-walks.txt`): one flour, and nine flours laid at once (the bakery takes eight, the ninth goes to the
 castle). The removal matches in four games (`baker-removals.txt`: waiting, baking, out with the bread, flour on its way), the first hand-out in one
 (`baker-materials.txt`, verb `construct:`), and the draw in one recording (`settler-draws.txt`, `baker`).
 The wait on a full flag has no emulator game for the baker: only the engine's own test (`BakeryTests`, the flag-is-full case) covers it. The baker's

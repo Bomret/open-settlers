@@ -7,7 +7,7 @@ names are in the [Program index](program-index.md#simulation). The farm, its job
 flag items are in [Flags](flags.md); the carrier that takes the grain on is in [Carriers](carriers.md).
 
 **Emulated.** The harness verb `goods:` (`tools/GhidraDump/emulate.py`) with a finished farm (type 12, a large building: the verb gives
-its node the object code 3) at a flag runs the original's passes, the object pass included. `tests/OpenSettlers.Tests/farm-walks.txt`
+its node the object code 3) at a flag runs the original's passes, the object pass included. `src/Adapters.Tests/farm-walks.txt`
 holds four scenarios of the verb, and `FarmerTests` runs the engine through the same commands: the farm among free meadow (7000 passes,
 the farmer sows three times), the fields of every stage set by hand (9000 passes), ripe and grown fields in the farmer's reach (4500
 passes, the castle's grain rises from 20 to 23), and a tree on every node of his reach where the original would sow (3000 passes, he

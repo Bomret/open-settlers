@@ -9,7 +9,7 @@ placement, the builder, and the worker request need of them. The work cycle of e
 **Emulated.** The emulator's `peek` of four tables gives the values below. The tables are the size table (`0x42d307`), the needs table
 (`0x449f18`), and the two draw tables (`0x44fcfe` and `0x44fd16`).
 
-Two files hold the placement evidence. `tests/OpenSettlers.Tests/food-sites.txt` holds the emulator's placement of a site of each
+Two files hold the placement evidence. `src/Adapters.Tests/food-sites.txt` holds the emulator's placement of a site of each
 food type (verb `remove`, click `b@x,y,T`). `BuildingSitePlacementTests` matches the engine's bytes to it. The emulator's click
 places whatever the evaluator judged and refuses nothing, because the program's click on a panel's building is not recovered
 ([Build sites](build-sites.md), "The node states"). The file therefore holds the evaluator's site of eight nodes of the same game, the

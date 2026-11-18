@@ -135,7 +135,7 @@ def declared(text):
 
 
 def type_names(path, files):
-    """The types a .cs file declares, and the types of the test project's helper files that name one of them."""
+    """The types a .cs file declares, and the types of the helper files of the test and helper projects that name one of them."""
     names = declared(read(path)) if os.path.isfile(path) else {os.path.basename(path)[: -len(".cs")]}
     helpers = [(text, declared(text)) for _, text, classes in files if not classes]  # no test class, so a helper
     grown = True
