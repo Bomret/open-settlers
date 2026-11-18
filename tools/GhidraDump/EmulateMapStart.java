@@ -271,7 +271,8 @@ public class EmulateMapStart extends GhidraScript {
 
     /**
      * Sets every per-command setting to its default, so a command's verb alone decides its settings and no command takes a
-     * setting of an earlier command of the launch (INV-0018). A field a verb sets for its run belongs here.
+     * setting of an earlier command of the launch (INV-0018). A field a verb sets for its run belongs here, and so does
+     * clearing a list or an array that a final field holds.
      */
     protected void defaultSettings() {
         reserveFlagZero = false;
