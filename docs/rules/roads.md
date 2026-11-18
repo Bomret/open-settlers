@@ -111,6 +111,94 @@ under a node that holds one (`Road_WalkEnds`, `0x444b29`). The harness holds it 
 The two other leads this section carried, bit 3 of the view's flag byte and a flag put on a node of a road, are known
 now: [A flag on a road](#a-flag-on-a-road).
 
+### The road markers
+
+**Status:** confirmed for the list, the marker of each direction, the positions, and the drawing; **inferred** for the
+end mark's word, the meaning of the images, when the markers follow a change of the game, and the largest height
+difference.
+
+In road mode the view shows the road cursor: the road markers. They are the seven entries of the list at view `+0xa4`.
+Each entry is a sprite word, a screen column, and a screen row. Entry 0 is the end mark on the end of the road. Entries
+1 to 6 stand on the six neighbors of the end, entry `d + 1` on the neighbor in direction `d`.
+
+**When the cursor is updated.** `Ui_HandleViews` (`0x440aae`) runs `0x440b01` for each view on every pass of the main
+loop. Where bit 2 of the view's flag byte (`+1`) is set, `0x440b01` clears it and runs `Road_UpdateCursor` (`0x44b6ce`),
+then `0x44c768`, then `View_PlaceCursorList` (`0x42f7ea`). The input handlers set the bit: `View_HandleClick`
+(`0x440c24`), `Road_ClickStep` (`0x443f62`), `Road_Cancel` (`0x442002`), `View_RunButtonAction` (`0x440d23`),
+`Castle_PlaceFromClick` (`0x442630`), `Click_Remove` (`0x4615cf`), and `Click_RemoveRoad` (`0x462d88`). The dump shows no
+other writer of the bit. So a change of the game around the end between two clicks, such as a settler who fells a tree
+beside it, does not change the markers until the next click or button (**inferred**).
+
+**The marker of each neighbor** (`Road_UpdateCursor`). The update walks the six neighbors of the end in the order of the
+node offsets at `+0xc4` of the game state, the first ring of the spiral table (`Map_BuildNeighborOffsets`, `0x41f6a5`):
+east, south-east, south, west, north-west, north, the directions 0 to 5 of the table above. For each it judges the
+direction by the rule of the allowed directions above and writes the sprite word of the entry (`+0xaa`, `+0xb0`, up to
+`+0xc8`):
+
+- A refused direction gets word 44, the blocked mark.
+- The way back gets word 45, the way-back mark. The update reads the end's road bits only while the road's length
+  (`+0xce`) is not 0, so at the start flag no neighbor gets it.
+- Every other direction gets word 39 plus the neighbor's height less the end's height (`0x44c6ff`): the slope mark.
+  The slope mark also stands on a road node where the evaluator would put a flag. The click step refuses the step onto
+  that node (above). The update puts no bound on the difference and reads no color class or threshold.
+
+So a direction gets word 44 exactly where its bit in the mask at `+0xd0` is clear.
+
+**The end mark.** No routine in the dump writes entry 0 in road mode. `0x44c768` writes, in road mode, only the panel's
+button list at view `+0x60` and returns. In normal mode it dispatches through the jump table at `0x44c80f` with a
+pointer to view `+0xa4`. `View_Setup` (`0x41f86b`) and `Panel_WriteButtonList` (`0x44c8cf`, one handler of that table)
+write word 32 into entry 0, and `Panel_WriteButtonList` writes word 33 into entry 2. The end mark in road mode is the
+word normal mode left, which is 32 (**inferred**: the other handlers of the jump table were not read).
+
+**Where each marker stands** (`View_PlaceCursorList`). The routine takes the node at `+0xfc` and `+0xfe` of the view's
+player block. `Road_ClickStep` sets that node to the road's end.
+When the road button opens road mode, it is the flag the button judged. The routine works out the node's screen
+position in the view, as the map is drawn there, and wraps it at the map size.
+Entry 0 stands there, raised by 4 pixels for each unit of the end's height. Entries 1 to 6 stand at the six neighbors:
+east 32 pixels to the right; south-east 16 to the right and 20 down; south 16 to the left and 20 down; west 32 to the
+left; north-west 16 to the left and 20 up; north 16 to the right and 20 up. Each is raised by 4 pixels for each unit of
+its own node's height, so each marker stands at its neighbor's place and height. Where the end lies outside the view's
+window, the routine sets bit 7 of the list's first byte, and the list draws nothing. `Render_RedrawViewBase`
+(`0x427133`) also runs the routine, so the markers follow the view when it moves.
+
+**The drawing.** `Render_DrawCursorList` (`0x450f6e`) draws the seven entries after the build markers
+([Build sites](build-sites.md#the-build-site-overlay)), so the markers lie above the terrain, the roads, the map
+objects, the settlers, and the build markers. It skips an entry with word 0. It draws each word through
+`Gfx_DrawSpriteBase320` (`0x44de9a`): the archive entry is the word plus 320, from the archive at `Archive_Base`
+([Graphics archives](graphics-archives.md#entries-no-routine-reads)).
+
+| Marker | Word | Entry | Image (**inferred** from what it shows) |
+| --- | --- | --- | --- |
+| End mark | 32 | 352 | a pale bow of two triangles that meet in the middle |
+| Blocked mark | 44 | 364 | a box striped in red and yellow |
+| Way-back mark | 45 | 365 | a box with the word UNDO |
+| Slope -4 to 4 | 35 to 43 | 355 to 363 | a framed box filled up to a sloped line; the line falls to the right for a negative difference and rises for a positive one, steeper for a larger one; green for 0 and 1 either way, yellow for 2, red for 3 and 4 |
+
+The color and the tilt are in the images. The code picks the image by the difference alone.
+
+**The largest height difference.** The update reads two 5-bit heights, so the code admits differences from -31 to 31.
+On a generated map `MapGen_LimitSlopes` keeps neighbors within 32 of each other. `MapGen_ScaleHeights` then takes a
+height as its value plus 6, divided by 8. So neighbors differ by at most 4 ([Map form](map-form.md)). That bound is
+**inferred**: the passes between the two (`MapGen_FillLakes`, `MapGen_LowerToWaterLevel`, `MapGen_KeepMainLand`) were
+not checked against it. In play the digger levels the nodes of a large site that lie up to 8 off the site's height
+([Digging](digging.md)). That can leave a larger difference at the site's edge (**inferred**).
+
+The archive holds slope images for 4 either way. Beyond that the sum names other entries, and the original draws them:
+
+- 5 draws 364, the blocked image.
+- 6 draws 365, the way-back image.
+- 7 draws nothing, as 366 is absent.
+- 8 to 13 draw the sprites 367 to 372, among them the build markers.
+- -5 draws 354, a frame of red and yellow.
+- -6 draws 353, a small dot.
+- -7 draws 352, the end mark's image.
+- -8 and -9 draw nothing, as 351 and 350 are absent.
+
+**A click on a marker.** No routine reads the list for a click: in the dump only `View_Setup`, `0x44c768`,
+`View_PlaceCursorList`, and `Render_DrawCursorList` touch view `+0xa4`. `View_HandleClick` finds the node under the
+pointer, and `Road_ClickStep` judges it as described above. A marker stands on its node, so a click on it is a click on
+that node.
+
 ## A flag on a road
 
 A flag put on a node that holds a road splits the road into two. The program does it in the flag placement itself, so
@@ -387,7 +475,17 @@ game, a node at a time, and sends one command where the road reaches a flag; Esc
 again cancels. `RoadDraws` gives a draw term for each strip (direction, height difference, slope, ground), the History Edition
 source answers it through `RoadRules` and `RoadGraphics` (no image where the difference is over 4), and the control draws
 the strips over the terrain in every copy of the map;
-the road being drawn is a white line.
+the road being drawn is a white line. `RoadPlanner.Verdicts` gives the road cursor's verdict of each direction at the road's end. It uses
+`RoadBuilding.Verdicts` and the same `Allowed` the click uses, with the road's bits in the map and taken back after.
+`RoadMarkerDraws` (`src/MapView/RoadMarkerDraws.cs`) turns the verdicts into the road markers. It makes the end mark.
+It makes a `RoadMarker` term for each neighbor: blocked, way back, or the slope of the height difference. Each stands
+at the unwrapped node raised by its height. The control draws the markers above the build markers and the white line
+in every copy of the map. It draws them again after each click and each change of the game it draws. The History
+Edition source answers a road marker with the entries of "The road markers" above. The basic set answers with its own
+images for the end, blocked, and way-back marks and the slopes from -4 to 4. The engine updates the markers on a
+change of the game, where the original waits for the next click. `RoadPlanner.Verdicts` walks the whole road again from
+its start flag. So a change of the game can refuse an earlier step. An inner node passing to another owner is an
+example, and it shows the blocked mark on all six neighbors. `Road_UpdateCursor` judges only the neighbors of the end.
 The border posts ([How a border is drawn](#how-a-border-is-drawn)) come from `BorderDraws` (`src/MapView/BorderDraws.cs`):
 a `BorderPost` term per edge east, south-east, and south of a node whose owner differs from the neighbor's and where the
 node holds no road bit of that direction, with the slope sum and ground of the road strip of that edge

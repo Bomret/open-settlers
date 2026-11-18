@@ -98,8 +98,8 @@ by `Building_Free` (`0x42cf9d`) and the computer player. The build-site overlay 
 ## The build-site overlay
 
 **Status:** confirmed for the nodes, the markers, the toggle, the drawing, and the draw order of the markers.
-Confirmed also: two sprite lists come above the markers. What those two lists show is open. The meaning of the four images
-is **inferred** from what they show.
+Confirmed also: two sprite lists come above the markers. The first is the road cursor; what the second shows is open. The
+meaning of the four images is **inferred** from what they show.
 
 The overlay shows, on the nodes of a view, what the evaluator allows there. `Render_DrawViewOverlay` (`0x450a35`) runs
 `Render_DrawViewLayers` (`0x450a56`) for each view. That routine draws the build markers through `BuildHelp_DrawMarkers`
@@ -109,9 +109,10 @@ come above the markers.
 **The draw order.** `Main_Loop` (`0x425a10`) runs `Render_DrawMapView` (`0x44d38d`) and then `Render_DrawViewOverlay`.
 `Render_DrawMapView` draws each row's tiles and objects and then the row's settlers (`Render_DrawViewRows` at `0x44d3ae`,
 `Render_DrawRowSettlers` at `0x44ffe7`). So the markers lie above the terrain, the map objects, the buildings, and the
-settlers. Two sprite lists come above the markers. `0x450f6e` draws up to seven entries of the list at view `+0xa4`. `0x450a8f` draws
-the list at view `+0x1aa`, with its count at `+0x1ae`. What the two lists show is **open**. The engine draws nothing above
-the markers (see "In the engine").
+settlers. Two sprite lists come above the markers. `Render_DrawCursorList` (`0x450f6e`) draws up to seven entries of the list at
+view `+0xa4`: the road markers of road mode ([Roads](roads.md#the-road-markers)). `0x450a8f` draws the list at view `+0x1aa`, with its
+count at `+0x1ae`. What the second list shows is **open**. The engine draws only the road
+markers above the build markers (see "In the engine").
 
 **The nodes.** `BuildHelp_DrawMarkers` walks the view's whole window of nodes, row by row, each row in two halves of
 alternate nodes, and runs `BuildHelp_DrawRowMarkers` (`0x450d85`) for each half. The node position wraps at the map size.
@@ -256,7 +257,7 @@ is slot 3.
 
 ## In the engine
 
-`BuildMarkers` and `BuildMarkerDraws` (`src/MapView/BuildMarker.cs`) turn the evaluator's judgment into a marker and a draw for each node of the player's territory. The game view's Build help button (`src/Viewer/MapViewControl.cs`) toggles them. The view draws the markers above the terrain, the objects, the buildings, and the settlers, and draws nothing above them.
+`BuildMarkers` and `BuildMarkerDraws` (`src/MapView/BuildMarker.cs`) turn the evaluator's judgment into a marker and a draw for each node of the player's territory. The game view's Build help button (`src/Viewer/MapViewControl.cs`) toggles them. The view draws the markers above the terrain, the objects, the buildings, the settlers, and the white line of a road being drawn. Only the road markers of a road being drawn lie above them ([Roads](roads.md#the-road-markers)).
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`) is the evaluator. The engine departs from the program in one place. A node with a flag or a building object gives 0, 0, 0 (above). The code 3 height term reads the building table. The flag button and the building placement hand that table to `BuildSite.Evaluate`. `BuildSiteResult.AllowsFlag` is the flag button's rule. The flag placement is in [Flags](flags.md).
 

@@ -109,6 +109,7 @@ mise run map
 - The building sites that have not started.
 - The goods at flags.
 - The four build markers of the build-site overlay.
+- The road markers of road mode: the end, blocked, and way-back marks, and a slope mark for each height difference from -4 to 4.
 - The border posts of the territory: a pole on land and a post in water.
 - One figure per job and kind of activity for the settlers.
 

@@ -116,6 +116,33 @@ public sealed class RepositoryContentTests
         Assert.HasCount(8, heaps.Distinct(), "the eight stages of a heap");
     }
 
+    // Each road marker the basic set draws, the end, blocked, and way-back marks and the slope of each difference from -4 to 4,
+    // has an image of its own, so the player tells them apart.
+    [TestMethod]
+    public void EachRoadMarkerHasItsOwnImage()
+    {
+        var manifest = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(RepositoryRoot(), "content", "basic", "manifest.json"))
+        );
+        string Image(string key) =>
+            Convert.ToHexString(
+                File.ReadAllBytes(
+                    Path.Combine(
+                        RepositoryRoot(),
+                        "content",
+                        "basic",
+                        manifest.RootElement.GetProperty(key).GetProperty("image").GetString()!
+                    )
+                )
+            );
+
+        var keys = new[] { "road-marker/end", "road-marker/blocked", "road-marker/way-back" }.Concat(
+            Enumerable.Range(-4, 9).Select(difference => $"road-marker/slope/{difference}")
+        );
+
+        Assert.HasCount(12, keys.Select(Image).Distinct(), "the twelve road markers");
+    }
+
     // The two saplings a forester plants (the object codes 0x67 and 0x68) have images of their own, not the litter the generator
     // draws for the codes it names nothing for, and differ from each other, as the two grow into different trees.
     [TestMethod]

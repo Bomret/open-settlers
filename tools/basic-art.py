@@ -513,6 +513,42 @@ def marker(kind):
     return c, (-(c.width // 2), -(c.height - 1))
 
 
+def road_marker(kind, difference=0):
+    """A road marker, centred on its node: a ring for the end of the road, a red cross for a blocked neighbour, a hooked
+    arrow pointing back for the way back, and for a slope a box filled up to a line that rises or falls by the height
+    difference, green up to 1 either way, yellow at 2, and red at 3 and 4. Each reads apart from the others."""
+    if kind == "end":
+        c = Canvas(11, 11)
+        c.disc(5, 5, 4, MARKER)
+        for y in range(3, 8):
+            for x in range(3, 8):
+                if (x - 5) ** 2 + (y - 5) ** 2 <= 4:
+                    c.pixels[y][x] = (0, 0, 0, 0)
+    elif kind == "blocked":
+        c = Canvas(11, 11)
+        c.line(1, 1, 8, 8, (210, 40, 40), 2)
+        c.line(8, 1, 1, 8, (210, 40, 40), 2)
+    elif kind == "way-back":
+        c = Canvas(13, 11)
+        c.line(4, 5, 11, 5, MARKER, 2)
+        c.line(11, 5, 11, 9, MARKER, 2)
+        c.triangle((1, 5), 5, 0, MARKER)
+        c.line(1, 5, 4, 2, MARKER, 2)
+        c.line(1, 5, 4, 8, MARKER, 2)
+    else:
+        size = abs(difference)
+        color = (70, 170, 70) if size <= 1 else (235, 200, 50) if size == 2 else (210, 50, 40)
+        c = Canvas(14, 12)
+        c.rect(0, 0, 14, 12, (60, 70, 140))
+        c.rect(1, 1, 12, 10, (215, 215, 220))
+        left, right = 6 + difference, 6 - difference
+        for x in range(1, 13):
+            top = left + (right - left) * (x - 1) // 11
+            c.rect(x, top, 1, 11 - top, color)
+    c.outline(INK)
+    return c, (-(c.width // 2), -(c.height // 2))
+
+
 JOBS = {
     "carrier": (60, 100, 170),
     "woodcutter": (60, 130, 60),
@@ -642,6 +678,10 @@ def main():
         add(f"good/{code}", f"good/{code}.png", good(code))
     for kind in ("flag", "mine", "small", "large"):
         add(f"marker/{kind}", f"marker/{kind}.png", marker(kind))
+    for kind in ("end", "blocked", "way-back"):
+        add(f"road-marker/{kind}", f"road-marker/{kind}.png", road_marker(kind))
+    for difference in range(-4, 5):
+        add(f"road-marker/slope/{difference}", f"road-marker/slope-{difference}.png", road_marker("slope", difference))
     add("border/pole", "border/pole.png", border_post(water=False))
     add("border/water", "border/water.png", border_post(water=True))
     for job, color in JOBS.items():

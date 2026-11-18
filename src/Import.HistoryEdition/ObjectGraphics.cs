@@ -80,6 +80,15 @@ sealed class ObjectGraphics
         AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
         AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
         AddSprites(Enum.GetValues<BuildMarker>().Select(ObjectSprites.MarkerEntry), "the build marker sprite");
+        AddSprites(
+            Enumerable
+                .Range(
+                    ObjectSprites.CursorFirstEntry,
+                    ObjectSprites.CursorLastEntry - ObjectSprites.CursorFirstEntry + 1
+                )
+                .Where(entry => !sprites.ContainsKey(entry)),
+            "the road marker sprite"
+        );
         AddSprites(BorderRules.Entries, "the border post sprite");
 
         var shadows = new Dictionary<int, ObjectImage>();

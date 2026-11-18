@@ -110,6 +110,23 @@ public sealed class RoadBuildingTests
                 }
 
                 var digest = game.Digest();
+                // The mask is the cursor update's before the click: the road cursor blocks exactly the directions it
+                // leaves clear, and judging them changes nothing.
+                var mask = int.Parse(fields["mask"], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                var verdicts = game.RoadPlanner.Verdicts(start[0], start[1], directions[..index]);
+                Assert.AreEqual(
+                    mask,
+                    Enumerable
+                        .Range(0, 6)
+                        .Where(direction => verdicts[direction] != RoadCursorVerdict.Blocked)
+                        .Sum(direction => 1 << direction),
+                    $"{label} step {index} cursor"
+                );
+                Assert.AreEqual(
+                    digest,
+                    game.Digest(),
+                    $"{label} step {index} judges the cursor without changing the game"
+                );
                 Assert.AreEqual(
                     expected,
                     game.RoadPlanner.Check(start[0], start[1], directions[..(index + 1)]),
