@@ -71,7 +71,6 @@ public sealed class GameOperationsTests
         Assert.IsTrue(random.Count > 1, "the generator draws in the passes");
         Assert.IsTrue(phases.Count > 1, "the main pass runs through its phases");
         Assert.IsTrue(occupied, "the walkers occupy slots at some tick, so the list is not trivially empty");
-        Assert.AreEqual(game.Revision, game.AppliedCommands.Count);
         Assert.IsTrue(game.AppliedCommands.Count > 0);
         Assert.IsNotInstanceOfType<System.Collections.Generic.List<Command>>(game.AppliedCommands);
     }

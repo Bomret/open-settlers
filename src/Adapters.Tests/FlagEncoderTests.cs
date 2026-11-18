@@ -233,8 +233,10 @@ public sealed class FlagEncoderTests
     public void TheDigestRequestsOfAFlagAreTheClassAndRankOfEachOfItsTwoRequestWords()
     {
         var table = new FlagTable { { 4, 5 } };
-        table[0].AskFor(RequestWord.First, new GoodClass { Class = 3, Word = RequestWord.First }, 0x3e);
-        table[0].AskFor(RequestWord.Second, new GoodClass { Class = 0, Word = RequestWord.Second }, 7);
+        table[0].AskFor(RequestWord.First, new GoodClass { Class = 3, Word = RequestWord.First });
+        table[0].RankRequest(RequestWord.First, 0x3e);
+        table[0].AskFor(RequestWord.Second, new GoodClass { Class = 0, Word = RequestWord.Second });
+        table[0].RankRequest(RequestWord.Second, 7);
         table.Add(6, 5);
 
         CollectionAssert.AreEqual(

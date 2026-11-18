@@ -127,7 +127,7 @@ public sealed class CarrierBehavior(
         for (var i = 0; i < window; i++)
         {
             var had = flags[FlagCursor].CarrierRequestFailed;
-            flags[FlagCursor].RecordCarrierRequest(failed: false);
+            flags[FlagCursor].ClearCarrierRetry();
             if (had)
             {
                 history.RecordFlag(FlagCursor, EventType.ClearFlagRetryBits, Cause.Carriers);
@@ -357,8 +357,8 @@ public sealed class CarrierBehavior(
             Direction = waitDirection,
             Approach = Heading.Facing(waitDirection).Retried,
         };
-        CountCarrier(startSide);
-        CountCarrier(farSide);
+        startSide.CarrierEnters();
+        farSide.CarrierEnters();
         history.RecordSettler(slot, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(waitFlag).ToString());
         history.RecordFlag(start, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(far).ToString());
         history.RecordFlag(far, EventType.LayoutWaitingOnRoad, Cause.Layout, history.FlagId(start).ToString());
@@ -380,20 +380,14 @@ public sealed class CarrierBehavior(
         }
 
         var (far, farDirection) = RoadNetwork.FarEnd(road, flag, direction);
-        CountCarrier(flags[far].Side(farDirection));
-        CountCarrier(flags[flag].Side(direction));
+        flags[far].Side(farDirection).CarrierEnters();
+        flags[flag].Side(direction).CarrierEnters();
         movement.Become(settler, new WalksRoad { Load = null, Heading = Heading.Facing(direction) });
         var id = history.SettlerId(slot);
         history.RecordSettler(slot, EventType.EnterRoad, Cause.Carriers, history.FlagId(flag).ToString());
         history.RecordFlag(flag, EventType.EnterRoad, Cause.Carriers, id.ToString());
         history.RecordFlag(far, EventType.EnterRoad, Cause.Carriers, id.ToString());
         WalkRoad(slot, settler);
-    }
-
-    // A carrier has entered a road: no carrier is on the way to it any more and it holds one more.
-    static void CountCarrier(FlagSide side)
-    {
-        side.CarrierEnters();
     }
 
     // State 3, a carrier on its road (0x43ad78 and the step routines of 0x43b508): when its timer has run out it steps along

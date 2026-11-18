@@ -35,7 +35,8 @@ public sealed class FlagOperationTests
     public void ClearAskKeepsTheRank()
     {
         var flag = new Flag(4, 5);
-        flag.AskFor(RequestWord.First, Planks, 0x3e);
+        flag.AskFor(RequestWord.First, Planks);
+        flag.RankRequest(RequestWord.First, 0x3e);
 
         flag.ClearAsk(RequestWord.First);
 
@@ -49,11 +50,23 @@ public sealed class FlagOperationTests
     public void ServeRequestShiftsAnOddRankAndZeroesAnEvenOne(byte before, byte after)
     {
         var flag = new Flag(4, 5);
-        flag.AskFor(RequestWord.Second, Planks, before);
+        flag.AskFor(RequestWord.Second, Planks);
+        flag.RankRequest(RequestWord.Second, before);
 
         flag.ServeRequest(RequestWord.Second);
 
         Assert.AreEqual(after, flag.RequestOf(RequestWord.Second).Rank);
+    }
+
+    [TestMethod]
+    public void ClearCarrierRetryClearsTheFailure()
+    {
+        var flag = new Flag(4, 5);
+        flag.RecordCarrierRequest(failed: true);
+
+        flag.ClearCarrierRetry();
+
+        Assert.IsFalse(flag.CarrierRequestFailed);
     }
 
     [TestMethod]

@@ -45,9 +45,9 @@ public sealed class Flag(int x, int y)
     /// </summary>
     public Request RequestOf(RequestWord word) => _requests[(int)word];
 
-    /// <summary>The flag asks for a class of goods in a request word, at a rank (a new ask starts at rank 0).</summary>
-    public void AskFor(RequestWord word, GoodClass asks, byte rank = 0) =>
-        _requests[(int)word] = new Request { Asks = asks, Rank = rank };
+    /// <summary>The flag asks for a class of goods in a request word, at rank 0.</summary>
+    public void AskFor(RequestWord word, GoodClass asks) =>
+        _requests[(int)word] = new Request { Asks = asks, Rank = 0 };
 
     /// <summary>The flag asks for nothing more in a request word; the rank stays.</summary>
     public void ClearAsk(RequestWord word) => _requests[(int)word] = _requests[(int)word] with { Asks = null };
@@ -68,6 +68,9 @@ public sealed class Flag(int x, int y)
 
     /// <summary>Records whether the flag's request for a carrier found none.</summary>
     public void RecordCarrierRequest(bool failed) => CarrierRequestFailed = failed;
+
+    /// <summary>The retry scan passes the flag: the mark of a failed carrier request is cleared.</summary>
+    public void ClearCarrierRetry() => CarrierRequestFailed = false;
 
     /// <summary>The goods on the flag are due their turn.</summary>
     public void MarkGoodsTurnDue() => NeedsGoodsTurn = true;
