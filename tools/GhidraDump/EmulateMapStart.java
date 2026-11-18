@@ -5,9 +5,10 @@
 // The game code keeps its registers in a block that EDI points to, and the game state at the block's +0x34
 // pointer. The script builds both in unused memory, loads the input, runs the original's instructions from
 // a start address to a stop address, and reads the result back. Each script argument is one command, with
-// hexadecimal words and no spaces. The commands of one launch are independent: each prints the lines it prints in a
-// launch of its own (INV-0018). A command that fails ends a launch that is not a draw: batch, and the later commands
-// of the launch print nothing; a draw: batch prints a failure line for the command and runs on.
+// hexadecimal words and no spaces. A launch is one emulate.py call. Its commands are independent: each prints the
+// lines it prints in a launch of its own (INV-0018). A command that fails ends a launch that runs no draw: batch,
+// and the later commands print nothing. A command of a draw: batch that fails prints a failure line, and the batch
+// runs on.
 //
 //   rng:S0,S1,S2             one Rng_Step (0x466ade) from the state words S0,S1,S2; prints the new words
 //   steps:N:S0,S1,S2         N steps in a row; prints the words after each

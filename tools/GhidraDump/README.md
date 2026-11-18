@@ -145,10 +145,10 @@ layer digests of the canonical map form after each pass (`docs/rules/map-form.md
 seconds to a few minutes, the longer for the larger sizes. Every other command that starts from a map generates it
 silently, once per size and seed in one Ghidra launch: the first run keeps the memory the generation wrote and the
 registers it left, and later commands of the same launch, `draw:` batch commands among them, start from that state
-instead of generating again. Each command restores a copy of that state, so the commands of a launch are independent:
-a command prints the lines it prints in a launch of its own, whatever commands ran before it (INV-0018). A command that
-fails ends a launch that is not a `draw:` batch, and the later commands of the launch print nothing; a `draw:` batch
-prints a failure line for the command and runs on. The `gen` command
+instead of generating again. Each command restores a copy of that state. A launch is one `emulate.py` call, and its
+commands are independent. A command prints the lines it prints in a launch of its own, whatever commands ran before it
+(INV-0018). A command that fails ends a launch that runs no `draw:` batch, and the later commands of the launch print
+nothing. A command of a `draw:` batch that fails prints a failure line, and the batch runs on. The `gen` command
 always generates, because it prints each pass. The commands `site`, `castle`, `stockrows`,
 `opponents`, and `peek` run the build-site evaluator, the castle placement, the start stock table, the free-game
 opponent settings, and a byte dump: their forms are in the header of `EmulateMapStart.java`, and the rules they
