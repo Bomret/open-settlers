@@ -58,12 +58,13 @@ to come from the castle.
 
 A road goes from a flag to a flag, one node per click.
 
-1. Click a flag. The castle's flag counts. A white line shows the road while you draw it. The road markers show what
-   the next step does: a mark on the end of the road, and on each of the six nodes next to it a sign. A blocked sign
-   marks a node the step may not go to. A way-back sign marks the node the road came from. Every other node shows a
-   slope sign for the height difference of that step, with its color and tilt (with the basic content set: green up to 1
-   either way, yellow for 2, red for 3 and 4). A road node with no flag shows a slope sign where a flag could stand on
-   it, although the click on it is refused. A click on a sign is a click on its node.
+1. Click a flag. The castle's flag counts. A white line shows the road while you draw it.
+   The road markers show what the next step does. A mark stands on the end of the road. A sign stands on each of the
+   six nodes next to it. A blocked sign marks a node the step may not go to. A way-back sign marks the node the road
+   came from. Every other node shows a slope sign for the height difference of that step. The sign's color and tilt
+   show the difference. With the basic content set, the color is green up to 1 either way, yellow for 2, and red for
+   3 and 4. A road node where a flag could stand shows a slope sign, although the click on it is refused.
+   A click on a sign is a click on its node.
 2. Click a node next to the end of the road. The road grows by that node. A node outside the territory is refused.
    A node with a stone, a rock, or a building is refused. A node with a road and no flag is refused.
    A tree does not refuse the step. A road may cross a tree node.

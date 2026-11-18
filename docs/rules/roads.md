@@ -138,9 +138,9 @@ direction by the rule of the allowed directions above and writes the sprite word
 - A refused direction gets word 44, the blocked mark.
 - The way back gets word 45, the way-back mark. The update reads the end's road bits only while the road's length
   (`+0xce`) is not 0, so at the start flag no neighbor gets it.
-- Every other direction gets word 39 plus the neighbor's height less the end's height (`0x44c6ff`): the slope mark. A
-  road node where the evaluator would put a flag gets it too, although the click step refuses the step onto it (above).
-  The update puts no bound on the difference and reads no color class or threshold.
+- Every other direction gets word 39 plus the neighbor's height less the end's height (`0x44c6ff`): the slope mark.
+  The slope mark also stands on a road node where the evaluator would put a flag. The click step refuses the step onto
+  that node (above). The update puts no bound on the difference and reads no color class or threshold.
 
 So a direction gets word 44 exactly where its bit in the mask at `+0xd0` is clear.
 
@@ -151,9 +151,9 @@ write word 32 into entry 0, and `Panel_WriteButtonList` writes word 33 into entr
 word normal mode left, which is 32 (**inferred**: the other handlers of the jump table were not read).
 
 **Where each marker stands** (`View_PlaceCursorList`). The routine takes the node at `+0xfc` and `+0xfe` of the view's
-player block. `Road_ClickStep` sets that node to the road's end. When the road button opens road mode, it is the flag the button
-judged. The
-routine works out the node's screen position in the view, as the map is drawn there, and wraps it at the map size.
+player block. `Road_ClickStep` sets that node to the road's end.
+When the road button opens road mode, it is the flag the button judged. The routine works out the node's screen
+position in the view, as the map is drawn there, and wraps it at the map size.
 Entry 0 stands there, raised by 4 pixels for each unit of the end's height. Entries 1 to 6 stand at the six neighbors:
 east 32 pixels to the right; south-east 16 to the right and 20 down; south 16 to the left and 20 down; west 32 to the
 left; north-west 16 to the left and 20 up; north 16 to the right and 20 up. Each is raised by 4 pixels for each unit of
@@ -177,15 +177,22 @@ objects, the settlers, and the build markers. It skips an entry with word 0. It 
 The color and the tilt are in the images. The code picks the image by the difference alone.
 
 **The largest height difference.** The update reads two 5-bit heights, so the code admits differences from -31 to 31.
-On a generated map `MapGen_LimitSlopes` keeps neighbors within 32 of each other, and `MapGen_ScaleHeights` then takes a
-height as its value plus 6, divided by 8, so neighbors differ by at most 4 ([Map form](map-form.md)). That bound is
-**inferred**: the passes between the two (`MapGen_FillLakes`, `MapGen_LowerToWaterLevel`, `MapGen_KeepMainLand`) were not
-checked against it. In play the digger levels the nodes of a large site that lie up to 8 off the site's height
-([Digging](digging.md)), which can leave a larger difference at the site's edge (**inferred**). The archive holds slope
-images for 4 either way. Beyond that the sum names other entries, and the original draws them: 5 draws 364, the blocked
-image; 6 draws 365, the way-back image; 7 draws nothing (366 is absent); 8 to 13 draw the sprites 367 to 372, among them
-the build markers; -5 draws 354, a frame of red and yellow; -6 draws 353, a small dot; -7 draws 352, the end mark's
-image; -8 and -9 draw nothing (351 and 350 are absent).
+On a generated map `MapGen_LimitSlopes` keeps neighbors within 32 of each other. `MapGen_ScaleHeights` then takes a
+height as its value plus 6, divided by 8. So neighbors differ by at most 4 ([Map form](map-form.md)). That bound is
+**inferred**: the passes between the two (`MapGen_FillLakes`, `MapGen_LowerToWaterLevel`, `MapGen_KeepMainLand`) were
+not checked against it. In play the digger levels the nodes of a large site that lie up to 8 off the site's height
+([Digging](digging.md)). That can leave a larger difference at the site's edge (**inferred**).
+
+The archive holds slope images for 4 either way. Beyond that the sum names other entries, and the original draws them:
+
+- 5 draws 364, the blocked image.
+- 6 draws 365, the way-back image.
+- 7 draws nothing, as 366 is absent.
+- 8 to 13 draw the sprites 367 to 372, among them the build markers.
+- -5 draws 354, a frame of red and yellow.
+- -6 draws 353, a small dot.
+- -7 draws 352, the end mark's image.
+- -8 and -9 draw nothing, as 351 and 350 are absent.
 
 **A click on a marker.** No routine reads the list for a click: in the dump only `View_Setup`, `0x44c768`,
 `View_PlaceCursorList`, and `Render_DrawCursorList` touch view `+0xa4`. `View_HandleClick` finds the node under the
@@ -468,16 +475,17 @@ game, a node at a time, and sends one command where the road reaches a flag; Esc
 again cancels. `RoadDraws` gives a draw term for each strip (direction, height difference, slope, ground), the History Edition
 source answers it through `RoadRules` and `RoadGraphics` (no image where the difference is over 4), and the control draws
 the strips over the terrain in every copy of the map;
-the road being drawn is a white line. `RoadPlanner.Verdicts` gives the road cursor's verdict of each direction at the
-road's end (`RoadBuilding.Verdicts`, the same `Allowed` the click uses, with the road's bits in the map and taken back
-after). `RoadMarkerDraws` (`src/MapView/RoadMarkerDraws.cs`) turns the verdicts into the road markers: the end mark and a
-`RoadMarker` term for each neighbor (blocked, way back, or the slope of the height difference), at the unwrapped node raised
-by its height. The control draws them above the build markers and the white line in every copy of the map, again after
-each click and each change of the game it draws. The History Edition source answers a road marker with the entries of
-"The road markers" above, and the basic set with its own images for the end, blocked, and way-back marks and the slopes
-from -4 to 4. The engine updates the markers on a change of the game, where the original waits for the next click. `RoadPlanner.Verdicts` walks the whole road again from its start flag, so a
-change of the game that refuses an earlier step, such as an inner node passing to another owner, shows the blocked mark
-on all six neighbors; `Road_UpdateCursor` judges only the neighbors of the end.
+the road being drawn is a white line. `RoadPlanner.Verdicts` gives the road cursor's verdict of each direction at the road's end. It uses
+`RoadBuilding.Verdicts` and the same `Allowed` the click uses, with the road's bits in the map and taken back after.
+`RoadMarkerDraws` (`src/MapView/RoadMarkerDraws.cs`) turns the verdicts into the road markers. It makes the end mark.
+It makes a `RoadMarker` term for each neighbor: blocked, way back, or the slope of the height difference. Each stands
+at the unwrapped node raised by its height. The control draws the markers above the build markers and the white line
+in every copy of the map. It draws them again after each click and each change of the game it draws. The History
+Edition source answers a road marker with the entries of "The road markers" above. The basic set answers with its own
+images for the end, blocked, and way-back marks and the slopes from -4 to 4. The engine updates the markers on a
+change of the game, where the original waits for the next click. `RoadPlanner.Verdicts` walks the whole road again from
+its start flag. So a change of the game can refuse an earlier step. An inner node passing to another owner is an
+example, and it shows the blocked mark on all six neighbors. `Road_UpdateCursor` judges only the neighbors of the end.
 The border posts ([How a border is drawn](#how-a-border-is-drawn)) come from `BorderDraws` (`src/MapView/BorderDraws.cs`):
 a `BorderPost` term per edge east, south-east, and south of a node whose owner differs from the neighbor's and where the
 node holds no road bit of that direction, with the slope sum and ground of the road strip of that edge
