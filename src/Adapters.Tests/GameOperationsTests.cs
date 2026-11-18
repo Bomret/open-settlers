@@ -14,7 +14,7 @@ public sealed class GameOperationsTests
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
+        "buildings": [{"type": "woodcutter-hut", "x": 13, "y": 10}],
         "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}]
         """;
 
@@ -112,7 +112,7 @@ public sealed class GameOperationsTests
         var layout = Read(
             """
             "castle": {"x": 10, "y": 10},
-            "buildings": [{"type": "woodcutter", "x": -5, "y": 10}]
+            "buildings": [{"type": "woodcutter-hut", "x": -5, "y": 10}]
             """
         );
         var game = NewGame(layout);
@@ -141,8 +141,8 @@ public sealed class GameOperationsTests
         var game = Built();
 
         Assert.IsNull(game.RemovalCommandAt(11, 11), "the castle's flag is refused");
-        Assert.AreEqual(CommandKind.RemoveBuilding, game.RemovalCommandAt(13, 10), "the hut is taken down");
         Assert.AreEqual(CommandKind.RemoveRoad, game.RemovalCommandAt(12, 11), "a node of the road is taken down");
+        Assert.AreEqual(CommandKind.RemoveRoad, game.RemovalCommandAt(13, 11), "a node of the road is taken down");
         Assert.IsNull(game.RemovalCommandAt(0, 0), "a node that holds nothing is refused");
     }
 

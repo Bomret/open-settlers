@@ -119,7 +119,14 @@ public sealed class CodelessGoodTests
         var game = Started(withAiToken: false);
         game.LayGood(0, 0, TestCatalog.AiToken);
 
-        var error = Assert.ThrowsExactly<InvalidOperationException>(() => game.Tick());
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() =>
+        {
+            // The flag's turn comes in the passes of the flag scan.
+            for (var tick = 0; tick < 200; tick++)
+            {
+                game.Tick();
+            }
+        });
 
         StringAssert.Contains(error.Message, "ai-token");
     }
