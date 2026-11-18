@@ -2,6 +2,8 @@
 
 **Status:** Accepted
 
+**Amended by:** [ADR 0020](0020-content-is-a-catalog-of-named-entries-and-the-original-s-codes-stay-at-its-edge.md)
+
 The original holds map objects, settler jobs and states, and building types as bare numbers, a form its
 memory and speed limits forced. Open Settlers gives each of them a name of its own in one name table:
 `tree`, `stone`, `carrier`, `walks-along-road`, `woodcutter`. The gameplay stays the original's

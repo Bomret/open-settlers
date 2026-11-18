@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using OpenSettlers.Domain;
+using OpenSettlers.Domain.Testing;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Application.Testing;
@@ -43,7 +44,8 @@ public static class HutBench
             bench.Draws,
             (_, _) => -1
         );
-        Action<int, int, int> layGood = (flagSlot, place, good) => laid.Add((flagSlot, place, good));
+        Action<int, int, Good> layGood = (flagSlot, place, good) =>
+            laid.Add((flagSlot, place, TestCatalog.CodeOf(good)));
         var behaviour = new HutWork(
             bench.Movement,
             bench.Settlers,

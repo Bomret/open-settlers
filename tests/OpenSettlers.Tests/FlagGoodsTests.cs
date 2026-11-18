@@ -89,7 +89,7 @@ public sealed class FlagGoodsTests
     static string Fields(Game game, int flag) =>
         Convert.ToHexString([
             .. new[] { FlagEncoder.GoodsByte(game.Flags[flag]), FlagEncoder.Status(game.Flags[flag]) },
-            .. game.Flags[flag].Places.Select(FlagEncoder.GoodByte),
+            .. game.Flags[flag].Places.Select(place => (byte)FlagEncoder.GoodWord(place, TestCatalog.Default)),
             .. game.Flags[flag].Places.SelectMany(place => BitConverter.GetBytes(FlagEncoder.DestinationWord(place))),
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[flag].Side(direction))),
         ]);
@@ -98,10 +98,10 @@ public sealed class FlagGoodsTests
         string.Concat((Convert.ToByte(fields[..2], 16) & 0x80).ToString("X2"), fields[2..]);
 
     // The carrier's 16 bytes as the original's item holds them while it waits and the turn it fetches a good.
-    static string Carrier(Settler s, int width)
+    internal static string Carrier(Settler s, int width)
     {
-        var raw = SettlerEncoder.Fields(s);
-        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
+        var bytes = new List<byte> { (byte)(s.Job.OriginalCode!.Value << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
         bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
@@ -198,7 +198,7 @@ public sealed class FlagGoodsTests
         {
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.Goods.LayGood(put.Flag, put.Place, put.Good);
+                game.Goods.LayGood(put.Flag, put.Place, TestCatalog.GoodOf(put.Good));
             }
 
             game.Tick();
@@ -254,7 +254,7 @@ public sealed class FlagGoodsTests
     // in state 3 while the carrier carries a good (its byte 11 is not 0), and else the flag it walks to or what it held last,
     // which the engine keeps in its own numbering and nothing reads: only the first three are compared. The fixture's bytes
     // say which: the state at 10 and the good at 11.
-    static string Masked(string expected, string bytes)
+    internal static string Masked(string expected, string bytes)
     {
         var state = Convert.ToByte(expected[20..22], 16);
         var carrying = state == 3 && Convert.ToByte(expected[22..24], 16) != 0;
@@ -302,7 +302,7 @@ public sealed class FlagGoodsTests
             }
         );
         game.Tick();
-        game.Goods.LayGood(1, 0, 7);
+        game.Goods.LayGood(1, 0, Good.Log);
         var before = game.Digest();
 
         for (var tick = 0; tick < 70; tick++)
@@ -310,7 +310,7 @@ public sealed class FlagGoodsTests
             game.Tick();
         }
 
-        Assert.AreEqual(new Good { Code = 7 }, game.Flags[1].Places[0].Good);
+        Assert.AreEqual(Good.Log, game.Flags[1].Places[0].Good);
         Assert.IsNull(game.Flags[1].Places[0].Way, "the good has no direction");
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn, "the flag asks again at its next turn");
         Assert.IsNull(game.Flags[1].Places[0].Destination);

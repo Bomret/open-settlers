@@ -158,7 +158,7 @@ public sealed class ForesterTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Forester.Code, hut[2], "the fixture's building is a forester's");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Forester), hut[2], "the fixture's building is a forester's");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Forester),
             "the fixture's building has its site"

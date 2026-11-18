@@ -145,8 +145,6 @@ public sealed class CarrierBehavior(
     /// <summary>
     /// 0x46414d, the flag table's pass: the flags whose slot divided by 32 is the phase each get their turn, once for each
     /// cycle of 33 passes: the turn of the flag's goods (docs/rules/goods.md), then the road loop that asks for carriers.
-    /// **Not ported:** the second carrier of a road with 3 goods waiting to go one way (table 0x462acd), and the loss of
-    /// the roads' carrier bits at a flag with 7 goods.
     /// </summary>
     public void FlagPass(int phase)
     {
@@ -157,20 +155,23 @@ public sealed class CarrierBehavior(
                 continue;
             }
 
-            goods.Turn(slot);
-            VisitFlag(slot);
+            VisitFlag(slot, goods.Turn(slot));
         }
     }
 
-    // The turn of a flag (0x464c36): for each direction from north to east that holds a road, a road whose byte shows no
-    // carrier on it or on the way asks for one, unless a request of this flag found none since the retry scan. A road
-    // with a carrier sets its bit in the status.
-    void VisitFlag(int slot)
+    // The turn of a flag (0x464c36), for each direction from north to east that holds a road. A road with fewer than three of
+    // the flag's goods heading along it and a carrier on it sets its bit in the status. A busy road (three or more) sets none:
+    // with a carrier on the way it asks for nothing, else it asks for another unless its carriers equal the number its length
+    // class holds (0x465189; a road over that number asks again). A road with no carrier on it or on the way asks for one.
+    // A request is made only while no request of this flag has failed since the retry scan, and a water road asks for
+    // none (its boatman is not ported). At a crowded flag the bit of each road that is busy or asked goes out (0x46520b).
+    void VisitFlag(int slot, GoodsLoad load)
     {
         // The flag takes what the turn found only at its end: a request made in the turn records the flag as it stood before.
         var flag = flags[slot];
         var failed = flag.CarrierRequestFailed;
         var holders = new List<FlagSide>();
+        var lost = new List<FlagSide>();
         for (var direction = 5; direction >= 0; direction--)
         {
             if (roads.RoadAt(slot, direction) is not { } road)
@@ -179,19 +180,40 @@ public sealed class CarrierBehavior(
             }
 
             var side = flag.Side(direction);
-            if (side.Carriers != 0)
+            var busy = load.Busy.Has(direction);
+            if (!busy)
             {
-                holders.Add(side);
+                if (side.Carriers != 0)
+                {
+                    holders.Add(side);
+                    continue;
+                }
+
+                if (side.CarrierOnTheWay)
+                {
+                    continue;
+                }
             }
-            else if (!side.CarrierOnTheWay && !failed && !road.Water && !RequestCarrier(slot, direction, road))
+
+            var full = side.Carriers != 0 && side.Carriers == movement.Tables.RoadCapacity(side.Length.Value);
+            if (!side.CarrierOnTheWay && !full && !failed && !road.Water && !RequestCarrier(slot, direction, road))
             {
                 failed = true;
             }
+
+            if (load.Crowded)
+            {
+                lost.Add(side);
+            }
         }
 
-        var changed = failed != flag.CarrierRequestFailed || holders.Any(side => !side.HoldsCarrier);
+        var changed =
+            failed != flag.CarrierRequestFailed
+            || holders.Any(side => !side.HoldsCarrier)
+            || lost.Any(side => side.HoldsCarrier);
         flag.RecordCarrierRequest(failed);
         holders.ForEach(side => side.HoldCarrier());
+        lost.ForEach(side => side.ClearCarrierHold());
         if (changed)
         {
             history.RecordFlag(slot, EventType.VisitFlag, Cause.Carriers);
@@ -404,8 +426,19 @@ public sealed class CarrierBehavior(
             }
             else
             {
-                // A carrier on a flag: with a good for the building at this flag it goes in, else it swaps goods with the flag and
-                // goes on along the road it came by.
+                // A carrier on a flag: marked to go, it leaves for a storage (0x43aea4: state 2, mode 0xfe, the word at 12 and the
+                // timer 0, the mark cleared, its frame and heading as they are) and takes no further step this turn. Else, with a
+                // good for the building at this flag it goes in, else it swaps goods with the flag and goes on along the road it
+                // came by.
+                if (walks.Marked)
+                {
+                    settler.Timer = 0;
+                    movement.Become(settler, new Walks { Errand = new ToStorage(), Heading = walks.Heading });
+                    history.RecordSettler(slot, EventType.CarrierGoesHome, Cause.Carriers);
+
+                    return;
+                }
+
                 if (walks.Load is { Destination: { } destination } && destination == Map.At(here).LinkedSlot)
                 {
                     Deliver(slot, settler, walks);
@@ -444,8 +477,7 @@ public sealed class CarrierBehavior(
     // node holds no settler for the others to wait for) and takes state 0x42 with the flag and the direction of the road at
     // that flag as its target. The dword at 12 holds a pointer to the flag's item in the original; the engine keeps the slot in
     // the target.
-    // **Inferred:** the fourth turn at a road that holds two carriers is read from the code; no emulator or debugger run reaches
-    // it. Open lead in docs/milestones/m3-first-loop.md (the fourth turn of a carrier at the end of a road that holds two).
+    // The fourth turn at a road that holds two carriers is emulated: a busy road that drains (busy-road-walks.txt) releases one.
     void Wait(int slot, Settler settler, WalksRoad walks, int back, int flag)
     {
         settler.Timer = 0x3f;
@@ -563,8 +595,8 @@ public sealed class CarrierBehavior(
         }
     }
 
-    // State 0xe (0x43c4ea) when its timer has run out. The first time the good goes into the building: its byte 8 or 9 (the log
-    // and the goods from 9 on but 13 count in byte 9, the others in byte 8) gains 0x0f, and where that carries out of the byte the
+    // State 0xe (0x43c4ea) when its timer has run out. The first time the good goes into the building: its byte 8 or 9 (the
+    // handover counter of the good's entry, RuleTables.HandoverCounterOf) gains 0x0f, and where that carries out of the byte the
     // word of both bytes becomes 0xffff and the good is counted in the building's storage, up to 50000. The castle's bytes are
     // 0xffff, so each good delivered to it counts. The carrier then turns the frame round, takes the other half of the step's
     // time, and the second time goes on in state 3 at the flag, where the exchange runs again.
@@ -591,7 +623,7 @@ public sealed class CarrierBehavior(
                 movement.Become(settler, hands with { Load = null });
                 if (movement.BuildingAt(node) is { IsDemolishing: false } building)
                 {
-                    var counter = good.FillsHigh ? FillCounter.High : FillCounter.Low;
+                    var counter = movement.Tables.HandoverCounterOf(good);
                     var sum = building.FillOf(counter) + 0x0f;
                     building.SetFill(counter, sum);
                     if (sum > 0xff)
@@ -609,9 +641,9 @@ public sealed class CarrierBehavior(
                         buildingSlot,
                         EventType.Handover,
                         Cause.Goods,
-                        $"{history.SettlerId(slot)} good {good}"
+                        $"{history.SettlerId(slot)} good {history.GoodText(good)}"
                     );
-                    given = $"{history.BuildingId(buildingSlot)} good {good}";
+                    given = $"{history.BuildingId(buildingSlot)} good {history.GoodText(good)}";
                 }
             }
 

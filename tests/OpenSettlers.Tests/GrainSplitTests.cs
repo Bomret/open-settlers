@@ -142,7 +142,7 @@ public sealed class GrainSplitTests
         {
             if (pass == 500 && grainOnTheFlag)
             {
-                game.Goods.LayGood(FarmFlag, 0, Good.Grain.Code);
+                game.Goods.LayGood(FarmFlag, 0, Good.Grain);
             }
 
             game.Tick();
@@ -198,7 +198,7 @@ public sealed class GrainSplitTests
             {
                 if (pass == 500)
                 {
-                    game.Goods.LayGood(FarmFlag, 0, Good.Grain.Code);
+                    game.Goods.LayGood(FarmFlag, 0, Good.Grain);
                 }
             },
             from: 300

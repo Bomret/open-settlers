@@ -17,17 +17,11 @@ public sealed class ThingHistoryRemovalTests
 
         return new RuleTables(
             classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
+            MadeProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: MadeProgram.MadeWorkers()
+            catalog: TestCatalog.WithDoors(MadeProgram.MadeWorkers()),
+            noBuildingDoor: 8
         );
     }
 
@@ -257,10 +251,10 @@ public sealed class ThingHistoryRemovalTests
                 else
                 {
                     var s = game.Settlers[thing.Slot];
-                    var raw = SettlerEncoder.Fields(s);
+                    var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
                     int[] expected =
                     [
-                        s.Job.Code,
+                        JobWords.Of(TestCatalog.Default, s.Job),
                         raw.State,
                         s.Player,
                         raw.Mode,

@@ -76,7 +76,7 @@ sealed class FlameLists
 
     /// <summary>
     /// The flames of a burning building of <paramref name="type"/>: list 0 for an early site, else the list of the type's
-    /// number; none for a type outside 0 to 24.
+    /// original code (<see cref="BuildingTables.CodeOfName"/>); none for a type with no code or a code outside 0 to 24.
     /// </summary>
     public IReadOnlyList<Flame> Of(BuildingType type, bool earlySite)
     {
@@ -85,7 +85,7 @@ sealed class FlameLists
             return _lists[0];
         }
 
-        return type.Code is >= 0 and < ListCount ? _lists[type.Code] : [];
+        return BuildingTables.CodeOfName.TryGetValue(type.Name, out var code) && code < ListCount ? _lists[code] : [];
     }
 
     /// <summary>The sprite entry of a flame (<c>0x44e329</c>): 136, plus its size byte, plus its phase, plus the 320 that <c>Gfx_DrawSpriteBase320</c> adds.</summary>

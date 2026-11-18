@@ -14,7 +14,9 @@ namespace OpenSettlers.Tests;
 // short digest of the whole recorded event log (each event's tick, type, thing, raw field=value state, cause, and
 // other). The expected lines live in golden.txt: the event counts of the original lines were taken once from the engine as it
 // stood before the onion refactor of the simulation (the two site-with-handout lines were taken in the M4 sweep), the event-log hashes were regenerated for the castle settler's renamed event
-// (castle-settler-builds), the every-pass lines for the castle settler's turn every pass, and the digests were regenerated for the flags' request words, on made-up tables
+// (castle-settler-builds), the every-pass lines for the castle settler's turn every pass, the digests were regenerated for the
+// flags' request words, and the two carrier-layout lines were regenerated when the made-up tables got a catalog (every catalog rank
+// is at least 1, where the tables without one read rank 0, so the exchange re-picks the waiting log), on made-up tables
 // (MadeProgram.MadeTables; ConstructionTables.Tables() for site-with-handout), so it needs no install: paths that depend on the
 // real program tables' step times or building classes are not pinned (INV-0001: digests, not dumps). A change to any rule outcome, the order of two settlers in a pass, or
 // an event field changes a line. INV-0002: a scenario gives the same lines on every run, as the committed lines pin. INV-0007: the digest holds no

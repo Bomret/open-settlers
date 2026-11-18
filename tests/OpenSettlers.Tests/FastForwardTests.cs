@@ -35,7 +35,7 @@ public sealed class FastForwardTests
         return script.Problems.Single();
     }
 
-    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job.Code: Woodcutter.Number, Activity: Cuts });
+    static bool Cutting(Game game) => game.Settlers.Any(s => s is { Job: Woodcutter, Activity: Cuts });
 
     // The tick the woodcutter first cuts at, found on a game of its own.
     static long FirstCut()
@@ -161,7 +161,7 @@ public sealed class FastForwardTests
     {
         var (game, _) = SawmillWorld.World();
         SawmillWorld.SawmillerInside(game);
-        game.Goods.LayGood(0, 0, Good.Log.Code);
+        game.Goods.LayGood(0, 0, Good.Log);
 
         return game;
     }
@@ -385,9 +385,7 @@ public sealed class FastForwardTests
         var problem = Step("fast-forward carrier carrying max 6000").Run(game, Unread);
 
         Assert.IsNull(problem);
-        Assert.IsTrue(
-            game.Settlers.Any(s => s is { Job.Code: Carrier.Number, Activity: WalksRoad { Load: not null } })
-        );
+        Assert.IsTrue(game.Settlers.Any(s => s is { Job: Carrier, Activity: WalksRoad { Load: not null } }));
     }
 
     // What a play run observes of the game alone: its ticks and the castle's logs.

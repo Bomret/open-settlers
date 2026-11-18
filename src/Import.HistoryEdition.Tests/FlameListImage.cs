@@ -11,7 +11,7 @@ namespace OpenSettlers.Tests;
 static class FlameListImage
 {
     // Every list holds one small flame at (0, 0), but list 2 holds a small flame at (-3, 5) and a large one at (4, -12), and
-    // list 0 a large one at (1, -2). Types 7 and 8 point to one list.
+    // list 0 a large one at (1, -2). Types 0xc and 0xd (the farm and the butcher) point to one list.
     public static void Lists(byte[] exe)
     {
         var header = At(FlameLists.Address);
@@ -26,8 +26,8 @@ static class FlameListImage
         new byte[] { 8, 1, 0xfe, 0xff }.CopyTo(exe, header + 60);
         BitConverter.GetBytes((short)70).CopyTo(exe, header + 2 * 2);
         new byte[] { 0, 0xfd, 5, 8, 4, 0xf4, 0x80 }.CopyTo(exe, header + 70);
-        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 7);
-        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 8);
+        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 0xc);
+        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 0xd);
         new byte[] { 8, 2, 3, 0xff }.CopyTo(exe, header + 80);
     }
 }

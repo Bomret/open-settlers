@@ -62,11 +62,17 @@ public sealed class CastlePlacementTests
         );
         var actual =
             $"seed={fields["seed"]} size={fields["size"]} tile={fields["tile"]} level={fields["level"]} "
-            + $"evaluator={site.Node}.{site.Site}.{site.Height} stock={string.Join(',', game.CastleStock.Stock)} "
+            + $"evaluator={site.Node}.{site.Site}.{site.Height} stock={string.Join(',', StockInCodeOrder(game))} "
             + $"layers={Digests(map)} changes={Changes(before, Snapshot(map))}";
 
         Assert.AreEqual(expected, actual);
     }
+
+    // The emulator's stock list is by the original's codes; the castle keys its stock by catalog entry.
+    static IEnumerable<int> StockInCodeOrder(Game game) =>
+        game
+            .Tables.Catalog.Goods.OrderBy(entry => entry.OriginalCode)
+            .Select(entry => game.CastleStock.Count(new Good { Name = entry.Name }));
 
     [TestMethod]
     public void ARefusedPlacementChangesNoState()

@@ -28,7 +28,7 @@ public sealed class HutWorkTests
         }
 
         Assert.AreEqual(
-            ((0, 0, WoodcutterRules.GoodLog), 1, (HutX, HutY), true),
+            ((0, 0, TestCatalog.CodeOf(Good.Log)), 1, (HutX, HutY), true),
             (laid.Single(), bench.Draws.Taken, (woodcutter.X, woodcutter.Y), woodcutter.Activity is Door)
         );
     }

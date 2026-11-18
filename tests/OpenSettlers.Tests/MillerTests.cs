@@ -12,7 +12,8 @@ namespace OpenSettlers.Tests;
 // over the item tables on a game started as the original's game start leaves its tables, with a finished mill (type 15, a small
 // building) at a flag, and the carriers that bring it grain and take its flour to the castle (the whole run is checked). A scenario
 // starts with a "#" line that names its verb command; the lines after it give, for a pass, the 16 bytes of the miller (slot 3, s3=: a
-// settler without a job the castle made the miller) where his node, state, or part of the work changed, the 18 bytes of the building (b=)
+// settler without a job the castle made the miller) where his node, state, or part of the work changed, the 16 bytes of the busy road's
+// second carrier (slot 2, s2=: a settler without a job the castle made a carrier) where listed, the 18 bytes of the building (b=)
 // where they changed, the flag's byte 4 and goods bytes (g=) where they changed, the request words of the flag (req=) where they changed,
 // the castle's grain and flour counts (grain=, flour=) where they changed, and the generator's words (rng=). The engine runs the same
 // commands and must hold the same values at each listed pass.
@@ -25,6 +26,7 @@ public sealed class MillerTests
 {
     const string Fixture = "mill-walks.txt";
     const int WorkerSlot = 3;
+    const int SecondCarrierSlot = 2;
     const int HutSlot = 1;
 
     sealed record Scenario
@@ -64,7 +66,7 @@ public sealed class MillerTests
         return scenarios;
     }
 
-    static List<int[]> Points(string list) =>
+    internal static List<int[]> Points(string list) =>
         list.Length == 0 ? [] : [.. list.Split(';').Select(point => point.Split(',').Select(int.Parse).ToArray())];
 
     static string Words(RandomGenerator generator) =>
@@ -91,7 +93,7 @@ public sealed class MillerTests
             })
         );
 
-    static Game Start(
+    internal static Game Start(
         string command,
         out Map map,
         out int hutFlag,
@@ -169,7 +171,7 @@ public sealed class MillerTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Mill.Code, hut[2], "the fixture's building is a mill");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Mill), hut[2], "the fixture's building is a mill");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Mill),
             "the fixture's building has its site"
@@ -192,7 +194,7 @@ public sealed class MillerTests
         {
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.Goods.LayGood(put.Flag, put.Place, put.Good);
+                game.Goods.LayGood(put.Flag, put.Place, TestCatalog.GoodOf(put.Good));
             }
 
             game.Tick();
@@ -213,6 +215,16 @@ public sealed class MillerTests
                 );
             }
 
+            if (line.TryGetValue("s2", out var carrier))
+            {
+                var expected = FlagWords.InEngineNumbers(carrier, 24, game.Flags.Count);
+                Assert.AreEqual(
+                    FlagGoodsTests.Masked(expected, expected),
+                    FlagGoodsTests.Masked(expected, WorkerBytes.Hex(game.Settlers[SecondCarrierSlot], width)),
+                    $"{name}: the busy road's second carrier after pass {pass}"
+                );
+            }
+
             if (line.TryGetValue("b", out var hutBytes))
             {
                 Assert.AreEqual(
@@ -225,7 +237,9 @@ public sealed class MillerTests
             if (line.TryGetValue("g", out var goods))
             {
                 var places = game.Flags[hutFlag].Places;
-                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
                 Assert.AreEqual(
                     goods.Split('/')[1],
                     bytes,

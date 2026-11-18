@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 
-**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md)
+**Amended by:** [ADR 0017](0017-install-data-enters-through-import-ports.md), [ADR 0020](0020-content-is-a-catalog-of-named-entries-and-the-original-s-codes-stay-at-its-edge.md)
 
 Builds on [ADR 0013](0013-the-simulation-is-typed-and-the-original-s-bytes-stay-at-its-edge.md) and
 [ADR 0014](0014-the-map-view-draws-through-a-graphics-source.md).

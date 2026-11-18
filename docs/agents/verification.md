@@ -267,6 +267,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/road-markers.play` on the game view with seed `1234567812345678` and size 1, under either content set: cropped shots of the road
   markers at the castle's flag, after a step, after the step back, and none after the road is built.
 - `play/woodcutter-log.play` on the same layout: crops of the woodcutter cutting, the woodcutter walking back with his log, and the road's carrier carrying that log toward the castle.
+- `layouts/busy-road.jsonc` and `play/busy-road.play`: a carrier on a road of six steps from the castle's flag, and five logs on the
+  far flag. Three or more goods for one road make the road busy, so the castle sends a second carrier. The script fast-forwards to
+  the second carrier (`count carrier = 2`) and shoots it on its way. It runs with the install and with `--content-set basic`.
 - `layouts/butcher.jsonc` and `play/butcher.play`: a finished butcher's shop with its butcher inside, a road to the castle, and two pigs on the castle's flag,
   fast-forwarded to the castle's second meat beyond its start stock (`meat >= 27` from a start of 25).
 - `layouts/mill.jsonc` and `play/mill.play`: a finished mill with its miller inside, a road to the castle, and two grains on the castle's flag,
@@ -277,21 +280,28 @@ script alone. Add a layout only where none of them holds the situation.
   the castle's flag, fast-forwarded to the pig on the step out and then to the castle's first pig.
 - `play/basic-construction.play` and `play/basic-production.play` on the game view with `--content-set basic` and no install.
   The construction loop uses seed `1234567812345634`. The castle's materials build the sawmill and the woodcutter's hut. The woodcutter's logs reach
-  the sawmill, and its planks build a stonecutter's hut. The production chains use seed `4455544685788642` and four fresh games started by `seed`. Mill and baker give
-  bread, farm and mill give flour, butcher and pig farm give meat, and a fisher gives fish. The run lines are in each script's header. The chains
-  split over four games because a game holds five settlers without a job. The other game-view scripts run with the install: their `expect` values
-  are the History Edition's.
+  the sawmill, and its planks build a stonecutter's hut. The production chains use seed `4455544685788642` and one game each for bread, meat, and fish. In the bread game, farm, mill, and baker give
+  bread from the farm's grain. The chain needs more settlers without a job than the castle's five. The settler supply adds them. Butcher and pig
+  farm give meat, and a fisher gives fish, each in a fresh game started by `seed`. The run lines are in each script's header. The other
+  game-view scripts run with the install: their `expect` values are the History Edition's.
 - `play/burning.play` on `layouts/woodcutter.jsonc` and `play/basic-burning.play` on the same layout with `--content-set basic`: the
   woodcutter's hut is razed with the Remove button, shots show it with its flames twice, then nothing once the burn frees its node.
   The first shows the original's flames, the second the basic set's.
 - `play/food-chain.play` on the game view with seed `4455544685788642` and size 1: the fisher, the butcher, and the baker are built one after
   the other and joined by roads from the castle, and the script runs to 8 breads in the castle (it starts with 4), with fish and meat
-  beyond their start stock too. The castle's 5 jobless settlers allow no more. The farm, the mill, and the pig farm would need 6 more.
-  The play therefore shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
+  beyond their start stock too. The three buildings are the ones the castle's 5 first jobless settlers staff. The settler supply adds
+  more as the game runs. The play shows the stock's pigs and flour moving to the butcher and the baker. The roads and the next site are placed after a `shot`, since
   the game's ticks run only after the first `shot` that follows a `fast-forward`.
 - `play/castle-growing.play` on the game view with seed `4455544685788642` and size 1, and `play/castle-growing-basic.play` on the
   basic set with seed `1234567812345634` and size 1: each script places the castle with a click. It fast-forwards to ticks 20, 30, 31, 32, and 45, while
   the castle grows, and to tick 200, after it stands. A cropped shot of the castle follows each. The shots of ticks 30 to 32 show the castle grow each pass.
+- `play/work-areas.play` on the game view with seed `1234567812345678` and size 1: the castle's click places it at 24,19. A
+  stonecutter's site goes to 28,18, near the heaps at 26,17 and 24,15. The script shoots the work-area tint around the site with
+  Work areas on and off. It checks that the digest is the same before and after the press. It checks that a new seed turns the
+  button off.
+- `play/reach-markers.play` on the game view with seed `1234567812345678` and size 1: the castle's click places it at 24,13.
+  With Work areas on and the Stonecutter button pressed, the shots show green discs near the heaps at 24,15 and 26,17. They show
+  red rings around 24,9. Both kinds lie over Build help's markers. None shows once the button is released.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the

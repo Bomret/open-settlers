@@ -15,7 +15,13 @@ sealed record StandInGood
     /// <summary>Which byte of a building's fill the good counts in.</summary>
     public required FillCounter Counts { get; init; }
 
-    /// <summary>The transport priority, a rank from 1 to 26 that no other good shares.</summary>
+    /// <summary>Which byte of a building's fill the carrier's handover of the good counts in.</summary>
+    public required FillCounter Handover { get; init; }
+
+    /// <summary>Whether a lost good of this kind counts against the total of resource 1.</summary>
+    public required bool CountsAgainstResource1 { get; init; }
+
+    /// <summary>The transport priority, a rank from 1 up that no other good shares.</summary>
     public required int Priority { get; init; }
 
     /// <summary>The request the good looks for, or null for a good that goes to storage at once.</summary>
@@ -51,6 +57,12 @@ sealed record StandInBuilding
 
     /// <summary>The worker the finished building asks for, or null for none.</summary>
     public required WorkerRequest? Worker { get; init; }
+
+    /// <summary>Whether the builder of the site takes a second figure.</summary>
+    public required bool SecondFigure { get; init; }
+
+    /// <summary>The rank that breaks a tie between two building types, the lower first, 1 to 255.</summary>
+    public required int TieRank { get; init; }
 }
 
 /// <summary>
@@ -99,6 +111,9 @@ sealed record StandInRules
     /// <summary>The door speeds of the castle: standing, then constructing.</summary>
     public required (byte Standing, byte Constructing) CastleDoor { get; init; }
 
+    /// <summary>The castle's rank that breaks a tie between two building types, 1 to 255.</summary>
+    public required int CastleTieRank { get; init; }
+
     /// <summary>The tool a builder is made with.</summary>
     public required Good BuilderTool { get; init; }
 
@@ -108,11 +123,13 @@ sealed record StandInRules
     /// <summary>The rank the pig farm's grain request starts from.</summary>
     public required byte PigRank { get; init; }
 
+    /// <summary>The jobs the set has, each named by its stable name in the jobs file; none has an original code.</summary>
+    public required ImmutableArray<Job> Jobs { get; init; }
+
     /// <summary>The chance in percent that a pig grows, by the pigs the farm holds, 0 to 7.</summary>
     public required ImmutableArray<int> PigGrowthPercent { get; init; }
 
     const int Whole = 0x8000;
-    const int NoneKind = 2;
 
     /// <summary>
     /// Encodes the rules into <see cref="RuleTables"/>. Throws <see cref="InvalidDataException"/> where the tables refuse them.
@@ -126,36 +143,39 @@ sealed record StandInRules
             steps[at] = StepTimeByRise[((at + RuleTables.StepTimeFirst) % Rises + Rises) % Rises];
         }
 
-        var doors = new byte[RuleTables.DoorSpeedCount];
-        doors[BuildingType.Castle.Code] = CastleDoor.Standing;
-        doors[BuildingType.Castle.Code | 0x20] = CastleDoor.Constructing;
-        var sizes = Enumerable.Repeat((byte)BuildingSize.Small, RuleTables.BuildingTypeCount).ToArray();
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        var materials = new ushort[RuleTables.BuildingTypeCount];
-        var blows = new ushort[2 * RuleTables.BuildingTypeCount];
-        foreach (var (type, building) in Buildings)
+        // The castle states only its door and that it is a storage: its site is built from no needs and it asks for no worker.
+        var castle = new BuildingEntry
         {
-            doors[type.Code] = building.StandingDoor;
-            doors[type.Code | 0x20] = building.ConstructingDoor;
-            if (type.Code >= RuleTables.BuildingTypeCount)
+            Name = BuildingType.Castle.Name,
+            TieRank = CastleTieRank,
+            Size = BuildingSize.Mine,
+            Needs = new BuildingNeeds { Planks = 0, Stones = 0 },
+            StandingDoor = CastleDoor.Standing,
+            ConstructingDoor = CastleDoor.Constructing,
+            EarlyBlowStep = 0,
+            LateBlowStep = 0,
+            SecondFigure = false,
+            IsStorage = true,
+        };
+        var buildings = Buildings
+            .Select(entry => new BuildingEntry
             {
-                continue;
-            }
-
-            sizes[type.Code] = (byte)building.Size;
-            needs[2 * type.Code] = (byte)building.Needs.Planks;
-            needs[2 * type.Code + 1] = (byte)building.Needs.Stones;
-            workers[type.Code] = building.Worker;
-            for (var turn = 0; turn < building.Stones.Length; turn++)
-            {
-                materials[type.Code] |= (ushort)(building.Stones[turn] ? 1 << turn : 0);
-            }
-
-            // A blow adds the share of the half it is one of, rounded up so that the blows of a half reach it.
-            blows[2 * type.Code] = (ushort)((Whole + building.FirstHalfBlows - 1) / building.FirstHalfBlows);
-            blows[2 * type.Code + 1] = (ushort)((Whole + building.SecondHalfBlows - 1) / building.SecondHalfBlows);
-        }
+                Name = entry.Key.Name,
+                TieRank = entry.Value.TieRank,
+                Size = entry.Value.Size,
+                Needs = entry.Value.Needs,
+                StandingDoor = entry.Value.StandingDoor,
+                ConstructingDoor = entry.Value.ConstructingDoor,
+                Worker = entry.Value.Worker,
+                Stones = entry.Value.Stones,
+                // A blow adds the share of the half it is one of, rounded up so that the blows of a half reach it.
+                EarlyBlowStep = (ushort)((Whole + entry.Value.FirstHalfBlows - 1) / entry.Value.FirstHalfBlows),
+                LateBlowStep = (ushort)((Whole + entry.Value.SecondHalfBlows - 1) / entry.Value.SecondHalfBlows),
+                SecondFigure = entry.Value.SecondFigure,
+                // The castle is the set's one storage: the basic set draws no storehouse.
+                IsStorage = false,
+            })
+            .Append(castle);
 
         var windows = new ushort[RuleTables.ScanWindowCount];
         foreach (var (size, window) in ScanWindows)
@@ -172,21 +192,6 @@ sealed record StandInRules
             }
         }
 
-        var kinds = Enumerable.Repeat((byte)NoneKind, RuleTables.GoodKindCount).ToArray();
-        var priorities = new byte[RuleTables.Goods];
-        var classes = new GoodClass?[RuleTables.GoodClassCount];
-        foreach (var good in Goods)
-        {
-            kinds[good.Good.Code] = good.Counts switch
-            {
-                FillCounter.Low => 0,
-                FillCounter.High => 1,
-                _ => NoneKind,
-            };
-            priorities[good.Good.Code - 1] = (byte)good.Priority;
-            classes[good.Good.Code] = good.Request;
-        }
-
         try
         {
             return new RuleTables(
@@ -194,25 +199,32 @@ sealed record StandInRules
                 [
                     .. Enumerable
                         .Range(0, RuleTables.StartStockRows)
-                        .Select(row => Goods.Select(good => good.StartStock[row]).ToArray()),
+                        .Select(row =>
+                            (IReadOnlyDictionary<Good, byte>)
+                                Goods.ToDictionary(good => good.Good, good => good.StartStock[row])
+                        ),
                 ],
                 steps,
-                doors,
                 windows,
                 walkRows: walk,
-                goodKinds: kinds,
                 roadCapacities: [.. RoadCapacities],
-                transportPriorities: priorities,
                 frameRows: [.. FrameRows],
-                buildingSizes: sizes,
-                buildingNeeds: needs,
-                goodClasses: classes,
+                catalog: new ContentCatalog(
+                    Goods.Select(good => new GoodEntry
+                    {
+                        Name = good.Good.Name,
+                        Request = good.Request,
+                        Counter = good.Counts,
+                        HandoverCounter = good.Handover,
+                        CountsAgainstResource1 = good.CountsAgainstResource1,
+                        TransportRank = good.Priority,
+                    }),
+                    buildings,
+                    Jobs.Select(job => new JobEntry { Name = job.Name })
+                ),
                 distribution: [.. Distribution.Select(order => order.ToArray())],
                 plankRankBase: PlankRank,
                 millRankBase: MillRank,
-                workers: workers,
-                materialOrder: materials,
-                blowSteps: blows,
                 jobData:
                 [
                     (new Builder(), new WorkerRequest { Job = new Builder(), Tool = BuilderTool }),

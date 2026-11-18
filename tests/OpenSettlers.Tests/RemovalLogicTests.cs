@@ -256,7 +256,7 @@ public sealed class RemovalLogicTests
         var game = World();
         Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, 13, 4));
         var lost = game.Flags.Count - 1;
-        game.Goods.LayGood(lost, 0, WoodcutterRules.GoodLog, destination: 3);
+        game.Goods.LayGood(lost, 0, Good.Log, destination: 3);
         var hut = game.Buildings[1];
         Assert.AreEqual(0, hut.FillHigh);
 
@@ -269,24 +269,25 @@ public sealed class RemovalLogicTests
     [TestMethod]
     public void WhenARemovalFreesARoadsWaitingPlaceTheGoodOfTheHighestTransportPriorityForThatRoadWaitsNext()
     {
-        const int Stone = 9;
-        const int Board = 1;
+        var stone = TestCatalog.GoodOf(9);
+        var board = TestCatalog.GoodOf(1);
         const int Way = 0;
-        var ranks = new byte[StartStock.Goods];
-        ranks[WoodcutterRules.GoodLog - 1] = 5;
-        ranks[Stone - 1] = 9;
-        ranks[Board - 1] = 2;
+        // The start stock places every good, so each good holds an entry: the others rank low and lay nowhere.
+        var ranks = Enumerable.Range(0, TestCatalog.Names.Length).Select(index => (byte)(20 + index)).ToArray();
+        ranks[TestCatalog.CodeOf(Good.Log) - 1] = 5;
+        ranks[TestCatalog.CodeOf(stone) - 1] = 9;
+        ranks[TestCatalog.CodeOf(board) - 1] = 2;
         var game = World(transportPriorities: ranks);
-        game.Goods.LayGood(1, 0, Board, way: Way);
-        game.Goods.LayGood(1, 1, WoodcutterRules.GoodLog, way: Way);
-        game.Goods.LayGood(1, 2, Stone, way: Way);
-        game.Goods.LayGood(1, 5, Board, destination: 3, way: Way);
+        game.Goods.LayGood(1, 0, board, way: Way);
+        game.Goods.LayGood(1, 1, Good.Log, way: Way);
+        game.Goods.LayGood(1, 2, stone, way: Way);
+        game.Goods.LayGood(1, 5, board, destination: 3, way: Way);
         game.Goods.WaitForRoad(1, Way, 5);
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveBuilding, 16, 2));
 
         Assert.IsNull(game.Flags[1].Places[5].Way, "the good for the hut loses its direction");
-        Assert.AreEqual(new Good { Code = Board }, game.Flags[1].Places[5].Good);
+        Assert.AreEqual(board, game.Flags[1].Places[5].Good);
         Assert.AreEqual(2, game.Flags[1].Side(Way).WaitingPlace, "the stone waits for the road next");
     }
 
@@ -373,7 +374,7 @@ public sealed class RemovalLogicTests
         foreach (var (x, y) in new[] { (13, 4), (13, 7), (14, 8) })
         {
             Assert.IsTrue(Applied(game, CommandKind.PlaceFlag, x, y));
-            game.Goods.LayGood(game.Flags.Count - 1, 0, WoodcutterRules.GoodLog);
+            game.Goods.LayGood(game.Flags.Count - 1, 0, Good.Log);
         }
 
         Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 13, 4));
@@ -437,7 +438,7 @@ public sealed class RemovalLogicTests
 
     sealed class FakePriorities : ITransportPriorities
     {
-        public int TransportPriority(Good good) => good.Code;
+        public int TransportPriority(Good good) => TestCatalog.CodeOf(good);
     }
 
     sealed class Rig

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.MapView;
 using OpenSettlers.Simulation;
@@ -124,11 +125,13 @@ public sealed class PlayStateTests
     [TestMethod]
     public void TheCastlesPlanksAndStonesAreTheGoodsEightAndTenOfItsStock()
     {
-        var stock = new int[StartStock.Goods];
-        stock[6] = 3;
-        stock[7] = 53;
-        stock[9] = 28;
-        var castle = new CastleStock();
+        var stock = new Dictionary<Good, int>
+        {
+            [Good.Log] = 3,
+            [Good.Plank] = 53,
+            [Good.Stone] = 28,
+        };
+        var castle = new CastleStock(TestCatalog.Default);
         castle.Place(
             new Castle
             {
@@ -185,6 +188,29 @@ public sealed class PlayStateTests
         var dump = (GameState with { Game = game }).Dump();
 
         StringAssert.EndsWith(dump, $"bread=6\ndigest={game.Digest():x16}\n");
+    }
+
+    [TestMethod]
+    public void A_digest_expect_compares_the_games_digest_as_sixteen_hex_digits()
+    {
+        var game = GameFactory.Create(MadeProgram.Made(), new Map(MapSize.Offered[0]));
+        var state = GameState with { Game = game };
+        var digest = game.Digest().ToString("x16", System.Globalization.CultureInfo.InvariantCulture);
+
+        Assert.IsNull(state.Check(Expect("digest", "=", digest)));
+        Assert.AreEqual(
+            $"expect digest = 0000000000000000 failed: actual {digest}",
+            state.Check(Expect("digest", "=", "0000000000000000"))
+        );
+    }
+
+    [TestMethod]
+    public void A_digest_expect_in_the_map_view_is_a_problem()
+    {
+        Assert.AreEqual(
+            "expect digest: the map view has no digest, use --game-view",
+            State.Check(Expect("digest", "=", "0000000000000000"))
+        );
     }
 
     static readonly PlayState FlagState = GameState with

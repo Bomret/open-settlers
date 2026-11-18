@@ -35,8 +35,6 @@ public sealed class JobTablesGeneratorTests
                 public Job Job { get; } = new TJob();
                 public virtual void Read(byte[] exe, ICollection<(Job Job, object Data)> data) { }
             }
-            [AttributeUsage(AttributeTargets.Class)]
-            public sealed class JobNameAttribute(string name, string evidence) : Attribute { }
             [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
             public sealed class StateNameAttribute(int code, string name, string evidence) : Attribute { }
             [AttributeUsage(AttributeTargets.Assembly)]
@@ -86,7 +84,7 @@ public sealed class JobTablesGeneratorTests
 
     static readonly string[] WellFormed =
     [
-        Module("AlphaTables", "Alpha", "[JobName(\"alpha\", \"why alpha\")][StateName(0x11, \"acts\", \"why acts\")]"),
+        Module("AlphaTables", "Alpha", "[StateName(0x11, \"acts\", \"why acts\")]"),
         Module("BetaTables", "Beta", "[StateName(0x12, \"rests\", \"why rests\")]"),
     ];
 
@@ -103,7 +101,7 @@ public sealed class JobTablesGeneratorTests
         );
         StringAssert.Contains(text, "new global::OpenSettlers.Import.HistoryEdition.AlphaTables()");
         StringAssert.Contains(text, "new global::OpenSettlers.Import.HistoryEdition.BetaTables()");
-        StringAssert.Contains(text, "(global::OpenSettlers.Domain.Alpha.Number, \"alpha\", \"why alpha\")");
+        Assert.IsFalse(text.Contains("JobNames"), "the registry lists no job names: the job types hold them");
         StringAssert.Contains(text, "(17, \"acts\", \"why acts\")");
         StringAssert.Contains(text, "(18, \"rests\", \"why rests\")");
     }
@@ -141,21 +139,6 @@ public sealed class JobTablesGeneratorTests
         Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
         StringAssert.Contains(error.GetMessage(), "FirstTables");
         StringAssert.Contains(error.GetMessage(), "SecondTables");
-    }
-
-    [TestMethod]
-    public void TwoModulesThatNameOneJobAreABuildErrorNamingBothClasses()
-    {
-        var (diagnostics, _, _) = Run(
-            Module("AlphaTables", "Alpha", "[JobName(\"same\", \"one\")]"),
-            Module("BetaTables", "Beta", "[JobName(\"same\", \"two\")]")
-        );
-
-        var error = diagnostics.Single(d => d.Id == "TAB003");
-        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
-        StringAssert.Contains(error.GetMessage(), "AlphaTables");
-        StringAssert.Contains(error.GetMessage(), "BetaTables");
-        StringAssert.Contains(error.GetMessage(), "same");
     }
 
     [TestMethod]

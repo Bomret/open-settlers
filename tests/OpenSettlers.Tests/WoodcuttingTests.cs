@@ -16,7 +16,7 @@ public sealed class WoodcuttingTests
     const int HutFlag = 3;
 
     // The 128 nodes around the hut the worker draws from, as the spiral gives them.
-    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == new Good { Code = 7 });
+    static bool HoldsLog(Game game) => game.Flags[HutFlag].Places.Any(place => place.Good == Good.Log);
 
     // The goods on the hut's flag, place by place.
     static Good[] Goods(Game game) => [.. game.Flags[HutFlag].Places.Select(place => place.Good)];
@@ -35,11 +35,7 @@ public sealed class WoodcuttingTests
             game.Tick();
         }
 
-        Assert.AreEqual(
-            new Good { Code = 7 },
-            game.Flags[HutFlag].Places[0].Good,
-            "the log lies on the first place of the flag"
-        );
+        Assert.AreEqual(Good.Log, game.Flags[HutFlag].Places[0].Good, "the log lies on the first place of the flag");
         Assert.AreEqual(8, game.Flags[HutFlag].Places.Count);
         Assert.AreEqual(before - 1, reach.Count(node => IsTree(map, node)), "one tree is felled");
     }
@@ -95,6 +91,33 @@ public sealed class WoodcuttingTests
 
     static (bool Constructing, ushort Progress) Castle(Game game) =>
         game.Buildings[0].Constructing ? (true, game.Buildings[0].Progress) : (false, (ushort)0);
+
+    [TestMethod]
+    public void TheObjectLayerWatchNoticesAGoodWithNoCodeArrivingOnAndLeavingAFlag()
+    {
+        var game = World(false, out _);
+        var watch = new OpenSettlers.MapView.ObjectLayerWatch();
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game));
+        game.Tick();
+        Assert.IsFalse(watch.Changed(game), "nothing moves with no tree in reach");
+
+        game.Goods.LayGood(0, 7, new Good { Name = "wine" });
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game), "a good with no code arrived");
+        game.Tick();
+        Assert.IsFalse(watch.Changed(game));
+
+        game.Goods.LayGood(0, 7, new Good { Name = "ale" });
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game), "another good with no code took its place");
+        game.Tick();
+        Assert.IsFalse(watch.Changed(game));
+
+        game.Goods.LayGood(0, 7, Good.None);
+        game.Tick();
+        Assert.IsTrue(watch.Changed(game), "the good with no code left");
+    }
 
     [TestMethod]
     public void TheObjectLayerWatchLooksOnlyAfterATickRan()

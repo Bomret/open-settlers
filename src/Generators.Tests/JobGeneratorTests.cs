@@ -17,6 +17,8 @@ public sealed class JobGeneratorTests
         namespace OpenSettlers.Domain;
         public abstract partial record Job { public abstract int Code { get; } }
         public sealed record UnportedJob(int Code) : Job { public override int Code { get; } = Code; }
+        [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true)]
+        public sealed class JobNameAttribute(string name, string evidence) : System.Attribute { public int Level { get; init; } = -1; }
         """;
 
     static readonly MetadataReference[] References =
@@ -44,6 +46,7 @@ public sealed class JobGeneratorTests
     static string JobSource(string declaration, string name, string number) =>
         $$"""
             namespace OpenSettlers.Domain;
+            [JobName("{{name.ToLowerInvariant()}}", "made-up evidence")]
             {{declaration}} {{name}} : Job { {{number}} public override int Code => Number; }
             """;
 
@@ -54,6 +57,9 @@ public sealed class JobGeneratorTests
         JobSource("public sealed record", "Beta", "public const int Number = 2;"),
         """
             namespace OpenSettlers.Domain;
+            [JobName("range-0", "made-up evidence", Level = 0)]
+            [JobName("range-1", "made-up evidence", Level = 1)]
+            [JobName("range-2", "made-up evidence", Level = 2)]
             public sealed record Range(int Level) : Job
             {
                 public const int Number = 10;
@@ -146,6 +152,7 @@ public sealed class JobGeneratorTests
             Domain,
             """
             namespace OpenSettlers.Domain;
+            [JobName("split", "made-up evidence")]
             public sealed partial record Split : Job { public const int Number = 9; public override int Code => Number; }
             public sealed partial record Split : Job;
             """
@@ -285,7 +292,7 @@ public sealed class JobGeneratorTests
     [TestMethod]
     public void TheUnportedJobIsNoJobOfItsOwn()
     {
-        // This UnportedJob is not sealed and has no number, so a generator that took it for a job would report it.
+        // This UnportedJob is not sealed, has no number and no name, so a generator that took it for a job would report it.
         var (diagnostics, _, _) = Run(
             """
             namespace OpenSettlers.Domain;
@@ -295,5 +302,146 @@ public sealed class JobGeneratorTests
         );
 
         Assert.AreEqual(0, diagnostics.Length, string.Join("; ", diagnostics));
+    }
+
+    [TestMethod]
+    public void TheGeneratedNameAndEvidenceAreWhatTheJobTypeDeclares()
+    {
+        var (_, text, output) = Run(WellFormed);
+
+        StringAssert.Contains(text, "public string Name");
+        StringAssert.Contains(text, "\"alpha\"");
+        StringAssert.Contains(text, "\"range-2\"");
+        StringAssert.Contains(text, "\"made-up evidence\"");
+        Assert.AreEqual(
+            0,
+            output.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error),
+            string.Join("; ", output.GetDiagnostics())
+        );
+    }
+
+    [TestMethod]
+    public void TwoJobsWithOneNameAreABuildErrorNamingBothClasses()
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            JobSource("public sealed record", "Alpha", "public const int Number = 1;"),
+            """
+            namespace OpenSettlers.Domain;
+            [JobName("alpha", "made-up evidence")]
+            public sealed record Twin : Job { public const int Number = 2; public override int Code => Number; }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB005");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "Alpha");
+        StringAssert.Contains(error.GetMessage(), "Twin");
+        StringAssert.Contains(error.GetMessage(), "'alpha'");
+    }
+
+    [TestMethod]
+    public void TwoLevelsOfARangeWithOneNameAreABuildError()
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            [JobName("same", "made-up evidence", Level = 0)]
+            [JobName("same", "made-up evidence", Level = 1)]
+            public sealed record Pair(int Level) : Job
+            {
+                public const int Number = 5;
+                public const int LastNumber = 6;
+                public override int Code => Number + Level;
+            }
+            """
+        );
+
+        Assert.AreEqual(1, diagnostics.Count(d => d.Id == "JOB005"));
+    }
+
+    [TestMethod]
+    public void AJobWithNoNameIsABuildErrorNamingTheClass()
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            public sealed record Nameless : Job { public const int Number = 5; public override int Code => Number; }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB006");
+        Assert.AreEqual(DiagnosticSeverity.Error, error.Severity);
+        StringAssert.Contains(error.GetMessage(), "Nameless");
+    }
+
+    [TestMethod]
+    public void ARangeThatLeavesALevelWithoutANameIsABuildErrorNamingTheLevel()
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            """
+            namespace OpenSettlers.Domain;
+            [JobName("short-0", "made-up evidence", Level = 0)]
+            public sealed record Short(int Level) : Job
+            {
+                public const int Number = 5;
+                public const int LastNumber = 6;
+                public override int Code => Number + Level;
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB006");
+        StringAssert.Contains(error.GetMessage(), "Short");
+        StringAssert.Contains(error.GetMessage(), "level 1");
+    }
+
+    [TestMethod]
+    [DataRow("Alpha")]
+    [DataRow("two words")]
+    [DataRow("")]
+    public void ANameOutsideLowercaseLettersDigitsAndHyphensIsABuildError(string name)
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            $$"""
+            namespace OpenSettlers.Domain;
+            [JobName("{{name}}", "made-up evidence")]
+            public sealed record Odd : Job { public const int Number = 5; public override int Code => Number; }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB007");
+        StringAssert.Contains(error.GetMessage(), "Odd");
+    }
+
+    [TestMethod]
+    [DataRow(
+        """[JobName("short-0", "made-up evidence", Level = 0)] [JobName("short-1", "made-up evidence", Level = 1)] [JobName("short-0-again", "made-up evidence", Level = 0)]"""
+    )]
+    [DataRow(
+        """[JobName("short-0", "made-up evidence", Level = 0)] [JobName("short-1", "made-up evidence", Level = 1)] [JobName("short-9", "made-up evidence", Level = 9)]"""
+    )]
+    public void ADuplicateOrOutOfRangeLevelOfAJobNameIsABuildError(string names)
+    {
+        var (diagnostics, _, _) = Run(
+            Domain,
+            $$"""
+            namespace OpenSettlers.Domain;
+            {{names}}
+            public sealed record Short(int Level) : Job
+            {
+                public const int Number = 5;
+                public const int LastNumber = 6;
+                public override int Code => Number + Level;
+            }
+            """
+        );
+
+        var error = diagnostics.Single(d => d.Id == "JOB008");
+        StringAssert.Contains(error.GetMessage(), "Short");
     }
 }

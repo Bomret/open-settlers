@@ -33,7 +33,7 @@ public sealed class GameOperationsTests
         var tables = new RuleTables(
             classes,
             MadeProgram.MadeStartStock(),
-            workers: MadeProgram.MadeWorkers(stonecutter: true)
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(workers: MadeProgram.MadeWorkers(stonecutter: true)))
         );
 
         return GameFactory.Create(tables, layout.BuildMap(), settlerSupply: supply, settlerRate: 40);

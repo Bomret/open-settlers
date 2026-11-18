@@ -53,7 +53,7 @@ public sealed class ButcherMaterialsTests
             {
                 game.ApplyCommands();
                 var stock = click["k@".Length..].Split(',').Select(int.Parse).ToArray();
-                Assert.AreEqual(Good.Pig.Code, stock[0], "the clicks of the fixture set the pigs");
+                Assert.AreEqual(TestCatalog.CodeOf(Good.Pig), stock[0], "the clicks of the fixture set the pigs");
                 while (game.CastleStock.Count(Good.Pig) > stock[1])
                 {
                     game.CastleStock.Take(Good.Pig);

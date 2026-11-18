@@ -26,7 +26,11 @@ public sealed class LayoutCastleContentsTests
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
-        var tables = new RuleTables(classes, MadeProgram.MadeStartStock(), workers: MadeProgram.MadeWorkers());
+        var tables = new RuleTables(
+            classes,
+            MadeProgram.MadeStartStock(),
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(workers: MadeProgram.MadeWorkers()))
+        );
 
         return GameFactory.Create(tables, layout.BuildMap(), stockLevel);
     }
@@ -50,11 +54,16 @@ public sealed class LayoutCastleContentsTests
             level
         );
 
-        var expected = new int[StartStock.Goods];
-        expected[20 - 1] = 1;
-        expected[19 - 1] = 2;
-        expected[Good.Grain.Code - 1] = 3;
-        CollectionAssert.AreEqual(expected, game.CastleStock.Stock.ToArray());
+        var expected = game.CastleStock.Catalog.Goods.Select(entry =>
+            entry.Name switch
+            {
+                "scythe" => 1,
+                "butcher-knife" => 2,
+                "grain" => 3,
+                _ => 0,
+            }
+        );
+        CollectionAssert.AreEqual(expected.ToArray(), game.CastleStock.Stock.ToArray());
     }
 
     [TestMethod]
@@ -62,7 +71,7 @@ public sealed class LayoutCastleContentsTests
     {
         var game = Applied(""" "castle": {"x": 10, "y": 10, "stock": {}} """, 40);
 
-        CollectionAssert.AreEqual(new int[StartStock.Goods], game.CastleStock.Stock.ToArray());
+        CollectionAssert.AreEqual(new int[game.CastleStock.Catalog.Goods.Length], game.CastleStock.Stock.ToArray());
     }
 
     [TestMethod]
@@ -132,9 +141,6 @@ public sealed class LayoutCastleContentsTests
     }
 
     [TestMethod]
-    [DataRow("{\"bread-roll\": 1}", "castle: stock: bread-roll is no good's name")]
-    [DataRow("{\"tree\": 1}", "castle: stock: tree is no good's name")]
-    [DataRow("{\"farmer\": 1}", "castle: stock: farmer is no good's name")]
     [DataRow("{\"grain\": 1, \"grain\": 2}", "castle: stock: grain is given twice")]
     [DataRow("[\"grain\"]", "castle: stock must be an object of good names and counts, such as {\"grain\": 1}")]
     [DataRow("3", "castle: stock must be an object of good names and counts, such as {\"grain\": 1}")]
@@ -149,6 +155,23 @@ public sealed class LayoutCastleContentsTests
         CollectionAssert.AreEqual(
             new[] { "t.jsonc: " + problem },
             Problems("{\"x\": 10, \"y\": 10, \"stock\": " + stock + "}")
+        );
+    }
+
+    [TestMethod]
+    [DataRow("bread-roll")]
+    [DataRow("tree")]
+    [DataRow("farmer")]
+    [DataRow("")]
+    public void AGoodTheContentSetLacksIsRefusedWhenTheLayoutIsBuiltWithTheNamesItKnows(string name)
+    {
+        var layout = Read("\"castle\": {\"x\": 10, \"y\": 10, \"stock\": {\"grain\": 1, \"" + name + "\": 1}}");
+        var game = NewGame(layout);
+
+        Assert.AreEqual(
+            $"t.jsonc: castle: stock: the good {name} is no stable name of a good of this content set, use "
+                + string.Join(", ", game.Tables.Catalog.Goods.Select(entry => entry.Name)),
+            layout.Apply(game)
         );
     }
 
@@ -179,6 +202,15 @@ public sealed class LayoutCastleContentsTests
     }
 
     [TestMethod]
+    public void ACastleThatNamesAKnightOfALevelHoldsAKnightOfThatLevelWaiting()
+    {
+        var game = Applied(""" "castle": {"x": 10, "y": 10, "settlers": {"knight-level-2": 1}} """);
+
+        CollectionAssert.AreEqual(new Job[] { new CastleSettler(), new Knight(2) }, Jobs(game));
+        Assert.IsInstanceOfType<WaitsInCastle>(game.Settlers[1].Activity);
+    }
+
+    [TestMethod]
     public void AnEmptySettlersLeavesTheCastleSettlerAloneAndTheCastleIsStillBuilt()
     {
         var game = Applied(""" "castle": {"x": 10, "y": 10, "settlers": {}} """);
@@ -201,7 +233,7 @@ public sealed class LayoutCastleContentsTests
         CollectionAssert.AreEqual(plain.CastleStock.Stock.ToArray(), named.CastleStock.Stock.ToArray());
     }
 
-    const string Woodcutter = """ "buildings": [{"type": "woodcutter", "x": 13, "y": 10}] """;
+    const string Woodcutter = """ "buildings": [{"type": "woodcutter-hut", "x": 13, "y": 10}] """;
 
     [TestMethod]
     public void ABuildingTakesANamedSettlerOfItsJobBeforeOneWithoutAJob()
@@ -280,8 +312,9 @@ public sealed class LayoutCastleContentsTests
     }
 
     const string NoJob =
-        " is no job's name: a castle names carrier, digger, builder, woodcutter, sawmiller, stonecutter, forester, "
-        + "fisher, pig-farmer, butcher, farmer, miller, baker, or jobless";
+        " is no job's name: a castle names baker, builder, butcher, carrier, digger, farmer, fisher, forester, jobless, "
+        + "knight-level-0, knight-level-1, knight-level-2, knight-level-3, knight-level-4, miller, pig-farmer, sawmiller, "
+        + "stonecutter, or woodcutter";
     const string BadCount = ": the count must be a whole number from 0";
 
     [TestMethod]

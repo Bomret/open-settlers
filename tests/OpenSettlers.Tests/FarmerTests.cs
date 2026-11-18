@@ -160,7 +160,7 @@ public sealed class FarmerTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Farm.Code, farm[2], "the fixture's building is a farm");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Farm), farm[2], "the fixture's building is a farm");
         Assert.IsTrue(
             Huts.Place(game, farm[0] - 1, farm[1] - 1, BuildingType.Farm),
             "the fixture's building has its site"
@@ -229,7 +229,8 @@ public sealed class FarmerTests
             if (line.TryGetValue("g", out var goods))
             {
                 var bytes = string.Concat(
-                    game.Flags[HutFlag].Places.Select(place => FlagEncoder.GoodByte(place).ToString("X2"))
+                    game.Flags[HutFlag]
+                        .Places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
                 );
                 Assert.AreEqual(goods.Split('/')[1], bytes, $"{name}: the goods on the farm's flag after pass {pass}");
             }

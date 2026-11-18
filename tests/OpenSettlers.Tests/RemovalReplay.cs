@@ -59,7 +59,7 @@ static class RemovalReplay
             FlagEncoder.GoodsByte(game.Flags[slot]),
             FlagEncoder.Status(game.Flags[slot]),
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.RoadByte(game.Flags[slot].Side(direction))),
-            .. game.Flags[slot].Places.Select(FlagEncoder.GoodByte),
+            .. game.Flags[slot].Places.Select(place => (byte)FlagEncoder.GoodWord(place, TestCatalog.Default)),
             .. game.Flags[slot].Places.SelectMany(place => BitConverter.GetBytes(FlagEncoder.DestinationWord(place))),
             .. Enumerable.Range(0, 6).Select(direction => FlagEncoder.DirectionByte(game.Flags[slot].Side(direction))),
         ]);
@@ -314,7 +314,7 @@ static class RemovalReplay
                         // A building click names the type of the building as its third number.
                         BuildingType? type =
                             kind == CommandKind.PlaceBuilding && node.Length > 2
-                                ? new BuildingType { Code = node[2] }
+                                ? TestCatalog.BuildingOf(node[2])
                                 : null;
                         game.Enqueue(
                             new Command
@@ -351,7 +351,7 @@ static class RemovalReplay
                 game.Goods.LayGood(
                     put[1] - 1,
                     put[2],
-                    put[3] & 0x1f,
+                    TestCatalog.GoodOf(put[3] & 0x1f),
                     put[4] == 0 ? null : put[4] - 1,
                     put[3] >> 5 == 0 ? null : (put[3] >> 5) - 1
                 );

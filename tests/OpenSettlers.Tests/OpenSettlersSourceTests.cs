@@ -83,7 +83,10 @@ public sealed class OpenSettlersSourceTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(
+            new RuleTables(classes, MadeProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
+            map
+        );
         game.Enqueue(
             new Command
             {
@@ -107,7 +110,7 @@ public sealed class OpenSettlersSourceTests
         );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var goods = Enumerable.Range(0, 8).Select(place => new Good { Code = place + 1 }).ToList();
+        var goods = Enumerable.Range(0, 8).Select(place => TestCatalog.GoodOf(place + 1)).ToList();
         var flagGoods = new Dictionary<(int X, int Y), IReadOnlyList<Good>> { [(17, 3)] = goods };
 
         var terms = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
@@ -152,11 +155,7 @@ public sealed class OpenSettlersSourceTests
             new WalksRoad { Load = null, Heading = heading },
             new WalksRoad
             {
-                Load = new Load
-                {
-                    Good = new Good { Code = 7 },
-                    Destination = null,
-                },
+                Load = new Load { Good = Good.Log, Destination = null },
                 Heading = heading,
             },
             new WaitsOutStep
@@ -166,11 +165,7 @@ public sealed class OpenSettlersSourceTests
             new HandsOver { Load = null, Heading = heading },
             new HandsOver
             {
-                Load = new Load
-                {
-                    Good = new Good { Code = 7 },
-                    Destination = null,
-                },
+                Load = new Load { Good = Good.Log, Destination = null },
                 Heading = heading,
             },
             new Door { TimeLeft = 0 },

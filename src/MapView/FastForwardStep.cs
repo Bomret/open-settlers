@@ -73,7 +73,7 @@ public abstract record FastForwardStep : PlayStep
 /// </summary>
 public sealed record FastForwardJobStep : FastForwardStep
 {
-    /// <summary>The job to watch: a job the name table names (<see cref="Named"/>).</summary>
+    /// <summary>The job to watch: a job a stable name stands for (<see cref="Named"/>).</summary>
     public required Job Job { get; init; }
 
     /// <summary>
@@ -83,25 +83,14 @@ public sealed record FastForwardJobStep : FastForwardStep
     public int? State { get; init; }
 
     /// <summary>
-    /// The job the name table names <paramref name="name"/>, found by trying each job number through
-    /// <see cref="Domain.Job.Of"/>; null for a name the table does not hold. Each name stands for one job (ADR 0010).
+    /// The job with the stable name <paramref name="name"/> (<see cref="Domain.Job.Named"/>); null for a name no job has. Both content sets
+    /// play the jobs of the engine, so a script finds a job by the same name under either (ADR 0010).
     /// </summary>
-    public static Job? Named(string name)
-    {
-        for (var code = 0; code < 256; code++)
-        {
-            if (Simulation.NameTable.JobName(code) == name)
-            {
-                return Domain.Job.Of(code);
-            }
-        }
+    public static Job? Named(string name) => Domain.Job.Named(name);
 
-        return null;
-    }
-
-    /// <summary>The job names the name table holds, in job-number order.</summary>
+    /// <summary>The stable names of the jobs, in ordinal order.</summary>
     public static IEnumerable<string> Names() =>
-        Enumerable.Range(0, 256).Select(Simulation.NameTable.JobName).OfType<string>().Distinct();
+        Domain.Job.Ported.Select(job => job.Name).OrderBy(name => name, StringComparer.Ordinal);
 
     /// <summary>Whether some settler of the job meets the condition; reads the game alone and builds no state.</summary>
     public override bool Holds(Game game, Func<bool, PlayState> state)

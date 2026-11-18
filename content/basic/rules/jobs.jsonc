@@ -2,6 +2,30 @@
 // and the pig farmer. Every value is the project's own invention, never taken from the original game (INV-0001,
 // ADR 0018); the comment on each line states why.
 {
+  // The jobs the set has, by stable name. The rules of every job hang on its type in the engine, so the set lists each of them:
+  // a name that is no job's, and a job left out, refuse the file. No job of the set has an original code.
+  "names": [
+    "baker", // Works in the bakery and turns flour into bread.
+    "builder", // Builds a site once its materials are there.
+    "butcher", // Works in the butcher's shop and turns pigs into meat.
+    "carrier", // Carries goods along a road.
+    "castle-settler", // The first settler, who stands by while the castle is built.
+    "digger", // Levels the ground of a large site.
+    "farmer", // Sows and harvests the farm's fields.
+    "fisher", // Casts at a lake and brings fish to the flag.
+    "forester", // Plants saplings around the forester's hut.
+    "jobless", // A settler without a job, who takes a tool to become a worker.
+    "knight-level-0", // The knight of the first level, who waits in the castle.
+    "knight-level-1", // The knight of the second level.
+    "knight-level-2", // The knight of the third level.
+    "knight-level-3", // The knight of the fourth level.
+    "knight-level-4", // The knight of the last level.
+    "miller", // Works in the mill and turns grain into flour.
+    "pig-farmer", // Tends the pigs of the pig farm.
+    "sawmiller", // Works in the sawmill and turns logs into planks.
+    "stonecutter", // Cuts stones from the stone heaps.
+    "woodcutter", // Cuts trees and brings logs to the flag.
+  ],
   "jobs": {
     "builder": {
       "tool": "hammer", // A building site asks for a builder, and a jobless settler takes a hammer to become one.

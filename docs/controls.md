@@ -33,14 +33,14 @@ has the focus.
 
 ## Game view
 
-The seed bar shows the tick count and the castle's log, plank, and stone counts. A new seed or size starts a new game on the new map.
+The seed bar shows the tick count and the castle's log, plank, stone, and food counts, then each good that the content set's start stock does not list and the castle holds, by its stable name. A new seed or size starts a new game on the new map.
 
 A click is a press and release of the left mouse button, or a tap on a touchpad, that does not move the view. A
 press that moves the view by more than a few pixels is a drag and places nothing. A click goes to the node whose
 point is nearest to it. A click on a flag's picture goes to that flag's node. Where two flag pictures overlap, the click goes to the southern flag. If both flags are in one row, it goes to the eastern one.
 
 The game view's buttons stand in one column right of the map, top to bottom in the order named here. The Flag, Road, Woodcutter, Forester, Stonecutter, Sawmill, Fisher, Farm, Pig farm, Butcher, Mill, Baker, and Remove buttons are on/off buttons. At most one is on: pressing one turns the others
-off. The Build help button is an on/off button apart from them (below). The Speed button stands last (below).
+off. The Build help and Work areas buttons are on/off buttons apart from them (below). The Speed button stands last (below).
 
 ### No button on
 
@@ -118,6 +118,33 @@ building has none, and neither does a node with no site.
 
 Where a flag stands south-east of a node, the node can show a flag marker. A click puts no flag there. The original does the
 same. The markers follow every change of the game in the frame that shows it. The map view has no Build help button.
+
+### Work areas
+
+Use Work areas to see the nodes your gatherers' workers search. The button turns the work-area overlay on and off. It starts
+off. It turns off again when a new seed or size starts a new game. The original has no such button.
+
+Pressing Work areas leaves the other buttons as they are, Build help included. Pressing another button leaves Work areas as it
+is. Work areas changes nothing in the game.
+
+While it is on, a node in the work area of one of your gatherer buildings shows a translucent yellow tint. The gatherer
+buildings are the woodcutter's, stonecutter's, forester's, fisher's, and farm. A building site counts as its building. The
+overlay draws one tint mark per node, so a node in two work areas shows one tint. The tint covers the nodes the worker draws
+from when he looks for a target. That is the 128 nodes nearest a woodcutter's, stonecutter's, or forester's hut, the 64
+nearest a fisher's, and the 7th to the 38th nearest a farm. The nodes lie across the map's edge where the search crosses it.
+The castle, the other buildings, and a building taken down and burning show no area. The tint draws over the trees and
+figures and under the build markers. It follows every change of the game in the frame that shows it. The map view has no
+Work areas button.
+
+While Work areas is on, the Woodcutter, Stonecutter, Forester, Fisher, or Farm button can be pressed. Then every node where
+that building fits shows a reach marker. A building fits where Build help would show its marker: the large-building marker
+for the farm, the small- or large-building marker for the others. A filled green disc means the worker would find a target
+from there: a tree, a node beside a stone heap, ground he may plant on, a free node at a shore, or a field he may harvest
+or sow. A red ring means he would find none. The marker judges the ground as it stands, before the building, its flag, and
+its road exist. So a target that the building's own site would cover still counts. The reach markers show with Build help on
+or off. They draw over Build help's markers. Before the castle stands, no gatherer fits, so no marker shows. Another build
+button, or none, shows no reach marker. The markers change with the pressed button and follow every change of the game in
+the frame that shows it.
 
 ### Speed
 

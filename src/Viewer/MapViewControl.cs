@@ -79,6 +79,7 @@ public partial class MapViewControl(
     (Button Button, BuildingType Type)[] _buildButtons = [];
     Button _removeButton = null!;
     Button _buildHelpButton = null!;
+    Button _workAreasButton = null!;
 
     // The placement of the walking settlers (game view only), the images the source drew for them so far, and the material
     // over them.
@@ -169,6 +170,7 @@ public partial class MapViewControl(
                 .Concat(_buildButtons.Select(entry => entry.Button))
                 .Append(_removeButton)
                 .Append(_buildHelpButton)
+                .Append(_workAreasButton)
                 .Where(b => b.IsVisibleInTree()),
         ];
 
@@ -218,13 +220,14 @@ public partial class MapViewControl(
             Food = _gameView ? _game?.CastleStock.FoodCounts ?? new int[PlayFields.Food.Length] : null,
         };
 
-    // The castle bar's text: the castle's logs, planks, stones, and each food good.
+    // The castle bar's text: the castle's logs, planks, stones, and each food good, and each added good the castle holds.
     static string CastleBar(Game game) =>
         CastleReadout.Text(
             game.CastleStock.Logs,
             game.CastleStock.Planks,
             game.CastleStock.Stones,
-            game.CastleStock.FoodCounts
+            game.CastleStock.FoodCounts,
+            CastleReadout.AddedGoods(game.CastleStock, game.Tables.StartStock)
         );
 
     /// <summary>
@@ -380,6 +383,12 @@ public partial class MapViewControl(
                             other.Button.ButtonPressed = false;
                         }
                     }
+
+                    // The reach markers follow the pressed build button.
+                    if (_workAreasButton.ButtonPressed)
+                    {
+                        Redraw();
+                    }
                 };
                 buttons.AddChild(button);
 
@@ -418,6 +427,18 @@ public partial class MapViewControl(
         };
         _buildHelpButton.Toggled += _ => Redraw();
         buttons.AddChild(_buildHelpButton);
+        // The work-area overlay (CONTEXT.md, "Work-area overlay"): while it is pressed every node in the work area of one of the
+        // player's gatherer buildings or sites shows a tint mark. The original has no such toggle. It starts off and turns off
+        // when a game starts (StartGame), as Build help does.
+        _workAreasButton = new Button
+        {
+            Text = "Work areas",
+            ToggleMode = true,
+            Visible = _gameView,
+            FocusMode = FocusModeEnum.None,
+        };
+        _workAreasButton.Toggled += _ => Redraw();
+        buttons.AddChild(_workAreasButton);
         // Stand-in for the History Edition's game-speed switch (Speed_SetFactor, 0x405fe0): each press doubles the tick
         // rate, and 8 times goes back to normal speed (docs/rules/timing.md). The speed stays when a new game starts.
         var speedButton = new Button
@@ -523,15 +544,10 @@ public partial class MapViewControl(
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                GameFactory.Create(
-                    _tables,
-                    _state.Map,
-                    _stockLevel ?? _state.StockLevel,
-                    everyPassTurns: true,
-                    handsOutGoods: true,
-                    settlerSupply: true,
-                    settlerRate: _settlerRate ?? _state.SettlerRate
-                ),
+                _tables,
+                _state.Map,
+                _stockLevel ?? _state.StockLevel,
+                _settlerRate ?? _state.SettlerRate,
                 out _game,
                 out var layoutProblem
             );
@@ -555,6 +571,7 @@ public partial class MapViewControl(
             _removeButton.ButtonPressed = false;
             // The original clears the overlay's bit when it sets up a view at the start of a game (View_Setup, 0x41f86b).
             _buildHelpButton.ButtonPressed = false;
+            _workAreasButton.ButtonPressed = false;
             _revisionDrawn = 0;
             DrawPreview();
             _pacer.Reset();
@@ -921,6 +938,9 @@ public partial class MapViewControl(
             return;
         }
 
+        // The work-area tint is judged once for the whole map and drawn in every wrap copy.
+        var tintMesh = WorkAreaMesh();
+        var reachMesh = ReachMarkerMesh();
         _framesDrawn = _frameCounter;
         _spriteNodes.Clear();
         _waterNodes.Clear();
@@ -955,6 +975,20 @@ public partial class MapViewControl(
             copy.AddChild(sprites);
             _spriteNodes.Add(sprites);
 
+            // The work-area tint paints over the objects and the settlers of every copy, so a forest's area stays visible, and
+            // under the markers.
+            if (tintMesh is not null)
+            {
+                copy.AddChild(
+                    new MeshInstance2D
+                    {
+                        Mesh = tintMesh,
+                        ZAsRelative = false,
+                        ZIndex = 2,
+                    }
+                );
+            }
+
             // The markers paint over the terrain, the objects, and the settlers of every copy.
             if (markerMesh is not null)
             {
@@ -963,6 +997,19 @@ public partial class MapViewControl(
                     {
                         Mesh = markerMesh,
                         Material = markerMaterial,
+                        ZAsRelative = false,
+                        ZIndex = 3,
+                    }
+                );
+            }
+
+            // The reach markers paint over the build markers of every copy, so both show where Build help is on too.
+            if (reachMesh is not null)
+            {
+                copy.AddChild(
+                    new MeshInstance2D
+                    {
+                        Mesh = reachMesh,
                         ZAsRelative = false,
                         ZIndex = 3,
                     }
@@ -1085,6 +1132,109 @@ public partial class MapViewControl(
         }
 
         return MarkerMesh(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
+    }
+
+    // One mesh of the work-area tint of the view's player (player 0) while Work areas is pressed: a translucent diamond on each
+    // marked node, plain shapes in one color. Null where it is off, in the map view, or where no node is marked.
+    ArrayMesh? WorkAreaMesh()
+    {
+        if (_game is null || !_workAreasButton.ButtonPressed)
+        {
+            return null;
+        }
+
+        var draws = WorkAreaDraws.Of(_game, 0);
+        if (draws.Count == 0)
+        {
+            return null;
+        }
+
+        const float HalfWidth = Camera.NodeSpacing / 2f;
+        const float HalfHeight = Camera.RowSpacing / 2f;
+        var tint = new Color(1f, 0.85f, 0.2f, 0.35f);
+        var vertices = new Vector2[draws.Count * 6];
+        var colors = new Color[draws.Count * 6];
+        for (var index = 0; index < draws.Count; index++)
+        {
+            var (x, y) = (draws[index].X, draws[index].Y);
+            Vector2 top = new(x, y - HalfHeight);
+            Vector2 right = new(x + HalfWidth, y);
+            Vector2 bottom = new(x, y + HalfHeight);
+            Vector2 left = new(x - HalfWidth, y);
+            var at = index * 6;
+            (vertices[at], vertices[at + 1], vertices[at + 2]) = (top, right, bottom);
+            (vertices[at + 3], vertices[at + 4], vertices[at + 5]) = (top, bottom, left);
+            for (var corner = 0; corner < 6; corner++)
+            {
+                colors[at + corner] = tint;
+            }
+        }
+
+        return TriangleMesh(vertices, colors);
+    }
+
+    // One mesh of the reach markers while Work areas and the build button of a gatherer are pressed: a filled green disc where the
+    // worker would find a target, a red ring where he would find none. Null where no marker shows.
+    ArrayMesh? ReachMarkerMesh()
+    {
+        if (_game is null || !_workAreasButton.ButtonPressed)
+        {
+            return null;
+        }
+
+        if (_buildButtons.FirstOrDefault(entry => entry.Button.ButtonPressed) is not { Button: not null } pressed)
+        {
+            return null;
+        }
+
+        var draws = ReachMarkerDraws.Of(_game, 0, pressed.Type);
+        if (draws.Count == 0)
+        {
+            return null;
+        }
+
+        const int Sides = 12;
+        const float Outer = 5f;
+        const float Inner = 3f;
+        var inReach = new Color(0.2f, 0.9f, 0.2f);
+        var outOfReach = new Color(0.95f, 0.2f, 0.2f);
+        var vertices = new System.Collections.Generic.List<Vector2>();
+        var colors = new System.Collections.Generic.List<Color>();
+        foreach (var draw in draws)
+        {
+            var center = new Vector2(draw.X, draw.Y);
+            for (var side = 0; side < Sides; side++)
+            {
+                var from = Vector2.FromAngle(Mathf.Tau * side / Sides);
+                var to = Vector2.FromAngle(Mathf.Tau * (side + 1) / Sides);
+                if (draw.InReach)
+                {
+                    vertices.AddRange([center, center + from * Outer, center + to * Outer]);
+                    colors.AddRange([inReach, inReach, inReach]);
+                }
+                else
+                {
+                    vertices.AddRange([center + from * Inner, center + from * Outer, center + to * Outer]);
+                    vertices.AddRange([center + from * Inner, center + to * Outer, center + to * Inner]);
+                    colors.AddRange([outOfReach, outOfReach, outOfReach, outOfReach, outOfReach, outOfReach]);
+                }
+            }
+        }
+
+        return TriangleMesh([.. vertices], [.. colors]);
+    }
+
+    // One mesh of plain triangles: each three vertices make one, each vertex in its color.
+    static ArrayMesh TriangleMesh(Vector2[] vertices, Color[] colors)
+    {
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices;
+        arrays[(int)Mesh.ArrayType.Color] = colors;
+        var mesh = new ArrayMesh();
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+
+        return mesh;
     }
 
     // One mesh of the road markers of the road being drawn; null where none is drawn or the source draws none.

@@ -24,7 +24,7 @@ public sealed class RoadCursorTests
         classes[StoneCode] = 2;
         classes[RockCode] = 2;
 
-        return new RuleTables(classes, MadeProgram.MadeStartStock());
+        return new RuleTables(classes, MadeProgram.MadeStartStock(), catalog: TestCatalog.StandIn());
     }
 
     // A map whose every node is player 0's and land, with a flag at 10,10.

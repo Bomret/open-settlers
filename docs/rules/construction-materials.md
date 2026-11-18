@@ -129,4 +129,4 @@ The storage's first settler carries the good out. That is the castle's job-4 set
 
 `FlagRequestSearch` is the level-by-level search. Both the good's request search and the hand-out run it. `SitePass` is the building pass's turn of a site. `GoodsTransport.Destine` runs the request search and the storage search. `GoodsTransport.ReleaseRequest` releases a request. `StorageDistribution` is the phase routine's hand-out, and `MainPass` runs it at the last phase.
 
-`CastleStock.Count`, `Take`, and `Add` count a good in the entry `good - 1` of the stock list. The storage word of good g lies at `4 + 2 * g`. The list starts at the word at 6, so it is one entry behind the good number. `Good.Log`, `Good.Plank`, and `Good.Stone` name the goods.
+`CastleStock.Count`, `Take`, and `Add` count a good in the place of its catalog entry, found by the good's stable name. The storage word of good g lies at `4 + 2 * g` in the original. `Good.Log`, `Good.Plank`, and `Good.Stone` name the goods. A good the catalog lacks stops the call with an error that names it.

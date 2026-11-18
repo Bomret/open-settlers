@@ -14,7 +14,7 @@ public sealed class StonecuttingTests
 {
     const int HutFlag = 3;
     const int WorkerSlot = 12;
-    static readonly Good Stone = new() { Code = 10 };
+    static readonly Good Stone = Good.Stone;
 
     static int Heaps(Map map) => Reach().Count(node => map.At(node.X, node.Y).Object.Kind == MapObjectKind.StoneHeap);
 
@@ -103,12 +103,12 @@ public sealed class StonecuttingTests
     // The tables of ConstructionTables with a forester that needs two stones and no plank, the stone asking the class it asks there.
     static RuleTables SiteTables()
     {
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[(2 * BuildingType.Forester.Code) + 1] = 2;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[(2 * TestCatalog.CodeOf(BuildingType.Forester)) + 1] = 2;
 
         return MadeProgram.MadeTables(
             buildingClass: 4,
-            transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
+            transportPriorities: [.. Enumerable.Range(1, TestCatalog.Names.Length).Select(good => (byte)good)],
             buildingSizes: ConstructionTables.Sizes(),
             buildingNeeds: needs,
             goodClasses: ConstructionTables.Classes(),

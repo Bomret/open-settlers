@@ -76,18 +76,18 @@ static class ObjectSprites
 
     // The object of the scaffold of each type's site, from the table at 0x44fcfe (the emulator's peek of it prints one byte for each type 0 to
     // 0x17), and of its finished building, from the table at 0x44fd16: the types of the huts and the sawmill, then the six food types.
-    static readonly Dictionary<int, (int Scaffold, int Finished)> Objects = new()
+    static readonly Dictionary<BuildingType, (int Scaffold, int Finished)> Objects = new()
     {
-        [BuildingType.Woodcutter.Code] = (186, 168),
-        [BuildingType.Stonecutter.Code] = (186, 169),
-        [BuildingType.Forester.Code] = (186, 170),
-        [BuildingType.Sawmill.Code] = (181, 160),
-        [BuildingType.Fisher.Code] = (186, 167),
-        [BuildingType.Farm.Code] = (177, 154),
-        [BuildingType.Butcher.Code] = (184, 156),
-        [BuildingType.PigFarm.Code] = (177, 155),
-        [BuildingType.Mill.Code] = (187, 188),
-        [BuildingType.Baker.Code] = (183, 162),
+        [BuildingType.Woodcutter] = (186, 168),
+        [BuildingType.Stonecutter] = (186, 169),
+        [BuildingType.Forester] = (186, 170),
+        [BuildingType.Sawmill] = (181, 160),
+        [BuildingType.Fisher] = (186, 167),
+        [BuildingType.Farm] = (177, 154),
+        [BuildingType.Butcher] = (184, 156),
+        [BuildingType.PigFarm] = (177, 155),
+        [BuildingType.Mill] = (187, 188),
+        [BuildingType.Baker] = (183, 162),
     };
 
     /// <summary>
@@ -105,7 +105,7 @@ static class ObjectSprites
 
     /// <summary>The sprite entry of the scaffold of the site of <paramref name="type"/>, or null for a type the view draws none for.</summary>
     public static int? StageEntry(BuildingType type) =>
-        Objects.TryGetValue(type.Code, out var objects) ? FirstEntry + objects.Scaffold : null;
+        Objects.TryGetValue(type, out var objects) ? FirstEntry + objects.Scaffold : null;
 
     /// <summary>The sprite entry of a layer of the site of <paramref name="type"/> (<see cref="SiteStages"/>), or null for none.</summary>
     public static int? SiteLayerEntry(SiteLayer layer, BuildingType type) =>
@@ -122,18 +122,19 @@ static class ObjectSprites
     /// </summary>
     public static int? FinishedEntry(BuildingType type) =>
         type == BuildingType.Castle ? CastleEntry
-        : Objects.TryGetValue(type.Code, out var objects) ? FirstEntry + objects.Finished
+        : Objects.TryGetValue(type, out var objects) ? FirstEntry + objects.Finished
         : null;
 
     /// <summary>The entry of the sprite of good 0; a good lying on a flag draws entry 320 plus the good (<c>0x44de9a</c>).</summary>
     public const int GoodsFirstEntry = 320;
 
-    /// <summary>The number of good sprites: the good's low 5 bits select one (<c>0x44db26</c> masks the byte with 0x1f).</summary>
+    /// <summary>The number of good sprites the archive holds after <see cref="GoodsFirstEntry"/>: the original's 26 goods and the codes 0, 27 to 31.</summary>
     public const int GoodsCount = 32;
 
-    /// <summary>The sprite entry of a good lying on a flag (<c>docs/rules/woodcutting.md</c>); a log is good 7, entry 327.
+    /// <summary>The sprite entry of a good lying on a flag (<c>docs/rules/woodcutting.md</c>); a log is good 7, entry 327. The good's original
+    /// code comes from its stable name (<see cref="GoodTables.CodeOf"/>); a good with no original code has no sprite, so null.
     /// <b>Inferred:</b> read from the decompile of <c>0x44de9a</c>; no emulator or debugger run of the draw confirms it.</summary>
-    public static int GoodEntry(Good good) => GoodsFirstEntry + (good.Code & 0x1f);
+    public static int? GoodEntry(Good good) => GoodTables.CodeOf(good) is { } code ? GoodsFirstEntry + code : null;
 
     /// <summary>The sprite entry of the flag marker, the first of the four build markers.</summary>
     public const int MarkerFirstEntry = 367;

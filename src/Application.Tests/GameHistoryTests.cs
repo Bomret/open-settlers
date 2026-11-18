@@ -20,6 +20,8 @@ public sealed class GameHistoryTests
 
         public ThingState Settler(int slot) => new() { Fields = [("slot", slot), ("state", State)] };
 
+        public string GoodText(Good good) => good.Name;
+
         public int State { get; set; }
     }
 

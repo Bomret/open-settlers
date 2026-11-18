@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Application.Testing;
 using OpenSettlers.Domain;
+using OpenSettlers.Domain.Testing;
 using OpenSettlers.Import.HistoryEdition.Testing;
 using OpenSettlers.Simulation;
 
@@ -77,7 +78,7 @@ public static class RemovalGame
         foreach (var hut in Points(parts[7]))
         {
             Assert.IsTrue(
-                Huts.Place(game, hut[0] - 1, hut[1] - 1, new BuildingType { Code = hut[2] }),
+                Huts.Place(game, hut[0] - 1, hut[1] - 1, TestCatalog.BuildingOf(hut[2])),
                 "the fixture's hut has its site"
             );
         }
@@ -123,7 +124,10 @@ public static class RemovalGame
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((building.Y * 2 * width + building.X) * 4));
-        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(building) << 2), (byte)BuildingEncoder.Status(building)]);
+        bytes.AddRange([
+            (byte)(BuildingEncoder.TypeIndex(building, TestCatalog.Default) << 2),
+            (byte)BuildingEncoder.Status(building),
+        ]);
         bytes.AddRange(BitConverter.GetBytes((ushort)(building.Flag + 1)));
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Fill(building)));
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(building)));

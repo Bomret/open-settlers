@@ -82,7 +82,12 @@ public sealed class StorageDistribution(
 
         castle.Take(good);
         var place = flags[CastleFlag].FirstEmptyPlace();
-        goods.LayGood(CastleFlag, place, good.Code, destination: asking);
-        history.RecordFlag(CastleFlag, EventType.Handout, Cause.Goods, $"{history.FlagId(asking)} good {good}");
+        goods.LayGood(CastleFlag, place, good, destination: asking);
+        history.RecordFlag(
+            CastleFlag,
+            EventType.Handout,
+            Cause.Goods,
+            $"{history.FlagId(asking)} good {history.GoodText(good)}"
+        );
     }
 }

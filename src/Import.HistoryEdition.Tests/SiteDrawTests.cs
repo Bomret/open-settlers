@@ -85,7 +85,7 @@ public sealed class SiteDrawTests
 
                 return (
                     fields["pass"],
-                    new BuildingType { Code = (bytes[4] >> 2) & 0x1f },
+                    TestCatalog.BuildingOf((bytes[4] >> 2) & 0x1f),
                     (ushort)(bytes[12] | bytes[13] << 8),
                     (bytes[4] & 0x80) != 0,
                     drawn.ToList()

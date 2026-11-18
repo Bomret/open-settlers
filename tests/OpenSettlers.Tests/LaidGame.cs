@@ -14,9 +14,9 @@ static class LaidGame
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
+        "buildings": [{"type": "woodcutter-hut", "x": 13, "y": 10}],
         "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
-        "goods": [{"x": 14, "y": 11, "place": 0, "good": 7}]
+        "goods": [{"x": 14, "y": 11, "place": 0, "good": "log"}]
         """;
 
     /// <summary>A game with the layout entries applied (<see cref="Built"/> unless the test gives others).</summary>

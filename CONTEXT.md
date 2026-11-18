@@ -110,6 +110,30 @@ judgment of the node picks it. It is switched on and off as a whole. Build help 
 that toggles it.
 _Avoid_: where-to-build overlay, placement overlay
 
+**Job search**
+What a gatherer's job rules declare about the search its worker runs from the building: the range of spiral entries
+it draws from and the target test a node of that range must pass. The woodcutter, stonecutter, forester, fisher, and
+farmer each have one. The worker's search and every view that shows the search read this one declaration.
+_Avoid_: search radius, search config
+
+**Work area**
+The nodes a gatherer's worker searches: the spiral entries of its job search, counted from the node of its building or
+building site.
+_Avoid_: work radius, range, catchment
+
+**Work-area overlay**
+The marks the game view draws while its Work areas button is on. One tint mark lies on every node in the work area of at
+least one of its player's gatherer buildings or building sites. While a gatherer's build button is pressed, a reach marker
+lies on every node where that building fits. The view draws it as plain shapes, not through the graphics source. It
+changes nothing in the game.
+_Avoid_: range overlay, heat map
+
+**Reach marker**
+The mark of the work-area overlay on a node where the gatherer building of the pressed build button fits. A filled disc
+shows where its target test accepts at least one node of the work area that building would have there. A ring shows where
+it accepts none.
+_Avoid_: in-range marker, resource marker
+
 **Content set**
 Where a run gets its game data: its graphics source, its rule data, and its walk steps. There are two: the
 History Edition set, which is the install read through the History Edition source, and the basic set, which the
@@ -135,8 +159,9 @@ has a kind, a node, the raw values the engine holds for it, and a name where the
 _Avoid_: entity, item, object (a map object is one kind of thing)
 
 **Name table**
-A table of Open Settlers' own names for the original's bare codes: map object codes, settler jobs and states,
-and building types. Each entry cites its evidence. A code with no entry shows raw. The object names read the
+A table of Open Settlers' own names for the original's bare codes of map objects and settler states. Each entry
+cites its evidence. A code with no entry shows raw. Goods, building types, and jobs take their names from the
+content catalog instead. The object names read the
 loaded class table, so `stone` names a code only where the table says class 2.
 _Avoid_: lookup, code map
 
@@ -183,6 +208,28 @@ The tables of the program data that the rules read, as typed values (`src/Domain
 builds them from the bytes of `Siedler1.exe`. A test builds its own.
 _Avoid_: program tables
 
+**Content catalog**
+The engine's list of the goods, building types, and jobs a game knows, one catalog entry each, ordered by stable
+name (ADR 0020). A content set's source builds it: the History Edition importer builds the original's entries, the
+basic set's reader its own.
+_Avoid_: registry, content database, mod list
+
+**Catalog entry**
+One good, building type, or job of the content catalog: its stable name, its original code where it has one, and
+the facts the rules read about it, such as a good's request class or a building type's size.
+_Avoid_: definition, prototype, template
+
+**Stable name**
+The name that is a catalog entry's identity, such as `log`, `castle`, or `woodcutter`. It does not change between
+runs or releases, and the catalog orders its entries by it.
+_Avoid_: id, key, slug
+
+**Original code**
+The number the original game gives a good, building type, or job, kept as an optional attribute of its catalog
+entry. Only the History Edition importer and the exporters read it, and the map view's readout reads whether an
+entry has one to decide whether it shows a raw value beside the name. An entry the original lacks has none.
+_Avoid_: id, type code (as identity)
+
 **ObjectClass**
 The class the rules give an object code (0 nothing, 3 a flag, 4 to 6 buildings), read with `RuleTables.ClassOf`.
 _Avoid_: object size, kind
@@ -204,7 +251,7 @@ _Avoid_: core, model layer
 **Adapter**
 The assembly that converts the original's packed bytes, map layers, and bare codes to and from the typed
 model (`src/Adapters/`, ADR 0013). It references the domain, the application, and the History Edition source
-assembly, of which it names only `JobTableNames`, for the job and state names (INV-0011).
+assembly, of which it names only `JobTableNames`, for the state names (INV-0011).
 _Avoid_: converter layer, edge
 
 **Platform layer**
@@ -242,8 +289,16 @@ once given, the direction of the first road toward it.
 _Avoid_: item, cargo
 
 **Road**
-A path between two flags, built one of six directions at a time. One carrier serves each road.
+A path between two flags, built one of six directions at a time. One carrier serves a road, and a busy road gets more,
+up to the number its [length class](docs/rules/roads.md#drawing-a-road) holds ([the numbers](docs/rules/carriers.md#a-busy-road)).
 _Avoid_: edge, path, street
+
+**Busy road**
+A road with three or more waiting goods at one of its flags that head along it. Its flag asks for another carrier for it
+while the road's carriers differ from the number its [length class](docs/rules/roads.md#drawing-a-road) holds
+([the numbers](docs/rules/carriers.md#a-busy-road)). A carrier of a road with two or more walks the road back and forth
+instead of waiting. It leaves the road for a storage after four turns at a flag with nothing to take.
+_Avoid_: congested road, crowded road, jam
 
 **Road marker**
 A sign the game view shows in road mode on the end of the road being drawn and on each of its six neighbors: the end

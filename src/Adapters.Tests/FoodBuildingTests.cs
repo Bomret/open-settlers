@@ -16,27 +16,32 @@ public sealed class FoodBuildingTests
     const int SiteY = 8;
     const int Planks = 2;
     const int Stones = 1;
-    static readonly Good FoodTool = new() { Code = 21 };
+    static readonly Good FoodTool = TestCatalog.GoodOf(21);
 
     // The made-up request of every food type: a job of its own between 11 and 20 (the castle holds no settler of those), with the tool
     // for the types whose number is even.
     static WorkerRequest Request(BuildingType type) =>
-        new() { Job = Job.Of(11 + type.Code % 10), Tool = type.Code % 2 == 0 ? FoodTool : Good.None };
+        new()
+        {
+            Job = Job.Of(11 + TestCatalog.CodeOf(type) % 10),
+            Tool = TestCatalog.CodeOf(type) % 2 == 0 ? FoodTool : Good.None,
+        };
 
     static (Game Game, Building Site) World(BuildingType type, bool large)
     {
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * type.Code] = Planks;
-        needs[2 * type.Code + 1] = Stones;
-        var order = new ushort[RuleTables.BuildingTypeCount];
-        order[type.Code] = 0b10;
+        var code = TestCatalog.CodeOf(type);
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[2 * code] = Planks;
+        needs[2 * code + 1] = Stones;
+        var order = new ushort[TestCatalog.BuildingSlots];
+        order[code] = 0b10;
         var sizes = ConstructionTables.Sizes();
-        sizes[type.Code] = (byte)(large ? 2 : 1);
+        sizes[code] = (byte)(large ? 2 : 1);
         var workers = ConstructionTables.Workers();
-        workers[type.Code] = Request(type);
+        workers[code] = Request(type);
         var steps = ConstructionTables.BlowSteps();
-        steps[2 * type.Code] = 0x1000;
-        steps[2 * type.Code + 1] = 0x1000;
+        steps[2 * code] = 0x1000;
+        steps[2 * code + 1] = 0x1000;
         var game = ConstructionWorld.Create(
             ConstructionTables.Tables(
                 needs: needs,

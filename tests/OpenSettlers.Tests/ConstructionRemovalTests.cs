@@ -82,7 +82,7 @@ public sealed class ConstructionRemovalTests
                         Kind = CommandKind.PlaceBuilding,
                         X = site[0],
                         Y = site[1],
-                        Building = new BuildingType { Code = site[2] },
+                        Building = TestCatalog.BuildingOf(site[2]),
                     }
                 );
                 game.ApplyCommands();

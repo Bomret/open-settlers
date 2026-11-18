@@ -33,8 +33,12 @@ static class StonecuttingWorld
     /// <summary>The made-up workers: the stonecutter's building asks for the stonecutter's job with no tool.</summary>
     public static WorkerRequest?[] Workers()
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        workers[TestCatalog.CodeOf(BuildingType.Stonecutter)] = new WorkerRequest
+        {
+            Job = new Stonecutter(),
+            Tool = Good.None,
+        };
 
         return workers;
     }

@@ -14,7 +14,7 @@ namespace OpenSettlers.Import.ContentSet;
 /// anchor is the offset of the image's top left corner from the term's position. The keys: <see cref="TerrainKey"/> for
 /// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
 /// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
-/// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 32 goods, <see cref="MarkerKey"/>
+/// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 26 goods by stable name (a good with no image draws nothing), <see cref="MarkerKey"/>
 /// for each of the four build markers, <c>road-marker/end</c>, <c>road-marker/blocked</c>, <c>road-marker/way-back</c>, and
 /// <c>road-marker/slope/</c> and the height difference for each slope from -4 to 4, <see cref="BorderPoleKey"/> and
 /// <see cref="BorderWaterKey"/> for the border posts, <see cref="SettlerKey"/> for each job and kind of activity of a
@@ -46,7 +46,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     readonly ObjectDrawing _flag;
     readonly ObjectDrawing[] _objects;
     readonly IReadOnlyDictionary<string, ObjectDrawing> _buildings;
-    readonly ObjectDrawing[] _goods;
+    readonly IReadOnlyDictionary<string, ObjectDrawing> _goods;
     readonly ObjectImage[] _settlers;
     readonly ObjectImage[] _markers;
     readonly ObjectImage[] _flameImages;
@@ -69,7 +69,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         ObjectDrawing flag,
         ObjectDrawing[] objects,
         IReadOnlyDictionary<string, ObjectDrawing> buildings,
-        ObjectDrawing[] goods,
+        IReadOnlyDictionary<string, ObjectDrawing> goods,
         ObjectImage[] settlers,
         ObjectImage[] markers,
         ObjectImage[] flameImages,
@@ -210,11 +210,8 @@ public sealed class OpenSettlersSource : IGraphicsSource
             _ => null,
         };
 
-    /// <summary>The number of goods the set draws: a good's low 5 bits select one.</summary>
-    public const int GoodCount = 32;
-
-    /// <summary>The manifest key of a good, by its low 5 bits.</summary>
-    public static string GoodKey(int code) => $"good/{code & (GoodCount - 1)}";
+    /// <summary>The manifest key of a good, by its stable name (<c>good/log</c>).</summary>
+    public static string GoodKey(string name) => $"good/{name}";
 
     /// <summary>The manifest key of a build marker: <c>marker/flag</c>, <c>marker/mine</c>, <c>marker/small</c>, or <c>marker/large</c>.</summary>
     public static string MarkerKey(BuildMarker marker) => $"marker/{marker.ToString().ToLowerInvariant()}";
@@ -351,11 +348,10 @@ public sealed class OpenSettlersSource : IGraphicsSource
             key => key,
             key => new ObjectDrawing { Image = Image(key), Shadow = null }
         );
-        var goods = new ObjectDrawing[GoodCount];
-        for (var code = 0; code < GoodCount; code++)
-        {
-            goods[code] = new ObjectDrawing { Image = Image(GoodKey(code)), Shadow = null };
-        }
+        var goods = StandInRulesReader.GoodNames.ToDictionary(
+            name => name,
+            name => new ObjectDrawing { Image = Image(GoodKey(name)), Shadow = null }
+        );
 
         var settlers = new ObjectImage[Jobs.Count * Kinds.Length];
         for (var job = 0; job < Jobs.Count; job++)
@@ -391,7 +387,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
         var headroom = objects
             .Concat([flag])
             .Concat(buildings.Values)
-            .Concat(goods)
+            .Concat(goods.Values)
             .Max(drawing => drawing.Image!.Height);
 
         return new OpenSettlersSource(
@@ -438,7 +434,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     public static string SettlerKey(string job, string kind) => $"settler/{job}/{kind}";
 
     // The kind of activity a settler term is drawn in: what it does, or that it carries a good.
-    static int KindOf(SettlerDraw draw) =>
+    int KindOf(SettlerDraw draw) =>
         draw.Activity switch
         {
             Cuts
@@ -456,11 +452,14 @@ public sealed class OpenSettlersSource : IGraphicsSource
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,
-            WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
-            or WaitsOutStep { Then: PutsDownGood }
-            or PutsDownGood => 1,
-            _ => draw.Carried.IsNone ? 0 : 1,
+            WalksFree { Trip.Purpose: BackToHut { Carrying: true } } => 1,
+            WaitsOutStep { Then: PutsDownGood then } => PoseOf(then.Good),
+            PutsDownGood putting => PoseOf(putting.Good),
+            _ => PoseOf(draw.Carried),
         };
+
+    // The carrying pose where the set has an image of the good, else the walking pose.
+    int PoseOf(Good good) => DrawingOf(good) is null ? 0 : 1;
 
     // The manifest's entries by key, each as its image path and anchor, checked for everything but the image file, and its
     // flame placements by key.
@@ -641,7 +640,10 @@ public sealed class OpenSettlersSource : IGraphicsSource
         : null;
 
     /// <inheritdoc />
-    public ObjectDrawing? Draw(GoodAtFlag draw) => _goods[draw.Good.Code & (GoodCount - 1)];
+    public ObjectDrawing? Draw(GoodAtFlag draw) => DrawingOf(draw.Good);
+
+    // The drawing of the good's stable name, or null for a good the set has no image for.
+    ObjectDrawing? DrawingOf(Good good) => _goods.GetValueOrDefault(good.Name);
 
     /// <inheritdoc />
     public ObjectDrawing? Draw(SettlerDraw draw)

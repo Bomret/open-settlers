@@ -266,8 +266,8 @@ the castle, the hut's flag, and a flag as a road, a node of no road, and a node 
   flag's slot in the target where the original keeps a pointer, so the bytes of a settler in state `0x19` that was one are masked in the test.
 - The drawing: the stand-in button "Remove" in `MapViewControl`. A building that burns is drawn with its flames over it until its
   countdown runs out (`ObjectDraws.Of`, ADR 0021); the view derives the countdown at the game's clock and writes no game state (INV-0016).
-  The History Edition source reads the flame lists (`FlameLists`, `src/Import.HistoryEdition/`); the basic set places flames of its own
-  making. Tests: `ObjectDrawsTests` (the draw list, the phase, the digest) and `FlameListsTests` (the lists from a program built in code).
+  The History Edition source reads the flame lists (`FlameLists`, `src/Import.HistoryEdition/`) and picks a type's list by the
+  type's original code, so a type with no code has no flames; the basic set places flames of its own making. Tests: `ObjectDrawsTests` (the draw list, the phase, the digest) and `FlameListsTests` (the lists from a program built in code).
 - Tests: `RemovalTests` (the verb's games and classes, `removals.txt`) and `RemovalLogicTests` (the engine's own logic, made-up tables);
   `SawmillRemovalTests` (a sawmill's worker waiting, sawing, and out with the plank, `saw-removals.txt`, [Sawmilling](sawmilling.md#removal)).
 - A site taken down (`Removal.TakeBuildingDown`) keeps its `Building.Site` with the planks it needs set to 0; `BuildSite.Evaluate` reads the clock (`Building.Stamp`) as the height of a large site taken down while it waited. The remove click reaches a site through the same command (`RemoveBuilding`). Tests: `ConstructionRemovalTests` (`construction-removal.txt`, the emulator verb `remove` with clicks written `N=click`).

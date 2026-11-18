@@ -25,13 +25,13 @@ public static class ConstructionTables
 
     public static GoodClass?[] Classes()
     {
-        var table = new GoodClass?[RuleTables.GoodClassCount];
-        table[Good.Plank.Code] = PlankClass;
-        table[Good.Stone.Code] = StoneClass;
-        table[Good.Log.Code] = LogClass;
-        table[Good.Grain.Code] = GrainClass;
-        table[Good.Flour.Code] = FlourClass;
-        table[Good.Pig.Code] = PigClass;
+        var table = new GoodClass?[TestCatalog.Slots];
+        table[TestCatalog.CodeOf(Good.Plank)] = PlankClass;
+        table[TestCatalog.CodeOf(Good.Stone)] = StoneClass;
+        table[TestCatalog.CodeOf(Good.Log)] = LogClass;
+        table[TestCatalog.CodeOf(Good.Grain)] = GrainClass;
+        table[TestCatalog.CodeOf(Good.Flour)] = FlourClass;
+        table[TestCatalog.CodeOf(Good.Pig)] = PigClass;
 
         return table;
     }
@@ -65,10 +65,10 @@ public static class ConstructionTables
     // The sizes of the types: the sawmill (0x11) and the butcher's shop (0xd) are large, the others small.
     public static byte[] Sizes()
     {
-        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
-        sizes[BuildingType.Sawmill.Code] = 2;
-        sizes[BuildingType.Butcher.Code] = 2;
-        sizes[BuildingType.PigFarm.Code] = 2;
+        var sizes = Enumerable.Repeat((byte)1, TestCatalog.BuildingSlots).ToArray();
+        sizes[TestCatalog.CodeOf(BuildingType.Sawmill)] = 2;
+        sizes[TestCatalog.CodeOf(BuildingType.Butcher)] = 2;
+        sizes[TestCatalog.CodeOf(BuildingType.PigFarm)] = 2;
 
         return sizes;
     }
@@ -91,34 +91,36 @@ public static class ConstructionTables
     // The made-up needs, a planks byte and a stones byte for each type: the forester two planks and no stone, every other type none.
     public static byte[] Needs()
     {
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * BuildingType.Forester.Code] = ForesterPlanks;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[2 * TestCatalog.CodeOf(BuildingType.Forester)] = ForesterPlanks;
 
         return needs;
     }
 
     // The made-up tool goods: the forester's worker needs the good 17 from the stock, the builder the good 18.
-    public static readonly Good ForesterTool = new() { Code = 17 };
-    public static readonly Good BuilderTool = new() { Code = 18 };
+    public static readonly Good ForesterTool = TestCatalog.GoodOf(17);
+    public static readonly Good BuilderTool = TestCatalog.GoodOf(18);
 
     // The made-up digger's tool: the good 19.
-    public static readonly Good DiggerTool = new() { Code = 19 };
+    public static readonly Good DiggerTool = TestCatalog.GoodOf(19);
 
     // The made-up sawmiller's tool: the good 20.
-    public static readonly Good SawTool = new() { Code = 20 };
+    public static readonly Good SawTool = TestCatalog.GoodOf(20);
 
     // The made-up workers: the woodcutter's hut asks for the woodcutter's job with no tool, the forester's for job 8 with a tool, the
     // sawmill for the sawmiller's job with a tool, the mill for the miller's job with no tool.
     public static WorkerRequest?[] Workers()
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest { Job = new Woodcutter(), Tool = Good.None };
-        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool };
-        workers[BuildingType.Sawmill.Code] = new WorkerRequest { Job = new Sawmiller(), Tool = SawTool };
-        workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
-        workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
-        workers[BuildingType.Butcher.Code] = new WorkerRequest { Job = new Butcher(), Tool = Good.None };
-        workers[BuildingType.PigFarm.Code] = new WorkerRequest { Job = new PigFarmer(), Tool = Good.None };
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        void Ask(BuildingType type, WorkerRequest request) => workers[TestCatalog.CodeOf(type)] = request;
+
+        Ask(BuildingType.Woodcutter, new WorkerRequest { Job = new Woodcutter(), Tool = Good.None });
+        Ask(BuildingType.Forester, new WorkerRequest { Job = Job.Of(8), Tool = ForesterTool });
+        Ask(BuildingType.Sawmill, new WorkerRequest { Job = new Sawmiller(), Tool = SawTool });
+        Ask(BuildingType.Mill, new WorkerRequest { Job = new Miller(), Tool = Good.None });
+        Ask(BuildingType.Baker, new WorkerRequest { Job = new Baker(), Tool = Good.None });
+        Ask(BuildingType.Butcher, new WorkerRequest { Job = new Butcher(), Tool = Good.None });
+        Ask(BuildingType.PigFarm, new WorkerRequest { Job = new PigFarmer(), Tool = Good.None });
 
         return workers;
     }
@@ -126,8 +128,8 @@ public static class ConstructionTables
     // The made-up order of materials: every type takes planks only, except that the sawmill takes a stone third.
     public static ushort[] MaterialOrder()
     {
-        var order = new ushort[RuleTables.BuildingTypeCount];
-        order[BuildingType.Sawmill.Code] = 0b100;
+        var order = new ushort[TestCatalog.BuildingSlots];
+        order[TestCatalog.CodeOf(BuildingType.Sawmill)] = 0b100;
 
         return order;
     }
@@ -136,15 +138,15 @@ public static class ConstructionTables
     // that sixteen blows build them; the sawmill's are 0x800 and 0x556.
     public static ushort[] BlowSteps()
     {
-        var steps = new ushort[2 * RuleTables.BuildingTypeCount];
+        var steps = new ushort[2 * TestCatalog.BuildingSlots];
         foreach (var type in new[] { BuildingType.Woodcutter, BuildingType.Forester })
         {
-            steps[2 * type.Code] = 0x1000;
-            steps[2 * type.Code + 1] = 0x1000;
+            steps[2 * TestCatalog.CodeOf(type)] = 0x1000;
+            steps[2 * TestCatalog.CodeOf(type) + 1] = 0x1000;
         }
 
-        steps[2 * BuildingType.Sawmill.Code] = 0x800;
-        steps[2 * BuildingType.Sawmill.Code + 1] = 0x556;
+        steps[2 * TestCatalog.CodeOf(BuildingType.Sawmill)] = 0x800;
+        steps[2 * TestCatalog.CodeOf(BuildingType.Sawmill) + 1] = 0x556;
 
         return steps;
     }
@@ -170,7 +172,7 @@ public static class ConstructionTables
             buildingClass: 4,
             // A made-up transport priority for each good (the good's own number): a carrier takes a waiting good only where its
             // priority is above 0.
-            transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
+            transportPriorities: [.. Enumerable.Range(1, TestCatalog.Names.Length).Select(good => (byte)good)],
             buildingSizes: sizes ?? Sizes(),
             buildingNeeds: needs ?? Needs(),
             goodKinds: goodKinds,
@@ -179,6 +181,8 @@ public static class ConstructionTables
             plankRankBase: plankRankBase,
             millRankBase: MillRankBase,
             diggerRequest: new WorkerRequest { Job = new Digger(), Tool = DiggerTool },
-            jobData: jobData
+            jobData: jobData,
+            // Made-up carriers a road holds by length class: with none, a busy road would ask for carriers while the castle has any.
+            roadCapacities: [1, 2, 2, 3, 3, 4, 4, 4]
         );
 }

@@ -1,0 +1,12 @@
+# A busy road gets a second carrier: fast-forward until the castle has sent a second carrier toward the road with five logs
+# on its flag, and take a shot of it on its way, then one a moment later.
+# Run it on the layout: sh tools/play-run.sh busy-road --layout layouts/busy-road.jsonc --fps 10
+wait 0.3
+expect-count carrier = 1
+fast-forward until count carrier = 2 max 6000
+scroll up 6 860 560
+wait 0.3
+dump second-carrier
+shot second-carrier
+wait 3
+shot later

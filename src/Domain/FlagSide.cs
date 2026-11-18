@@ -71,6 +71,9 @@ public sealed class FlagSide
     /// <summary>The flag's last turn saw a carrier on the road.</summary>
     public void HoldCarrier() => HoldsCarrier = true;
 
+    /// <summary>The road's bit of the flag's status goes out: a crowded flag's turn clears it (0x46520b).</summary>
+    public void ClearCarrierHold() => HoldsCarrier = false;
+
     /// <summary>The road ends: no carrier is on the way to it and the flag's last turn saw none on it.</summary>
     public void EndRoad()
     {

@@ -8,6 +8,20 @@ namespace OpenSettlers.Simulation;
 // road is told to fetch it (state 0x42, 0x42ff81, the carrier behaviour's).
 
 /// <summary>
+/// What the turn of a flag's goods hands the road loop (0x46414d): the roads that three or more goods head along (the set the
+/// thermometer at 0x46427c writes to +0x219), and whether seven or more places held a good on a turn that routed them (the
+/// count at +0x24e, which a turn that routes nothing leaves 0).
+/// </summary>
+public readonly record struct GoodsLoad
+{
+    /// <summary>The directions three or more of the flag's goods head.</summary>
+    public required RoadSet Busy { get; init; }
+
+    /// <summary>Whether seven or more places held a good on a turn that routed them.</summary>
+    public required bool Crowded { get; init; }
+}
+
+/// <summary>
 /// The goods on the flags: the put of a good on a place, the turn of a flag's goods that gives each good a destination and the
 /// direction of the road toward it, the transport priority that decides which good a road takes first, and the exchange of
 /// goods between a carrier and the flag it stands on.
@@ -29,19 +43,19 @@ public sealed class GoodsTransport(
     /// A good put on a place of a flag (0x436b46): the place's destination is cleared (or set to a given one, for a test that
     /// lays a good with a destination, and a way, for a test that lays a good with a direction) and the flag's turn is due.
     /// </summary>
-    public void LayGood(int flag, int place, int good, int? destination = null, int? way = null)
+    public void LayGood(int flag, int place, Good good, int? destination = null, int? way = null)
     {
         var laid = flags[flag].Places[place];
-        laid.Lay(new Good { Code = good }, destination, way);
+        laid.Lay(good, destination, way);
         flags[flag].MarkGoodsTurnDue();
     }
 
     /// <summary>
-    /// Puts a good on a place of the flag on the node as the settler's put does (0x436b46, <see cref="LayGood"/>). The
+    /// Puts a good on a place of the flag on the node as the settler's put does (0x436b46, <see cref="LayGood(int, int, Good, int?, int?)"/>). The
     /// original's put takes the first empty place and checks nothing: this refuses a node that holds no flag and a place
     /// that holds a good. The place is 0 to 7, as the layout's read checks. It returns why it refused, or null.
     /// </summary>
-    public string? PlaceGood(int x, int y, int place, int good)
+    public string? PlaceGood(int x, int y, int place, Good good)
     {
         var flag = flags.SlotAt(x, y);
         if (flag < 0)
@@ -65,30 +79,38 @@ public sealed class GoodsTransport(
 
     /// <summary>
     /// The transport priority of a good (a byte of the table in the player's block, +good - 0x55 from the pointer +0x64 + 4 *
-    /// player, read at 0x43b054): the rank the player's setup at a new game writes for each good 1 to 26 (0x42055e calls
-    /// 0x445570), read from the program. Good 0 is no good and has none. The bytes for the goods 27 to 31 belong to other fields
-    /// of the player's block in the original; no good has those numbers, and the engine gives them none.
+    /// player, read at 0x43b054): the rank the player's setup at a new game writes for each of the original's goods
+    /// (0x42055e calls 0x445570), read from the program into the good's catalog entry. No good has none, and a good the catalog
+    /// lacks is an error.
     /// </summary>
     public int TransportPriority(Good good) => movement.Tables.TransportPriority(good);
 
     /// <summary>
-    /// The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). It runs
-    /// when the flag's bit is set: the bit goes out, and each place from the last to the first that holds a good without a
-    /// direction gets a destination, or, with one, a direction.
+    /// The turn of a flag's goods (0x46414d, from the thermometer at 0x46427c to the places' loop ending at 0x4650b9). The
+    /// goods that head each direction are counted at every turn; the rest runs when the flag's bit is set: the bit goes out,
+    /// the places that hold a good are counted, and each place from the last to the first that holds a good without a
+    /// direction gets a destination, or, with one, a direction. The turn hands the road loop what it counted.
     /// </summary>
-    public void Turn(int flag)
+    public GoodsLoad Turn(int flag)
     {
+        var load = Load(flag);
         if (!flags[flag].NeedsGoodsTurn)
         {
-            return;
+            return new GoodsLoad { Busy = load[2], Crowded = false };
         }
 
         flags[flag].ClearGoodsTurn();
-        var load = Load(flag);
         var places = flags[flag].Places;
+        var held = 0;
         for (var place = 7; place >= 0; place--)
         {
-            if (places[place].IsEmpty || places[place].Way is not null)
+            if (places[place].IsEmpty)
+            {
+                continue;
+            }
+
+            held++;
+            if (places[place].Way is not null)
             {
                 continue;
             }
@@ -102,6 +124,8 @@ public sealed class GoodsTransport(
                 Direct(flag, place, load);
             }
         }
+
+        return new GoodsLoad { Busy = load[2], Crowded = held >= 7 };
     }
 
     // The goods that head each direction, as the four sets the original builds (0x46427c): set k holds the directions that more
@@ -213,7 +237,7 @@ public sealed class GoodsTransport(
     {
         if (destination is { } flag)
         {
-            buildings?.CountOneLess(flag, movement.Tables.FillCounterOf(good));
+            buildings?.CountOneLess(flag, movement.Tables.FillCounterOf(good), movement.Tables);
         }
     }
 
@@ -453,7 +477,7 @@ public sealed class GoodsTransport(
         movement.Become(settler, walks);
         if (changed)
         {
-            var detail = $"took {took} left {left}";
+            var detail = $"took {history.GoodText(took)} left {history.GoodText(left)}";
             history.RecordSettler(slot, EventType.Exchange, Cause.Goods, $"{history.FlagId(flag)} {detail}");
             history.RecordFlag(flag, EventType.Exchange, Cause.Goods, $"{history.SettlerId(slot)} {detail}");
         }

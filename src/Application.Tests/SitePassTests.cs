@@ -73,16 +73,8 @@ public sealed class SitePassTests
     {
         public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
             stage == SiteStage.Levelling
-                ? new WorkerRequest
-                {
-                    Job = new Woodcutter(),
-                    Tool = new Good { Code = 3 },
-                }
-                : new WorkerRequest
-                {
-                    Job = new Sawmiller(),
-                    Tool = new Good { Code = 4 },
-                };
+                ? new WorkerRequest { Job = new Woodcutter(), Tool = TestCatalog.GoodOf(3) }
+                : new WorkerRequest { Job = new Sawmiller(), Tool = TestCatalog.GoodOf(4) };
     }
 
     // The node of the site and its six neighbours at one height, then the node itself at another.
@@ -304,11 +296,7 @@ public sealed class SitePassTests
 
         pass.Turn(site);
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Woodcutter(),
-                Tool = new Good { Code = 3 },
-            },
+            new WorkerRequest { Job = new Woodcutter(), Tool = TestCatalog.GoodOf(3) },
             _asked.Single().Request
         );
 
@@ -316,11 +304,7 @@ public sealed class SitePassTests
         bench.Map.At(7, 5).Height = 3;
         pass.Turn(site);
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Sawmiller(),
-                Tool = new Good { Code = 4 },
-            },
+            new WorkerRequest { Job = new Sawmiller(), Tool = TestCatalog.GoodOf(4) },
             _asked.Single().Request
         );
     }
@@ -329,11 +313,7 @@ public sealed class SitePassTests
     {
         public override WorkerRequest? SiteWorker(SiteStage stage, RuleTables tables) =>
             stage == SiteStage.Building
-                ? new WorkerRequest
-                {
-                    Job = new Forester(),
-                    Tool = new Good { Code = 5 },
-                }
+                ? new WorkerRequest { Job = new Forester(), Tool = TestCatalog.GoodOf(5) }
                 : null;
     }
 

@@ -413,7 +413,7 @@ public sealed class ThingHistoryTests
         StringAssert.StartsWith(line, $"settler {carrier.s.X},{carrier.s.Y} job=0 ");
         StringAssert.Contains(
             line,
-            $"stamp={SettlerEncoder.Fields(carrier.s).Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(((WaitsAtFlag)carrier.s.Activity).Flag)} "
+            $"stamp={SettlerEncoder.Fields(carrier.s, game.Tables.Catalog).Stamp} id=settler#{carrier.slot}.1 flag-id={game.History.FlagId(((WaitsAtFlag)carrier.s.Activity).Flag)} "
         );
         var waiting = Lines(game)
             .Count(l =>

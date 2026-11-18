@@ -17,17 +17,11 @@ public sealed class ThingHistorySettlersTests
         classes[2] = 4;
         var tables = new RuleTables(
             classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
+            MadeProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: MadeProgram.MadeWorkers()
+            catalog: TestCatalog.WithDoors(MadeProgram.MadeWorkers()),
+            noBuildingDoor: 8
         );
         var map = MapGenerator.Generate(
             MadeProgram.Made(),
@@ -160,7 +154,7 @@ public sealed class ThingHistorySettlersTests
             for (var s = 0; s < game.Settlers.Count; s++)
             {
                 var settler = game.Settlers[s];
-                var raw = SettlerEncoder.Fields(settler);
+                var raw = SettlerEncoder.Fields(settler, TestCatalog.Default);
                 if (settler.Job == new Carrier())
                 {
                     // The carriers' rules record their own changes.
@@ -169,7 +163,7 @@ public sealed class ThingHistorySettlersTests
 
                 int[] expected =
                 [
-                    settler.Job.Code,
+                    JobWords.Of(TestCatalog.Default, settler.Job),
                     raw.State,
                     settler.Player,
                     raw.Mode,
@@ -228,7 +222,7 @@ public sealed class ThingHistorySettlersTests
             var b = game.Buildings[hutSlot];
             int[] expected =
             [
-                b.Type.Code,
+                TestCatalog.CodeOf(b.Type),
                 b.Constructing ? 1 : 0,
                 b.X,
                 b.Y,

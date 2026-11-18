@@ -9,12 +9,7 @@ namespace OpenSettlers.Tests;
 public sealed class ThingTests
 {
     static NameTable Names() =>
-        new(
-            new RuleTables(
-                new ObjectClass[RuleTables.ClassCount],
-                [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods])]
-            )
-        );
+        new(new RuleTables(new ObjectClass[RuleTables.ClassCount], MadeProgram.MadeStartStock()));
 
     [TestMethod]
     public void ANamedMapObjectShowsItsRawCodeThenItsName()

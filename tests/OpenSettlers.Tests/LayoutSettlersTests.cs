@@ -17,7 +17,7 @@ public sealed class LayoutSettlersTests
         "castle": {"x": 10, "y": 10},
         "flags": [{"x": 14, "y": 11}],
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
-        "buildings": [{"type": "woodcutter", "x": 13, "y": 10}],
+        "buildings": [{"type": "woodcutter-hut", "x": 13, "y": 10}],
         """;
 
     const string Carrier = """{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}""";
@@ -87,7 +87,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AFinishedMillEntryStandsAMillerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForGrainAtHisNextTurn()
     {
-        var layout = Read(Built.Replace("\"woodcutter\"", "\"mill\""));
+        var layout = Read(Built.Replace("\"woodcutter-hut\"", "\"mill\""));
         var game = GameFactory.Create(
             MadeTables(
                 workers: MadeProgram.MadeWorkers(mill: true),
@@ -113,7 +113,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AFinishedFisherEntryStandsHisWorkerInTheDoorAndHeGoesOnToLookForAShore()
     {
-        var game = Applied(Built.Replace("woodcutter", "fisher"));
+        var game = Applied(Built.Replace("woodcutter-hut", "fisher-hut"));
 
         var worker = game.Settlers.Single(settler => settler.Job == new Fisher() && settler.Activity is Door);
         Assert.AreEqual((13, 10), (worker.X, worker.Y));
@@ -128,7 +128,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AFinishedBakerEntryStandsABakerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForFlourAtHisNextTurn()
     {
-        var layout = Read(Built.Replace("\"woodcutter\"", "\"baker\""));
+        var layout = Read(Built.Replace("\"woodcutter-hut\"", "\"baker\""));
         var game = GameFactory.Create(
             MadeTables(workers: MadeProgram.MadeWorkers(baker: true), goodClasses: ConstructionTables.Classes()),
             layout.BuildMap()
@@ -150,10 +150,10 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AFinishedButcherEntryStandsAButcherMadeOfASettlerWithoutAJobAndTheKnifeFromTheCastlesStock()
     {
-        var knife = new Good { Code = 19 };
+        var knife = TestCatalog.GoodOf(19);
         var workers = MadeProgram.MadeWorkers();
-        workers[BuildingType.Butcher.Code] = new WorkerRequest { Job = new Butcher(), Tool = knife };
-        var layout = Read(Built.Replace("\"woodcutter\"", "\"butcher\""));
+        workers[TestCatalog.CodeOf(BuildingType.Butcher)] = new WorkerRequest { Job = new Butcher(), Tool = knife };
+        var layout = Read(Built.Replace("\"woodcutter-hut\"", "\"butcher\""));
         var game = GameFactory.Create(
             MadeTables(workers: workers, goodClasses: ConstructionTables.Classes()),
             layout.BuildMap()
@@ -186,7 +186,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AFinishedPigFarmEntryStandsAPigFarmerMadeOfASettlerWithoutAJobInItsDoorAndHeAsksForGrainAtHisNextTurn()
     {
-        var layout = Read(Built.Replace("\"woodcutter\"", "\"pig-farm\""));
+        var layout = Read(Built.Replace("\"woodcutter-hut\"", "\"pig-farm\""));
         var game = GameFactory.Create(
             MadeTables(
                 workers: MadeProgram.MadeWorkers(pigFarm: true),
@@ -312,7 +312,7 @@ public sealed class LayoutSettlersTests
     public void ACarrierPlacedOnARoadCarriesAGoodFromTheFarFlagIntoTheCastle()
     {
         var game = Applied(
-            Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]"
+            Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": \"log\"}}]"
         );
         var before = game.CastleStock.Logs;
 
@@ -324,9 +324,9 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AGoodIsPutOnThePlaceOfTheFlagWithNoDestination()
     {
-        var game = Applied(Built + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 2, \"good\": 7}]");
+        var game = Applied(Built + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 2, \"good\": \"log\"}]");
 
-        Assert.AreEqual(new Good { Code = 7 }, game.Flags[1].Places[2].Good);
+        Assert.AreEqual(Good.Log, game.Flags[1].Places[2].Good);
         Assert.IsTrue(game.Flags[1].Places[0].IsEmpty);
         Assert.IsTrue(game.Flags[1].NeedsGoodsTurn);
     }
@@ -339,8 +339,8 @@ public sealed class LayoutSettlersTests
     {
         var problem = Refused(
             Built.Replace(
-                "\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}]",
-                "\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}, {\"type\": \"woodcutter\", \"x\": 17, \"y\": 10}]"
+                "\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}]",
+                "\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}, {\"type\": \"woodcutter-hut\", \"x\": 17, \"y\": 10}]"
             )
         );
 
@@ -352,10 +352,10 @@ public sealed class LayoutSettlersTests
     [DataRow(14, 11, DisplayName = "the flag")]
     public void AWoodcutterEntryForAHutWithASettlerOnItsDoorOrFlagFailsTheLoad(int x, int y)
     {
-        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));
+        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}],", ""));
         game.Movement.Occupy(game.Map.Index(x, y), 1);
 
-        var problem = Read("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}]").Apply(game);
+        var problem = Read("\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}]").Apply(game);
 
         Assert.AreEqual("test.jsonc: buildings[0]: a settler stands on the hut's door or on its flag", problem);
     }
@@ -366,7 +366,7 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(
             Built.Replace(
-                "\"type\": \"woodcutter\", \"x\": 13, \"y\": 10",
+                "\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10",
                 $"\"type\": \"{type}\", \"x\": 13, \"y\": 10"
             )
         );
@@ -377,7 +377,7 @@ public sealed class LayoutSettlersTests
 
     [TestMethod]
     [DataRow("sawmill", 13, 10, DisplayName = "a finished sawmill")]
-    [DataRow("woodcutter", 10, 10, DisplayName = "the castle")]
+    [DataRow("woodcutter-hut", 10, 10, DisplayName = "the castle")]
     public void AWorkerForAFinishedBuildingOfAJobWhoseSettlerDoesNotStandInTheHutIsRefusedNamingTheJobsThatDo(
         string type,
         int x,
@@ -386,7 +386,7 @@ public sealed class LayoutSettlersTests
     {
         var game = Applied(
             Built.Replace(
-                "\"type\": \"woodcutter\", \"x\": 13, \"y\": 10",
+                "\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10",
                 $"\"type\": \"{type}\", \"x\": 13, \"y\": 10"
             )
         );
@@ -400,7 +400,7 @@ public sealed class LayoutSettlersTests
     [TestMethod]
     public void AWorkerForAWoodcuttersSiteIsRefused()
     {
-        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter\", \"x\": 13, \"y\": 10}],", ""));
+        var game = Applied(Built.Replace("\"buildings\": [{\"type\": \"woodcutter-hut\", \"x\": 13, \"y\": 10}],", ""));
         game.Enqueue(
             new Command
             {
@@ -544,29 +544,43 @@ public sealed class LayoutSettlersTests
         foreach (var place in new[] { 8, -1 })
         {
             Assert.IsTrue(
-                Problems(Built + $"\"goods\": [{{\"x\": 14, \"y\": 11, \"place\": {place}, \"good\": 7}}]")
+                Problems(Built + $"\"goods\": [{{\"x\": 14, \"y\": 11, \"place\": {place}, \"good\": \"log\"}}]")
                     .Any(problem => problem.StartsWith("test.jsonc: goods[0]: "))
             );
         }
 
         var taken =
             Built
-            + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 3, \"good\": 7}, {\"x\": 14, \"y\": 11, \"place\": 3, \"good\": 9}]";
-        var none = Built + "\"goods\": [{\"x\": 20, \"y\": 20, \"place\": 0, \"good\": 7}]";
+            + "\"goods\": [{\"x\": 14, \"y\": 11, \"place\": 3, \"good\": \"log\"}, {\"x\": 14, \"y\": 11, \"place\": 3, \"good\": \"boat\"}]";
+        var none = Built + "\"goods\": [{\"x\": 20, \"y\": 20, \"place\": 0, \"good\": \"log\"}]";
 
         Assert.IsTrue(Refused(taken)!.StartsWith("test.jsonc: goods[1]: "));
         Assert.IsTrue(Refused(none)!.StartsWith("test.jsonc: goods[0]: "));
     }
 
     [TestMethod]
-    public void AGoodThatIsNoGoodFailsTheRead()
+    public void AGoodGivenByNumberOrByAnUnknownNameIsRefusedWithTheNamesTheContentSetKnows()
     {
-        foreach (var good in new[] { "0", "26", "1.5", "\"log\"" })
+        foreach (var good in new[] { "4", "0", "26", "1.5", "\"unobtainium\"", "\"\"", "\"Log\"", "null" })
         {
-            Assert.IsTrue(
-                Problems(Built + $"\"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": {good}}}]")
-                    .Any(problem => problem.StartsWith("test.jsonc: goods[0]: "))
-            );
+            var refusal = Refused(Built + $"\"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": {good}}}]");
+
+            Assert.IsNotNull(refusal, good);
+            StringAssert.StartsWith(refusal, "test.jsonc: goods[0]: ", good);
+            StringAssert.Contains(refusal, $"the good {good} is no stable name", good);
+            StringAssert.Contains(refusal, "use boat, bread, butcher-knife, coal,", good);
+            StringAssert.EndsWith(refusal, "shield, shovel, stone, sword", good);
+        }
+    }
+
+    [TestMethod]
+    public void EveryOriginalGoodLoadsByItsStableNameTheShieldIncluded()
+    {
+        foreach (var name in TestCatalog.Names)
+        {
+            var game = Applied(Built + $"\"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": \"{name}\"}}]");
+
+            Assert.AreEqual(name, game.Flags[1].Places[0].Good.Name, name);
         }
     }
 
@@ -574,7 +588,8 @@ public sealed class LayoutSettlersTests
     public void TheSameLayoutGivesTheSameDigestOnEveryRun()
     {
         var text =
-            Built + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": 7}}]";
+            Built
+            + $"\"settlers\": [{Carrier}], \"goods\": [{{\"x\": 14, \"y\": 11, \"place\": 0, \"good\": \"log\"}}]";
         var first = Applied(text, Tree);
         var second = Applied(text, Tree);
         Run(first, 500);

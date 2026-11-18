@@ -6,12 +6,13 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // The game is a coordinator: it applies commands, runs the tick, and builds the digest (ADR 0013). Everything else a caller
-// reaches is a read-only part; the behaviours that change the game are internal to the assemblies that build and drive it.
+// reaches is a read-only part or a read-only query (the job search of a building type); the behaviours that change the game are
+// internal to the assemblies that build and drive it.
 [TestClass]
 public sealed class GameSurfaceTests
 {
     [TestMethod]
-    public void TheGamePublishesOnlyTheCommandTheTickTheDigestTheSetupOperationsAndTheRemovalQueryAsMethods()
+    public void TheGamePublishesOnlyTheCommandTheTickTheDigestTheSetupOperationsTheRemovalQueryAndTheJobSearchQueryAsMethods()
     {
         var methods = typeof(Game)
             .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
@@ -22,12 +23,14 @@ public sealed class GameSurfaceTests
         string[] expected =
         [
             "ApplyCommands",
+            "CastleWaitingSlot",
             "Digest",
             "Enqueue",
             "PlaceCarrierOnRoad",
             "PlaceFinishedBuilding",
             "PlaceGood",
             "RemovalCommandAt",
+            "SearchOf",
             "SetLayoutMode",
             "StandWorkerInFinishedHut",
             "Tick",
@@ -61,7 +64,6 @@ public sealed class GameSurfaceTests
             "CarrierFlagCursor",
             "CastleLeavingCount",
             "CastleStock",
-            "CastleWaitingList",
             "Clock",
             "Flags",
             "History",

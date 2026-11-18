@@ -164,9 +164,9 @@ public sealed class FlagOperationTests
     {
         var place = new WaitingGood();
 
-        place.Lay(new Good { Code = 7 }, 3, 2);
+        place.Lay(Good.Log, 3, 2);
 
-        Assert.AreEqual(7, place.Good.Code);
+        Assert.AreEqual(Good.Log, place.Good);
         Assert.AreEqual(3, place.Destination);
         Assert.AreEqual(2, (int?)place.Way);
     }
@@ -175,11 +175,11 @@ public sealed class FlagOperationTests
     public void ReplaceDropsTheWayAndKeepsTheGivenDestination()
     {
         var place = new WaitingGood();
-        place.Lay(new Good { Code = 7 }, 3, 2);
+        place.Lay(Good.Log, 3, 2);
 
-        place.Replace(new Good { Code = 9 }, 5);
+        place.Replace(TestCatalog.GoodOf(9), 5);
 
-        Assert.AreEqual(9, place.Good.Code);
+        Assert.AreEqual(TestCatalog.GoodOf(9), place.Good);
         Assert.AreEqual(5, place.Destination);
         Assert.IsNull(place.Way);
     }
@@ -188,7 +188,7 @@ public sealed class FlagOperationTests
     public void ClearEmptiesThePlaceAndKeepsTheDestination()
     {
         var place = new WaitingGood();
-        place.Lay(new Good { Code = 7 }, 3, 2);
+        place.Lay(Good.Log, 3, 2);
 
         place.Clear();
 
@@ -201,13 +201,13 @@ public sealed class FlagOperationTests
     public void SendToAndDirectSetTheDestinationAndTheWayAlone()
     {
         var place = new WaitingGood();
-        place.Lay(new Good { Code = 7 }, 3, 2);
+        place.Lay(Good.Log, 3, 2);
 
         place.SendTo(null);
         place.Direct(4);
 
         Assert.IsNull(place.Destination);
         Assert.AreEqual(4, (int?)place.Way);
-        Assert.AreEqual(7, place.Good.Code);
+        Assert.AreEqual(Good.Log, place.Good);
     }
 }

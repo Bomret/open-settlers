@@ -75,7 +75,7 @@ public abstract record MapLaunch
     /// <see cref="LaunchArgs.BadArgumentExitCode"/> (stderr); a layout file that fails to load exits with its own code
     /// and message (stdout); a missing install exits 2 (stdout, <c>ERROR problem</c>), a step the basic set skips; an
     /// unreadable or bad play script exits <see cref="PlayRun.FailedExitCode"/> (stderr). A layout entry the game refuses after the view opens
-    /// (<see cref="LayoutLoad.Start"/>) is outside this decision. The engine services come in as delegates:
+    /// (<see cref="LayoutLoad"/>) is outside this decision. The engine services come in as delegates:
     /// <paramref name="loadLayout"/> (<see cref="LayoutLoad.Run"/>), <paramref name="openInstall"/>
     /// (<see cref="Install.TryOpen"/>), <paramref name="readScript"/> (<see cref="PlayScript.Read"/>), and
     /// <paramref name="projectFolder"/> (the folder of the project, which a relative play script path and

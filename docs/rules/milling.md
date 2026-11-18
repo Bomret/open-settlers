@@ -12,8 +12,8 @@ small (object code 2), and its item holds the pointer to its flag at `+0xe` that
 `0x44579c` with the player setup, so the rank starts from the original's word. The engine matches the miller after every change of his node, state, or stretch,
 the building's bytes, the flag's goods and request words, the castle's grain and flour counts, and the generator's words in three games
 (`tests/OpenSettlers.Tests/mill-walks.txt`): one grain, eight grains laid at once with a ninth later (the mill takes seven, the eighth and ninth go to the castle),
-and a full flag. The full flag game ends at the pass 1588, the first place the carriers free: after it the engine's carriers leave the flag's node earlier than
-the original's, so the miller steps out earlier (**open lead**, the carriers' hand-over, not the mill's). The removal matches in six games (`mill-removals.txt`), the
+and a full flag. The full flag game runs to the pass 1800: eight stones on the mill's flag make its road to the castle busy, so the road gets a second
+carrier ([Carriers](carriers.md#a-busy-road)), and the miller steps out with his flour at the pass 1685. The removal matches in six games (`mill-removals.txt`), the
 first hand-out in one (`mill-materials.txt`, verb `construct:`), and the draw in one recording (`settler-draws.txt`, `miller`).
 
 ## The building and the job
@@ -71,12 +71,12 @@ first empty place and then to a flag that asks for it or to the castle. The bake
 
 The three orders of `0x42a313` hold a step for grain (class 4, first word, good 4) as they hold the plank's. The castle hands grain out to the asking mill as it hands out planks, and the
 mill counts one grain on its way in the low byte (`mill-materials.txt`: stock 3 to 2, fill byte 1, rank 0, then `0x3f`). The step for the food class 0 (fish, meat, bread; the mines ask them) finds
-no asker yet and stays inert (M6). With no grain in the stock the mill waits and the game runs on.
+no asker yet and stays inert (M7). With no grain in the stock the mill waits and the game runs on.
 
 ## The fill byte of a food good
 
 The table `0x462d6d` gives each good its counter: the food goods 1 to 6 count in byte 8, the low byte. The engine reads it in one place (`RuleTables.FillCounterOf`) for the count on the way (the request
-search and the hand-out) and the count back where a good is lost (`0x462ca4`, the removal's). The carrier's delivery reads the byte from the good's code (`Good.FillsHigh`), which agrees with the table on every good. For every good with a class it is the byte of the request word that asks for it.
+search and the hand-out) and the count back where a good is lost (`0x462ca4`, the removal's). The carrier's delivery reads the byte from the entry's handover counter (`RuleTables.HandoverCounterOf`), which the History Edition importer states from the rule at `0x43c4ea` and which agrees with the table on every good. For every good with a class it is the byte of the request word that asks for it.
 
 ## Removal
 

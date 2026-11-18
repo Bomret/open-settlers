@@ -67,10 +67,12 @@ through the section headers of the executable (`ProgramTablesImporter`). The eng
 prints the rows, and `ProgramTablesTests` compares a digest of the rows read with the emulator's.
 
 The 26 counts start at the word at 6 of the storage item, so the entry e (counted from 0) is the good e + 1; a log, the good 7,
-counts in the entry 6 (the word at `0x12`). The placement then takes from the result what the castle's own construction and the 20
-settlers use, by entry: 7 of the entry 7 (the planks, good 8), 2 of the entry 9 (the stones, good 10), 1 of the entry 15, 4 of the
-entry 16, 1 each of the entries 17 and 20, 2 of the entry 21, 3 of the entry 22, and 3 each of the entries 24 and 25 (the tools the
-settlers carry out are among them). **Confirmed:** the placement (`Castle_Place`, `0x442704`) takes the planks and the stones
+counts in the entry 6 (the word at `0x12`). The engine keys the castle's stock by the entries of the content catalog, with a place for
+every good of the catalog that starts at 0 (`CastleStock`), and the importer names each count of a row by the stable name of its good.
+The placement (`StartStock.At`) then takes from the result what the castle's own construction and the 20 settlers use, by stable
+name: 7 plank (entry 7, good 8), 2 stone (entry 9, good 10), 1 shovel (entry 15), 4 hammer (entry 16), 1 each of fishing-rod and
+hatchet (entries 17 and 20), 2 saw (entry 21), 3 pickaxe (entry 22), and 3 each of sword and shield (entries 24 and 25) (the tools
+the settlers carry out are among them). **Confirmed:** the placement (`Castle_Place`, `0x442704`) takes the planks and the stones
 itself: after the interpolation it lowers the word at `0x14` of the storage item by 7 and the word at `0x18` by 2, and it sets the
 player bytes `+0x164` to 7 and `+0x165` to 2. **Inferred:** the rest of the vector, the tools, is the difference between the
 interpolated rows and the stock the emulator leaves, not read from the subtractions of `0x442704`'s callees. **Emulated:** at the levels 0, 5, 9, 10, 25, 40, and 49

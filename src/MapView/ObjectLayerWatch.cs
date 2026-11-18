@@ -38,7 +38,7 @@ public sealed class ObjectLayerWatch
         {
             foreach (var place in flag.Places)
             {
-                hash = Fnv1a.Add(hash, place.Good);
+                hash = AddGood(hash, place.Good);
             }
         }
 
@@ -56,5 +56,17 @@ public sealed class ObjectLayerWatch
         _last = hash;
 
         return changed;
+    }
+
+    // A good is hashed by its stable name, so a good with no original code is told from an empty place (no name) and from any other good.
+    // The separator keeps two places' names apart.
+    static ulong AddGood(ulong hash, Good good)
+    {
+        foreach (var letter in good.Name)
+        {
+            hash = Fnv1a.Add(hash, letter);
+        }
+
+        return Fnv1a.Add(hash, ulong.MaxValue);
     }
 }

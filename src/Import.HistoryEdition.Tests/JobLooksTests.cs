@@ -12,12 +12,9 @@ public sealed class JobLooksTests
     static RuleTables Tables() =>
         new(
             [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
-            NoStock(),
+            MadeProgram.MadeStartStock(),
             jobData: MadeProgram.MadeJobData()
         );
-
-    static byte[][] NoStock() =>
-        [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])];
 
     [TestMethod]
     public void TheHistoryEditionRegistryHoldsOneLookForEachDrawnJob()

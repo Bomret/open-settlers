@@ -33,8 +33,7 @@ left open:
 - `0x46414d`: known. The phase's slice of `Table70`. Its road loop asks for carriers
   ([Carriers](../rules/carriers.md#the-flag-pass)); its goods part (destination by `0x45d3ea`, direction by `0x464aa8`,
   `0x464bb2`, `0x464c36`) is in [Goods at a flag](../rules/goods.md), confirmed against the emulator for a log at a flag with one
-  storage. Open leads: the request words of a building, the second carrier of a busy road (`0x462acd`, read, not ported), and the
-  priority table of the player's block. The harness verb `wood:` leaves flag slot 0 to the castle's flag, where no good ever
+  storage. Open leads: the request words of a building and the priority table of the player's block. The harness verb `wood:` leaves flag slot 0 to the castle's flag, where no good ever
   leaves; `goods:` takes the dummy slot as the original's game start does.
 - `0x42cb2d`, `0x42f3d9`: known. The slices of `Table18` and `Table16`: [Settlers](../rules/settlers.md#the-pass).
 - `0x42f4f1`: runs the turn of each settler in view once more; with `Game.EveryPassTurns` the engine gives that turn to
@@ -56,8 +55,7 @@ left open:
 - `0x4615cf`, `0x462d88`, `0x4617fd`, `0x462153`, `0x462e1d` with `0x463204`, `0x46385b`, `0x463a40`, `0x463ef9`, `0x4312ed`,
   `0x462c8d`, and `0x42cf9d`: known and ported for a flag, a road, and the woodcutter's hut, and the engine matches the emulator
   (the verb `remove`): [Removal](../rules/removal.md). Open leads (inferred, not run): a carrier carrying a good on a road that goes, a
-  worker or carrier on its way to a road or a hut that goes, more settlers on a joined road than its length class holds, the fourth
-  turn of a carrier at the end of a road that holds two, the castle's and the military buildings' branches of `0x4617fd` (the
+  worker or carrier on its way to a road or a hut that goes, more settlers on a joined road than its length class holds, the castle's and the military buildings' branches of `0x4617fd` (the
   territory `0x45e375`, the storage's settlers), the storage items' request fields and the player blocks' request words
   (`0x462bbc`, `0x462ad5`, `0x4312ed`), a worker that is outside a hut that goes, and the sprites of a burning house.
 - `0x42be63`, `0x42ca7a`, and the search in the settler's walk: known. The route search and the request for a worker:
@@ -135,8 +133,7 @@ left open:
 - Test gaps that need harness capability the repository lacks (open leads, each with the exact reason):
   the equal-length route tie-break (`Game.Route`) needs an emulator scenario with two equal-hop routes to a hut flag, and on the
   `1234,5678,9ABC` map every second road found crosses the hut's node or a road node, so a map or verb that lays the roads is
-  needed; a carrier that turns at the end of a road already holding two carriers (`Wait`) needs a road with two carriers, which
-  no command produces; a water road skipped by `VisitFlag` and `StorageEnd` needs a map with a road across water. (The carrier
+  needed; a water road skipped by `VisitFlag` and `StorageEnd` needs a map with a road across water. (The carrier
   request with no job-0 or job-21 settler is tested by emptying the castle's table of waiting settlers through an internal seam.)
 - The phase count of a game with one player and no computer opponent (33, inferred from `0x42055e`).
 - The passing of two settlers going opposite ways and the walk home (mode 254) are known and ported
@@ -145,8 +142,8 @@ left open:
 - A carrier waiting in state 0x42 is not drawn, and the figure row of job 0 (base 0) is the walking carrier's: both confirmed by the
   draw run ([Carriers](../rules/carriers.md#drawing)); a dismissed carrier (states 0x44, 0x45) is not drawn either (the `rejoined` and `dismissed` recordings).
 - A road that already holds two carriers (ported with the removal: the carrier counts its turns at the road's end and may leave the
-  road, [Carriers](../rules/carriers.md#the-carriers-walk); the two carriers of a joined road are emulated, the fourth turn is
-  **inferred**), the settlers' search level count (`+0x10a` of the player block, which only matters with several storages), and
+  road, [Carriers](../rules/carriers.md#the-carriers-walk); the two carriers of a joined road and the fourth turn on a busy road that
+  drains are emulated), the settlers' search level count (`+0x10a` of the player block, which only matters with several storages), and
   the storage's settler count (`+0x40`), which the request lowers and the engine does not keep.
 
 ## Open questions

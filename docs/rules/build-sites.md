@@ -257,7 +257,7 @@ is slot 3.
 
 ## In the engine
 
-`BuildMarkers` and `BuildMarkerDraws` (`src/MapView/BuildMarker.cs`) turn the evaluator's judgment into a marker and a draw for each node of the player's territory. The game view's Build help button (`src/Viewer/MapViewControl.cs`) toggles them. The view draws the markers above the terrain, the objects, the buildings, the settlers, and the white line of a road being drawn. Only the road markers of a road being drawn lie above them ([Roads](roads.md#the-road-markers)).
+`BuildMarkers` and `BuildMarkerDraws` (`src/MapView/BuildMarker.cs`) turn the evaluator's judgment into a marker and a draw for each node of the player's territory. The game view's Build help button (`src/Viewer/MapViewControl.cs`) toggles them. The view draws the markers above the terrain, the objects, the buildings, the settlers, the work-area tint, and the white line of a road being drawn. The reach markers of the work-area overlay ([Controls](../controls.md#work-areas)) and the road markers of a road being drawn lie above them ([Roads](roads.md#the-road-markers)). `ReachMarkerDraws` (`src/MapView/ReachMarkerDraws.cs`) takes a gatherer's fit from the same markers.
 
 `OpenSettlers.Simulation.BuildSite.Evaluate` (`src/Application/BuildSite.cs`) is the evaluator. The engine departs from the program in one place. A node with a flag or a building object gives 0, 0, 0 (above). The code 3 height term reads the building table. The flag button and the building placement hand that table to `BuildSite.Evaluate`. `BuildSiteResult.AllowsFlag` is the flag button's rule. The flag placement is in [Flags](flags.md).
 

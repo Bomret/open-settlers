@@ -45,10 +45,12 @@ public static class FlagEncoder
 
     /// <summary>
     /// The byte of a flag's item for a place (bytes <c>0xc</c> to <c>0x13</c>): 0 for an empty place, else the good in the
-    /// low 5 bits and, in bits 5 to 7, the direction the good was given plus one.
+    /// low 5 bits and, in bits 5 to 7, the direction the good was given plus one. A good with no original code writes the word of the hash
+    /// of its stable name (<see cref="GoodWords"/>), which holds nothing in the low byte, so the direction bits stay as they are and
+    /// the word equals no original good's byte.
     /// </summary>
-    public static byte GoodByte(WaitingGood place) =>
-        (byte)(place.Good.Code | (place.Way is { } way ? (way.Value + 1) << 5 : 0));
+    public static long GoodWord(WaitingGood place, ContentCatalog catalog) =>
+        GoodWords.Of(catalog, place.Good) | (place.Way is { } way ? (way.Value + 1) << 5 : 0);
 
     /// <summary>
     /// The destination word of a place (flag item <c>+0x14</c> + 2 * place): the original numbers its flags from 1, so the
@@ -96,8 +98,8 @@ public static class FlagEncoder
     }
 
     /// <summary>The items the digest takes at the end of the goods: the eight good bytes of each flag slot in turn.</summary>
-    public static IEnumerable<long> Places(FlagTable flags) =>
-        flags.SelectMany(flag => flag.Places, (_, place) => (long)GoodByte(place));
+    public static IEnumerable<long> Places(FlagTable flags, ContentCatalog catalog) =>
+        flags.SelectMany(flag => flag.Places, (_, place) => GoodWord(place, catalog));
 
     /// <summary>
     /// The items the digest takes of each flag slot in turn, free slots included: the node as column times 65536 plus row

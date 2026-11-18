@@ -24,9 +24,6 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     readonly IRandomDraws _draws = parts.Draws;
     readonly HutWork _hut = parts.Hut;
 
-    // The types whose builder takes the second figure: the mask 0x4a0400 tests the type's bit (0x43ceb4).
-    const int SecondFigureTypes = 0x4a0400;
-
     // The frame of the builder looking for a material (0x62, and 0x64 for the second figure), the frame of a blow (0x66 to 0x69 by the
     // draw's low two bits, four more for the second figure), and the timer the start routine gives.
     const int FirstFigureFrame = 0x62;
@@ -65,7 +62,8 @@ public sealed class BuilderRules(JobParts parts) : JobRules<Builder>(parts)
     /// </summary>
     public override void Start(int slot, Settler settler, Building site)
     {
-        var secondFigure = (SecondFigureTypes >> site.Type.Code & 1) != 0;
+        // The entry of the site's type states whether its builder takes the second figure (0x43ceb4).
+        var secondFigure = _movement.Tables.TakesSecondFigure(site.Type);
         _movement.Become(
             settler,
             new Builds

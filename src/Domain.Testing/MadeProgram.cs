@@ -20,17 +20,21 @@ public static class MadeProgram
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
     /// blocks a site, and the start stock rows count up from the row number. With every class 0 no object is large, so
     /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
-    /// original's data use the install's tables. The transport priorities are all 0.
+    /// original's data use the install's tables. The catalog holds the 26 goods of <see cref="TestCatalog"/>, each ranked by its position.
     /// </summary>
     public static RuleTables Made() => Made(null);
 
-    /// <summary>The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1), or all 0 for none.</summary>
+    /// <summary>
+    /// The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1; a good of rank 0 has no entry), or the position as the rank
+    /// for none.
+    /// </summary>
     public static RuleTables Made(byte[]? transportPriorities) =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             MadeStartStock(),
-            transportPriorities: transportPriorities,
-            workers: MadeWorkers(),
+            catalog: transportPriorities is null
+                ? TestCatalog.StandIn(TestCatalog.Buildings(workers: MadeWorkers()))
+                : TestCatalog.Of(ranks: transportPriorities, buildings: TestCatalog.Buildings(workers: MadeWorkers())),
             jobData: MadeJobData()
         );
 
@@ -56,10 +60,10 @@ public static class MadeProgram
             classes,
             MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            workers: workers ?? MadeWorkers()
+            catalog: TestCatalog.WithDoors(workers ?? MadeWorkers()),
+            noBuildingDoor: 8
         );
     }
 
@@ -72,18 +76,17 @@ public static class MadeProgram
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         classes[2] = 4;
-        var kinds = Enumerable.Repeat((byte)0xff, RuleTables.GoodKindCount).ToArray();
-        kinds[Good.Log.Code] = 1;
+        var kinds = Enumerable.Repeat((byte)0xff, TestCatalog.Slots).ToArray();
+        kinds[TestCatalog.CodeOf(Good.Log)] = 1;
 
         return new RuleTables(
             classes,
             MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            goodKinds: kinds,
             roadCapacities: [.. Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount)],
-            transportPriorities: transportPriorities
+            catalog: TestCatalog.Of(transportPriorities, kinds: kinds, buildings: TestCatalog.Buildings(door: 8)),
+            noBuildingDoor: 8
         );
     }
 
@@ -101,9 +104,9 @@ public static class MadeProgram
             classes,
             MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: MadeWorkers()
+            catalog: TestCatalog.WithDoors(MadeWorkers()),
+            noBuildingDoor: 8
         );
     }
 
@@ -116,15 +119,20 @@ public static class MadeProgram
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
 
-        return new RuleTables(classes, MadeStartStock());
+        return new RuleTables(classes, MadeStartStock(), catalog: TestCatalog.StandIn());
     }
 
     /// <summary>The start stock rows of <see cref="Made()"/>: each count is the row number times 10 plus the good's index.</summary>
-    public static byte[][] MadeStartStock() =>
+    public static IReadOnlyDictionary<Good, byte>[] MadeStartStock() =>
         [
             .. Enumerable
                 .Range(0, RuleTables.StartStockRows)
-                .Select(row => Enumerable.Range(0, RuleTables.Goods).Select(good => (byte)(row * 10 + good)).ToArray()),
+                .Select(row =>
+                    (IReadOnlyDictionary<Good, byte>)
+                        TestCatalog
+                            .Names.Select((_, index) => (Good: TestCatalog.GoodOf(index + 1), Index: index))
+                            .ToDictionary(entry => entry.Good, entry => (byte)(row * 10 + entry.Index))
+                ),
         ];
 
     /// <summary>The job of each number 0 to 31.</summary>
@@ -164,36 +172,52 @@ public static class MadeProgram
         bool pigFarm = false
     )
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        workers[TestCatalog.CodeOf(BuildingType.Woodcutter)] = new WorkerRequest
         {
             Job = new Woodcutter(),
-            Tool = new Good { Code = 1 },
+            Tool = TestCatalog.GoodOf(1),
         };
-        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
+        workers[TestCatalog.CodeOf(BuildingType.Forester)] = new WorkerRequest
+        {
+            Job = new Forester(),
+            Tool = Good.None,
+        };
         if (stonecutter)
         {
-            workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Stonecutter)] = new WorkerRequest
+            {
+                Job = new Stonecutter(),
+                Tool = Good.None,
+            };
         }
 
         if (mill)
         {
-            workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Mill)] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
         }
 
         if (fisher)
         {
-            workers[BuildingType.Fisher.Code] = new WorkerRequest { Job = new Fisher(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Fisher)] = new WorkerRequest
+            {
+                Job = new Fisher(),
+                Tool = Good.None,
+            };
         }
 
         if (baker)
         {
-            workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Baker)] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
         }
 
         if (pigFarm)
         {
-            workers[BuildingType.PigFarm.Code] = new WorkerRequest { Job = new PigFarmer(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.PigFarm)] = new WorkerRequest
+            {
+                Job = new PigFarmer(),
+                Tool = Good.None,
+            };
         }
 
         return workers;
@@ -221,7 +245,9 @@ public static class MadeProgram
         WorkerRequest? diggerRequest = null,
         ushort[]? scanWindows = null,
         byte[]? goodKinds = null,
-        IEnumerable<(Job Job, object Data)>? jobData = null
+        IEnumerable<(Job Job, object Data)>? jobData = null,
+        ContentCatalog? catalog = null,
+        byte[]? roadCapacities = null
     )
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -241,20 +267,33 @@ public static class MadeProgram
             classes,
             MadeStartStock(),
             [.. Enumerable.Repeat(stepTime, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             scanWindows ?? [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            transportPriorities: transportPriorities,
-            buildingSizes: buildingSizes,
-            buildingNeeds: buildingNeeds,
-            goodKinds: goodKinds ?? KindsOf(goodClasses),
-            goodClasses: goodClasses,
+            roadCapacities: roadCapacities,
+            // The goods of the catalog a test gives, or the made-up ones, with building types of the made-up facts of the arguments.
+            catalog: new ContentCatalog(
+                (
+                    catalog
+                    ?? (
+                        transportPriorities is null && goodClasses is null && goodKinds is null
+                            ? TestCatalog.StandIn()
+                            : TestCatalog.Of(transportPriorities, goodClasses, goodKinds ?? KindsOf(goodClasses))
+                    )
+                ).Goods,
+                TestCatalog.Buildings(
+                    8,
+                    buildingSizes,
+                    buildingNeeds,
+                    workers ?? MadeWorkers(stonecutter: true, fisher: true),
+                    materialOrder,
+                    blowSteps
+                ),
+                TestCatalog.Jobs()
+            ),
+            noBuildingDoor: 8,
             distribution: distribution,
             plankRankBase: plankRankBase,
             millRankBase: millRankBase,
-            workers: workers ?? MadeWorkers(stonecutter: true, fisher: true),
-            materialOrder: materialOrder,
-            blowSteps: blowSteps,
             // A request a test gives replaces the made-up one of the same job.
             jobData:
             [
@@ -273,6 +312,6 @@ public static class MadeProgram
             :
             [
                 .. classes.Select(asked => asked is { } c ? (byte)(c.Word == RequestWord.First ? 0 : 1) : (byte)0xff),
-                .. new byte[RuleTables.GoodKindCount - classes.Length],
+                .. new byte[TestCatalog.Slots - classes.Length],
             ];
 }

@@ -82,14 +82,17 @@ construction or for the tools of the first settlers. Later deliveries and taking
 its start stock. An empty object leaves the castle with no goods. Without the key the castle holds its
 [start stock](castle.md#the-start-stock). The original has no such start.
 
-The names are the good names of the name table, the goods 1 to 26 (`NameTable.GoodName`). They are the same on the install and
-on the basic content set. A name that only an object, a job, or a building type has is not a good. `stone` names both an object
-and a good, and under `stock` it is the good. The castle keeps its 20 first settlers. The key is taken on the castle entry only.
-A flag entry that names it fails as an unknown key.
+The names are the stable names of the goods of the game's content catalog (ADR 0020). The original's 26 goods have the same
+stable names on the install and on the basic content set. A name that only an object, a job, or a building type has is not a
+good. `stone` names both an object and a good, and under `stock` it is the good. The castle keeps its 20 first settlers. The key
+is taken on the castle entry only. A flag entry that names it fails as an unknown key.
 
-The load fails with a problem that names the file and the castle entry, and no game starts. These cases fail it:
+The name is checked when the layout is built, against the goods of the game's content catalog, since the catalog is unknown while
+the file is read. A name the catalog lacks is refused with `<file>: castle: stock: the good <name> is no stable name of a good of
+this content set, use <names>`, and no game starts.
 
-- a name that is no good's;
+The read fails with a problem that names the file and the castle entry, and no game starts. These cases fail it:
+
 - a name given twice;
 - a value that is not an object;
 - a count that is not a whole number from 0 to 50000, the most a count of the castle's stock holds.
@@ -105,17 +108,17 @@ Without the key the castle holds the 20 first settlers. With `settlers` and no `
 original leaves it after equipping its 20 first settlers. An empty object leaves the castle settler alone, and the castle is
 still built. The original has no such start.
 
-The names are the job names of the name table (`NameTable.JobName`). They are the same on the install and on the basic content
-set. These jobs have a name:
+The names are the stable names of the jobs (`Job.Named`). They are the same on the install and on the basic content set. These
+jobs have a name:
 
 - `carrier`, `digger`, `builder`, and `woodcutter`;
 - `sawmiller`, `stonecutter`, `forester`, and `fisher`;
 - `pig-farmer`, `butcher`, `farmer`, and `miller`;
-- `baker` and `jobless`.
+- `baker` and `jobless`;
+- the knights, `knight-level-0` to `knight-level-4`.
 
-A building type's name is not a job's. `mill` and `sawmill` are no job's names, and `woodcutter` names the job. The jobs 1, 9, 10,
-17 to 20, and 22 to 31 have no name, so no layout names them. The knights are the jobs 22 to 26. The castle settler,
-`castle-settler`, cannot be named. The key is taken on the castle entry only. A flag entry that names it fails as an unknown key.
+A building type's name is not a job's. `mill` and `sawmill` are no job's names, and `woodcutter` names the job. A job the engine
+does not port has no stable name (`UnportedJob`), so no layout names it. The castle settler, `castle-settler`, cannot be named. The key is taken on the castle entry only. A flag entry that names it fails as an unknown key.
 
 Requests take a named settler as they take a first settler ([Where a settler comes from](#where-a-settler-comes-from)). A
 building takes a settler of its job first. Else it takes a settler without a job and the job's tool from the castle's goods. A
@@ -142,8 +145,9 @@ The load fails with a problem that names the file and the castle entry, and no g
 
 ## Goods
 
-`{"x", "y", "place": 0 to 7, "good": 1 to 25}` puts the good on the place of the flag at the node, as `Flag_PutGood`
-(`0x436b46`) does. The place's destination is cleared and the flag's goods bit is set. The next turn of the flag's
+`{"x", "y", "place": 0 to 7, "good": "grain"}` puts the good, given by its stable name, on the place of the flag at the node,
+as `Flag_PutGood` (`0x436b46`) does. A number, or a name the game's content catalog lacks, is refused with a message that
+lists the names the content set knows. Every one of the original's 26 goods loads, the shield included. The place's destination is cleared and the flag's goods bit is set. The next turn of the flag's
 goods then gives the good a destination and a direction ([Goods at a flag](goods.md#the-turn-of-a-flags-goods)).
 
 The original's put takes the first empty place and checks nothing. The layout names the place. The engine refuses a
@@ -152,13 +156,18 @@ player block's counter of goods on flags (`0x436b46`).
 
 ## Finished buildings
 
-`{"type": "woodcutter" | "stonecutter" | "forester" | "sawmill" | "fisher" | "farm" | "baker" | "mill" | "pig-farm" | "butcher", "x", "y"}` in the `buildings` list stands a finished building
-of that type on the node, with its flag south-east of it. The entry state is the building the original's mission start
+`{"type": <stable name>, "x", "y"}` in the `buildings` list stands a finished building
+of that type on the node. The stable names of the original's types are `woodcutter-hut`, `stonecutter-hut`, `forester-hut`,
+`sawmill`, `fisher-hut`, `farm`, `baker`, `mill`, `pig-farm`, and `butcher`, and the basic set names the same ones
+(`content/basic/rules/buildings.jsonc`). The name is checked when the layout is built, against the building types of the game's
+content catalog, since the catalog is unknown while the file is read: a name the catalog lacks, a build-panel name, a number, or the
+name of a storage (the castle, the storehouse) is refused with `<file>: buildings[i]: the building type <as written> is no stable
+name of a building type of this content set, use <names>`. The entry stands with its flag south-east of it. The entry state is the building the original's mission start
 leaves: `0x41f2d2` places it through `Building_Place` (`0x449a63`, at `0x41f2f6`) and finishes it ([Build
 sites](build-sites.md#the-building-types)). The placement and its refusals are those of the building site, since the evaluator
 judges the node the same way, and a node that holds no site for the type's size, or no room for the flag, fails the load with
-the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a mill's miller, a fisher's fisher, a farm's farmer, a baker's baker, and a pig farm's pig farmer are placed as below, the other food buildings' workers not yet) and an entry with no type fail the
-read, naming the types. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
+the entry named. A type the placement does not build (the storehouse, the castle, any other name; the food types are in [Food buildings](food-buildings.md), and a mill's miller, a fisher's fisher, a farm's farmer, a baker's baker, and a pig farm's pig farmer are placed as below, the other food buildings' workers not yet) fails the
+build as above, and an entry with no type fails the read, naming the entry's shape. **Stand-ins:** the finished building has no status bit 4 and no pointer in its item, and its progress
 word is 0, so the digests of the M3 layouts stay (`Game.PlaceFinishedBuilding`). Its object code is 2 for the three small
 types, following the size-table caller `0x42cf9d` of `Building_Place`, where the mission start writes 2 only for type `0xb` and
 3 for every other type. The woodcutter's worker is the castle's woodcutter, and the stonecutter's the castle's stonecutter, walked in as above, where the mission

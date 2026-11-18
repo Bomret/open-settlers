@@ -109,6 +109,6 @@
   "objects": [],
   "castle": {"x": 10, "y": 10},
   "buildings": [
-    {"type": "fisher", "x": 14, "y": 10}
+    {"type": "fisher-hut", "x": 14, "y": 10}
   ]
 }

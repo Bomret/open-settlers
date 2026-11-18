@@ -22,7 +22,7 @@ public sealed class ObjectSpritesTests
         int scaffold
     )
     {
-        var type = new OpenSettlers.Domain.BuildingType { Code = code };
+        var type = TestCatalog.BuildingOf(code);
 
         Assert.AreEqual(1250 + finished, ObjectSprites.FinishedEntry(type));
         Assert.AreEqual(1250 + scaffold, ObjectSprites.StageEntry(type));
@@ -33,7 +33,7 @@ public sealed class ObjectSpritesTests
     {
         var entries = OpenSettlers.Domain.Good.Foods.Select(ObjectSprites.GoodEntry).ToArray();
 
-        CollectionAssert.AreEqual(new[] { 321, 322, 323, 324, 325, 326 }, entries);
+        CollectionAssert.AreEqual(new int?[] { 321, 322, 323, 324, 325, 326 }, entries);
     }
 
     [TestMethod]

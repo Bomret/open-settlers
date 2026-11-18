@@ -10,14 +10,52 @@ namespace OpenSettlers.Tests;
 public sealed class SettlerEncoderTests
 {
     // The movement that turns a walk home reads the residue as the encoder writes it.
+    static readonly ContentCatalog Catalog = TestCatalog.WithAiToken();
+
     static SettlerMovement Movement { get; } =
-        new(new Map(MapSize.Offered[0]), [], MadeProgram.MadeTables(), () => 0, SettlerEncoder.ResidueOf);
+        new(
+            new Map(MapSize.Offered[0]),
+            [],
+            MadeProgram.MadeTables(),
+            () => 0,
+            activity => SettlerEncoder.ResidueOf(activity, Catalog)
+        );
+
+    [TestMethod]
+    public void ACarrierOfAGoodWithNoOriginalCodeHoldsTheWordOfItsNameAsTheMode()
+    {
+        var word = GoodWords.Of(Catalog, TestCatalog.AiToken);
+
+        Assert.AreEqual(
+            word,
+            Fields(
+                new WalksRoad
+                {
+                    Load = new Load { Good = TestCatalog.AiToken, Destination = null },
+                    Heading = new Heading { Value = 1 },
+                }
+            ).Mode
+        );
+        Assert.AreEqual(
+            word,
+            Fields(
+                new HandsOver
+                {
+                    Load = new Load { Good = TestCatalog.AiToken, Destination = null },
+                    Heading = new Heading { Value = 1 },
+                }
+            ).Mode
+        );
+        Assert.AreEqual(word, Fields(new PutsDownGood { Good = TestCatalog.AiToken }).Mode);
+        Assert.AreEqual(word, Fields(new StepsOutWithGood { Good = TestCatalog.AiToken }).Mode);
+        Assert.IsGreaterThan(0xff, word, "no original good, no storage or building mode has that number");
+    }
 
     static Settler Of(Activity activity, ushort stamp = 0) => new(new Carrier(), 0, 4, 3, stamp, activity);
 
     static (int State, int Mode, int Target, int Heading, int Next) Fields(Activity activity)
     {
-        var raw = SettlerEncoder.Fields(Of(activity));
+        var raw = SettlerEncoder.Fields(Of(activity), Catalog);
 
         return (raw.State, raw.Mode, raw.Target, raw.Heading, raw.Next);
     }
@@ -96,11 +134,7 @@ public sealed class SettlerEncoderTests
     {
         var walks = new WalksRoad
         {
-            Load = new Load
-            {
-                Good = new Good { Code = 7 },
-                Destination = 2,
-            },
+            Load = new Load { Good = Good.Log, Destination = 2 },
             Heading = new Heading { Value = 1 },
             Waits = 3,
         };
@@ -150,7 +184,7 @@ public sealed class SettlerEncoderTests
             Direction = 3,
             Approach = new Heading { Value = 2 }.Retried,
         };
-        var raw = SettlerEncoder.Fields(Of(waiting, 0x1200));
+        var raw = SettlerEncoder.Fields(Of(waiting, 0x1200), Catalog);
 
         Assert.AreEqual((0x42, 3, 1, 0, 0), (raw.State, raw.Mode, raw.Target, raw.Heading, raw.Next));
         Assert.AreEqual((ushort)0x12fc, raw.Stamp);
@@ -340,7 +374,7 @@ public sealed class SettlerEncoderTests
             0x1234
         );
 
-        Assert.AreEqual((ushort)0x12fa, SettlerEncoder.Fields(settler).Stamp);
+        Assert.AreEqual((ushort)0x12fa, SettlerEncoder.Fields(settler, Catalog).Stamp);
     }
 
     [TestMethod]
@@ -463,7 +497,7 @@ public sealed class SettlerEncoderTests
     [TestMethod]
     public void TheSettlerLayingAGoodDownHoldsItInByte11()
     {
-        var raw = SettlerEncoder.Fields(Of(new PutsDownGood { Good = Good.Plank }));
+        var raw = SettlerEncoder.Fields(Of(new PutsDownGood { Good = Good.Plank }), Catalog);
 
         Assert.AreEqual((0xd, 8, 0), (raw.State, raw.Mode, raw.Target));
     }
@@ -473,11 +507,7 @@ public sealed class SettlerEncoderTests
     [TestMethod]
     public void ACarrierHandingAGoodOverHoldsTheGoodTheDestinationWordAndTheHalfInNext()
     {
-        var load = new Load
-        {
-            Good = new Good { Code = 7 },
-            Destination = 2,
-        };
+        var load = new Load { Good = Good.Log, Destination = 2 };
 
         Assert.AreEqual(
             (0xe, 7, 3, 3, 0),
@@ -513,7 +543,8 @@ public sealed class SettlerEncoderTests
                     Heading = new Heading { Value = 4 },
                     Approach = new Heading { Value = 1 },
                 }
-            )
+            ),
+            Catalog
         );
 
         Assert.AreEqual((0x43, 4, 0), (raw.State, raw.Heading, raw.Next));
@@ -607,7 +638,7 @@ public sealed class SettlerEncoderTests
             }
         );
 
-        var residue = SettlerEncoder.ResidueOf(settler);
+        var residue = SettlerEncoder.ResidueOf(settler, Catalog);
 
         Assert.AreEqual(
             new Residue

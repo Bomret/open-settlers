@@ -149,7 +149,7 @@ public sealed class WoodcuttingHistoryTests
             () =>
             {
                 var s = Woodcutter(game);
-                var raw = SettlerEncoder.Fields(s);
+                var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
                 seen.Add(s.Activity.Code);
                 var (state, refusal) = game.History.StateAt(id, game.TickCount - 1);
                 var now =

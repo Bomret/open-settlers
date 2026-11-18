@@ -22,16 +22,11 @@ public sealed class GameThingTests
 
         return new RuleTables(
             classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row =>
-                        Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()
-                    ),
-            ],
+            MadeProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
-            [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
-            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)]
+            [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
+            catalog: TestCatalog.WithDoors(),
+            noBuildingDoor: 8
         );
     }
 
@@ -121,13 +116,13 @@ public sealed class GameThingTests
     public void AFlagNamesTheGoodsOnItsPlacesInTheOrderOfThePlaces()
     {
         var game = World();
-        game.Goods.LayGood(1, 0, Good.Foods[1].Code);
-        game.Goods.LayGood(1, 3, Good.Foods[2].Code);
-        game.Goods.LayGood(1, 5, 0x1b);
+        game.Goods.LayGood(1, 0, Good.Foods[1]);
+        game.Goods.LayGood(1, 3, Good.Foods[2]);
+        game.Goods.LayGood(1, 5, TestCatalog.AiToken);
 
         var lines = Lines(game);
 
-        CollectionAssert.Contains(lines, "flag 18,6 slot=1 id=flag#1.1 goods=pig,meat,27");
+        CollectionAssert.Contains(lines, "flag 18,6 slot=1 id=flag#1.1 goods=pig,meat,ai-token");
         CollectionAssert.Contains(lines, "flag 16,6 slot=0 id=flag#0.1");
     }
 
@@ -136,9 +131,98 @@ public sealed class GameThingTests
     [DataRow(5, "flour")]
     public void ASettlerWhoCarriesAGoodNamesIt(int good, string name)
     {
-        var settler = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = new Good { Code = good } });
+        var settler = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = TestCatalog.GoodOf(good) });
 
-        CollectionAssert.Contains(Thing.Of(settler).Values.ToList(), ("carrying", name));
+        CollectionAssert.Contains(Thing.Of(settler, TestCatalog.Default).Values.ToList(), ("carrying", name));
+    }
+
+    [TestMethod]
+    public void ASettlerWhoCarriesAGoodWithNoCodeShowsItsNameAndNoRawModeValue()
+    {
+        var settler = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = TestCatalog.AiToken });
+        var values = Thing.Of(settler, TestCatalog.WithAiToken()).Values.ToList();
+
+        CollectionAssert.Contains(values, ("carrying", "ai-token"));
+        Assert.IsFalse(values.Any(value => value.Item1 == "mode"));
+    }
+
+    [TestMethod]
+    public void ACarrierWhoHandsOverAGoodWithNoCodeShowsItsNameAndNoRawModeValue()
+    {
+        var load = new Load { Good = TestCatalog.AiToken, Destination = null };
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            3,
+            4,
+            0,
+            new HandsOver
+            {
+                Load = load,
+                Heading = new Heading { Value = 0 },
+            }
+        );
+        var values = Thing.Of(settler, TestCatalog.WithAiToken()).Values.ToList();
+
+        CollectionAssert.Contains(values, ("carrying", "ai-token"));
+        Assert.IsFalse(values.Any(value => value.Item1 == "mode"));
+    }
+
+    [TestMethod]
+    public void ACarrierWhoHandsOverAnOriginalGoodShowsItsRawModeValueAndNoName()
+    {
+        var load = new Load { Good = Good.Log, Destination = null };
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            3,
+            4,
+            0,
+            new HandsOver
+            {
+                Load = load,
+                Heading = new Heading { Value = 0 },
+            }
+        );
+        var values = Thing.Of(settler, TestCatalog.Default).Values.ToList();
+
+        Assert.IsTrue(values.Any(value => value.Item1 == "mode"));
+        Assert.IsFalse(values.Any(value => value.Item1 == "carrying"));
+    }
+
+    [TestMethod]
+    public void ASettlerWhoseResidueHoldsTheWordOfAGoodWithNoCodeShowsNoRawModeValue()
+    {
+        var catalog = TestCatalog.WithAiToken();
+        var putsDown = new Settler(new Carrier(), 0, 3, 4, 0, new PutsDownGood { Good = TestCatalog.AiToken });
+        var settler = new Settler(
+            new Carrier(),
+            0,
+            3,
+            4,
+            0,
+            new Door { TimeLeft = 0 }.Carrying(SettlerEncoder.ResidueOf(putsDown, catalog))
+        );
+        var values = Thing.Of(settler, catalog).Values.ToList();
+
+        Assert.IsFalse(values.Any(value => value.Item1 == "mode"));
+    }
+
+    [TestMethod]
+    public void ASettlerWhoStepsOutOrPutsDownNoGoodShowsNoGoodAndDoesNotThrow()
+    {
+        foreach (
+            var activity in new Activity[]
+            {
+                new PutsDownGood { Good = Good.None },
+                new StepsOutWithGood { Good = Good.None },
+            }
+        )
+        {
+            var settler = new Settler(new Carrier(), 0, 3, 4, 0, activity);
+
+            Assert.IsFalse(Thing.Of(settler, TestCatalog.Default).Values.Any(value => value.Item1 == "carrying"));
+        }
     }
 
     [TestMethod]
@@ -146,7 +230,7 @@ public sealed class GameThingTests
     {
         var settler = new Settler(new Carrier(), 0, 3, 4, 0, new BuildsCastle());
 
-        Assert.IsFalse(Thing.Of(settler).Values.Any(value => value.Item1 == "carrying"));
+        Assert.IsFalse(Thing.Of(settler, TestCatalog.Default).Values.Any(value => value.Item1 == "carrying"));
     }
 
     [TestMethod]
@@ -204,15 +288,15 @@ public sealed class GameThingTests
 
         var settlers = Lines(game).Where(line => line.StartsWith("settler ", StringComparison.Ordinal)).ToList();
         var first = game.Settlers[0];
-        var raw = SettlerEncoder.Fields(first);
+        var raw = SettlerEncoder.Fields(first, TestCatalog.Default);
 
         Assert.AreEqual(game.Settlers.Count, settlers.Count);
         Assert.IsTrue(
             settlers.Contains(
-                $"settler {first.X},{first.Y} job={first.Job} state=0x{raw.State:x2} player={first.Player} "
+                $"settler {first.X},{first.Y} job={JobWords.Of(TestCatalog.Default, first.Job)} state=0x{raw.State:x2} player={first.Player} "
                     + $"mode=0x{raw.Mode:x2} target={raw.Target} next=0x{raw.Next:x2} heading={raw.Heading} "
                     + $"frame={first.Frame} timer={first.Timer} stamp={raw.Stamp} id=settler#0.1 "
-                    + $"{NameTable.JobName(first.Job.Code)} {NameTable.StateName(first.Activity.Code)}".TrimEnd()
+                    + $"{first.Job.Name} {NameTable.StateName(first.Activity.Code)}".TrimEnd()
             ),
             string.Join("\n", settlers.Take(3))
         );

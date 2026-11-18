@@ -35,13 +35,14 @@ public sealed class BuildingSiteTests
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var sizes = new byte[RuleTables.BuildingTypeCount];
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
+        var sizes = new byte[TestCatalog.BuildingSlots];
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
         foreach (var type in Types)
         {
-            sizes[type.Code] = (byte)(type == BuildingType.Sawmill ? 2 : 1);
-            needs[2 * type.Code] = (byte)(type == BuildingType.Sawmill ? 3 : 2);
-            needs[2 * type.Code + 1] = (byte)(type == BuildingType.Sawmill ? 2 : 0);
+            var code = TestCatalog.CodeOf(type);
+            sizes[code] = (byte)(type == BuildingType.Sawmill ? 2 : 1);
+            needs[2 * code] = (byte)(type == BuildingType.Sawmill ? 3 : 2);
+            needs[2 * code + 1] = (byte)(type == BuildingType.Sawmill ? 2 : 0);
         }
 
         foreach (var (code, large) in Food)
@@ -54,10 +55,10 @@ public sealed class BuildingSiteTests
         return new RuleTables(
             classes,
             MadeProgram.MadeStartStock(),
-            buildingSizes: sizes,
-            buildingNeeds: needs,
-            workers: MadeProgram.MadeWorkers(),
-            jobData: MadeProgram.MadeJobData()
+            jobData: MadeProgram.MadeJobData(),
+            catalog: TestCatalog.StandIn(
+                TestCatalog.Buildings(sizes: sizes, needs: needs, workers: MadeProgram.MadeWorkers())
+            )
         );
     }
 
@@ -134,7 +135,7 @@ public sealed class BuildingSiteTests
     [DataRow(0x11, 3, 2)]
     public void EachOfTheFourTypesIsPlacedAsABuildingSiteOfItsNeeds(int code, int planks, int stones)
     {
-        var type = new BuildingType { Code = code };
+        var type = TestCatalog.BuildingOf(code);
         var game = World();
         var (x, y, site) = Find(game, 4);
 
@@ -157,10 +158,10 @@ public sealed class BuildingSiteTests
             var game = World();
             var (x, y, site) = Find(game, 4);
 
-            Assert.IsTrue(Place(game, new BuildingType { Code = code }, x, y), $"type {code:x}");
+            Assert.IsTrue(Place(game, TestCatalog.BuildingOf(code), x, y), $"type {code:x}");
 
             var placed = game.Buildings[1];
-            Assert.AreEqual(code, placed.Type.Code);
+            Assert.AreEqual(TestCatalog.BuildingOf(code), placed.Type);
             Assert.IsTrue(placed.Constructing, $"type {code:x} is a building site");
             Assert.AreEqual(code % 4 + 1, placed.Site?.Planks, $"type {code:x} planks");
             Assert.AreEqual(code % 3, placed.Site?.Stones, $"type {code:x} stones");
@@ -182,11 +183,7 @@ public sealed class BuildingSiteTests
             var game = World();
             var (x, y, _) = Find(game, 3);
 
-            Assert.AreEqual(
-                !large,
-                Place(game, new BuildingType { Code = code }, x, y),
-                $"type {code:x} on a site of 3"
-            );
+            Assert.AreEqual(!large, Place(game, TestCatalog.BuildingOf(code), x, y), $"type {code:x} on a site of 3");
         }
     }
 
@@ -397,9 +394,9 @@ public sealed class BuildingSiteTests
     {
         var game = World();
         var (x, y, _) = Find(game, 4);
-        Place(game, new BuildingType { Code = code }, x, y);
+        Place(game, TestCatalog.BuildingOf(code), x, y);
 
-        var line = OpenSettlers.MapView.Thing.Of(game.Buildings[1]).Line();
+        var line = OpenSettlers.MapView.Thing.Of(game.Buildings[1], game.Tables.Catalog).Line();
 
         StringAssert.Contains(line, "constructing=true");
         StringAssert.Contains(line, needs);

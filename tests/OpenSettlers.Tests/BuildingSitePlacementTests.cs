@@ -79,7 +79,7 @@ public sealed class BuildingSitePlacementTests
             foreach (var node in nodes.OrderBy(node => node.Judged[1] >= needed).ThenBy(node => node.Judged[1]))
             {
                 var judged = BuildSite.Evaluate(game.Tables, game.Map, node.At[0], node.At[1], 0, hasCastle: true);
-                var where = $"{type.Code:x} on {node.At[0]},{node.At[1]}";
+                var where = $"{type.Name} on {node.At[0]},{node.At[1]}";
                 Assert.AreEqual(
                     (node.Judged[0], node.Judged[1]),
                     (judged.Node, judged.Site),

@@ -34,8 +34,12 @@ public sealed class ForestryTests
     // The made-up workers: the forester's building asks for the forester's job with no tool.
     static WorkerRequest?[] Workers()
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        workers[TestCatalog.CodeOf(BuildingType.Forester)] = new WorkerRequest
+        {
+            Job = new Forester(),
+            Tool = Good.None,
+        };
 
         return workers;
     }
@@ -293,7 +297,7 @@ public sealed class ForestryTests
         {
             game.Tick();
             grown |= saplings.Any(node => map.At(node.X, node.Y).Object.Kind != MapObjectKind.Sapling);
-            log = game.Flags[3].Places.Any(place => place.Good == new Good { Code = WoodcutterRules.GoodLog });
+            log = game.Flags[3].Places.Any(place => place.Good == Good.Log);
         }
 
         Assert.IsTrue(grown, "a sapling of the hut's reach grew");

@@ -98,11 +98,7 @@ public sealed class HistoryEditionSettlersTests
             0,
             new WalksRoad
             {
-                Load = new Load
-                {
-                    Good = new Good { Code = WoodcutterRules.GoodLog },
-                    Destination = null,
-                },
+                Load = new Load { Good = Good.Log, Destination = null },
                 Heading = new Heading { Value = 0 },
             }
         )
@@ -189,11 +185,7 @@ public sealed class HistoryEditionSettlersTests
             from state in new[] { 3, 0xe }
             from frame in Enumerable.Range(0, 0x79)
             from step in Enumerable.Range(0, 128)
-            let load = new Load
-            {
-                Good = new Good { Code = good },
-                Destination = null,
-            }
+            let load = new Load { Good = TestCatalog.GoodOf(good), Destination = null }
             select new Settler(
                 new Carrier(),
                 0,
