@@ -1174,14 +1174,7 @@ public partial class MapViewControl(
             }
         }
 
-        var arrays = new Godot.Collections.Array();
-        arrays.Resize((int)Mesh.ArrayType.Max);
-        arrays[(int)Mesh.ArrayType.Vertex] = vertices;
-        arrays[(int)Mesh.ArrayType.Color] = colors;
-        var mesh = new ArrayMesh();
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-
-        return mesh;
+        return TriangleMesh(vertices, colors);
     }
 
     // One mesh of the reach markers while Work areas and the build button of a gatherer are pressed: a filled green disc where the
@@ -1193,16 +1186,12 @@ public partial class MapViewControl(
             return null;
         }
 
-        var pressed = _buildButtons
-            .Where(entry => entry.Button.ButtonPressed)
-            .Select(entry => (BuildingType?)entry.Type)
-            .FirstOrDefault();
-        if (pressed is not { } type)
+        if (_buildButtons.FirstOrDefault(entry => entry.Button.ButtonPressed) is not { Button: not null } pressed)
         {
             return null;
         }
 
-        var draws = ReachMarkerDraws.Of(_game, 0, type);
+        var draws = ReachMarkerDraws.Of(_game, 0, pressed.Type);
         if (draws.Count == 0)
         {
             return null;
@@ -1236,10 +1225,16 @@ public partial class MapViewControl(
             }
         }
 
+        return TriangleMesh([.. vertices], [.. colors]);
+    }
+
+    // One mesh of plain triangles: each three vertices make one, each vertex in its color.
+    static ArrayMesh TriangleMesh(Vector2[] vertices, Color[] colors)
+    {
         var arrays = new Godot.Collections.Array();
         arrays.Resize((int)Mesh.ArrayType.Max);
-        arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
-        arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices;
+        arrays[(int)Mesh.ArrayType.Color] = colors;
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 
