@@ -56,7 +56,6 @@ public sealed class RuleTablesShapeTests
             [.. Enumerable.Range(0, RuleTables.ClassCount).Select(i => (ObjectClass)(i % 4))],
             TestProgram.MadeStartStock(),
             stepTimes: [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => (ushort)(1000 + i))],
-            doorSpeeds: [.. Enumerable.Range(0, RuleTables.DoorSpeedCount).Select(i => (byte)(100 + i))],
             scanWindows: [.. Enumerable.Range(0, RuleTables.ScanWindowCount).Select(i => (ushort)(300 + i))],
             roadCapacities: [.. Enumerable.Range(0, RuleTables.RoadCapacityCount).Select(i => (byte)(10 + i))],
             walkRows:
@@ -64,9 +63,7 @@ public sealed class RuleTablesShapeTests
                 .. Enumerable
                     .Range(0, RuleTables.WalkRowCount * RuleTables.WalkRowSize)
                     .Select(i => (byte)(4 * (i % 6 + 1))),
-            ],
-            buildingSizes: [.. Enumerable.Repeat((byte)2, RuleTables.BuildingTypeCount)],
-            buildingNeeds: [.. Enumerable.Range(0, 2 * RuleTables.BuildingTypeCount).Select(i => (byte)(i + 1))]
+            ]
         );
 
     [TestMethod]
@@ -74,7 +71,6 @@ public sealed class RuleTablesShapeTests
     {
         var tables = Distinct();
 
-        Assert.Throws<IndexOutOfRangeException>(() => tables.DoorSpeed(RuleTables.DoorSpeedCount));
         Assert.Throws<IndexOutOfRangeException>(() => tables.RoadCapacity(RuleTables.RoadCapacityCount));
         Assert.Throws<IndexOutOfRangeException>(() => tables.ScanWindow(RuleTables.ScanWindowCount));
         Assert.Throws<IndexOutOfRangeException>(() => tables.WalkDirection(RuleTables.WalkRowCount, 0));
@@ -86,7 +82,6 @@ public sealed class RuleTablesShapeTests
     {
         var tables = Distinct();
 
-        Assert.AreEqual((byte)107, tables.DoorSpeed(7));
         Assert.AreEqual((byte)15, tables.RoadCapacity(5));
         Assert.AreEqual((ushort)303, tables.ScanWindow(3));
         Assert.AreEqual(4, tables.WalkDirection(2, 0), "the entry 16 holds the code 4 * 5");
@@ -100,8 +95,8 @@ public sealed class RuleTablesShapeTests
         Assert.AreEqual(RuleTables.StartStockRows, tables.StartStock.Length);
         for (var row = 0; row < RuleTables.StartStockRows; row++)
         {
-            Assert.AreEqual(RuleTables.Goods, tables.StartStock[row].Length);
-            Assert.AreEqual((byte)(row * 10 + 4), tables.StartStock[row][4], $"row {row}");
+            Assert.AreEqual(TestCatalog.Names.Length, tables.StartStock[row].Count);
+            Assert.AreEqual((byte)(row * 10 + 4), tables.StartStock[row][TestCatalog.GoodOf(5)], $"row {row}");
         }
     }
 
@@ -150,9 +145,9 @@ public sealed class RuleTablesShapeTests
     {
         var rows = TestProgram.MadeStartStock();
         var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows);
-        rows[2][4] = 99;
+        ((Dictionary<Good, byte>)rows[2])[TestCatalog.GoodOf(5)] = 99;
 
-        Assert.AreEqual((byte)24, tables.StartStock[2][4]);
+        Assert.AreEqual((byte)24, tables.StartStock[2][TestCatalog.GoodOf(5)]);
     }
 
     [TestMethod]

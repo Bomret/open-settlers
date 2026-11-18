@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Domain;
@@ -106,20 +107,61 @@ public sealed class FlagEncoderTests
     public void AGoodWithADirectionEncodesAsTheGoodInBits0To4AndTheDirectionPlusOneInBits5To7()
     {
         var place = new Flag(4, 5).Places[2];
-        place.Good = new Good { Code = 7 };
+        place.Good = Good.Log;
         place.Way = 3;
 
-        Assert.AreEqual(7 | 4 << 5, FlagEncoder.GoodByte(place));
+        Assert.AreEqual(7 | 4 << 5, FlagEncoder.GoodWord(place, Catalog));
     }
+
+    [TestMethod]
+    public void AGoodWithNoOriginalCodeEncodesAsAWordThatNoOriginalGoodHasAndKeepsTheDirectionBits()
+    {
+        var place = new Flag(4, 5).Places[2];
+        place.Good = TestCatalog.AiToken;
+        place.Way = 3;
+
+        var word = FlagEncoder.GoodWord(place, Catalog);
+
+        Assert.AreEqual(4, word >> 5 & 7, "the direction plus one stays in bits 5 to 7");
+        Assert.IsGreaterThan(0xff, word, "no original good's byte is that large");
+        Assert.AreEqual((long)GoodWords.Of(Catalog, TestCatalog.AiToken) | 4 << 5, word);
+        Assert.AreEqual(
+            Fnv1a.Of("ai-token") & 0x7fffff00,
+            (ulong)word & 0x7fffff00,
+            "the word holds the hash of the stable name"
+        );
+    }
+
+    [TestMethod]
+    public void AGoodWithNoOriginalCodeWithNoDirectionEncodesAsItsWordAlone()
+    {
+        var place = new Flag(4, 5).Places[0];
+        place.Good = TestCatalog.AiToken;
+
+        Assert.AreEqual((long)GoodWords.Of(Catalog, TestCatalog.AiToken), FlagEncoder.GoodWord(place, Catalog));
+        Assert.AreEqual(0, FlagEncoder.GoodWord(place, Catalog) & 0xff);
+    }
+
+    [TestMethod]
+    public void AGoodTheCatalogLacksStopsTheEncodingNamingIt()
+    {
+        var place = new Flag(4, 5).Places[0];
+        place.Good = new Good { Name = "unobtainium" };
+
+        var error = Assert.ThrowsExactly<InvalidOperationException>(() => FlagEncoder.GoodWord(place, Catalog));
+        StringAssert.Contains(error.Message, "unobtainium");
+    }
+
+    static readonly ContentCatalog Catalog = TestCatalog.WithAiToken();
 
     [TestMethod]
     public void AGoodWithNoDirectionAndAnEmptyPlaceEncodeAsTheCodeAndZero()
     {
         var flag = new Flag(4, 5);
-        flag.Places[0].Good = new Good { Code = 9 };
+        flag.Places[0].Good = TestCatalog.GoodOf(9);
 
-        Assert.AreEqual(9, FlagEncoder.GoodByte(flag.Places[0]));
-        Assert.AreEqual(0, FlagEncoder.GoodByte(flag.Places[1]));
+        Assert.AreEqual(9, FlagEncoder.GoodWord(flag.Places[0], Catalog));
+        Assert.AreEqual(0, FlagEncoder.GoodWord(flag.Places[1], Catalog));
     }
 
     [TestMethod]
@@ -138,12 +180,12 @@ public sealed class FlagEncoderTests
     public void AnEmptyPlaceKeepsTheDestinationOfItsLastGoodInTheEncoding()
     {
         var place = new Flag(4, 5).Places[4];
-        place.Good = new Good { Code = 7 };
+        place.Good = Good.Log;
         place.Destination = 0;
 
         place.Good = Good.None;
 
-        Assert.AreEqual(0, FlagEncoder.GoodByte(place));
+        Assert.AreEqual(0, FlagEncoder.GoodWord(place, Catalog));
         Assert.AreEqual(1, FlagEncoder.DestinationWord(place));
     }
 
@@ -163,14 +205,14 @@ public sealed class FlagEncoderTests
     public void ThePlaceOfAFlagIsTheFirstEmptyOneAndNoneWhenAllHoldAGood()
     {
         var flag = new Flag(4, 5);
-        flag.Places[0].Good = new Good { Code = 7 };
-        flag.Places[1].Good = new Good { Code = 7 };
+        flag.Places[0].Good = Good.Log;
+        flag.Places[1].Good = Good.Log;
 
         Assert.AreEqual(2, flag.FirstEmptyPlace());
 
         foreach (var place in flag.Places)
         {
-            place.Good = new Good { Code = 7 };
+            place.Good = Good.Log;
         }
 
         Assert.AreEqual(-1, flag.FirstEmptyPlace());
@@ -226,11 +268,14 @@ public sealed class FlagEncoderTests
     public void TheDigestPlacesOfAFlagAreTheEightGoodBytes()
     {
         var table = new FlagTable { { 4, 5 } };
-        table[0].Places[0].Good = new Good { Code = 9 };
-        table[0].Places[7].Good = new Good { Code = 7 };
+        table[0].Places[0].Good = TestCatalog.GoodOf(9);
+        table[0].Places[7].Good = Good.Log;
         table[0].Places[7].Way = 0;
 
-        CollectionAssert.AreEqual(new long[] { 9, 0, 0, 0, 0, 0, 0, 7 | 1 << 5 }, FlagEncoder.Places(table).ToArray());
+        CollectionAssert.AreEqual(
+            new long[] { 9, 0, 0, 0, 0, 0, 0, 7 | 1 << 5 },
+            FlagEncoder.Places(table, Catalog).ToArray()
+        );
     }
 
     [TestMethod]

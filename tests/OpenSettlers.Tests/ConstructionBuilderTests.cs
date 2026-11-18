@@ -80,7 +80,7 @@ public sealed class ConstructionBuilderTests
                 if (click[0] == 'k')
                 {
                     // k@G,N: the castle's stock of the good G written by hand to N.
-                    var good = new Good { Code = node[0] };
+                    var good = TestCatalog.GoodOf(node[0]);
                     while (game.CastleStock.Take(good)) { }
 
                     for (var i = 0; i < node[1]; i++)
@@ -99,7 +99,7 @@ public sealed class ConstructionBuilderTests
                         Kind = CommandKind.PlaceBuilding,
                         X = node[0],
                         Y = node[1],
-                        Building = new BuildingType { Code = node[2] },
+                        Building = TestCatalog.BuildingOf(node[2]),
                     }
                 );
                 game.ApplyCommands();
@@ -110,7 +110,7 @@ public sealed class ConstructionBuilderTests
                 game.Goods.LayGood(
                     put[1] - 1,
                     put[2],
-                    put[3] & 0x1f,
+                    TestCatalog.GoodOf(put[3] & 0x1f),
                     put[4] == 0 ? null : put[4] - 1,
                     put[3] >> 5 == 0 ? null : (put[3] >> 5) - 1
                 );

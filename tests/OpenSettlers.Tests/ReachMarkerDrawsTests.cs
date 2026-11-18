@@ -110,12 +110,12 @@ public sealed class ReachMarkerDrawsTests
     }
 
     [TestMethod]
-    [DataRow(9, 1, 128)]
-    [DataRow(0xc, 7, 38)]
-    public void The_forester_and_the_farmer_show_their_target_test_over_their_entries(int code, int first, int last)
+    [DataRow("forester-hut", 1, 128)]
+    [DataRow("farm", 7, 38)]
+    public void The_forester_and_the_farmer_show_their_target_test_over_their_entries(string name, int first, int last)
     {
         var game = WorkAreaDrawsTests.Applied("", objects: Heap);
-        var type = new BuildingType { Code = code };
+        var type = new BuildingType { Name = name };
         var search = game.SearchOf(type)!;
 
         var shown = Shown(game, type);
@@ -130,16 +130,16 @@ public sealed class ReachMarkerDrawsTests
     // The same on the History Edition tables, where the farm is a large building.
     [TestMethod]
     [TestCategory(Needs.Install)]
-    [DataRow(9, 1, 128)]
-    [DataRow(0xc, 7, 38)]
+    [DataRow("forester-hut", 1, 128)]
+    [DataRow("farm", 7, 38)]
     public void With_the_History_Edition_tables_the_forester_and_the_farmer_show_their_target_test_over_their_entries(
-        int code,
+        string name,
         int first,
         int last
     )
     {
         var game = WorkAreaDrawsTests.Applied("", TestProgram.Tables(), Heap);
-        var type = new BuildingType { Code = code };
+        var type = new BuildingType { Name = name };
         var search = game.SearchOf(type)!;
 
         var shown = Shown(game, type);

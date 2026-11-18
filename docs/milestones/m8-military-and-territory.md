@@ -1,6 +1,6 @@
-# M7 Military and territory: scope
+# M8 Military and territory: scope
 
-Goal and done condition: [roadmap, M7](../roadmap.md#m7-military-and-territory). Marks:
+Goal and done condition: [roadmap, M8](../roadmap.md#m8-military-and-territory). Marks:
 [Leads](AGENTS.md#leads).
 
 ## Territory

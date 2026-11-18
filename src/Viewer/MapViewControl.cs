@@ -220,13 +220,14 @@ public partial class MapViewControl(
             Food = _gameView ? _game?.CastleStock.FoodCounts ?? new int[PlayFields.Food.Length] : null,
         };
 
-    // The castle bar's text: the castle's logs, planks, stones, and each food good.
+    // The castle bar's text: the castle's logs, planks, stones, and each food good, and each added good the castle holds.
     static string CastleBar(Game game) =>
         CastleReadout.Text(
             game.CastleStock.Logs,
             game.CastleStock.Planks,
             game.CastleStock.Stones,
-            game.CastleStock.FoodCounts
+            game.CastleStock.FoodCounts,
+            CastleReadout.AddedGoods(game.CastleStock, game.Tables.StartStock)
         );
 
     /// <summary>
@@ -543,15 +544,10 @@ public partial class MapViewControl(
             // A layout whose entry the game refuses fails the load: nothing of it is shown and the run exits 4.
             var exit = LayoutLoad.Start(
                 _layout,
-                GameFactory.Create(
-                    _tables,
-                    _state.Map,
-                    _stockLevel ?? _state.StockLevel,
-                    everyPassTurns: true,
-                    handsOutGoods: true,
-                    settlerSupply: true,
-                    settlerRate: _settlerRate ?? _state.SettlerRate
-                ),
+                _tables,
+                _state.Map,
+                _stockLevel ?? _state.StockLevel,
+                _settlerRate ?? _state.SettlerRate,
                 out _game,
                 out var layoutProblem
             );

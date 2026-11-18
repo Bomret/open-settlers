@@ -137,7 +137,7 @@ public sealed class FisherRules(JobParts parts) : JobRules<Fisher>(parts)
 
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                _hut.PutGood(slot, settler, Good.Fish.Code, Cause);
+                _hut.PutGood(slot, settler, Good.Fish, Cause);
             }
 
             _hut.ReturnToHut(slot, settler, trip);

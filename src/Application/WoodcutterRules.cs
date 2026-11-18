@@ -18,9 +18,6 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
     readonly IRandomDraws _draws = parts.Draws;
     readonly HutWork _hut = parts.Hut;
 
-    /// <summary>The good of a log (the byte 7 the settler writes onto the flag, 0x438011).</summary>
-    public const int GoodLog = 7;
-
     Map Map => _movement.Map;
 
     /// <inheritdoc />
@@ -121,7 +118,7 @@ public sealed class WoodcutterRules(JobParts parts) : JobRules<Woodcutter>(parts
 
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                _hut.PutGood(slot, settler, GoodLog, Cause);
+                _hut.PutGood(slot, settler, Good.Log, Cause);
             }
 
             _hut.ReturnToHut(slot, settler, trip);

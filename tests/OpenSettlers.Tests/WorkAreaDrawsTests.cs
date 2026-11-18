@@ -16,10 +16,10 @@ public sealed class WorkAreaDrawsTests
     // The five gatherers and a sawmill around the castle.
     const string AllFive = """
         {"type": "farm", "x": 7, "y": 6},
-        {"type": "woodcutter", "x": 12, "y": 6},
-        {"type": "fisher", "x": 14, "y": 10},
-        {"type": "forester", "x": 14, "y": 13},
-        {"type": "stonecutter", "x": 7, "y": 14},
+        {"type": "woodcutter-hut", "x": 12, "y": 6},
+        {"type": "fisher-hut", "x": 14, "y": 10},
+        {"type": "forester-hut", "x": 14, "y": 13},
+        {"type": "stonecutter-hut", "x": 7, "y": 14},
         {"type": "sawmill", "x": 12, "y": 14}
         """;
 
@@ -117,7 +117,7 @@ public sealed class WorkAreaDrawsTests
     [TestMethod]
     public void A_hut_near_the_map_s_edge_marks_the_wrapped_nodes_on_the_far_side()
     {
-        var game = Applied("""{"type": "woodcutter", "x": 5, "y": 10}""");
+        var game = Applied("""{"type": "woodcutter-hut", "x": 5, "y": 10}""");
 
         var marked = Marked(game);
 
@@ -128,7 +128,7 @@ public sealed class WorkAreaDrawsTests
     [TestMethod]
     public void Each_mark_stands_at_its_node_raised_by_the_node_s_height()
     {
-        var game = Applied("""{"type": "woodcutter", "x": 12, "y": 6}""");
+        var game = Applied("""{"type": "woodcutter-hut", "x": 12, "y": 6}""");
 
         foreach (var draw in WorkAreaDraws.Of(game, 0))
         {
@@ -164,7 +164,7 @@ public sealed class WorkAreaDrawsTests
     [TestMethod]
     public void A_burning_gatherer_building_the_castle_and_a_sawmill_show_no_area()
     {
-        var game = Applied("""{"type": "woodcutter", "x": 12, "y": 6}, {"type": "sawmill", "x": 12, "y": 14}""");
+        var game = Applied("""{"type": "woodcutter-hut", "x": 12, "y": 6}, {"type": "sawmill", "x": 12, "y": 14}""");
         game.Enqueue(
             new Command
             {

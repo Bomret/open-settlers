@@ -1,54 +1,68 @@
 // The stand-in rules of the basic content set that concern buildings: size, needs, door speed, the builder's order of
-// materials and blows, and the worker a finished building asks for. Every value is the project's own invention, never
-// taken from the original game (INV-0001, ADR 0018); the comment on each line states why. A building type this set
-// draws no art for has no entry: it is a small building with no needs and no worker.
+// materials and blows, the builder's second figure, and the worker a finished building asks for. Every value is the project's
+// own invention, never taken from the original game (INV-0001, ADR 0018); the comment on each line states why. The keys are
+// the stable names of the building types, which a layout names a building by (ADR 0020). A building type this set draws no art
+// for has no entry.
 //
 // Each building holds:
-//   size       "mine", "small", or "large".
-//   needs      the planks and stones a site needs, 0 to 255 each.
-//   door       the door speed of the finished building ("standing") and of its site ("constructing"), 0 to 31, in
-//              32nds of a step time: a settler passes the door in that share of a step.
-//   materials  the order the builder takes materials in, at most 16 of "plank" and "stone".
-//   blows      the builder's blows in the first and in the second half of the work, 1 to 32768 each.
-//   worker     the job the finished building asks for and the tool a jobless settler takes for it ("none" for no tool);
-//              a building without this key asks for no worker.
+//   size          "mine", "small", or "large".
+//   needs         the planks and stones a site needs, 0 to 255 each.
+//   door          the door speed of the finished building ("standing") and of its site ("constructing"), 0 to 31, in
+//                 32nds of a step time: a settler passes the door in that share of a step.
+//   materials     the order the builder takes materials in, at most 16 of "plank" and "stone".
+//   blows         the builder's blows in the first and in the second half of the work, 1 to 32768 each.
+//   secondFigure  "second-figure" where the site's builder takes a second figure, "one-figure" where he does not.
+//   worker        the job the finished building asks for and the tool a jobless settler takes for it ("none" for no tool);
+//                 a building without this key asks for no worker.
+//   tieRank       the rank that breaks a tie between two building types, the lower first, 1 to 255, one each: two commands of
+//                 one tick that differ only in the type they place come in its order. A stand-in: the ranks follow the order
+//                 the History Edition gives the same types, so that both sets break the tie alike.
 {
   "buildings": {
     "castle": {
-      // The castle only has a door: its site is not built from needs, and it asks for no worker.
+      // The castle only has a door and a rank: its site is not built from needs, and it asks for no worker.
       "door": { "standing": 20, "constructing": 20 }, // A settler passes in five eighths of a step: the longest pass of any building, for the biggest building.
+      "tieRank": 11, // Last, after the sawmill, as in the History Edition's order.
     },
-    "woodcutter": {
+    "woodcutter-hut": {
       "size": "small", // A hut beside the trees.
       "needs": { "planks": 2, "stones": 0 }, // Timber only: the cheapest hut.
       "door": { "standing": 12, "constructing": 12 }, // A quick door: a settler passes in three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
+      "secondFigure": "one-figure", // A small hut is built by one builder's figure.
       "worker": { "job": "woodcutter", "tool": "hatchet" }, // A woodcutter fells with a hatchet.
+      "tieRank": 2, // After the fisher's hut, as in the History Edition's order.
     },
-    "stonecutter": {
+    "stonecutter-hut": {
       "size": "small", // A hut beside the stones.
       "needs": { "planks": 2, "stones": 0 }, // Timber only: the stone is for others.
       "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
+      "secondFigure": "one-figure", // A small hut is built by one builder's figure.
       "worker": { "job": "stonecutter", "tool": "pickaxe" }, // A stonecutter cuts with a pickaxe.
+      "tieRank": 3, // After the woodcutter's hut, as in the History Edition's order.
     },
-    "forester": {
+    "forester-hut": {
       "size": "small", // A hut beside the meadows.
       "needs": { "planks": 2, "stones": 0 }, // Timber only.
       "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
+      "secondFigure": "one-figure", // A small hut is built by one builder's figure.
       "worker": { "job": "forester", "tool": "none" }, // A forester plants with his hands: no tool.
+      "tieRank": 4, // After the stonecutter's hut, as in the History Edition's order.
     },
-    "fisher": {
+    "fisher-hut": {
       "size": "small", // A hut on the shore.
       "needs": { "planks": 2, "stones": 0 }, // Timber only.
       "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank"], // Two planks, in turn.
       "blows": { "firstHalf": 8, "secondHalf": 8 }, // Eight blows a material, two materials, split evenly.
+      "secondFigure": "one-figure", // A small hut is built by one builder's figure.
       "worker": { "job": "fisher", "tool": "fishing-rod" }, // A fisher casts with a rod.
+      "tieRank": 1, // First, as in the History Edition's order.
     },
     "mill": {
       "size": "small", // The windmill stands on a small plot.
@@ -56,7 +70,9 @@
       "door": { "standing": 12, "constructing": 12 }, // A quick door: three eighths of a step.
       "materials": ["plank", "plank", "stone", "plank"], // The base stone goes in between the planks.
       "blows": { "firstHalf": 16, "secondHalf": 16 }, // Eight blows a material, four materials, split evenly.
+      "secondFigure": "one-figure", // A small building is built by one builder's figure.
       "worker": { "job": "miller", "tool": "none" }, // A miller grinds without a tool.
+      "tieRank": 8, // After the pig farm, as in the History Edition's order.
     },
     "sawmill": {
       "size": "large", // The saw frame needs a large plot.
@@ -64,7 +80,9 @@
       "door": { "standing": 16, "constructing": 16 }, // A slower door: a settler passes in half a step, for the larger building.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
+      "secondFigure": "second-figure", // The saw frame is big enough for a second builder's figure.
       "worker": { "job": "sawmiller", "tool": "saw" }, // A sawmiller saws with a saw.
+      "tieRank": 10, // After the baker, as in the History Edition's order.
     },
     "farm": {
       "size": "large", // The fields need a large plot.
@@ -72,7 +90,9 @@
       "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
+      "secondFigure": "one-figure", // The farm is built by one builder's figure.
       "worker": { "job": "farmer", "tool": "scythe" }, // A farmer harvests with a scythe.
+      "tieRank": 5, // After the forester's hut, as in the History Edition's order.
     },
     "pig-farm": {
       "size": "large", // The pens need a large plot.
@@ -80,7 +100,9 @@
       "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
+      "secondFigure": "one-figure", // The farm's twin is built by one builder's figure.
       "worker": { "job": "pig-farmer", "tool": "none" }, // A pig farmer feeds the pigs by hand.
+      "tieRank": 7, // After the butcher, as in the History Edition's order.
     },
     "butcher": {
       "size": "large", // The slaughter house needs a large plot.
@@ -88,7 +110,9 @@
       "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
+      "secondFigure": "one-figure", // The slaughter house is built by one builder's figure.
       "worker": { "job": "butcher", "tool": "butcher-knife" }, // A butcher cuts with his knife.
+      "tieRank": 6, // After the farm, as in the History Edition's order.
     },
     "baker": {
       "size": "large", // The oven needs a large plot.
@@ -96,7 +120,9 @@
       "door": { "standing": 16, "constructing": 16 }, // A slower door: half a step.
       "materials": ["plank", "stone", "plank", "stone", "plank"], // Planks and stones alternate.
       "blows": { "firstHalf": 20, "secondHalf": 20 }, // Eight blows a material, five materials, split evenly.
+      "secondFigure": "one-figure", // The oven is built by one builder's figure.
       "worker": { "job": "baker", "tool": "none" }, // A baker bakes without a tool.
+      "tieRank": 9, // After the mill, as in the History Edition's order.
     },
   },
 }

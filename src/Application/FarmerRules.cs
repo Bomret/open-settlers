@@ -154,7 +154,7 @@ public sealed class FarmerRules(JobParts parts) : JobRules<Farmer>(parts)
 
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                _hut.PutGood(slot, settler, Good.Grain.Code, Cause);
+                _hut.PutGood(slot, settler, Good.Grain, Cause);
             }
 
             _hut.ReturnToHut(slot, settler, trip);

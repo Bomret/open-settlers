@@ -139,7 +139,7 @@ public sealed class OpenSettlersSourceTests
             .Concat(["road/east", "road/south-east", "road/south", "object/flag"])
             .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"))
             .Concat(BuildingKeys)
-            .Concat(Enumerable.Range(0, 32).Select(code => $"good/{code}"))
+            .Concat(StandInRulesReader.GoodNames.Select(OpenSettlersSource.GoodKey))
             .Concat(["marker/flag", "marker/mine", "marker/small", "marker/large"])
             .Concat(["road-marker/end", "road-marker/blocked", "road-marker/way-back"])
             .Concat(Enumerable.Range(-4, 9).Select(difference => $"road-marker/slope/{difference}"))
@@ -677,7 +677,7 @@ public sealed class OpenSettlersSourceTests
                     Row = 0,
                     X = 0,
                     Y = 0,
-                    Type = new BuildingType { Code = type },
+                    Type = TestCatalog.BuildingOf(type),
                 }
             )!;
 
@@ -888,47 +888,73 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
-    public void AGoodDrawsTheImageOfItsLowFiveBitsWithNoShadow()
+    public void AGoodDrawsTheImageOfItsStableNameWithNoShadow()
     {
         using var folder = new ContentFolder();
         folder.Png("log.png", "4x2:7");
-        folder.Entries["good/7"] = ContentFolder.Entry("log.png", "-2, -2");
+        folder.Entries["good/log"] = ContentFolder.Entry("log.png", "-2, -2");
         var source = folder.Load();
 
-        var drawing = source.Draw(
-            new GoodAtFlag
-            {
-                Row = 0,
-                X = 0,
-                Y = 0,
-                Good = new Good { Code = 7 },
-            }
-        )!;
+        var drawing = source.Draw(AtFlag(Good.Log))!;
 
         Assert.IsNull(drawing.Shadow);
         Assert.AreEqual(
             (4, 2, -2, -2),
             (drawing.Image!.Width, drawing.Image.Height, drawing.Image.OffsetX, drawing.Image.OffsetY)
         );
-        Assert.AreSame(
-            drawing.Image,
-            source
-                .Draw(
-                    new GoodAtFlag
-                    {
-                        Row = 0,
-                        X = 0,
-                        Y = 0,
-                        Good = new Good { Code = 7 + 32 },
-                    }
-                )!
-                .Image
-        );
     }
 
     [TestMethod]
-    [DataRow("good/0")]
-    [DataRow("good/31")]
+    public void AGoodWithNoImageDrawsNothingAndTheSetStillLoads()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("log.png", "4x2:7");
+        folder.Entries["good/log"] = ContentFolder.Entry("log.png", "0, 0");
+        var source = folder.Load();
+
+        Assert.IsNull(source.Draw(AtFlag(new Good { Name = "wine" })), "no good draws another's image");
+        Assert.IsNull(source.Draw(AtFlag(Good.None)));
+    }
+
+    [TestMethod]
+    public void ACarriedGoodWithNoImageIsNotDrawnCarried()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:3");
+        folder.Entries["settler/woodcutter/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/woodcutter/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+
+        var log = source.Draw(Settler(new Woodcutter(), Walking(), carried: Good.Log))!;
+        var wine = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good { Name = "wine" }))!;
+
+        Assert.AreEqual((3, 1), (log.Image!.Rgba[0], wine.Image!.Rgba[0]));
+    }
+
+    [TestMethod]
+    public void AGoodWithNoImageLaidDownOrSteppedOutWithIsNotDrawnCarried()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Entries["settler/sawmiller/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/sawmiller/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+        var wine = new Good { Name = "wine" };
+
+        var putsDown = source.Draw(Settler(new Sawmiller(), new PutsDownGood { Good = wine }))!.Image!;
+        var stepsOut = source
+            .Draw(Settler(new Sawmiller(), new WaitsOutStep { Then = new PutsDownGood { Good = wine } }))!
+            .Image!;
+        var plank = source.Draw(Settler(new Sawmiller(), new PutsDownGood { Good = Good.Plank }))!.Image!;
+
+        Assert.AreEqual((1, 1, 2), (putsDown.Rgba[0], stepsOut.Rgba[0], plank.Rgba[0]));
+    }
+
+    [TestMethod]
+    [DataRow("good/fish")]
+    [DataRow("good/shield")]
     public void AGoodKeyTheManifestLacksIsRefusedByFileAndKey(string key)
     {
         using var folder = new ContentFolder();
@@ -936,6 +962,15 @@ public sealed class OpenSettlersSourceTests
 
         Refuses(folder, "manifest.json", key);
     }
+
+    static GoodAtFlag AtFlag(Good good) =>
+        new()
+        {
+            Row = 0,
+            X = 0,
+            Y = 0,
+            Good = good,
+        };
 
     static SettlerDraw Settler(
         Job job,
@@ -988,7 +1023,7 @@ public sealed class OpenSettlersSourceTests
 
         var walks = source.Draw(Settler(new Woodcutter(), Walking()))!.Image!;
         var cuts = source.Draw(Settler(new Woodcutter(), Cutting()))!.Image!;
-        var carries = source.Draw(Settler(new Woodcutter(), Walking(), carried: new Good { Code = 7 }))!.Image!;
+        var carries = source.Draw(Settler(new Woodcutter(), Walking(), carried: Good.Log))!.Image!;
 
         Assert.AreEqual((1, 2, 3), (walks.Rgba[0], cuts.Rgba[0], carries.Rgba[0]));
     }
@@ -1761,7 +1796,10 @@ public sealed class OpenSettlersSourceTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(
+            new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
+            map
+        );
         game.Enqueue(
             new Command
             {
@@ -1785,7 +1823,7 @@ public sealed class OpenSettlersSourceTests
         );
         game.Tick();
         Huts.PlaceAndTick(game, 16, 2);
-        var goods = Enumerable.Range(0, 8).Select(place => new Good { Code = place + 1 }).ToList();
+        var goods = Enumerable.Range(0, 8).Select(place => TestCatalog.GoodOf(place + 1)).ToList();
         var flagGoods = new Dictionary<(int X, int Y), IReadOnlyList<Good>> { [(17, 3)] = goods };
 
         var terms = ObjectDraws.Of(map, game.CastleStock.Castle, game.Buildings, flagGoods);
@@ -1839,23 +1877,12 @@ public sealed class OpenSettlersSourceTests
             );
         }
 
-        for (var code = 0; code < 32; code++)
+        foreach (var name in StandInRulesReader.GoodNames)
         {
-            Assert.IsNotNull(
-                source
-                    .Draw(
-                        new GoodAtFlag
-                        {
-                            Row = 0,
-                            X = 0,
-                            Y = 0,
-                            Good = new Good { Code = code },
-                        }
-                    )
-                    ?.Image,
-                $"good {code}"
-            );
+            Assert.IsNotNull(source.Draw(AtFlag(new Good { Name = name }))?.Image, $"good {name}");
         }
+
+        Assert.IsNull(source.Draw(AtFlag(Good.None)), "the set holds no image for no good");
 
         Assert.IsNotNull(
             source
@@ -1948,11 +1975,7 @@ public sealed class OpenSettlersSourceTests
             new WalksRoad { Load = null, Heading = heading },
             new WalksRoad
             {
-                Load = new Load
-                {
-                    Good = new Good { Code = 7 },
-                    Destination = null,
-                },
+                Load = new Load { Good = Good.Log, Destination = null },
                 Heading = heading,
             },
             new WaitsOutStep
@@ -1962,11 +1985,7 @@ public sealed class OpenSettlersSourceTests
             new HandsOver { Load = null, Heading = heading },
             new HandsOver
             {
-                Load = new Load
-                {
-                    Good = new Good { Code = 7 },
-                    Destination = null,
-                },
+                Load = new Load { Good = Good.Log, Destination = null },
                 Heading = heading,
             },
             new Door { TimeLeft = 0 },

@@ -9,10 +9,10 @@ namespace OpenSettlers.Tests;
 [TestClass]
 public sealed class GoodsTransportTests
 {
-    const int Log = 7;
+    static readonly Good Log = Good.Log;
 
     // A good of the made-up ranks (the ninth: the program gives it no class, so it goes to storage at once).
-    const int Ninth = 9;
+    static readonly Good Ninth = TestCatalog.GoodOf(9);
     const int West = 3;
     const int East = 0;
 
@@ -101,9 +101,9 @@ public sealed class GoodsTransportTests
     [TestMethod]
     public void TheGoodOfTheHigherTransportPriorityTakesTheRoadFromOneThatWaitsForIt()
     {
-        var ranks = new byte[StartStock.Goods];
-        ranks[Log - 1] = 5;
-        ranks[Ninth - 1] = 9;
+        var ranks = new byte[TestCatalog.Names.Length];
+        ranks[TestCatalog.CodeOf(Log) - 1] = 5;
+        ranks[TestCatalog.CodeOf(Ninth) - 1] = 9;
         var (bench, goods) = Chain(ranks);
         goods.LayGood(1, 6, Log, destination: 0);
         goods.Turn(1);
@@ -123,9 +123,9 @@ public sealed class GoodsTransportTests
     [TestMethod]
     public void AGoodOfALowerTransportPriorityLeavesTheRoadToTheOneThatWaitsForIt()
     {
-        var ranks = new byte[StartStock.Goods];
-        ranks[Log - 1] = 5;
-        ranks[Ninth - 1] = 9;
+        var ranks = new byte[TestCatalog.Names.Length];
+        ranks[TestCatalog.CodeOf(Log) - 1] = 5;
+        ranks[TestCatalog.CodeOf(Ninth) - 1] = 9;
         var (bench, goods) = Chain(ranks);
         goods.LayGood(1, 6, Ninth, destination: 0);
         goods.Turn(1);
@@ -155,7 +155,7 @@ public sealed class GoodsTransportTests
 
         Assert.IsNotNull(goods.PlaceGood(9, 9, 0, Log), "no flag stands on the node");
         Assert.IsNull(goods.PlaceGood(6, 4, 0, Log));
-        Assert.AreEqual(new Good { Code = Log }, bench.Flags[1].Places[0].Good);
+        Assert.AreEqual(Log, bench.Flags[1].Places[0].Good);
         Assert.IsNotNull(goods.PlaceGood(6, 4, 0, Ninth), "the place holds a good already");
     }
 }

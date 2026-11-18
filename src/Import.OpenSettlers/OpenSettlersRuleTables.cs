@@ -14,7 +14,7 @@ public sealed class OpenSettlersRuleTables(string folder) : IRuleTablesSource
     /// <summary>The file of the world's rules, in the content set's folder: object classes, step times, scan windows, frame rows, road capacities, and walk rows.</summary>
     public const string WorldFile = "rules/world.jsonc";
 
-    /// <summary>The file of the goods' rules: counting, priorities, requests, the distribution orders, the start stock, and the request ranks.</summary>
+    /// <summary>The file of the goods' rules: counting, the handover's counter, resource-1 counting, priorities, requests, the distribution orders, the start stock, and the request ranks.</summary>
     public const string GoodsFile = "rules/goods.jsonc";
 
     /// <summary>The file of the buildings' rules: size, needs, door speeds, the builder's materials and blows, and the workers.</summary>

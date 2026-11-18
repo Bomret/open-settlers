@@ -33,7 +33,7 @@ public sealed class JobTests
     {
         for (var code = 0; code <= 255; code++)
         {
-            Assert.AreEqual(code, Job.Of(code).Code, $"job {code}");
+            Assert.AreEqual((int?)code, Job.Of(code).OriginalCode, $"job {code}");
         }
     }
 
@@ -77,15 +77,76 @@ public sealed class JobTests
         Assert.AreEqual(Job.Of(21), new Jobless());
         Assert.AreEqual(Job.Of(24), new Knight(2));
         Assert.AreEqual(Job.Of(9).GetHashCode(), new UnportedJob(9).GetHashCode());
-        Assert.AreEqual(Job.Of(27), Job.Of(26).Promoted);
+        Assert.AreEqual(new Knight(3), new Knight(2).Promoted);
+        Assert.ThrowsExactly<ArgumentException>(() => _ = new Knight(4).Promoted);
+        Assert.IsFalse(new Knight(4).CanBePromoted);
     }
 
     [TestMethod]
-    public void AJobPrintsAsItsBareNumber()
+    public void AJobPrintsAsItsStableNameAndAnUnportedJobAsItsRawNumber()
     {
-        Assert.AreEqual("5", new Woodcutter().ToString());
-        Assert.AreEqual("24", new Knight(2).ToString());
+        Assert.AreEqual("woodcutter", new Woodcutter().ToString());
+        Assert.AreEqual("knight-level-2", new Knight(2).ToString());
         Assert.AreEqual("9", new UnportedJob(9).ToString());
+    }
+
+    [TestMethod]
+    public void EveryPortedJobAndEveryKnightLevelHasAStableNameWithItsEvidence()
+    {
+        Assert.HasCount(Ported.Length + 5, Job.Ported);
+        var names = Job.Ported.Select(job => job.Name).ToArray();
+        CollectionAssert.AllItemsAreUnique(names);
+        foreach (var job in Job.Ported)
+        {
+            Assert.IsTrue(
+                job.Name.Length > 0 && job.Name.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'),
+                job.Name
+            );
+            Assert.IsFalse(string.IsNullOrWhiteSpace(job.NameEvidence), $"the evidence of {job.Name}");
+        }
+
+        for (var level = 0; level < 5; level++)
+        {
+            Assert.AreEqual($"knight-level-{level}", new Knight(level).Name);
+        }
+
+        Assert.AreEqual("woodcutter", new Woodcutter().Name);
+        Assert.AreEqual("castle-settler", new CastleSettler().Name);
+        Assert.AreEqual("pig-farmer", new PigFarmer().Name);
+    }
+
+    [TestMethod]
+    public void AnUnportedJobHasNoNameAndNoEvidence()
+    {
+        Assert.AreEqual("", new UnportedJob(9).Name);
+        Assert.AreEqual("", new UnportedJob(9).NameEvidence);
+        Assert.DoesNotContain(new UnportedJob(9), Job.Ported);
+    }
+
+    [TestMethod]
+    public void TheRegistryKeepsItsOrderByTypeNameThenLevel()
+    {
+        var keys = Job.Ported.Select(job => job.GetType().Name).ToArray();
+
+        CollectionAssert.AreEqual(keys.OrderBy(key => key, StringComparer.Ordinal).ToArray(), keys);
+        CollectionAssert.AreEqual(
+            Enumerable.Range(0, 5).Select(level => new Knight(level)).ToArray(),
+            Job.Ported.OfType<Knight>().ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void NamedFindsEachJobByItsStableNameAndNothingElse()
+    {
+        foreach (var job in Job.Ported)
+        {
+            Assert.AreEqual(job, Job.Named(job.Name), job.Name);
+        }
+
+        Assert.IsNull(Job.Named("chef"));
+        Assert.IsNull(Job.Named(""));
+        Assert.IsNull(Job.Named("Woodcutter"));
+        Assert.IsNull(Job.Named("unported-9"));
     }
 
     [TestMethod]
@@ -95,6 +156,20 @@ public sealed class JobTests
         {
             Assert.ThrowsExactly<ArgumentException>(() => new UnportedJob(code), $"job {code}");
         }
+    }
+
+    [TestMethod]
+    public void AKnightCanBePromotedBelowItsLastLevelAndTheLastLevelMatchesTheNumbersTheLookupKnows()
+    {
+        for (var level = 0; level < 4; level++)
+        {
+            Assert.IsTrue(new Knight(level).CanBePromoted, $"level {level}");
+        }
+
+        var last = Knight.LastLevel;
+        Assert.IsFalse(new Knight(last).CanBePromoted);
+        Assert.AreEqual(Job.Of(Knight.LastNumber), new Knight(last));
+        Assert.ThrowsExactly<ArgumentException>(() => new Knight(last + 1));
     }
 
     [TestMethod]
@@ -135,30 +210,37 @@ public sealed class JobTests
         const BindingFlags Declared =
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
+        // The registry of the generator is the one static member; no number constant and no rule on the type reads a number.
         CollectionAssert.AreEqual(
-            Array.Empty<string>(),
+            new[] { "Ported" },
             typeof(Job).GetProperties(Declared).Select(p => p.Name).ToArray()
         );
-        CollectionAssert.AreEquivalent(
-            new[] { "FirstKnight", "LastKnight" },
-            typeof(Job).GetFields(Declared).Select(field => field.Name).ToList()
+        CollectionAssert.AreEqual(
+            Array.Empty<string>(),
+            typeof(Job).GetFields(Declared).Select(field => field.Name).Where(name => !name.StartsWith('<')).ToList()
+        );
+        var members = typeof(Job).GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+        Assert.IsFalse(
+            members.Any(member => member.Name is "IsKnight" or "IsKnightOrAbove" or "KnightLevel" or "Code")
         );
     }
 
     [TestMethod]
-    public void TheTableMembersKeepTheirValueForEveryNumberFrom0To31()
+    public void TheTypesOfTheJobsKeepTheGenericArrivalHomeOfTheOriginalsTableForEveryNumberFrom0To31()
     {
         for (var code = 0; code <= 31; code++)
         {
-            var job = Job.Of(code);
-            var knight = code is >= 22 and <= 26;
-            var above = code >= 22;
-            Assert.AreEqual(knight, job.IsKnight, $"IsKnight {code}");
-            Assert.AreEqual(above, job.IsKnightOrAbove, $"IsKnightOrAbove {code}");
-            Assert.AreEqual(code - 22, job.KnightLevel, $"KnightLevel {code}");
-            Assert.AreEqual(code + 1, job.Promoted.Code, $"Promoted {code}");
-            var own = code is 7 or 8 or 11 or 14 or 20 || code == 5 || above;
-            Assert.AreEqual(!own, job.ArrivesHomeGenerically, $"ArrivesHomeGenerically {code}");
+            var own = code is 5 or 7 or 8 or 11 or 14 or 20 or >= 22;
+            Assert.AreEqual(!own, Job.Of(code).ArrivesHomeGenerically, $"ArrivesHomeGenerically {code}");
         }
+    }
+
+    [TestMethod]
+    public void AnUnportedJobOfAnExceptedNumberDoesNotArriveGenericallyWhereverItIsBuilt()
+    {
+        Assert.IsFalse(new UnportedJob(20).ArrivesHomeGenerically);
+        Assert.IsFalse(new UnportedJob(27).ArrivesHomeGenerically);
+        Assert.AreEqual(Job.Of(20), new UnportedJob(20));
+        Assert.IsTrue(new UnportedJob(18).ArrivesHomeGenerically);
     }
 }

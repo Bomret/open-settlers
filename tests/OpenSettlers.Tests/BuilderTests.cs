@@ -147,11 +147,11 @@ public sealed class BuilderTests
     // goods on site in the high nibble.
     static (Game Game, Building Site) StoneWorld(ushort order = 0b10, int plankOnSite = 1, int stoneOnSite = 0)
     {
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * BuildingType.Forester.Code] = 1;
-        needs[(2 * BuildingType.Forester.Code) + 1] = 1;
-        var materialOrder = new ushort[RuleTables.BuildingTypeCount];
-        materialOrder[BuildingType.Forester.Code] = order;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[2 * TestCatalog.CodeOf(BuildingType.Forester)] = 1;
+        needs[(2 * TestCatalog.CodeOf(BuildingType.Forester)) + 1] = 1;
+        var materialOrder = new ushort[TestCatalog.BuildingSlots];
+        materialOrder[TestCatalog.CodeOf(BuildingType.Forester)] = order;
         var game = ConstructionWorld.Create(
             ConstructionTables.Tables(stepTime: 300, needs: needs, materialOrder: materialOrder)
         );

@@ -109,7 +109,11 @@ public sealed class SettlerSupplyRecordingTests
         {
             foreach (var good in parts[7].Split(';').Select(text => text.Split(',').Select(int.Parse).ToArray()))
             {
-                var kind = new Good { Code = good[0] };
+                // The recording gives a good by the original's number: the History Edition catalog's entry of that code.
+                var kind = new Good
+                {
+                    Name = game.Tables.Catalog.Goods.Single(entry => entry.OriginalCode == good[0]).Name,
+                };
                 while (game.CastleStock.Count(kind) > good[1])
                 {
                     game.CastleStock.Take(kind);

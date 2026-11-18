@@ -26,14 +26,7 @@ public sealed class RoadCursorTests
         classes[StoneCode] = 2;
         classes[RockCode] = 2;
 
-        return new RuleTables(
-            classes,
-            [
-                .. Enumerable
-                    .Range(0, RuleTables.StartStockRows)
-                    .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)good).ToArray()),
-            ]
-        );
+        return new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn());
     }
 
     // A map whose every node is player 0's and land, with a flag at 10,10.

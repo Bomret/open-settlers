@@ -27,7 +27,7 @@ public sealed class HutWork(
     GameHistory history,
     IRandomDraws draws,
     WalkHomeBehavior walkHome,
-    Action<int, int, int> layGood,
+    Action<int, int, Good> layGood,
     Func<bool> inLayout
 )
 {
@@ -139,7 +139,7 @@ public sealed class HutWork(
         var good = ((PutsDownGood)settler.Activity).Good;
         var flag = Map.At(settler.X, settler.Y).LinkedSlot;
         var place = flags[flag].FirstEmptyPlace();
-        layGood(flag, place >= 0 ? place : FlagPlaces - 1, good.Code);
+        layGood(flag, place >= 0 ? place : FlagPlaces - 1, good);
         history.RecordFlag(flag, EventType.PutGood, Cause.Settlers, history.SettlerId(slot).ToString());
         movement.Become(settler, new EntersBuilding(), movement.ResidueOf(settler.Activity) with { Mode = 0 });
         EnterHut(slot, settler);
@@ -488,7 +488,7 @@ public sealed class HutWork(
     /// The settler lays a good on the first empty place of the flag it stands on (0x436b46). The flag changes and records with
     /// <paramref name="cause"/>; the settler does not.
     /// </summary>
-    internal void PutGood(int slot, Settler settler, int good, Cause cause)
+    internal void PutGood(int slot, Settler settler, Good good, Cause cause)
     {
         var flag = Map.At(settler.X, settler.Y).LinkedSlot;
         var place = flags[flag].FirstEmptyPlace();

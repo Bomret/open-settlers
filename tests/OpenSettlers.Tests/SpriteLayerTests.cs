@@ -62,11 +62,7 @@ public sealed class SpriteLayerTests
                 0,
                 new WalksRoad
                 {
-                    Load = new Load
-                    {
-                        Good = new Good { Code = good },
-                        Destination = null,
-                    },
+                    Load = new Load { Good = TestCatalog.GoodOf(good), Destination = null },
                     Heading = new Heading { Value = 0 },
                 }
             )

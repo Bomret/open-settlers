@@ -23,7 +23,7 @@ public sealed record JobParts
     public required IRandomDraws Draws { get; init; }
 
     /// <summary>Lays a good on a place of a flag: the flag slot, the place, and the good.</summary>
-    public required Action<int, int, int> LayGood { get; init; }
+    public required Action<int, int, Good> LayGood { get; init; }
 
     /// <summary>
     /// The states the workers who go out from a building share: the step from a flag into the building (the turn of state 6), the step

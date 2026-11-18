@@ -1196,225 +1196,183 @@
       -35
     ]
   },
-  "good/0": {
-    "image": "good/0.png",
+  "good/fish": {
+    "image": "good/fish.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/1": {
-    "image": "good/1.png",
+  "good/pig": {
+    "image": "good/pig.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/2": {
-    "image": "good/2.png",
+  "good/meat": {
+    "image": "good/meat.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/3": {
-    "image": "good/3.png",
+  "good/grain": {
+    "image": "good/grain.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/4": {
-    "image": "good/4.png",
+  "good/flour": {
+    "image": "good/flour.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/5": {
-    "image": "good/5.png",
+  "good/bread": {
+    "image": "good/bread.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/6": {
-    "image": "good/6.png",
+  "good/log": {
+    "image": "good/log.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/7": {
-    "image": "good/7.png",
+  "good/plank": {
+    "image": "good/plank.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/8": {
-    "image": "good/8.png",
+  "good/boat": {
+    "image": "good/boat.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/9": {
-    "image": "good/9.png",
+  "good/stone": {
+    "image": "good/stone.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/10": {
-    "image": "good/10.png",
+  "good/iron-ore": {
+    "image": "good/iron-ore.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/11": {
-    "image": "good/11.png",
+  "good/iron": {
+    "image": "good/iron.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/12": {
-    "image": "good/12.png",
+  "good/coal": {
+    "image": "good/coal.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/13": {
-    "image": "good/13.png",
+  "good/gold-ore": {
+    "image": "good/gold-ore.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/14": {
-    "image": "good/14.png",
+  "good/gold": {
+    "image": "good/gold.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/15": {
-    "image": "good/15.png",
+  "good/shovel": {
+    "image": "good/shovel.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/16": {
-    "image": "good/16.png",
+  "good/hammer": {
+    "image": "good/hammer.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/17": {
-    "image": "good/17.png",
+  "good/fishing-rod": {
+    "image": "good/fishing-rod.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/18": {
-    "image": "good/18.png",
+  "good/butcher-knife": {
+    "image": "good/butcher-knife.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/19": {
-    "image": "good/19.png",
+  "good/scythe": {
+    "image": "good/scythe.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/20": {
-    "image": "good/20.png",
+  "good/hatchet": {
+    "image": "good/hatchet.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/21": {
-    "image": "good/21.png",
+  "good/saw": {
+    "image": "good/saw.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/22": {
-    "image": "good/22.png",
+  "good/pickaxe": {
+    "image": "good/pickaxe.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/23": {
-    "image": "good/23.png",
+  "good/pliers": {
+    "image": "good/pliers.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/24": {
-    "image": "good/24.png",
+  "good/sword": {
+    "image": "good/sword.png",
     "anchor": [
       -4,
       -7
     ]
   },
-  "good/25": {
-    "image": "good/25.png",
-    "anchor": [
-      -4,
-      -7
-    ]
-  },
-  "good/26": {
-    "image": "good/26.png",
-    "anchor": [
-      -4,
-      -7
-    ]
-  },
-  "good/27": {
-    "image": "good/27.png",
-    "anchor": [
-      -4,
-      -7
-    ]
-  },
-  "good/28": {
-    "image": "good/28.png",
-    "anchor": [
-      -4,
-      -7
-    ]
-  },
-  "good/29": {
-    "image": "good/29.png",
-    "anchor": [
-      -4,
-      -7
-    ]
-  },
-  "good/30": {
-    "image": "good/30.png",
-    "anchor": [
-      -4,
-      -7
-    ]
-  },
-  "good/31": {
-    "image": "good/31.png",
+  "good/shield": {
+    "image": "good/shield.png",
     "anchor": [
       -4,
       -7

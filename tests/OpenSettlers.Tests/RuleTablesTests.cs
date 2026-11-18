@@ -65,74 +65,163 @@ public sealed class RuleTablesTests
         Assert.AreEqual(-1, tables.WalkDirection(0, 0), "an empty row names none");
     }
 
-    [TestMethod]
-    public void ALostGoodCountsAgainstTheByteItsKindNames()
-    {
-        var kinds = new byte[RuleTables.GoodKindCount];
-        kinds[3] = 0;
-        kinds[4] = 1;
-        kinds[5] = 0xff;
-        kinds[6] = 2;
-
-        var tables = new RuleTables(
+    // Facts chosen against the original's rules (the log's handover counts low here, coal counts against resource 1), so a rule that
+    // derives a fact from a good's code, not from its entry, reads a wrong value.
+    static RuleTables WithGoods() =>
+        new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            goodKinds: kinds
+            catalog: new ContentCatalog([
+                new GoodEntry
+                {
+                    Name = "log",
+                    OriginalCode = 7,
+                    Request = new GoodClass { Class = 2, Word = RequestWord.Second },
+                    Counter = FillCounter.Low,
+                    HandoverCounter = FillCounter.Low,
+                    CountsAgainstResource1 = true,
+                    TransportRank = 4,
+                },
+                new GoodEntry
+                {
+                    Name = "ai-token",
+                    Counter = FillCounter.None,
+                    HandoverCounter = FillCounter.High,
+                    CountsAgainstResource1 = false,
+                    TransportRank = 9,
+                },
+                new GoodEntry
+                {
+                    Name = "coal",
+                    OriginalCode = 13,
+                    Counter = FillCounter.High,
+                    HandoverCounter = FillCounter.Low,
+                    CountsAgainstResource1 = false,
+                    TransportRank = 1,
+                },
+            ])
         );
 
-        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(new Good { Code = 3 }));
-        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(new Good { Code = 4 }));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 5 }));
-        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Code = 6 }));
+    [TestMethod]
+    public void TheTransportPriorityIsTheRankOfTheGoodsEntryAndZeroForNoGood()
+    {
+        var tables = WithGoods();
+
+        Assert.AreEqual(4, tables.TransportPriority(Good.Log));
+        Assert.AreEqual(9, tables.TransportPriority(new Good { Name = "ai-token" }));
+        Assert.AreEqual(0, tables.TransportPriority(Good.None));
     }
 
     [TestMethod]
-    public void ATransportPriorityIsOnlyDefinedForTheGoodsOneTo26()
+    public void TheClassOfAGoodIsTheRequestOfItsEntryAndNullForAGoodForStorage()
     {
-        var ranks = new byte[RuleTables.Goods];
-        ranks[0] = 26;
-        ranks[25] = 1;
+        var tables = WithGoods();
 
-        var tables = TestProgram.Made(ranks);
+        Assert.AreEqual(new GoodClass { Class = 2, Word = RequestWord.Second }, tables.ClassOfGood(Good.Log));
+        Assert.IsNull(tables.ClassOfGood(TestCatalog.GoodOf(13)), "an entry with no request goes to storage at once");
+        Assert.IsNull(tables.ClassOfGood(Good.None));
+    }
 
-        Assert.AreEqual(26, tables.TransportPriority(new Good { Code = 1 }));
-        Assert.AreEqual(1, tables.TransportPriority(new Good { Code = 26 }));
-        Assert.AreEqual(0, tables.TransportPriority(new Good { Code = 0 }));
-        Assert.AreEqual(0, tables.TransportPriority(new Good { Code = 27 }));
+    [TestMethod]
+    public void EveryRuleFactOfAGoodTheCatalogLacksStopsWithAnErrorNamingIt()
+    {
+        var tables = WithGoods();
+        var lacking = Good.Plank;
+
+        foreach (
+            var read in new Action[]
+            {
+                () => tables.TransportPriority(lacking),
+                () => tables.ClassOfGood(lacking),
+                () => tables.FillCounterOf(lacking),
+                () => tables.HandoverCounterOf(lacking),
+                () => tables.CountsAgainstResource1(lacking),
+            }
+        )
+        {
+            var error = Assert.ThrowsExactly<InvalidOperationException>(read);
+            StringAssert.Contains(error.Message, "plank");
+        }
+    }
+
+    [TestMethod]
+    public void ALostGoodCountsAgainstTheByteItsEntryNames()
+    {
+        var tables = WithGoods();
+
+        Assert.AreEqual(FillCounter.Low, tables.FillCounterOf(Good.Log));
+        Assert.AreEqual(FillCounter.High, tables.FillCounterOf(TestCatalog.GoodOf(13)));
+        Assert.AreEqual(FillCounter.None, tables.FillCounterOf(new Good { Name = "ai-token" }));
+    }
+
+    [TestMethod]
+    public void TheHandoverFillsTheCounterOfTheGoodsEntryWhateverItsCode()
+    {
+        var tables = WithGoods();
+
+        Assert.AreEqual(FillCounter.Low, tables.HandoverCounterOf(Good.Log), "the original's rule would say high");
+        Assert.AreEqual(FillCounter.Low, tables.HandoverCounterOf(TestCatalog.GoodOf(13)));
+        Assert.AreEqual(FillCounter.High, tables.HandoverCounterOf(new Good { Name = "ai-token" }));
+    }
+
+    [TestMethod]
+    public void ALostGoodCountsAgainstResource1WhereItsEntryStatesIt()
+    {
+        var tables = WithGoods();
+
+        Assert.IsTrue(tables.CountsAgainstResource1(Good.Log), "the original's rule would say no");
+        Assert.IsFalse(tables.CountsAgainstResource1(TestCatalog.GoodOf(13)), "coal counts against nothing");
+        Assert.IsFalse(tables.CountsAgainstResource1(Good.None));
     }
 
     [TestMethod]
     public void ABuildingTypeTakesTheSizeAndTheNeedsOfItsTableEntries()
     {
-        var sizes = new byte[RuleTables.BuildingTypeCount];
-        sizes[5] = 1;
-        sizes[6] = 2;
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * 6] = 7;
-        needs[2 * 6 + 1] = 3;
+        var sizes = new byte[TestCatalog.BuildingSlots];
+        sizes[TestCatalog.CodeOf(BuildingType.Mill)] = 1;
+        sizes[TestCatalog.CodeOf(BuildingType.Baker)] = 2;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[2 * TestCatalog.CodeOf(BuildingType.Baker)] = 7;
+        needs[2 * TestCatalog.CodeOf(BuildingType.Baker) + 1] = 3;
 
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            buildingSizes: sizes,
-            buildingNeeds: needs
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, needs: needs))
         );
 
-        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(new BuildingType { Code = 4 }));
-        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(new BuildingType { Code = 5 }));
-        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(new BuildingType { Code = 6 }));
-        Assert.AreEqual(new BuildingNeeds { Planks = 7, Stones = 3 }, tables.NeedsOf(new BuildingType { Code = 6 }));
-        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(new BuildingType { Code = 5 }));
+        Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Farm));
+        Assert.AreEqual(BuildingSize.Small, tables.SizeOf(BuildingType.Mill));
+        Assert.AreEqual(BuildingSize.Large, tables.SizeOf(BuildingType.Baker));
+        Assert.AreEqual(new BuildingNeeds { Planks = 7, Stones = 3 }, tables.NeedsOf(BuildingType.Baker));
+        Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(BuildingType.Mill));
     }
 
     [TestMethod]
-    public void ATypeOutsideTheTablesIsNoSizeAndNeedsNothing()
+    public void TheCastleAndNoBuildingAreNoSizeAndNeedNothing()
     {
         var tables = TestProgram.Made();
 
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Castle));
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.None));
         Assert.AreEqual(new BuildingNeeds { Planks = 0, Stones = 0 }, tables.NeedsOf(BuildingType.Castle));
+    }
+
+    [TestMethod]
+    public void ABuildingTypeTheCatalogLacksStopsTheRulesWithAnErrorNamingIt()
+    {
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
+
+        StringAssert.Contains(
+            Assert.ThrowsExactly<InvalidOperationException>(() => tables.SizeOf(BuildingType.Sawmill)).Message,
+            "sawmill"
+        );
+        StringAssert.Contains(
+            Assert
+                .ThrowsExactly<InvalidOperationException>(() => tables.TakesSecondFigure(BuildingType.Sawmill))
+                .Message,
+            "sawmill"
+        );
     }
 
     [TestMethod]
@@ -175,22 +264,8 @@ public sealed class RuleTablesTests
                     Cutting = 9,
                 }
             ),
-            (
-                new Digger(),
-                new WorkerRequest
-                {
-                    Job = new Digger(),
-                    Tool = new Good { Code = 16 },
-                }
-            ),
-            (
-                new Builder(),
-                new WorkerRequest
-                {
-                    Job = new Builder(),
-                    Tool = new Good { Code = 17 },
-                }
-            )
+            (new Digger(), new WorkerRequest { Job = new Digger(), Tool = TestCatalog.GoodOf(16) }),
+            (new Builder(), new WorkerRequest { Job = new Builder(), Tool = TestCatalog.GoodOf(17) })
         );
 
         Assert.AreEqual(woodcutter, tables.Get<FigureAdds>(new Woodcutter()));
@@ -205,19 +280,11 @@ public sealed class RuleTablesTests
             tables.Get<FigureAdds>(new Digger())
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Digger(),
-                Tool = new Good { Code = 16 },
-            },
+            new WorkerRequest { Job = new Digger(), Tool = TestCatalog.GoodOf(16) },
             tables.Get<WorkerRequest>(new Digger())
         );
         Assert.AreEqual(
-            new WorkerRequest
-            {
-                Job = new Builder(),
-                Tool = new Good { Code = 17 },
-            },
+            new WorkerRequest { Job = new Builder(), Tool = TestCatalog.GoodOf(17) },
             tables.Get<WorkerRequest>(new Builder())
         );
     }

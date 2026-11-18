@@ -71,12 +71,12 @@ first empty place and then to a flag that asks for it or to the castle. The bake
 
 The three orders of `0x42a313` hold a step for grain (class 4, first word, good 4) as they hold the plank's. The castle hands grain out to the asking mill as it hands out planks, and the
 mill counts one grain on its way in the low byte (`mill-materials.txt`: stock 3 to 2, fill byte 1, rank 0, then `0x3f`). The step for the food class 0 (fish, meat, bread; the mines ask them) finds
-no asker yet and stays inert (M6). With no grain in the stock the mill waits and the game runs on.
+no asker yet and stays inert (M7). With no grain in the stock the mill waits and the game runs on.
 
 ## The fill byte of a food good
 
 The table `0x462d6d` gives each good its counter: the food goods 1 to 6 count in byte 8, the low byte. The engine reads it in one place (`RuleTables.FillCounterOf`) for the count on the way (the request
-search and the hand-out) and the count back where a good is lost (`0x462ca4`, the removal's). The carrier's delivery reads the byte from the good's code (`Good.FillsHigh`), which agrees with the table on every good. For every good with a class it is the byte of the request word that asks for it.
+search and the hand-out) and the count back where a good is lost (`0x462ca4`, the removal's). The carrier's delivery reads the byte from the entry's handover counter (`RuleTables.HandoverCounterOf`), which the History Edition importer states from the rule at `0x43c4ea` and which agrees with the table on every good. For every good with a class it is the byte of the request word that asks for it.
 
 ## Removal
 

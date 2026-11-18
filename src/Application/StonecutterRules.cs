@@ -49,9 +49,6 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
     readonly IRandomDraws _draws = parts.Draws;
     readonly HutWork _hut = parts.Hut;
 
-    /// <summary>The good of a stone (the byte 10 the settler writes onto the flag, 0x438180).</summary>
-    public const int GoodStone = 10;
-
     // The time a node without a heap adds to the search's timer (0x435c50), where the woodcutter's adds 400.
     const int HeapMiss = 100;
 
@@ -190,7 +187,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
         {
             if (trip.Purpose is BackToHut { Carrying: true })
             {
-                _hut.PutGood(slot, settler, GoodStone, Cause);
+                _hut.PutGood(slot, settler, Good.Stone, Cause);
             }
 
             _hut.ReturnToHut(slot, settler, trip);

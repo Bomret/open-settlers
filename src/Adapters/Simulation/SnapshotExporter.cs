@@ -8,15 +8,27 @@ namespace OpenSettlers.Simulation;
 /// holds (ADR 0013, INV-0006): the fields in a fixed order, each a name and its number. It reads the game's lists, which the
 /// game shares with it, and changes none.
 /// </summary>
-public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildings, FlagTable flags) : IThingSnapshots
+/// <param name="settlers">The settler list.</param>
+/// <param name="buildings">The building list.</param>
+/// <param name="flags">The flag list.</param>
+/// <param name="catalog">The content catalog of the game: it gives each good its original code, or the word of the hash of its name.</param>
+public sealed class SnapshotExporter(
+    SettlerTable settlers,
+    BuildingTable buildings,
+    FlagTable flags,
+    ContentCatalog catalog
+) : IThingSnapshots
 {
+    /// <inheritdoc/>
+    public string GoodText(Good good) => GoodWords.Text(catalog, good);
+
     /// <summary>The building in the slot: its type, node, flag, status, worker, and fill, as the building table holds them.</summary>
     public ThingState Building(int slot)
     {
         var b = buildings[slot];
         List<(string, int)> fields =
         [
-            ("type", b.Type.Code),
+            ("type", BuildingWords.Of(catalog, b.Type)),
             ("constructing", b.Constructing ? 1 : 0),
             ("x", b.X),
             ("y", b.Y),
@@ -45,7 +57,9 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
             fields.Add(($"road{direction}", FlagEncoder.RoadByte(flag.Side(direction))));
         }
 
-        fields.AddRange(flag.Places.Select((place, index) => ($"good{index}", (int)FlagEncoder.GoodByte(place))));
+        fields.AddRange(
+            flag.Places.Select((place, index) => ($"good{index}", (int)FlagEncoder.GoodWord(place, catalog)))
+        );
 
         return new ThingState { Fields = fields };
     }
@@ -54,12 +68,12 @@ public sealed class SnapshotExporter(SettlerTable settlers, BuildingTable buildi
     public ThingState Settler(int slot)
     {
         var s = settlers[slot];
-        var raw = SettlerEncoder.Fields(s);
+        var raw = SettlerEncoder.Fields(s, catalog);
         return new ThingState
         {
             Fields =
             [
-                ("job", s.Job.Code),
+                ("job", JobWords.Of(catalog, s.Job)),
                 ("state", raw.State),
                 ("player", s.Player),
                 ("mode", raw.Mode),

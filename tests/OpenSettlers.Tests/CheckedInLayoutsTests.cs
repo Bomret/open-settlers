@@ -30,7 +30,7 @@ public sealed class CheckedInLayoutsTests
     }
 
     // The first problem of a layout's text, or null when it reads and every entry applies.
-    static string? Problem(string text, string file)
+    static string? Problem(string text, string file, RuleTables? tables = null)
     {
         var read = Layout.Read(text, file);
         if (read.Layout is null)
@@ -38,10 +38,25 @@ public sealed class CheckedInLayoutsTests
             return string.Join("; ", read.Problems);
         }
 
-        var tables = new OpenSettlersRuleTables(LaunchInstall.BasicFolder(PythonTool.RepoRoot())).Read();
-        var game = GameFactory.Create(tables, read.Layout.BuildMap(), StartStock.LevelOf(read.Layout.Seed));
+        if (tables is null)
+        {
+            return read.Layout.Apply(LayoutSettlersTests.NewGame(read.Layout));
+        }
 
-        return read.Layout.Apply(game);
+        // The game as the launch builds it: the start stock level and the settler rate the layout's seed draws, and the passes
+        // of a played game.
+        return
+            LayoutLoad.Start(
+                read.Layout,
+                tables,
+                read.Layout.BuildMap(),
+                StartStock.LevelOf(read.Layout.Seed),
+                StartStock.SettlerRateOf(read.Layout.Seed),
+                out _,
+                out var message
+            ) == 0
+            ? null
+            : message;
     }
 
     [TestMethod]
@@ -53,6 +68,31 @@ public sealed class CheckedInLayoutsTests
         var problems = files.Select(file => Problem(File.ReadAllText(file), Path.GetFileName(file))).OfType<string>();
 
         Assert.AreEqual("", string.Join("\n", problems));
+    }
+
+    // Every layout applies under the tables of one content set; the problems name each file that a set refuses.
+    static string ProblemsUnder(RuleTables tables) =>
+        string.Join(
+            "\n",
+            Directory
+                .GetFiles(LayoutsFolder(), "*.jsonc")
+                .Select(file => Problem(File.ReadAllText(file), Path.GetFileName(file), tables))
+                .OfType<string>()
+        );
+
+    [TestMethod]
+    public void EveryLayoutOfTheRepositoryAppliesUnderTheBasicSet()
+    {
+        var basic = Path.Combine(Path.GetDirectoryName(LayoutsFolder())!, "content", "basic");
+
+        Assert.AreEqual("", ProblemsUnder(new OpenSettlersRuleTables(basic).Read()));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EveryLayoutOfTheRepositoryAppliesUnderTheHistoryEditionTables()
+    {
+        Assert.AreEqual("", ProblemsUnder(TestProgram.Tables()));
     }
 
     [TestMethod]

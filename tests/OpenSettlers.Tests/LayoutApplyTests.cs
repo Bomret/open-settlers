@@ -12,7 +12,7 @@ public sealed class LayoutApplyTests
     const string Castle = """ "castle": {"x": 10, "y": 10}, """;
     const string Flag = """ "flags": [{"x": 14, "y": 11}], """;
     const string Road = """ "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}], """;
-    const string Hut = """ "buildings": [{"type": "woodcutter", "x": 13, "y": 10}] """;
+    const string Hut = """ "buildings": [{"type": "woodcutter-hut", "x": 13, "y": 10}] """;
 
     // The reasons the game gives for a refused entry (Layout.Refusal).
     const string CastleRefusal = "the node is no castle site, the original refuses it there";
@@ -40,7 +40,7 @@ public sealed class LayoutApplyTests
         var tables = new RuleTables(
             classes,
             TestProgram.MadeStartStock(),
-            workers: TestProgram.MadeWorkers(stonecutter: true)
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(workers: TestProgram.MadeWorkers(stonecutter: true)))
         );
 
         return GameFactory.Create(tables, layout.BuildMap());
@@ -125,7 +125,7 @@ public sealed class LayoutApplyTests
     // The made tables of the layout tests with the sawmill large, as the original's size table makes it.
     static Game NewGameWithALargeSawmill(Layout layout)
     {
-        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
+        var sizes = Enumerable.Repeat((byte)1, TestCatalog.BuildingSlots).ToArray();
         foreach (
             var large in new[]
             {
@@ -137,7 +137,7 @@ public sealed class LayoutApplyTests
             }
         )
         {
-            sizes[large.Code] = 2;
+            sizes[TestCatalog.CodeOf(large)] = 2;
         }
 
         var classes = new ObjectClass[RuleTables.ClassCount];
@@ -147,32 +147,33 @@ public sealed class LayoutApplyTests
             new RuleTables(
                 classes,
                 TestProgram.MadeStartStock(),
-                buildingSizes: sizes,
-                workers: TestProgram.MadeWorkers(stonecutter: true)
+                catalog: TestCatalog.StandIn(
+                    TestCatalog.Buildings(sizes: sizes, workers: TestProgram.MadeWorkers(stonecutter: true))
+                )
             ),
             layout.BuildMap()
         );
     }
 
     [TestMethod]
-    [DataRow("woodcutter", 2)]
-    [DataRow("stonecutter", 4)]
-    [DataRow("forester", 9)]
-    [DataRow("sawmill", 0x11)]
-    [DataRow("fisher", 1)]
-    [DataRow("farm", 0xc)]
-    [DataRow("butcher", 0xd)]
-    [DataRow("pig-farm", 0xe)]
-    [DataRow("mill", 0xf)]
-    [DataRow("baker", 0x10)]
-    public void AFinishedBuildingEntryStandsFinishedWithItsFlagAndNoSite(string name, int code)
+    [DataRow("woodcutter-hut")]
+    [DataRow("stonecutter-hut")]
+    [DataRow("forester-hut")]
+    [DataRow("sawmill")]
+    [DataRow("fisher-hut")]
+    [DataRow("farm")]
+    [DataRow("butcher")]
+    [DataRow("pig-farm")]
+    [DataRow("mill")]
+    [DataRow("baker")]
+    public void AFinishedBuildingEntryStandsFinishedWithItsFlagAndNoSite(string name)
     {
         var layout = Read(Castle + $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """);
         var game = NewGameWithALargeSawmill(layout);
 
         Assert.IsNull(layout.Apply(game));
 
-        var building = game.Buildings.Single(b => b.Type.Code == code);
+        var building = game.Buildings.Single(b => b.Type.Name == name);
         Assert.IsFalse(building.Constructing, "a layout's building stands finished");
         Assert.IsNull(building.Site);
         Assert.AreEqual((14, 11), (game.Flags[building.Flag].X, game.Flags[building.Flag].Y));
@@ -181,12 +182,12 @@ public sealed class LayoutApplyTests
     [TestMethod]
     public void AFarmEntryStandsAJoblessSettlerInsideAsTheFarmerInTheSearchForAField()
     {
-        var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter", "farm"));
-        var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
-        sizes[BuildingType.Farm.Code] = 2;
+        var layout = Read(Castle + Flag + Road + Hut.Replace("woodcutter-hut", "farm"));
+        var sizes = Enumerable.Repeat((byte)1, TestCatalog.BuildingSlots).ToArray();
+        sizes[TestCatalog.CodeOf(BuildingType.Farm)] = 2;
         var workers = TestProgram.MadeWorkers();
-        var scythe = new Good { Code = 20 };
-        workers[BuildingType.Farm.Code] = new WorkerRequest { Job = new Farmer(), Tool = scythe };
+        var scythe = TestCatalog.GoodOf(20);
+        workers[TestCatalog.CodeOf(BuildingType.Farm)] = new WorkerRequest { Job = new Farmer(), Tool = scythe };
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
         Game Made(Layout of) =>
@@ -194,9 +195,8 @@ public sealed class LayoutApplyTests
                 new RuleTables(
                     classes,
                     TestProgram.MadeStartStock(),
-                    buildingSizes: sizes,
-                    workers: workers,
-                    jobData: TestProgram.MadeJobData()
+                    jobData: TestProgram.MadeJobData(),
+                    catalog: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, workers: workers))
                 ),
                 of.BuildMap()
             );
@@ -232,21 +232,35 @@ public sealed class LayoutApplyTests
     [DataRow("storehouse")]
     [DataRow("castle")]
     [DataRow("well")]
-    public void AnEntryThatNamesATypeNoSliceBuildsFailsTheReadNamingTheTypes(string name)
+    [DataRow("woodcutter")]
+    [DataRow("fisher")]
+    [DataRow("stonecutter")]
+    [DataRow("forester")]
+    public void AnEntryThatNamesNoPlaceableStableNameIsRefusedAtTheBuildNamingTheNames(string name)
     {
         var entry = $$""" "buildings": [{"type": "{{name}}", "x": 13, "y": 10}] """;
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + entry), "test.jsonc");
+        var layout = Read(Castle + entry);
+        var game = NewGameWithALargeSawmill(layout);
 
-        Assert.IsTrue(
-            read.Problems.Any(problem =>
-                problem.StartsWith("test.jsonc: buildings[0]: ")
-                && problem.Contains($"no building type {name}")
-                && problem.Contains(
-                    "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher"
-                )
-            ),
-            string.Join("; ", read.Problems)
+        var problem = layout.Apply(game);
+
+        Assert.AreEqual(
+            $"test.jsonc: buildings[0]: the building type \"{name}\" is no stable name of a building type of this content set, use "
+                + "baker, butcher, farm, fisher-hut, forester-hut, mill, pig-farm, sawmill, stonecutter-hut, woodcutter-hut",
+            problem
         );
+        Assert.AreEqual(0, game.Buildings.Count(building => !building.IsFree && building.Type != BuildingType.Castle));
+    }
+
+    [TestMethod]
+    public void AnEntryThatGivesTheTypeAsANumberIsRefusedAtTheBuildNamingTheNames()
+    {
+        var layout = Read(Castle + """ "buildings": [{"type": 2, "x": 13, "y": 10}] """);
+
+        var problem = layout.Apply(NewGameWithALargeSawmill(layout));
+
+        StringAssert.StartsWith(problem, "test.jsonc: buildings[0]: ");
+        StringAssert.Contains(problem, "use baker, butcher");
     }
 
     [TestMethod]
@@ -335,7 +349,7 @@ public sealed class LayoutApplyTests
         var roads =
             """ "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}, {"x": 11, "y": 11, "directions": [0, 0, 0]}], """;
         var huts =
-            """ "buildings": [{"type": "woodcutter", "x": 13, "y": 10}, {"type": "woodcutter", "x": 13, "y": 10}] """;
+            """ "buildings": [{"type": "woodcutter-hut", "x": 13, "y": 10}, {"type": "woodcutter-hut", "x": 13, "y": 10}] """;
 
         foreach (var (extra, entry) in new[] { (flags + huts, "flags"), (roads + huts, "roads"), (huts, "buildings") })
         {

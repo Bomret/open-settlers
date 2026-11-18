@@ -72,7 +72,7 @@ public sealed class BuildingEncoderTests
     {
         const int Stones = 3;
         var needs = ConstructionTables.Needs();
-        needs[(2 * BuildingType.Forester.Code) + 1] = Stones;
+        needs[(2 * TestCatalog.CodeOf(BuildingType.Forester)) + 1] = Stones;
         var game = ConstructionWorld.Create(ConstructionTables.Tables(needs: needs));
         ConstructionWorld.Site(game, BuildingType.Forester, 17, 5);
         var site = game.Buildings[1].Site!;

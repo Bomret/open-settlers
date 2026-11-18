@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.MapView;
 
 /// <summary>
 /// The <c>&lt;what&gt;</c> of an <c>expect-at</c> or <c>expect-count</c> step: a kind (<c>object</c>, <c>settler</c>,
-/// <c>building</c>, <c>flag</c>, <c>road</c>), a name from the name table, or <c>object:0xNN</c> for one raw map
+/// <c>building</c>, <c>flag</c>, <c>road</c>), a name from the name table or the stable name of a building type, or <c>object:0xNN</c> for one raw map
 /// object code. A name several codes share matches a thing of any of them.
 /// </summary>
 public sealed record ThingSelector
@@ -22,6 +24,26 @@ public sealed record ThingSelector
     static readonly string[] Kinds = [Thing.ObjectKind, "settler", "building", "flag", "road"];
 
     const string RawPrefix = "object:0x";
+
+    // The stable names of the building types the engine names (BuildingType): a script is read before a game and its catalog exist.
+    static readonly HashSet<string> BuildingNames =
+    [
+        .. new[]
+        {
+            BuildingType.Castle,
+            BuildingType.Woodcutter,
+            BuildingType.Stonecutter,
+            BuildingType.Forester,
+            BuildingType.Sawmill,
+            BuildingType.Fisher,
+            BuildingType.Farm,
+            BuildingType.Butcher,
+            BuildingType.PigFarm,
+            BuildingType.Mill,
+            BuildingType.Baker,
+            BuildingType.Storehouse,
+        }.Select(type => type.Name),
+    ];
 
     /// <summary>Reads <paramref name="text"/>; the selector, or the problem when it is no kind, name, or raw code.</summary>
     public static (ThingSelector? Selector, string? Problem) Parse(string text)
@@ -48,7 +70,11 @@ public sealed record ThingSelector
             return (new ThingSelector { Text = text, RawCode = code }, null);
         }
 
-        return Array.IndexOf(Kinds, text) >= 0 || NameTable.IsName(text)
+        return
+            Array.IndexOf(Kinds, text) >= 0
+            || NameTable.IsName(text)
+            || Job.Named(text) is not null
+            || BuildingNames.Contains(text)
             ? (
                 new ThingSelector
                 {
@@ -60,7 +86,7 @@ public sealed record ThingSelector
             )
             : (
                 null,
-                $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, or object:0xNN"
+                $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, the stable name of a building type, the stable name of a job, or object:0xNN"
             );
     }
 

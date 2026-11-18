@@ -24,8 +24,13 @@ The simulation is three class-library assemblies under `src/` that depend only i
 - `Adapters/Simulation/` (`OpenSettlers.Simulation`): the edge. Importers (`MapImporter`, `MapGenerator`, `Layout`),
   exporters (`GameDigest`, `SnapshotExporter`, `FlagEncoder`, `SettlerEncoder`, `BuildingEncoder`,
   `MapLayerExporter`), and `GameFactory`. It references the domain, the application, and the History Edition source,
-  of which it names only `JobTableNames` (INV-0011). `ProgramTablesImporter` is internal to the History Edition
-  source (`src/Import.HistoryEdition/Tables/`, ADR 0017).
+  of which it names only `JobTableNames`, for the state names (INV-0011). `ProgramTablesImporter` is internal to the
+  History Edition source (`src/Import.HistoryEdition/Tables/`, ADR 0017).
+
+The content catalog (`ContentCatalog`, ADR 0020) is built by a rule tables source, in the History Edition source by
+`ProgramTablesImporter.Catalog` and in the Open Settlers source by `StandInRules`, and every layer reads it as
+`RuleTables.Catalog`. A rule identifies a good, building type, or job by its stable name and never reads an original
+code (INV-0014). The adapters take only the state names from the History Edition source (`JobTableNames`).
 
 Place new code by what it does: a rule goes in the application, a type that states what a rule reads goes in the
 domain, and a conversion from or to the original's bytes goes in the adapters.
@@ -38,8 +43,9 @@ of the jobs. A building the job works in has its own list, in step 5. A caller n
 (`new Woodcutter()`, `is Woodcutter`), never by a static accessor or a number constant of `Job`. Add a job as its own
 files, layer by layer:
 
-1. Domain, `src/Domain/Jobs/X.cs`: `public sealed record X : Job` with `public const int Number = <n>;` (a literal) and
-   `public override int Code => Number;`. Override `ArrivesHomeGenerically` for a job that has a branch of its own in
+1. Domain, `src/Domain/Jobs/X.cs`: `public sealed record X : Job` with `public const int Number = <n>;` (a literal),
+   `public override int? OriginalCode => Number;`, and a `[JobName("x", "<evidence>")]` stable name (INV-0006; a ranged
+   job names each level with `Level = n`). Override `ArrivesHomeGenerically` for a job that has a branch of its own in
    the original's table at `0x437dfb`. The data the original holds for the job (`FigureAdds` and its relatives, a
    `WorkerRequest`) is a record of the domain that the rules read through `RuleTables.Get<T>(new X())`. Declare the
    record types the job owns in `public override IReadOnlyList<Type> Data => [typeof(...)]`: the importer refuses a
@@ -56,10 +62,10 @@ files, layer by layer:
    alone.
    `JobModules.Build(parts)` builds every module.
 3. History Edition source, `src/Import.HistoryEdition/Tables/Jobs/XTables.cs`: `sealed class XTables : JobTables<X>`
-   (internal, as are `JobTables<TJob>` and its attributes) with `[JobName]` and
-   `[StateName]` (each carries its evidence, INV-0006) and a `Read` override that adds the job's data records from
-   `Siedler1.exe`. The generator writes `JobTablesRegistry`, which holds the modules and the names; `NameTable` in the
-   adapters reads the names through `JobTableNames`.
+   (internal, as are `JobTables<TJob>` and its attributes) with `[StateName]` (each carries its evidence,
+   INV-0006) and a `Read` override that adds the job's data records from `Siedler1.exe`. The generator writes
+   `JobTablesRegistry`, which holds the modules and the state names; `NameTable` in the adapters reads the state names
+   through `JobTableNames`.
 4. Looks: `src/Import.HistoryEdition/HistoryEditionLooks/XLook.cs` with the internal
    `XLook(RuleTables tables) : HistoryEditionLook<X>` for the History Edition source and
    `src/Import.OpenSettlers/OpenSettlersLooks/XKey.cs` with the internal

@@ -5,12 +5,8 @@ namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The stonecutter's tables: his figure adds, read as the woodcutter's are (the stub of job 7 must jump to his handler, and the add
-/// of his step back off the heap must be the add of his way back with the stone), and his name and states.
+/// of his step back off the heap must be the add of his way back with the stone), and his states.
 /// </summary>
-[JobName(
-    "stonecutter",
-    "Stonecutter; his work puts good 10 (a stone) on the hut's flag (0x438182) and cuts the stone heaps 0x48 to 0x4f (0x435c5c); docs/rules/stonecutting.md"
-)]
 [StateName(
     0x15,
     "looks-for-heap",

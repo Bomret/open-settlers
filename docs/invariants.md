@@ -11,10 +11,10 @@ Check: `RepositoryContentTests` fails on a file with the extension of an install
 ### INV-0002
 
 Class: architecture
-Concepts: Simulation, Tick
-Statement: The simulation draws randomness only from its own seeded generator. It never draws randomness from wall-clock time, frame timing, the iteration order of an unordered collection, or floating-point arithmetic whose result can differ between platforms. The same seed and the same inputs give the same state after the same number of ticks.
+Concepts: Simulation, Tick, Content catalog
+Statement: The simulation draws randomness only from its own seeded generator. It never draws randomness from wall-clock time, frame timing, the iteration order of an unordered collection, or floating-point arithmetic whose result can differ between platforms. The content catalog orders its entries by stable name, whatever order its source gives them in (ADR 0020). The same seed and the same inputs give the same state after the same number of ticks.
 Breaks: silently
-Check: `GameTests` (`TheSameSeedAndCommandsGiveTheSameDigest`, `ACommandAtAnotherTickGivesAnotherDigest`) runs the same seed and commands twice and compares `Game.Digest()`.
+Check: `GameTests` (`TheSameSeedAndCommandsGiveTheSameDigest`, `ACommandAtAnotherTickGivesAnotherDigest`) runs the same seed and commands twice and compares `Game.Digest()`. A catalog test builds one catalog from its entries in two orders and compares the entry order.
 
 ### INV-0003
 
@@ -43,10 +43,10 @@ Check: the layout loader's tests refuse every settler or good entry that names n
 ### INV-0006
 
 Class: architecture
-Concepts: Name table, Thing
-Statement: Every name shown for a map object code, settler job, settler state, or building type comes from a name-table entry that cites its evidence (ADR 0010). The raw value always shows beside the name, and a code with no entry shows only raw.
+Concepts: Name table, Thing, Catalog entry, Stable name
+Statement: Every name shown for a map object code or a settler state comes from a name-table entry that cites its evidence, and every name shown for a good, building type, or job is the stable name of its catalog entry; an original entry's name cites its evidence (ADR 0010, ADR 0020). The raw value always shows beside the name, a code with no entry shows only raw, and an entry with no original code shows its name and no raw value.
 Breaks: silently
-Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name. Reviewers check the evidence of each new entry.
+Check: `NameTableTests` checks that every entry carries its evidence and that a code with no entry gets no name. A catalog test checks that every original entry carries its evidence. Reviewers check the evidence of each new entry.
 
 ### INV-0007
 
@@ -84,9 +84,19 @@ Check: `GraphicsSourceBoundaryTests` pins the classes of the map view outside th
 
 Class: architecture
 Concepts: Import port, Graphics source, Install
-Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats. Only the Open Settlers source assembly reads the basic content set: its graphics, its stand-in rules, and its walk steps (ADR 0018). The map view, the asset check, the asset browser, the domain, and the application name no type of a source assembly. The Godot host names one only where it builds a source: the launch code and the main scene, `AssetBrowserView`. The adapter assembly is the one exception: it names `JobTableNames` of the History Edition source, through which the name table reads the job and state names (ADR 0017).
+Statement: The engine reaches game data only through import ports. Only the History Edition source assembly reads the install or names a type of the original's file formats. Only the Open Settlers source assembly reads the basic content set: its graphics, its stand-in rules, and its walk steps (ADR 0018). The map view, the asset check, the asset browser, the domain, and the application name no type of a source assembly. The Godot host names one only where it builds a source: the launch code and the main scene, `AssetBrowserView`. The rule tables source builds the content catalog, and every other layer reads it as `RuleTables.Catalog` (ADR 0020). The adapter assembly is the one exception: it names `JobTableNames` of the History Edition source, through which the name table reads the state names; a job names itself on its type and its catalog entry (ADR 0017, ADR 0020).
 Breaks: loudly
 Check: the format readers, the asset kinds, the graphics readers and figure tables, the program tables importer, the job tables modules, and the looks are internal to the History Edition assembly, so the compiler refuses a use from outside it. Its public types are the ones the host builds (`Install`, `HistoryEditionSource`, `HistoryEditionRuleTables`, `HistoryEditionAssets`, `StepOffsets`) and `JobTableNames`. The looks and the rule file reader are internal to the Open Settlers assembly. Its public types are the ones the host builds: `OpenSettlersSource`, `OpenSettlersRuleTables`, and `OpenSettlersWalkSteps`. `ImportPortBoundaryTests` checks that the domain and the application reference no source assembly and that the adapter assembly's metadata names no History Edition type but `JobTableNames`. The map view, `src/Assets`, and `src/Viewer` compile inside the Godot project, which references both source assemblies, so the compiler does not keep them from those public types. `GraphicsSourceBoundaryTests` scans the map view, `src/Assets`, and the viewer classes outside the composition root for History Edition names and for content-set names (the source, the looks, their namespace, and the content set's folder). Reviewers check that no port returns a format type.
+
+### INV-0014
+
+Class: architecture
+Concepts: Content catalog, Catalog entry, Original code, Domain, Rule
+Statement: No rule of the domain or the application reads or branches on an original code. Goods, building types, and jobs are identified by their stable names, and the facts the rules read come from their catalog entries. Only the History Edition importer and the exporters read an original code (ADR 0020). The map view's readout reads whether an entry has one (`OriginalCode`, `GoodWords.IsCodelessWord`, `BuildingWords.HasCode`, `JobWords.HasCode`), to decide whether it shows a raw value beside the name or the name alone. One exception stands: `UnportedJob.ArrivesHomeGenerically` reads the job's number, because an unported job has no catalog entry and no stable name. It is a stand-in that pins the table at 0x437dfb and retires when the job is ported.
+Breaks: silently
+Check: `OriginalCodeBoundaryTests` (`tests/OpenSettlers.Tests/OriginalCodeBoundaryTests.cs`) parses `src/Domain` and `src/Application` for reads of an original code (the code members, the job lookup, and the job number names), with planted violations as positive controls. Reviewers check that a new fact of an original entry is read from its table into the entry, not derived from its code.
+Symbols: GoodEntry.OriginalCode, BuildingEntry.OriginalCode, JobEntry.OriginalCode, Job.Of
+Paths: src/Domain/**, src/Application/**
 
 ### INV-0015
 

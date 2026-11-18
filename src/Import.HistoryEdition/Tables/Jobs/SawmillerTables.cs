@@ -4,12 +4,8 @@ namespace OpenSettlers.Import.HistoryEdition;
 
 /// <summary>
 /// The sawmiller's tables: his figure adds from the immediates of his handler (<c>0x43fc21</c>), where the stub of job 6 must jump
-/// to it, and his name and states.
+/// to it, and his states.
 /// </summary>
-[JobName(
-    "sawmiller",
-    "Sawmiller; the handler 0x42da0b of the building type 0x11 asks for job 6 with the tool good 22 and the job's state 0x18 takes a log out of the building (0x4359fe) and carries the plank (good 8) out to the flag (0x43c6aa); docs/rules/sawmilling.md"
-)]
 [StateName(
     0xb,
     "steps-out-with-good",

@@ -96,8 +96,8 @@ swords and shields in the castle, each of them is made a knight at once and the 
 knights owed grow to 2 and stay there, and every new settler is a settler without a job.
 
 So 20000 of each 65536 settlers are owed as knights, about 31 %. An owed knight waits, up to two of them, until a storage
-of the player holds the two goods. Goods 25 and 26 are the sword and the shield
-([Food buildings](food-buildings.md#the-goods); which one is which is open). `Castle_CreateSettlers` turns three of the
+of the player holds the two goods. Goods 25 and 26 are the sword and the shield, the stable names `sword` and `shield`
+(**inferred**, [Food buildings](food-buildings.md#the-goods); which one is which is open). `Castle_CreateSettlers` turns three of the
 first settlers into knights in the same way ([Castle](castle.md#what-the-placement-writes)).
 
 ## The cap
@@ -157,7 +157,8 @@ any other rate. A game without it reads no rate, makes no new settler and digest
   turn follows [The settler timer](#the-settler-timer) in 16-bit arithmetic, so the period holds across the clock's wrap.
 - Each try feeds the knight accumulator, and makes a settler without a job in the next slot of `Game.Settlers`: on the
   castle's node, waiting in the castle (`WaitsInCastle`), stamped with the clock, with the history fill and a `settler-made`
-  event. With a knight owed and a sword and a shield in `CastleStock`, it takes the knight's job 22 at once, the stock gives
+  event. With a knight owed and a sword and a shield (`Good.Sword`, `Good.Shield`) in `CastleStock`, it becomes a knight of
+  level 0 (`Knight`, `knight-level-0`, the original's job 22) at once, the stock gives
   up one of each, and the debt falls by one.
 - `SettlerTable.Capacity` is C for the game's map (`SettlerTable.SizeOf`): 500, 1000, or 2000. The engine's table has no
   dummy in slot 0, so it is full at C − 1 settlers (`SettlerTable.IsFull`), as the original's is. A try while the table is
@@ -172,7 +173,7 @@ any other rate. A game without it reads no rate, makes no new settler and digest
   (`StartStock.SettlerRateOf`, `MapViewState.SettlerRate`). A layout's game takes the rate of the layout's seed. The play-run
   wrapper takes no rate, so a play run takes the seed's rate.
 - `SettlerSupplyRecordingTests` matches `settler-supply.txt` pass by pass: the new settlers' bytes, the timer, the stock of
-  goods 25 and 26, and the generator's words. `SettlerSupplyTests` holds the rules the recording does not reach.
+  goods 25 and 26 (the recording's numbers, read through the History Edition catalog's entries), and the generator's words. `SettlerSupplyTests` holds the rules the recording does not reach.
 
 Departures:
 

@@ -38,7 +38,7 @@ public sealed class FlameListsTests
     internal static int At(int address) => address - ImageBase - SectionStart + RawStart;
 
     // Every list holds one small flame at (0, 0), but list 2 holds a small flame at (-3, 5) and a large one at (4, -12), and
-    // list 0 a large one at (1, -2). Types 7 and 8 point to one list.
+    // list 0 a large one at (1, -2). Types 0xc and 0xd (the farm and the butcher) point to one list.
     internal static void Lists(byte[] exe)
     {
         var header = At(FlameLists.Address);
@@ -53,8 +53,8 @@ public sealed class FlameListsTests
         new byte[] { 8, 1, 0xfe, 0xff }.CopyTo(exe, header + 60);
         BitConverter.GetBytes((short)70).CopyTo(exe, header + 2 * 2);
         new byte[] { 0, 0xfd, 5, 8, 4, 0xf4, 0x80 }.CopyTo(exe, header + 70);
-        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 7);
-        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 8);
+        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 0xc);
+        BitConverter.GetBytes((short)80).CopyTo(exe, header + 2 * 0xd);
         new byte[] { 8, 2, 3, 0xff }.CopyTo(exe, header + 80);
     }
 
@@ -84,13 +84,10 @@ public sealed class FlameListsTests
             lists.Of(BuildingType.Woodcutter, earlySite: false).ToArray()
         );
         CollectionAssert.AreEqual(new[] { Small(0, 0) }, lists.Of(BuildingType.Fisher, earlySite: false).ToArray());
+        CollectionAssert.AreEqual(new[] { Large(2, 3) }, lists.Of(BuildingType.Farm, earlySite: false).ToArray());
         CollectionAssert.AreEqual(
-            new[] { Large(2, 3) },
-            lists.Of(new BuildingType { Code = 7 }, earlySite: false).ToArray()
-        );
-        CollectionAssert.AreEqual(
-            lists.Of(new BuildingType { Code = 7 }, earlySite: false).ToArray(),
-            lists.Of(new BuildingType { Code = 8 }, earlySite: false).ToArray()
+            lists.Of(BuildingType.Farm, earlySite: false).ToArray(),
+            lists.Of(BuildingType.Butcher, earlySite: false).ToArray()
         );
     }
 
@@ -104,13 +101,13 @@ public sealed class FlameListsTests
     }
 
     [TestMethod]
-    [DataRow(-1)]
-    [DataRow(25)]
-    public void ATypeOutside0To24GivesNoFlames(int code)
+    [DataRow("ai-hut")]
+    [DataRow("")]
+    public void ATypeWithNoOriginalCodeGivesNoFlames(string name)
     {
         var lists = FlameLists.Read(Executable(Lists));
 
-        Assert.IsEmpty(lists.Of(new BuildingType { Code = code }, earlySite: false));
+        Assert.IsEmpty(lists.Of(new BuildingType { Name = name }, earlySite: false));
     }
 
     [TestMethod]

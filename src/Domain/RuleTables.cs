@@ -10,7 +10,7 @@ namespace OpenSettlers.Domain;
 /// the step times, and the others below. They come from the install's <c>Siedler1.exe</c> and are never restated in
 /// source (INV-0001): <c>ProgramTablesImporter</c> in the History Edition source builds them from the program's bytes, and a test
 /// builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
-/// <see cref="DoorSpeed(int)"/>, and the others). The raw tables the importer's tests check against the original, and the
+/// <see cref="DoorSpeed(Building?)"/>, and the others). The raw tables the importer's tests check against the original, and the
 /// <see cref="Figures"/> the map view draws from, are read-only values: no member hands out the stored data for change, and the constructor
 /// copies the arrays it is given.
 /// </summary>
@@ -18,9 +18,6 @@ public sealed class RuleTables
 {
     /// <summary>The number of object codes, and the size of the class table.</summary>
     public const int ClassCount = 128;
-
-    /// <summary>The number of goods of the start stock rows and of the transport priority table.</summary>
-    public const int Goods = 26;
 
     /// <summary>The number of rows of the start stock table (the levels 0, 10, 20, 30, and 40).</summary>
     public const int StartStockRows = 5;
@@ -34,20 +31,8 @@ public sealed class RuleTables
     /// <summary>The number of words of <see cref="StepTimes"/> (the indices <see cref="StepTimeFirst"/> to 127).</summary>
     public const int StepTimeCount = 160;
 
-    /// <summary>The number of building types the door speed table covers.</summary>
-    public const int DoorSpeedCount = 64;
-
     /// <summary>The number of entries of the scan window table, one for each map size value.</summary>
     public const int ScanWindowCount = 8;
-
-    /// <summary>
-    /// The number of building types the size and needs tables cover: the types 0 to 0x17 (the size table at <c>0x42d307</c> and the
-    /// needs table at <c>0x449f18</c> hold no entry of the castle, type 0x18).
-    /// </summary>
-    public const int BuildingTypeCount = 24;
-
-    /// <summary>The number of goods of the class table at <c>0x464117</c> (good numbers are 5 bits).</summary>
-    public const int GoodClassCount = 32;
 
     /// <summary>The number of rows of the figure bases (the figure word's high byte, 0 to 0x88).</summary>
     public const int FigureBaseRowCount = 137;
@@ -67,9 +52,6 @@ public sealed class RuleTables
     /// <summary>The number of offsets of the waiting carriers.</summary>
     public const int IdleOffsetCount = 128;
 
-    /// <summary>The number of goods the good kind table covers (good numbers are 5 bits).</summary>
-    public const int GoodKindCount = 32;
-
     /// <summary>The number of length classes of a road.</summary>
     public const int RoadCapacityCount = 8;
 
@@ -80,73 +62,53 @@ public sealed class RuleTables
     public const int WalkRowSize = 8;
 
     readonly ImmutableArray<ObjectClass> _classes;
-    readonly ImmutableArray<byte> _goodKinds;
     readonly ImmutableArray<byte> _roadCapacities;
     readonly ImmutableArray<byte> _walkRows;
-    readonly ImmutableArray<byte> _transportPriorities;
-    readonly ImmutableArray<byte> _doorSpeeds;
     readonly ImmutableArray<ushort> _scanWindows;
-    readonly ImmutableArray<byte> _buildingSizes;
-    readonly ImmutableArray<byte> _buildingNeeds;
-    readonly ImmutableArray<GoodClass?> _goodClasses;
     readonly ImmutableArray<ImmutableArray<DistributionStep>> _distribution;
-    readonly ImmutableArray<WorkerRequest?> _workers;
-    readonly ImmutableArray<ushort> _materialOrder;
-    readonly ImmutableArray<ushort> _blowSteps;
 
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
-    /// <paramref name="doorSpeeds"/>, <paramref name="scanWindows"/>) are empty where a test needs none; the walk then
-    /// reads them as zeros.
+    /// <paramref name="scanWindows"/>) are empty where a test needs none; the walk then reads them as zeros. The facts of the building
+    /// types are those of their entries in <paramref name="catalog"/>.
     /// </summary>
     public RuleTables(
         ObjectClass[] classes,
-        byte[][] startStock,
+        IReadOnlyDictionary<Good, byte>[] startStock,
         ushort[]? stepTimes = null,
-        byte[]? doorSpeeds = null,
         ushort[]? scanWindows = null,
         short[]? figureBases = null,
         short[]? figureOffsets = null,
         byte[]? walkRows = null,
         short[]? carriedFigures = null,
-        byte[]? goodKinds = null,
         byte[]? roadCapacities = null,
-        byte[]? transportPriorities = null,
         sbyte[]? frameRows = null,
         short[]? idlePhases = null,
         short[]? idleFigures = null,
         sbyte[]? idleOffsets = null,
-        byte[]? buildingSizes = null,
-        byte[]? buildingNeeds = null,
-        GoodClass?[]? goodClasses = null,
         DistributionStep[][]? distribution = null,
         byte plankRankBase = 0,
         byte millRankBase = 0,
-        WorkerRequest?[]? workers = null,
-        ushort[]? materialOrder = null,
-        ushort[]? blowSteps = null,
-        IEnumerable<(Job Job, object Data)>? jobData = null
+        IEnumerable<(Job Job, object Data)>? jobData = null,
+        ContentCatalog? catalog = null,
+        byte noBuildingDoor = 0
     )
     {
-        if (
-            classes.Length != ClassCount
-            || startStock.Length != StartStockRows
-            || startStock.Any(row => row.Length != Goods)
-        )
+        if (classes.Length != ClassCount || startStock.Length != StartStockRows)
         {
-            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows of 26.");
+            throw new ArgumentException("A class table holds 128 bytes and a start stock table 5 rows.");
         }
 
         // Every table is copied, the goods of each distribution step included, so no caller keeps a hand on what the tables hold.
         _classes = [.. classes];
-        StartStock = [.. startStock.Select(row => row.ToImmutableArray())];
+        StartStock = [.. startStock.Select(row => row.ToImmutableDictionary())];
         StepTimes = [.. stepTimes ?? new ushort[StepTimeCount]];
-        _doorSpeeds = [.. doorSpeeds ?? new byte[DoorSpeedCount]];
+        NoBuildingDoor = noBuildingDoor;
         _scanWindows = [.. scanWindows ?? new ushort[ScanWindowCount]];
         _walkRows = [.. walkRows ?? new byte[WalkRowCount * WalkRowSize]];
-        _goodKinds = [.. goodKinds ?? new byte[GoodKindCount]];
         _roadCapacities = [.. roadCapacities ?? new byte[RoadCapacityCount]];
-        _transportPriorities = [.. transportPriorities ?? new byte[Goods]];
+        // A catalog the caller does not give holds no good and no building type, so a rule that meets one stops with an error naming it.
+        Catalog = catalog ?? ContentCatalog.Empty;
         Figures = new FigureTables(
             figureBases,
             figureOffsets,
@@ -156,11 +118,7 @@ public sealed class RuleTables
             idleOffsets,
             frameRows
         );
-        // stand-in: a table a test does not give makes every type small, so a test that places a building needs no table.
-        _buildingSizes = [.. buildingSizes ?? [.. Enumerable.Repeat((byte)1, BuildingTypeCount)]];
-        _buildingNeeds = [.. buildingNeeds ?? new byte[2 * BuildingTypeCount]];
-        // stand-in: a table a test does not give sends every good to storage at once, and no storage hands any good out.
-        _goodClasses = [.. goodClasses ?? new GoodClass?[GoodClassCount]];
+        // stand-in: a table a test does not give hands no good out.
         _distribution =
         [
             .. (
@@ -177,11 +135,6 @@ public sealed class RuleTables
         ];
         PlankRankBase = plankRankBase;
         MillRankBase = millRankBase;
-        // stand-in: a table a test does not give makes no building ask for a worker.
-        _workers = [.. workers ?? new WorkerRequest?[BuildingTypeCount]];
-        // stand-in: a table a test does not give makes every material a plank and every blow add nothing.
-        _materialOrder = [.. materialOrder ?? new ushort[BuildingTypeCount]];
-        _blowSteps = [.. blowSteps ?? new ushort[2 * BuildingTypeCount]];
         // A job's data is exactly what is given: a job's data that is missing is an error when read (see Get).
         _jobData = [];
         foreach (var (job, data) in jobData ?? [])
@@ -211,39 +164,41 @@ public sealed class RuleTables
     /// <summary>The class of the object <paramref name="mapObject"/>.</summary>
     public ObjectClass ClassOf(MapObject mapObject) => _classes[mapObject.Code];
 
-    /// <summary>The start stock rows, each <see cref="Goods"/> counts.</summary>
-    public ImmutableArray<ImmutableArray<byte>> StartStock { get; }
+    /// <summary>The start stock rows, each the count of the goods it names; a good a row does not name counts 0.</summary>
+    public ImmutableArray<ImmutableDictionary<Good, byte>> StartStock { get; }
 
     /// <summary>The figure tables the settlers are drawn from.</summary>
     public FigureTables Figures { get; }
 
-    /// <summary>The default transport priorities of the goods 1 to 26, as the importer read them (index good - 1).</summary>
-    public ImmutableArray<byte> TransportPriorities => _transportPriorities;
+    /// <summary>
+    /// The goods and building types of the game, one entry each (ADR 0020): the content set's source builds it, and the accessors below
+    /// read the facts of a good or building type from its entry. A good or building type the catalog lacks stops the accessors with an
+    /// error that names it.
+    /// </summary>
+    public ContentCatalog Catalog { get; }
 
     /// <summary>
-    /// The default transport priority of the good <paramref name="good"/>, 1 to 26: its rank, 1 to 26, each once; the
-    /// carrier's exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for a number that is no
-    /// good, and for every good where a test needs none.
+    /// The default transport priority of the good <paramref name="good"/>: the rank of its entry, each rank given once; the carrier's
+    /// exchange lines up the good of the highest rank next (<c>docs/rules/goods.md</c>). 0 for no good; a good the catalog lacks is an error.
     /// </summary>
-    public int TransportPriority(Good good) => good.Code is >= 1 and <= Goods ? _transportPriorities[good.Code - 1] : 0;
-
-    /// <summary>The byte counts of the good kind table as the importer read them.</summary>
-    public ImmutableArray<byte> GoodKinds => _goodKinds;
+    public int TransportPriority(Good good) => good.IsNone ? 0 : Catalog.Require(good).TransportRank;
 
     /// <summary>
-    /// Which byte of a building's fill a good counts in: the table <c>0x462d6d</c> (<c>docs/rules/removal.md</c>), the one rule for
-    /// every place that counts a good on its way (the request search and the storage's hand-out), counts it back where it is lost
-    /// (<c>0x462ca4</c>, the removal's): the food goods 1 to 6 count in the low byte. The carrier's handover counts the delivery by the
-    /// good's code (<see cref="Good.FillsHigh"/>), which agrees.
-    /// <paramref name="good"/> is a good, its number taken to 0 to 31 (the original masks it with 0x1f).
+    /// Which byte of a building's fill a good counts in on its way: the counter of its entry, the one rule for every place that counts
+    /// a good on its way (the request search and the storage's hand-out) and counts it back where it is lost (<c>docs/rules/removal.md</c>).
+    /// No good counts in the low byte; a good the catalog lacks is an error.
     /// </summary>
-    public FillCounter FillCounterOf(Good good) =>
-        _goodKinds[good.Code & 0x1f] switch
-        {
-            0 => FillCounter.Low,
-            1 => FillCounter.High,
-            _ => FillCounter.None,
-        };
+    public FillCounter FillCounterOf(Good good) => good.IsNone ? FillCounter.Low : Catalog.Require(good).Counter;
+
+    /// <summary>
+    /// Which byte of a building's fill the carrier's handover of <paramref name="good"/> counts in: the handover counter of its entry
+    /// (the rule at <c>0x43c4ea</c>, <c>docs/rules/goods.md</c>). No good counts in the low byte; a good the catalog lacks is an error.
+    /// </summary>
+    public FillCounter HandoverCounterOf(Good good) =>
+        good.IsNone ? FillCounter.Low : Catalog.Require(good).HandoverCounter;
+
+    /// <summary>Whether a lost good of this kind counts against the total of resource 1, as its entry states; false for no good, an error for a good the catalog lacks.</summary>
+    public bool CountsAgainstResource1(Good good) => !good.IsNone && Catalog.Require(good).CountsAgainstResource1;
 
     /// <summary>The number of carriers each length class of a road holds at most, as the importer read them.</summary>
     public ImmutableArray<byte> RoadCapacities => _roadCapacities;
@@ -281,47 +236,51 @@ public sealed class RuleTables
         return index >= 0 && index < StepTimes.Length ? StepTimes[index] : (ushort)0;
     }
 
-    /// <summary>The speed table of the doors as the importer read it.</summary>
-    public ImmutableArray<byte> DoorSpeeds => _doorSpeeds;
-
-    /// <summary>The speed of the door of the building type <paramref name="buildingType"/>, in 32nds of a step time.</summary>
-    public byte DoorSpeed(int buildingType) => _doorSpeeds[buildingType];
+    /// <summary>
+    /// The speed of the door of a place where no building stands, in 32nds of a step time: a fact of its own, since no entry holds it
+    /// (the first byte of the door table at <c>0x43c92b</c>).
+    /// </summary>
+    public byte NoBuildingDoor { get; }
 
     /// <summary>
-    /// The speed of the door of <paramref name="building"/> (the table is indexed by its type plus 0x20 while it is built), or
-    /// of no building, the first entry, where there is none.
+    /// The speed of the door of <paramref name="building"/>, in 32nds of a step time: the standing or the constructing speed of its
+    /// entry, or <see cref="NoBuildingDoor"/> where there is no building. A type the catalog lacks is an error.
     /// </summary>
     public byte DoorSpeed(Building? building) =>
-        _doorSpeeds[building is null ? 0 : building.Type.Code | (building.Constructing ? 0x20 : 0)];
-
-    /// <summary>The size table as the importer read it: one byte for each building type, 0 a mine, 1 small, 2 large.</summary>
-    public ImmutableArray<byte> BuildingSizes => _buildingSizes;
+        building is null ? NoBuildingDoor
+        : building.Constructing ? Catalog.Require(building.Type).ConstructingDoor
+        : Catalog.Require(building.Type).StandingDoor;
 
     /// <summary>
-    /// How much room the building type <paramref name="type"/> takes (<c>0x42d307</c>, <c>docs/rules/build-sites.md</c>). A type
-    /// outside the table, the castle included, reads as a mine, which no placement builds.
+    /// How much room the building type <paramref name="type"/> takes (<c>0x42d307</c>, <c>docs/rules/build-sites.md</c>): the size of its
+    /// entry, a mine for the castle and for no building. A type the catalog lacks is an error.
     /// </summary>
-    public BuildingSize SizeOf(BuildingType type) =>
-        type.Code is >= 0 and < BuildingTypeCount && _buildingSizes[type.Code] is 1 or 2
-            ? (BuildingSize)_buildingSizes[type.Code]
-            : BuildingSize.Mine;
-
-    /// <summary>The needs table as the importer read it: planks then stones for each building type.</summary>
-    public ImmutableArray<byte> BuildingNeedsTable => _buildingNeeds;
+    public BuildingSize SizeOf(BuildingType type) => type.IsNone ? BuildingSize.Mine : Catalog.Require(type).Size;
 
     /// <summary>
-    /// The planks and stones the building type <paramref name="type"/> needs (<c>0x449f18</c>); none for a type outside the table.
+    /// The planks and stones the building type <paramref name="type"/> needs (<c>0x449f18</c>): the needs of its entry, none for no
+    /// building. A type the catalog lacks is an error.
     /// </summary>
     public BuildingNeeds NeedsOf(BuildingType type) =>
-        type.Code is >= 0 and < BuildingTypeCount
-            ? new BuildingNeeds { Planks = _buildingNeeds[2 * type.Code], Stones = _buildingNeeds[2 * type.Code + 1] }
-            : new BuildingNeeds { Planks = 0, Stones = 0 };
+        type.IsNone ? new BuildingNeeds { Planks = 0, Stones = 0 } : Catalog.Require(type).Needs;
+
+    /// <summary>
+    /// Whether the site of the building type <paramref name="type"/> has a builder with a second figure (the test at <c>0x43ceb4</c>):
+    /// the fact of its entry. A type the catalog lacks is an error.
+    /// </summary>
+    public bool TakesSecondFigure(BuildingType type) => Catalog.Require(type).SecondFigure;
+
+    /// <summary>
+    /// Whether the building type <paramref name="type"/> is a storage, as its entry states; false for no building. A type the catalog
+    /// lacks is an error.
+    /// </summary>
+    public bool IsStorage(BuildingType type) => !type.IsNone && Catalog.Require(type).IsStorage;
 
     /// <summary>
     /// The request a good with no destination looks for (<c>0x464117</c>): its class and the request word of the flags that ask for
-    /// it; null for a good that goes to storage at once. The importer turns the program's table into these values.
+    /// it: the request of its entry; null for no good and for a good that goes to storage at once; a good the catalog lacks is an error.
     /// </summary>
-    public GoodClass? ClassOfGood(Good good) => _goodClasses[good.Code & 0x1f];
+    public GoodClass? ClassOfGood(Good good) => good.IsNone ? null : Catalog.Require(good).Request;
 
     /// <summary>
     /// The order a storage serves the requests in, by the draw the phase routine takes at each cycle (<c>0x42965c</c>): the draw taken
@@ -349,27 +308,37 @@ public sealed class RuleTables
     public byte MillRankBase { get; }
 
     /// <summary>
-    /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>); null for
-    /// a type whose handler asks for none of this kind, the castle included.
+    /// What a finished building of <paramref name="type"/> asks for as its worker (the handlers of the jump table <c>0x42cd1d</c>): the
+    /// worker of its entry; null for a type whose handler asks for none of this kind, the castle included, and for no building. A type
+    /// the catalog lacks is an error.
     /// </summary>
-    public WorkerRequest? WorkerOf(BuildingType type) =>
-        type.Code is >= 0 and < BuildingTypeCount ? _workers[type.Code] : null;
+    public WorkerRequest? WorkerOf(BuildingType type) => type.IsNone ? null : Catalog.Require(type).Worker;
 
     /// <summary>
     /// Whether the material the builder takes in turn <paramref name="index"/> of a building of <paramref name="type"/> is a stone, not a
-    /// plank (the order words at <c>0x43f0ba</c>, one for each type: a set bit means a stone, <c>docs/rules/construction.md</c>).
+    /// plank (the order of its entry, <c>0x43f0ba</c>, <c>docs/rules/construction.md</c>). A turn past the order takes a plank; a type
+    /// the catalog lacks is an error.
     /// </summary>
-    public bool StoneAt(BuildingType type, int index) =>
-        type.Code is >= 0 and < BuildingTypeCount
-        && index is >= 0 and < 16
-        && (_materialOrder[type.Code] >> index & 1) != 0;
+    public bool StoneAt(BuildingType type, int index)
+    {
+        if (type.IsNone)
+        {
+            return false;
+        }
+
+        var order = Catalog.Require(type).Stones;
+
+        return index >= 0 && index < order.Length && order[index];
+    }
 
     /// <summary>
-    /// What a blow of the builder adds to the building's progress word (<c>0x43f0fa</c>, two words for each type): the first before the word
-    /// reaches <c>0x8000</c>, the second from there on; 0 for a type outside the table.
+    /// What a blow of the builder adds to the building's progress word (<c>0x43f0fa</c>): the early step of the entry before the word
+    /// reaches <c>0x8000</c>, the late step from there on; 0 for no building. A type the catalog lacks is an error.
     /// </summary>
     public ushort BlowStep(BuildingType type, bool late) =>
-        type.Code is >= 0 and < BuildingTypeCount ? _blowSteps[2 * type.Code + (late ? 1 : 0)] : (ushort)0;
+        type.IsNone ? (ushort)0
+        : late ? Catalog.Require(type).LateBlowStep
+        : Catalog.Require(type).EarlyBlowStep;
 
     /// <summary>The scan window table as the importer read it.</summary>
     public ImmutableArray<ushort> ScanWindows => _scanWindows;

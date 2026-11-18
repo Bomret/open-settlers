@@ -81,7 +81,7 @@ The names of the tool goods are **inferred** from the job that asks for each and
 
 **The start (`0x43ce20`, entry 3 of the job start table `0x43ca54`).** The start runs where the builder has stepped through the site's door, in state 4 ([Settlers](settlers.md#the-walk)). He takes state 9 with these values:
 
-- The frame is `0x62`. For the types 10, 17, 19, and 22 it is `0x64`. The mask `0x4a0400` tests the type.
+- The frame is `0x62`. For the types 10, 17, 19, and 22 it is `0x64`. The mask `0x4a0400` tests the type. The History Edition importer reads the mask into the `SecondFigure` fact of each building type's catalog entry (the sawmill and the storehouse among the catalog's types), and the builder reads that fact (`RuleTables.TakesSecondFigure`).
 - The timer is `0x7f`.
 - The word at 12 holds the site's slot.
 - Byte 11 is 1.

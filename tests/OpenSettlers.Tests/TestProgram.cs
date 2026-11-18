@@ -23,26 +23,35 @@ static class TestProgram
     /// Tables of made-up values, no restatement of the original's: every object code has class 0, so no object
     /// blocks a site, and the start stock rows count up from the row number. With every class 0 no object is large, so
     /// a map generated with these tables keeps every object and is not the original's map; tests that compare with the
-    /// original's data use <see cref="Tables"/>. The transport priorities are all 0.
+    /// original's data use <see cref="Tables"/>. The catalog holds the 26 goods of <see cref="TestCatalog"/>, each ranked by its position.
     /// </summary>
     public static RuleTables Made() => Made(null);
 
-    /// <summary>The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1), or all 0 for none.</summary>
+    /// <summary>
+    /// The tables of <see cref="Made()"/> with made-up transport priorities (index good - 1; a good of rank 0 has no entry), or the position as the rank
+    /// for none.
+    /// </summary>
     public static RuleTables Made(byte[]? transportPriorities) =>
         new(
             new ObjectClass[RuleTables.ClassCount],
             MadeStartStock(),
-            transportPriorities: transportPriorities,
-            workers: MadeWorkers(),
+            catalog: transportPriorities is null
+                ? TestCatalog.StandIn(TestCatalog.Buildings(workers: MadeWorkers()))
+                : TestCatalog.Of(ranks: transportPriorities, buildings: TestCatalog.Buildings(workers: MadeWorkers())),
             jobData: MadeJobData()
         );
 
     /// <summary>The start stock rows of <see cref="Made()"/>: each count is the row number times 10 plus the good's index.</summary>
-    public static byte[][] MadeStartStock() =>
+    public static IReadOnlyDictionary<Good, byte>[] MadeStartStock() =>
         [
             .. Enumerable
                 .Range(0, RuleTables.StartStockRows)
-                .Select(row => Enumerable.Range(0, StartStock.Goods).Select(good => (byte)(row * 10 + good)).ToArray()),
+                .Select(row =>
+                    (IReadOnlyDictionary<Good, byte>)
+                        TestCatalog
+                            .Names.Select((_, index) => (Good: TestCatalog.GoodOf(index + 1), Index: index))
+                            .ToDictionary(entry => entry.Good, entry => (byte)(row * 10 + entry.Index))
+                ),
         ];
 
     /// <summary>The job of each number 0 to 31.</summary>
@@ -82,36 +91,52 @@ static class TestProgram
         bool pigFarm = false
     )
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Woodcutter.Code] = new WorkerRequest
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        workers[TestCatalog.CodeOf(BuildingType.Woodcutter)] = new WorkerRequest
         {
             Job = new Woodcutter(),
-            Tool = new Good { Code = 1 },
+            Tool = TestCatalog.GoodOf(1),
         };
-        workers[BuildingType.Forester.Code] = new WorkerRequest { Job = new Forester(), Tool = Good.None };
+        workers[TestCatalog.CodeOf(BuildingType.Forester)] = new WorkerRequest
+        {
+            Job = new Forester(),
+            Tool = Good.None,
+        };
         if (stonecutter)
         {
-            workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Stonecutter)] = new WorkerRequest
+            {
+                Job = new Stonecutter(),
+                Tool = Good.None,
+            };
         }
 
         if (mill)
         {
-            workers[BuildingType.Mill.Code] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Mill)] = new WorkerRequest { Job = new Miller(), Tool = Good.None };
         }
 
         if (fisher)
         {
-            workers[BuildingType.Fisher.Code] = new WorkerRequest { Job = new Fisher(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Fisher)] = new WorkerRequest
+            {
+                Job = new Fisher(),
+                Tool = Good.None,
+            };
         }
 
         if (baker)
         {
-            workers[BuildingType.Baker.Code] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.Baker)] = new WorkerRequest { Job = new Baker(), Tool = Good.None };
         }
 
         if (pigFarm)
         {
-            workers[BuildingType.PigFarm.Code] = new WorkerRequest { Job = new PigFarmer(), Tool = Good.None };
+            workers[TestCatalog.CodeOf(BuildingType.PigFarm)] = new WorkerRequest
+            {
+                Job = new PigFarmer(),
+                Tool = Good.None,
+            };
         }
 
         return workers;

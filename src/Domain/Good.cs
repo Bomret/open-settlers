@@ -1,92 +1,100 @@
+using System;
 using System.Collections.Generic;
 
 namespace OpenSettlers.Domain;
 
-/// <summary>A kind of good (<c>docs/rules/goods.md</c>), by the number the original gives it: 1 to 26, 7 a log; 0 is no good.</summary>
+/// <summary>
+/// A kind of good (<c>docs/rules/goods.md</c>): the entry of the <see cref="ContentCatalog"/> that its <see cref="Name"/> names (ADR 0020).
+/// The stable name is the good's whole identity: equality, hashing, and text go by it. The facts of a good are the entry's, read through
+/// <see cref="RuleTables"/>; the original's number of a good is an attribute of the entry that only the History Edition importer and the
+/// exporters read, and whose presence the readout reads. No good is <see cref="None"/>, which has no name and is never an entry.
+/// </summary>
 public readonly record struct Good
 {
-    /// <summary>The good's number, 0 to 31.</summary>
-    public required int Code { get; init; }
+    readonly string? _name;
+
+    /// <summary>The good's stable name (<c>log</c>); empty for no good.</summary>
+    public string Name
+    {
+        get => _name ?? "";
+        init => _name = value;
+    }
+
+    /// <summary>Whether <paramref name="other"/> is the good with this stable name.</summary>
+    public bool Equals(Good other) => string.Equals(Name, other.Name, StringComparison.Ordinal);
+
+    /// <summary>A hash of the stable name that is the same on every run.</summary>
+    public override int GetHashCode() => (int)Fnv1a.Of(Name);
 
     /// <summary>No good.</summary>
     public static Good None => default;
 
     /// <summary>
-    /// The log, good 7: the woodcutter puts it on his flag (<c>0x438013</c>, <c>docs/rules/woodcutting.md</c>), and the castle's word for
+    /// The log: the woodcutter puts it on his flag (<c>0x438013</c>, <c>docs/rules/woodcutting.md</c>), and the castle's word for
     /// it, <c>0x12</c> of the storage item, rises with each delivered log.
     /// </summary>
-    public static Good Log => new() { Code = 7 };
+    public static Good Log => new() { Name = "log" };
 
     /// <summary>
-    /// The plank, good 8: a building site's request for planks (class 1 of the request word at <c>0x42</c>, row 8 of
+    /// The plank: a building site's request for planks (class 1 of the request word at <c>0x42</c>, row 8 of
     /// <c>0x464117</c>) takes the castle's stock word of this good (<c>docs/rules/construction-materials.md</c>).
     /// </summary>
-    public static Good Plank => new() { Code = 8 };
+    public static Good Plank => new() { Name = "plank" };
 
     /// <summary>
-    /// The stone, good 10: the stonecutter puts it on his flag (<c>0x438182</c>), and a building site's request for stones (class 4 of
+    /// The stone: the stonecutter puts it on his flag (<c>0x438182</c>), and a building site's request for stones (class 4 of
     /// the request word at <c>0x44</c>, row 10 of <c>0x464117</c>) takes the castle's stock word of this good.
     /// </summary>
-    public static Good Stone => new() { Code = 10 };
+    public static Good Stone => new() { Name = "stone" };
 
     /// <summary>
-    /// The fish, good 1: the fisher's walk ends with the put of it on his flag (<c>0x43837f</c>); its class is class 0 of the request word
-    /// at <c>0x42</c>, which goods 3 and 6 share (<c>docs/rules/food-buildings.md</c>). **Inferred** name.
+    /// The fish: the fisher's walk ends with the put of it on his flag (<c>0x43837f</c>); its class is class 0 of the request word
+    /// at <c>0x42</c>, which the meat and the bread share (<c>docs/rules/food-buildings.md</c>). **Inferred** name.
     /// </summary>
-    public static Good Fish => new() { Code = 1 };
+    public static Good Fish => new() { Name = "fish" };
 
     /// <summary>
-    /// The pig, good 2: the job of the type 0xe puts it (<c>0x433577</c>) and the job of the type 0xd takes it in (class 3 of the
+    /// The pig: the job of the type 0xe puts it (<c>0x433577</c>) and the job of the type 0xd takes it in (class 3 of the
     /// request word at <c>0x42</c>, <c>0x43d249</c>); the History Edition draws it as a pig. **Inferred** name.
     /// </summary>
-    public static Good Pig => new() { Code = 2 };
+    public static Good Pig => new() { Name = "pig" };
 
-    /// <summary>The meat, good 3: the job of the type 0xd puts it (<c>0x4333a5</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
-    public static Good Meat => new() { Code = 3 };
+    /// <summary>The meat: the job of the type 0xd puts it (<c>0x4333a5</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
+    public static Good Meat => new() { Name = "meat" };
 
     /// <summary>
-    /// The grain, good 4: the farm's walk ends with the put of it (<c>0x43847d</c>), and the jobs of the types 0xe and 0xf take it in
+    /// The grain: the farm's walk ends with the put of it (<c>0x43847d</c>), and the jobs of the types 0xe and 0xf take it in
     /// (class 4 of the request word at <c>0x42</c>, <c>0x43d1e1</c> and <c>0x43d3b0</c>). **Inferred** name.
     /// </summary>
-    public static Good Grain => new() { Code = 4 };
+    public static Good Grain => new() { Name = "grain" };
 
     /// <summary>
-    /// The flour, good 5: the job of the type 0xf puts it (<c>0x433a1e</c>) and the job of the type 0x10 takes it in (class 5 of the
+    /// The flour: the job of the type 0xf puts it (<c>0x433a1e</c>) and the job of the type 0x10 takes it in (class 5 of the
     /// request word at <c>0x42</c>, <c>0x43d44c</c>). **Inferred** name.
     /// </summary>
-    public static Good Flour => new() { Code = 5 };
+    public static Good Flour => new() { Name = "flour" };
 
-    /// <summary>The bread, good 6: the job of the type 0x10 puts it (<c>0x43384f</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
-    public static Good Bread => new() { Code = 6 };
-
-    /// <summary>
-    /// The sword, good 25: a new knight takes one from the castle's stock (<c>0x428a75</c>, <c>docs/rules/new-settlers.md</c>). **Inferred**
-    /// name; which of the goods 25 and 26 is the sword and which the shield is open (<c>docs/rules/food-buildings.md</c>).
-    /// </summary>
-    public static Good Sword => new() { Code = 25 };
+    /// <summary>The bread: the job of the type 0x10 puts it (<c>0x43384f</c>); class 0 of the word at <c>0x42</c>. **Inferred** name.</summary>
+    public static Good Bread => new() { Name = "bread" };
 
     /// <summary>
-    /// The shield, good 26: a new knight takes one from the castle's stock (<c>0x428a75</c>). **Inferred** name; which of the goods 25
-    /// and 26 is the sword and which the shield is open.
+    /// The sword: a new knight takes one from the castle's stock (<c>0x428a75</c>, <c>docs/rules/new-settlers.md</c>). **Inferred**
+    /// name; which of the two weapons the original keeps is the sword and which the shield is open (<c>docs/rules/food-buildings.md</c>).
     /// </summary>
-    public static Good Shield => new() { Code = 26 };
+    public static Good Sword => new() { Name = "sword" };
 
-    /// <summary>The six food goods in the order of their numbers, 1 to 6: fish, pig, meat, grain, flour, bread.</summary>
+    /// <summary>
+    /// The shield: a new knight takes one from the castle's stock (<c>0x428a75</c>). **Inferred** name; which of the two weapons the
+    /// original keeps is the sword and which the shield is open.
+    /// </summary>
+    public static Good Shield => new() { Name = "shield" };
+
+    /// <summary>The six food goods in the order the food readout shows them: fish, pig, meat, grain, flour, bread.</summary>
     public static IReadOnlyList<Good> Foods { get; } = [Fish, Pig, Meat, Grain, Flour, Bread];
 
     /// <summary>Whether this is no good.</summary>
-    public bool IsNone => Code == 0;
+    public bool IsNone => Name.Length == 0;
 
-    /// <summary>Whether a lost good of this kind counts against the total of resource 1: the goods 14 and 15, the number taken to 0 to 31 (0x462c8d).</summary>
-    public bool CountsAgainstResource1 => (Code & 0x1f) is 0xe or 0xf;
-
-    /// <summary>
-    /// Whether a good counts against the high byte of the fill it is handed into (the castle's): the goods from 9 on except 13, and the
-    /// log (7); every other good counts against the low byte. This is the carrier's handover rule (<c>0x43c4ea</c>), which reads the good's
-    /// code and not the kind table (<see cref="RuleTables.FillCounterOf"/>); the two agree on every good.
-    /// </summary>
-    public bool FillsHigh => Code >= 9 ? Code != 13 : Code == 7;
-
-    /// <inheritdoc />
-    public override string ToString() => Code.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    /// <summary>The good's stable name.</summary>
+    public override string ToString() => Name;
 }

@@ -23,11 +23,11 @@ public sealed class SawmillSiteTests
 
     static (Game Game, Building Site) World()
     {
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[2 * BuildingType.Sawmill.Code] = Planks;
-        needs[2 * BuildingType.Sawmill.Code + 1] = Stones;
-        var order = new ushort[RuleTables.BuildingTypeCount];
-        order[BuildingType.Sawmill.Code] = 0x000c;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[2 * TestCatalog.CodeOf(BuildingType.Sawmill)] = Planks;
+        needs[2 * TestCatalog.CodeOf(BuildingType.Sawmill) + 1] = Stones;
+        var order = new ushort[TestCatalog.BuildingSlots];
+        order[TestCatalog.CodeOf(BuildingType.Sawmill)] = 0x000c;
         var game = ConstructionWorld.Create(
             ConstructionTables.Tables(needs: needs, materialOrder: order),
             handsOutGoods: true

@@ -69,8 +69,8 @@ public sealed class WorkerWalkTests
     // twice the map's width), the stamp, the state, the mode, the target, the heading, and the next state.
     internal static string Hex(Settler s, int width)
     {
-        var raw = SettlerEncoder.Fields(s);
-        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
+        var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
+        var bytes = new List<byte> { (byte)(s.Job.OriginalCode!.Value << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
         bytes.AddRange(BitConverter.GetBytes(raw.Stamp));
@@ -87,7 +87,10 @@ public sealed class WorkerWalkTests
     {
         var bytes = new List<byte>();
         bytes.AddRange(BitConverter.GetBytes((b.Y * 2 * width + b.X) * 4));
-        bytes.AddRange([(byte)(BuildingEncoder.TypeIndex(b) << 2), (byte)BuildingEncoder.Status(b)]);
+        bytes.AddRange([
+            (byte)(BuildingEncoder.TypeIndex(b, TestCatalog.Default) << 2),
+            (byte)BuildingEncoder.Status(b),
+        ]);
         bytes.AddRange(BitConverter.GetBytes((ushort)b.Flag));
         bytes.AddRange([0, 0]);
         bytes.AddRange(BitConverter.GetBytes((ushort)BuildingEncoder.Worker(b)));

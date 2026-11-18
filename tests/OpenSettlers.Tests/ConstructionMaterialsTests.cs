@@ -100,7 +100,7 @@ public sealed class ConstructionMaterialsTests
                     Kind = CommandKind.PlaceBuilding,
                     X = node[0],
                     Y = node[1],
-                    Building = new BuildingType { Code = node[2] },
+                    Building = TestCatalog.BuildingOf(node[2]),
                 }
             );
             game.ApplyCommands();
@@ -178,7 +178,7 @@ public sealed class ConstructionMaterialsTests
             foreach (var good in new[] { Good.Log, Good.Plank, Good.Stone })
             {
                 Assert.AreEqual(
-                    bytes[4 + 2 * good.Code] | bytes[5 + 2 * good.Code] << 8,
+                    bytes[4 + 2 * TestCatalog.CodeOf(good)] | bytes[5 + 2 * TestCatalog.CodeOf(good)] << 8,
                     game.CastleStock.Count(good),
                     $"{when}: the castle's count of the good {good}"
                 );

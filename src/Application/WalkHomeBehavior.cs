@@ -160,7 +160,7 @@ public sealed class WalkHomeBehavior(
         }
 
         var walk = new Trip { Remaining = new Vector(dx, dy), Purpose = new Home() };
-        settler.Activity = settler.Job.IsKnight ? new KnightWalks { Trip = walk } : new WalksFree { Trip = walk };
+        settler.Activity = settler.Job is Knight ? new KnightWalks { Trip = walk } : new WalksFree { Trip = walk };
         settler.Timer = 0;
         history.RecordSettler(slot, EventType.SearchedHome, Cause.WalkHome);
     }

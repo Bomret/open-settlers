@@ -48,14 +48,14 @@ public sealed class JobSearchTests
         ?? throw new AssertFailedException($"no job search for {type}");
 
     [TestMethod]
-    [DataRow(2, 1, 128, 0x1fc)]
-    [DataRow(4, 1, 128, 0x1fc)]
-    [DataRow(9, 1, 128, 0x1fc)]
-    [DataRow(1, 1, 64, 0xfc)]
-    [DataRow(0xc, 7, 38, 0x7c)]
-    public void A_gatherer_s_search_covers_the_entries_its_draw_mask_reaches(int code, int first, int last, int mask)
+    [DataRow("woodcutter-hut", 1, 128, 0x1fc)]
+    [DataRow("stonecutter-hut", 1, 128, 0x1fc)]
+    [DataRow("forester-hut", 1, 128, 0x1fc)]
+    [DataRow("fisher-hut", 1, 64, 0xfc)]
+    [DataRow("farm", 7, 38, 0x7c)]
+    public void A_gatherer_s_search_covers_the_entries_its_draw_mask_reaches(string name, int first, int last, int mask)
     {
-        var search = SearchOf(new BuildingType { Code = code });
+        var search = SearchOf(new BuildingType { Name = name });
 
         Assert.AreEqual(first, search.First);
         Assert.AreEqual(last, search.Last);

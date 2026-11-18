@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace OpenSettlers.Simulation;
 
@@ -19,10 +20,7 @@ public sealed class GameDigest : IGameDigest
     {
         var hash = Mix(Mix(FnvOffset, game.TickCount), (long)Applied(game));
         hash = Mix(hash, game.CastleStock.Castle is { } castle ? castle.X * 65536L + castle.Y : -1);
-        foreach (var count in game.CastleStock.Stock)
-        {
-            hash = Mix(hash, count);
-        }
+        MixStock(game, ref hash);
 
         foreach (var item in FlagEncoder.Items(game.Flags))
         {
@@ -69,6 +67,57 @@ public sealed class GameDigest : IGameDigest
         return hash;
     }
 
+    // The castle's stock: the count of each good with an original code, in the order of the codes (the storage item's words), then, in
+    // the catalog's order of stable names, the hash of the name and the count of each good with no code that the castle holds some of.
+    // A good with no code and a count of 0 leaves the digest as it is.
+    static void MixStock(Game game, ref ulong hash)
+    {
+        var stock = game.CastleStock;
+        var entries = stock.Catalog.Goods.Select(
+            (entry, place) => (entry, count: stock.Stock.Count > place ? stock.Stock[place] : -1)
+        );
+        foreach (
+            var (entry, count) in entries
+                .Where(e => e.entry.OriginalCode is not null && e.count >= 0)
+                .OrderBy(e => e.entry.OriginalCode)
+        )
+        {
+            hash = Mix(hash, count);
+        }
+
+        foreach (var (entry, count) in entries.Where(e => e.entry.OriginalCode is null && e.count > 0))
+        {
+            hash = Mix(Mix(hash, (long)Fnv1a.Of(entry.Name)), count);
+        }
+    }
+
+    // The number of jobs the original's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
+    const int WaitingJobCount = 32;
+
+    // The castle's list of waiting settlers in the original's order: the slot that waits for each job number, then, in the catalog's order
+    // of stable names, the hash of the name and the slot of each job with no code that has one waiting. A job with no code and no waiting
+    // settler leaves the digest as it is.
+    static void MixWaiting(Game game, ref ulong hash)
+    {
+        var catalog = game.Tables.Catalog;
+        for (var code = 0; code < WaitingJobCount; code++)
+        {
+            var job = Job.Of(code);
+            if (job is UnportedJob || catalog.EntryOf(job)?.OriginalCode == code)
+            {
+                hash = Mix(hash, game.Roster.Waiting(job));
+            }
+        }
+
+        foreach (var entry in catalog.Jobs.Where(entry => entry.OriginalCode is null))
+        {
+            if (Job.Named(entry.Name) is { } job && game.Roster.Waiting(job) is var slot and not 0)
+            {
+                hash = Mix(Mix(hash, (long)Fnv1a.Of(entry.Name)), slot);
+            }
+        }
+    }
+
     // The commands the game applied, folded one after the other.
     static ulong Applied(Game game)
     {
@@ -86,7 +135,7 @@ public sealed class GameDigest : IGameDigest
 
             if (command.Building is { } type)
             {
-                applied = Mix(applied, type.Code);
+                applied = Mix(applied, BuildingWords.Of(game.Tables.Catalog, type));
             }
         }
 
@@ -104,7 +153,7 @@ public sealed class GameDigest : IGameDigest
         hash = Mix(Mix(Mix(hash, random.W0), random.W1), random.W2);
         var (stamp, timer, x, y, decay) = game.Hut.ObjectPassState;
         hash = Mix(Mix(Mix(Mix(Mix(hash, stamp), timer), x), y), decay);
-        foreach (var good in FlagEncoder.Places(game.Flags))
+        foreach (var good in FlagEncoder.Places(game.Flags, game.Tables.Catalog))
         {
             hash = Mix(hash, good);
         }
@@ -126,7 +175,7 @@ public sealed class GameDigest : IGameDigest
             foreach (
                 var value in new[]
                 {
-                    BuildingEncoder.TypeIndex(building),
+                    BuildingEncoder.TypeIndex(building, game.Tables.Catalog),
                     building.X,
                     building.Y,
                     building.Flag,
@@ -149,11 +198,11 @@ public sealed class GameDigest : IGameDigest
 
         foreach (var settler in game.Settlers)
         {
-            var raw = SettlerEncoder.Fields(settler);
+            var raw = SettlerEncoder.Fields(settler, game.Tables.Catalog);
             foreach (
                 var value in new[]
                 {
-                    settler.Job.Code,
+                    JobWords.Of(game.Tables.Catalog, settler.Job),
                     settler.Player,
                     settler.Frame,
                     settler.Timer,
@@ -172,10 +221,7 @@ public sealed class GameDigest : IGameDigest
             }
         }
 
-        foreach (var slot in game.Roster.WaitingList)
-        {
-            hash = Mix(hash, slot);
-        }
+        MixWaiting(game, ref hash);
 
         foreach (var (index, slot) in game.Movement.Occupied)
         {

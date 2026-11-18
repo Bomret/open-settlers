@@ -16,7 +16,7 @@ public sealed class StonecuttingTests
     const int HutX = 16;
     const int HutY = 2;
 
-    static readonly Good Stone = new() { Code = 10 };
+    static readonly Good Stone = Good.Stone;
 
     // The nodes a heap can stand on for the stonecutter: the north-west neighbour of each of the 128 nodes around the hut.
     static (int X, int Y)[] Reach() =>
@@ -34,8 +34,12 @@ public sealed class StonecuttingTests
     // The made-up workers: the stonecutter's building asks for the stonecutter's job with no tool.
     static WorkerRequest?[] Workers()
     {
-        var workers = new WorkerRequest?[RuleTables.BuildingTypeCount];
-        workers[BuildingType.Stonecutter.Code] = new WorkerRequest { Job = new Stonecutter(), Tool = Good.None };
+        var workers = new WorkerRequest?[TestCatalog.BuildingSlots];
+        workers[TestCatalog.CodeOf(BuildingType.Stonecutter)] = new WorkerRequest
+        {
+            Job = new Stonecutter(),
+            Tool = Good.None,
+        };
 
         return workers;
     }
@@ -212,12 +216,12 @@ public sealed class StonecuttingTests
     // The tables of ConstructionTables with a forester that needs two stones and no plank, the stone asking the class it asks there.
     static RuleTables SiteTables()
     {
-        var needs = new byte[2 * RuleTables.BuildingTypeCount];
-        needs[(2 * BuildingType.Forester.Code) + 1] = 2;
+        var needs = new byte[2 * TestCatalog.BuildingSlots];
+        needs[(2 * TestCatalog.CodeOf(BuildingType.Forester)) + 1] = 2;
 
         return LayoutSettlersTests.MadeTables(
             buildingClass: 4,
-            transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
+            transportPriorities: [.. Enumerable.Range(1, TestCatalog.Names.Length).Select(good => (byte)good)],
             buildingSizes: ConstructionTables.Sizes(),
             buildingNeeds: needs,
             goodClasses: ConstructionTables.Classes(),

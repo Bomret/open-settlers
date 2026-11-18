@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace OpenSettlers.Simulation;
 
 /// <summary>
@@ -31,8 +33,26 @@ public static class GameFactory
         int settlerRate = 0
     )
     {
+        // Two code-less entries of one kind with one word: the flag word, the carrier's mode, the building table's item, a settler's
+        // item, the snapshot, and the digest could not tell them apart.
+        var catalog = tables.Catalog;
+        ExporterWords.CheckCodeless(
+            "goods",
+            catalog.Goods.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
+            nameof(tables)
+        );
+        ExporterWords.CheckCodeless(
+            "building types",
+            catalog.Buildings.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
+            nameof(tables)
+        );
+        ExporterWords.CheckCodeless(
+            "jobs",
+            catalog.Jobs.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
+            nameof(tables)
+        );
         var clock = new GameClock();
-        var castle = new CastleStock();
+        var castle = new CastleStock(tables.Catalog);
         var flags = new FlagTable();
         var network = new RoadNetwork();
         var buildings = new BuildingTable();
@@ -41,9 +61,18 @@ public static class GameFactory
         var draws = new GeneratorDraws(map.Generator);
         // The history reads the tick count of the game, which exists once the parts are wired.
         Game? game = null;
-        var history = new GameHistory(new SnapshotExporter(settlers, buildings, flags), () => game!.TickCount);
+        var history = new GameHistory(
+            new SnapshotExporter(settlers, buildings, flags, tables.Catalog),
+            () => game!.TickCount
+        );
         var supply = settlerSupply ? new SettlerSupply(settlerRate, clock, castle, settlers, history) : null;
-        var movement = new SettlerMovement(map, buildings, tables, () => clock.Now, SettlerEncoder.ResidueOf);
+        var movement = new SettlerMovement(
+            map,
+            buildings,
+            tables,
+            () => clock.Now,
+            activity => SettlerEncoder.ResidueOf(activity, tables.Catalog)
+        );
         int Route(int from, int to) => network.Route(flags.Count, from, to);
 
         var goods = new GoodsTransport(movement, flags, network, history, buildings);
@@ -190,7 +219,7 @@ public static class GameFactory
                 Hut = hut,
                 Placement = placement,
                 RoadPlanner = planner,
-                Queue = new CommandQueue(),
+                Queue = new CommandQueue(tables.Catalog),
                 Handlers =
                 [
                     new PlaceCastleHandler(

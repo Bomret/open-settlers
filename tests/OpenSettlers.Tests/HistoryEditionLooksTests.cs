@@ -23,7 +23,7 @@ public sealed class HistoryEditionLooksTests
     static RuleTables Tables(short[]? carried = null) =>
         new(
             [.. Enumerable.Repeat(0, RuleTables.ClassCount).Select(value => (ObjectClass)value)],
-            [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[RuleTables.Goods])],
+            TestProgram.MadeStartStock(),
             carriedFigures: carried,
             jobData:
             [
@@ -360,12 +360,26 @@ public sealed class HistoryEditionLooksTests
 
         Assert.AreEqual(
             0x1a00,
-            look.Add(Draw(new Carrier(), road, carried: new Good { Code = RuleTables.CarriedFigureCount - 1 }), 0)
+            look.Add(Draw(new Carrier(), road, carried: TestCatalog.GoodOf(RuleTables.CarriedFigureCount - 1)), 0)
         );
-        Assert.AreEqual(
-            0,
-            look.Add(Draw(new Carrier(), road, carried: new Good { Code = RuleTables.CarriedFigureCount }), 0)
-        );
-        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good { Code = 99 }), 0));
+        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good { Name = "wine" }), 0));
+    }
+
+    // The carrier carries the good its stable name gives, through the importer's name-to-code map: a good with no original code adds
+    // nothing, whatever number it holds.
+    [TestMethod]
+    public void ACarrierLookFindsTheWordOfAGoodByItsNameAndAddsNothingForAGoodWithNoOriginalCode()
+    {
+        var carried = new short[RuleTables.CarriedFigureCount];
+        carried[26] = 0x1a00;
+        var look = new CarrierLook(Tables(carried));
+        var road = new WalksRoad
+        {
+            Load = null,
+            Heading = new Heading { Value = 0 },
+        };
+
+        Assert.AreEqual(0x1a00, look.Add(Draw(new Carrier(), road, carried: new Good { Name = "shield" }), 0));
+        Assert.AreEqual(0, look.Add(Draw(new Carrier(), road, carried: new Good { Name = "wine" }), 0));
     }
 }

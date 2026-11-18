@@ -41,7 +41,8 @@ public sealed class HutWorkTests
             bench.Draws,
             (_, _) => -1
         );
-        Action<int, int, int> layGood = (flagSlot, place, good) => laid.Add((flagSlot, place, good));
+        Action<int, int, Good> layGood = (flagSlot, place, good) =>
+            laid.Add((flagSlot, place, TestCatalog.CodeOf(good)));
         var behaviour = new HutWork(
             bench.Movement,
             bench.Settlers,
@@ -100,7 +101,7 @@ public sealed class HutWorkTests
         }
 
         Assert.AreEqual(
-            ((0, 0, WoodcutterRules.GoodLog), 1, (HutX, HutY), true),
+            ((0, 0, TestCatalog.CodeOf(Good.Log)), 1, (HutX, HutY), true),
             (laid.Single(), bench.Draws.Taken, (woodcutter.X, woodcutter.Y), woodcutter.Activity is Door)
         );
     }

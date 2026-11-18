@@ -116,7 +116,7 @@ public sealed class PigFarmTests
         FarmerInside(game);
         var grain = game.CastleStock.Count(Good.Grain);
         var pigs = game.CastleStock.Count(Good.Pig);
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
 
         var reached = RunUntilAPigReachesTheCastle(game, pigs, 60000);
 
@@ -138,7 +138,7 @@ public sealed class PigFarmTests
         var farmer = FarmerInside(game);
         farm.FillHigh = 8;
         var pigs = game.CastleStock.Count(Good.Pig);
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
         Assert.IsTrue(RunUntil(game, () => farmer.Activity.Carries, 20000), "he carries something out");
 
         Assert.IsInstanceOfType<PutsDownGood>(((WaitsOutStep)farmer.Activity).Then, "he is about to lay it down");
@@ -155,7 +155,7 @@ public sealed class PigFarmTests
         var farmer = FarmerInside(game);
         var pigs = game.CastleStock.Count(Good.Pig);
         farm.FillHigh = 3;
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
 
         ConstructionWorld.Run(game, 30000);
 
@@ -171,21 +171,21 @@ public sealed class PigFarmTests
         FarmerInside(game);
         for (var place = 0; place < 7; place++)
         {
-            game.Goods.LayGood(1, place, Good.Grain.Code);
+            game.Goods.LayGood(1, place, Good.Grain);
         }
 
         // The pig farmer takes one of the seven out of the fill into his work, so the farm holds six.
         Assert.IsTrue(RunUntil(game, () => Held(farm) == 6, 6000), "six grains are held");
         ConstructionWorld.Run(game, 100);
         Assert.AreEqual(3, GrainRequest(game).Rank, "the rank 0xff shifted by six is 3: the request still asks");
-        game.Goods.LayGood(1, 0, Good.Grain.Code);
-        game.Goods.LayGood(1, 1, Good.Grain.Code);
+        game.Goods.LayGood(1, 0, Good.Grain);
+        game.Goods.LayGood(1, 1, Good.Grain);
 
         Assert.IsTrue(RunUntil(game, () => Held(farm) == 8, 6000), "two more are served");
         ConstructionWorld.Run(game, 100);
         Assert.AreEqual(0, GrainRequest(game).Rank, "eight grains held: the request ranks 0");
         var grain = game.CastleStock.Count(Good.Grain);
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
 
         ConstructionWorld.Run(game, 8000);
 
@@ -241,7 +241,7 @@ public sealed class PigFarmTests
         {
             if (game.Flags[FarmFlag].Places[place].IsEmpty)
             {
-                game.Goods.LayGood(FarmFlag, place, Good.Stone.Code);
+                game.Goods.LayGood(FarmFlag, place, Good.Stone);
                 laid++;
             }
         }
@@ -257,7 +257,7 @@ public sealed class PigFarmTests
         farm.FillHigh = 8;
         var stones = game.CastleStock.Count(Good.Stone);
         var pigs = game.CastleStock.Count(Good.Pig);
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
         var laid = 0;
         var tick = 0;
         while (farmer.Activity is not StepsOutWithGood && tick++ < 12000)

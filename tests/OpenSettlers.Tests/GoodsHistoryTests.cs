@@ -16,8 +16,8 @@ public sealed class GoodsHistoryTests
         "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
         "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
         "goods": [
-          {"x": 14, "y": 11, "place": 0, "good": 7},
-          {"x": 14, "y": 11, "place": 1, "good": 7}
+          {"x": 14, "y": 11, "place": 0, "good": "log"},
+          {"x": 14, "y": 11, "place": 1, "good": "log"}
         ]
         """;
 
@@ -111,10 +111,10 @@ public sealed class GoodsHistoryTests
         {
             game.Tick();
             var s = game.Settlers[id.Slot];
-            var raw = SettlerEncoder.Fields(s);
+            var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
             int[] engine =
             [
-                s.Job.Code,
+                JobWords.Of(TestCatalog.Default, s.Job),
                 raw.State,
                 s.Player,
                 raw.Mode,

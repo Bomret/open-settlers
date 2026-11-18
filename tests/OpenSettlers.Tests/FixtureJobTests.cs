@@ -29,6 +29,8 @@ public sealed class FixtureJobTests
                 public virtual IReadOnlyList<Type> Data => [];
             }
             public sealed record UnportedJob(int Code) : Job { public override int Code { get; } = Code; }
+            [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+            public sealed class JobNameAttribute(string name, string evidence) : Attribute { public int Level { get; init; } = -1; }
             public sealed class RuleTables;
         }
         """;
@@ -63,8 +65,6 @@ public sealed class FixtureJobTests
                 public Job Job { get; } = new TJob();
                 public virtual void Read(byte[] exe, ICollection<(Job Job, object Data)> data) { }
             }
-            [AttributeUsage(AttributeTargets.Class)]
-            public sealed class JobNameAttribute(string name, string evidence) : Attribute { }
             [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
             public sealed class StateNameAttribute(int code, string name, string evidence) : Attribute { }
             [AttributeUsage(AttributeTargets.Assembly)]
@@ -102,6 +102,7 @@ public sealed class FixtureJobTests
         {
             public required ushort Walk { get; init; }
         }
+        [JobName("fixture", "a made-up job")]
         public sealed record Fixture : Job
         {
             public const int Number = 12;
@@ -119,7 +120,6 @@ public sealed class FixtureJobTests
         using System.Collections.Generic;
         using OpenSettlers.Domain;
         namespace OpenSettlers.Import.HistoryEdition;
-        [JobName("fixture", "a made-up job")]
         [StateName(0x30, "fixes", "a made-up state")]
         public sealed class FixtureTables : JobTables<Fixture>
         {
@@ -231,10 +231,11 @@ public sealed class FixtureJobTests
             "the tables registry"
         );
         StringAssert.Contains(
-            adapters.Text,
-            "(global::OpenSettlers.Domain.Fixture.Number, \"fixture\", \"a made-up job\")",
-            "the name table's job names"
+            domain.Text,
+            "global::OpenSettlers.Domain.Fixture => \"fixture\"",
+            "the Domain's Job.Name"
         );
+        StringAssert.Contains(domain.Text, "\"fixture\" => new global::OpenSettlers.Domain.Fixture()", "Job.Named");
         StringAssert.Contains(adapters.Text, "(48, \"fixes\", \"a made-up state\")", "the name table's states");
         StringAssert.Contains(
             mapView.Text,

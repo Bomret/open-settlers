@@ -348,16 +348,7 @@ public sealed class SettlerFiguresTests
     // A carrier in the activity of a state; on its road or handing a good over it carries the good `mode`, none for 0.
     static Settler Carrier(int mode, int state = 3, int timer = 0)
     {
-        var carried =
-            mode == 0
-                ? null
-                : new Load?(
-                    new Load
-                    {
-                        Good = new Good { Code = mode },
-                        Destination = null,
-                    }
-                );
+        var carried = mode == 0 ? null : new Load?(new Load { Good = TestCatalog.GoodOf(mode), Destination = null });
         var activity = state switch
         {
             3 => new WalksRoad
@@ -1060,11 +1051,7 @@ public sealed class SettlerFiguresTests
     [TestMethod]
     public void ASettlersTermsNameItsJobActivityHeadingStepPlayerAndCarriedGood()
     {
-        var load = new Load
-        {
-            Good = new Good { Code = 7 },
-            Destination = null,
-        };
+        var load = new Load { Good = Good.Log, Destination = null };
         var carrier = new Settler(
             new Carrier(),
             1,
@@ -1097,7 +1084,7 @@ public sealed class SettlerFiguresTests
                 && term.Frame == 7
                 && term.Step == 8
                 && term.Player == 1
-                && term.Carried == new Good { Code = 7 }
+                && term.Carried == Good.Log
                 && term.Row == 3
             )
         );

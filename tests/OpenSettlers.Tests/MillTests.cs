@@ -74,7 +74,7 @@ public sealed class MillTests
         MillerInside(game);
         var grain = game.CastleStock.Count(Good.Grain);
         var flour = game.CastleStock.Count(Good.Flour);
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
 
         ConstructionWorld.Run(game, 12000);
 
@@ -95,7 +95,7 @@ public sealed class MillTests
         MillerInside(game);
         for (var place = 0; place < 7; place++)
         {
-            game.Goods.LayGood(1, place, Good.Grain.Code);
+            game.Goods.LayGood(1, place, Good.Grain);
         }
 
         ConstructionWorld.Run(game, 80);
@@ -122,11 +122,11 @@ public sealed class MillTests
     {
         // The made-up kind table sends the grain to the high byte where its request word counts the low one: the byte a grain is counted
         // in on its way and the byte it is counted back from agree whichever table says it.
-        var kinds = new byte[RuleTables.GoodKindCount];
-        kinds[Good.Grain.Code] = 1;
+        var kinds = new byte[TestCatalog.Slots];
+        kinds[TestCatalog.CodeOf(Good.Grain)] = 1;
         var (game, mill) = World(kinds: kinds);
         MillerInside(game);
-        game.Goods.LayGood(1, 0, Good.Grain.Code);
+        game.Goods.LayGood(1, 0, Good.Grain);
         for (var tick = 0; tick < 100 && mill.FillLow + mill.FillHigh == 0; tick++)
         {
             game.Tick();
@@ -202,7 +202,7 @@ public sealed class MillTests
         {
             if (game.Flags[MillFlag].Places[place].IsEmpty)
             {
-                game.Goods.LayGood(MillFlag, place, Good.Stone.Code);
+                game.Goods.LayGood(MillFlag, place, Good.Stone);
                 laid++;
             }
         }
@@ -217,7 +217,7 @@ public sealed class MillTests
         var miller = MillerInside(game);
         var stones = game.CastleStock.Count(Good.Stone);
         var flour = game.CastleStock.Count(Good.Flour);
-        game.Goods.LayGood(CastleFlag, 0, Good.Grain.Code);
+        game.Goods.LayGood(CastleFlag, 0, Good.Grain);
         var laid = 0;
         var tick = 0;
         while (miller.Activity is not StepsOutWithGood && tick++ < 12000)

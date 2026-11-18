@@ -16,15 +16,7 @@ public sealed class NameTableTests
         Assert.AreEqual("felled-tree", names.ObjectName(0x5d));
         Assert.AreEqual("stump", names.ObjectName(0x53));
         Assert.AreEqual("flag", names.ObjectName(1));
-        Assert.AreEqual("castle", NameTable.BuildingName(BuildingType.Castle.Code));
-        Assert.AreEqual("storehouse", NameTable.BuildingName(0xa));
-        Assert.AreEqual("carrier", NameTable.JobName(Carrier.Number));
-        Assert.AreEqual("digger", NameTable.JobName(Digger.Number));
         Assert.AreEqual("digs", NameTable.StateName(8));
-        Assert.AreEqual(3, new Builder().Code);
-        Assert.AreEqual("builder", NameTable.JobName(3));
-        Assert.AreEqual("castle-settler", NameTable.JobName(4));
-        Assert.AreEqual("jobless", NameTable.JobName(21));
         Assert.AreEqual("walks-along-road", NameTable.StateName(3));
         Assert.AreEqual("builds", NameTable.StateName(9));
         Assert.AreEqual("leaves-site", NameTable.StateName(0x4a));
@@ -33,7 +25,6 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheSawmillersJobAndStatesGetTheirNames()
     {
-        Assert.AreEqual("sawmiller", NameTable.JobName(Sawmiller.Number));
         Assert.AreEqual("saws", NameTable.StateName(0x18));
         Assert.AreEqual("steps-out-with-good", NameTable.StateName(0xb));
         Assert.AreEqual("puts-down-good", NameTable.StateName(0xd));
@@ -42,35 +33,30 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheMillersJobAndStateGetTheirNames()
     {
-        Assert.AreEqual("miller", NameTable.JobName(Miller.Number));
         Assert.AreEqual("grinds", NameTable.StateName(0x23));
     }
 
     [TestMethod]
     public void TheBakersJobAndStateGetTheirNames()
     {
-        Assert.AreEqual("baker", NameTable.JobName(Baker.Number));
         Assert.AreEqual("bakes", NameTable.StateName(0x24));
     }
 
     [TestMethod]
     public void TheButchersJobAndStateGetTheirNames()
     {
-        Assert.AreEqual("butcher", NameTable.JobName(Butcher.Number));
         Assert.AreEqual("butchers", NameTable.StateName(0x26));
     }
 
     [TestMethod]
     public void ThePigFarmersJobAndStateGetTheirNames()
     {
-        Assert.AreEqual("pig-farmer", NameTable.JobName(PigFarmer.Number));
         Assert.AreEqual("tends-pigs", NameTable.StateName(0x25));
     }
 
     [TestMethod]
     public void TheStonecuttersJobAndStatesGetTheirNames()
     {
-        Assert.AreEqual("stonecutter", NameTable.JobName(Stonecutter.Number));
         Assert.AreEqual("looks-for-heap", NameTable.StateName(0x15));
         Assert.AreEqual("walks-to-heap", NameTable.StateName(0x16));
         Assert.AreEqual("cuts-stone", NameTable.StateName(0x17));
@@ -79,7 +65,6 @@ public sealed class NameTableTests
     [TestMethod]
     public void TheForestersJobStatesAndSaplingsGetTheirNames()
     {
-        Assert.AreEqual("forester", NameTable.JobName(Forester.Number));
         Assert.AreEqual("looks-for-spot", NameTable.StateName(0x13));
         Assert.AreEqual("plants", NameTable.StateName(0x14));
         var names = Table((0x67, 1), (0x68, 1));
@@ -89,73 +74,28 @@ public sealed class NameTableTests
     }
 
     [TestMethod]
-    public void TheFoodBuildingsAndGoodsHaveNamesWithEvidence()
+    public void TheNameTableHoldsNoBuildingType()
     {
-        // The numbers are the program's: a type 0xd handler asks for the job whose tool is good 19, the butcher's knife.
-        CollectionAssert.AreEqual(
-            new[] { "fisher-hut", "farm", "butcher", "pig-farm", "mill", "baker" },
-            new[] { 1, 0xc, 0xd, 0xe, 0xf, 0x10 }.Select(NameTable.BuildingName).ToArray()
-        );
-        CollectionAssert.AreEqual(
-            new[] { 1, 0xc, 0xd, 0xe, 0xf, 0x10 },
-            new[]
-            {
-                BuildingType.Fisher,
-                BuildingType.Farm,
-                BuildingType.Butcher,
-                BuildingType.PigFarm,
-                BuildingType.Mill,
-                BuildingType.Baker,
-            }
-                .Select(type => type.Code)
-                .ToArray()
-        );
-        CollectionAssert.AreEqual(
-            new[] { "fish", "pig", "meat", "grain", "flour", "bread" },
-            Enumerable.Range(1, 6).Select(NameTable.GoodName).ToArray()
-        );
-        CollectionAssert.AreEqual(
-            new[]
-            {
-                "log",
-                "plank",
-                "boat",
-                "stone",
-                "iron-ore",
-                "iron",
-                "coal",
-                "gold-ore",
-                "gold",
-                "shovel",
-                "hammer",
-                "fishing-rod",
-                "butcher-knife",
-                "scythe",
-                "hatchet",
-                "saw",
-                "pickaxe",
-                "pliers",
-                "sword",
-                "shield",
-            },
-            Enumerable.Range(7, 20).Select(NameTable.GoodName).ToArray()
-        );
-        Assert.IsNull(NameTable.GoodName(0));
-        Assert.IsNull(NameTable.GoodName(27));
+        // A building type takes its name from its catalog entry (ADR 0020), whose name cites its evidence (BuildingTablesTests).
+        foreach (var entry in NameTable.Entries)
+        {
+            Assert.AreNotEqual("castle", entry.Name);
+            Assert.AreNotEqual("woodcutter-hut", entry.Name);
+            Assert.AreNotEqual("storehouse", entry.Name);
+        }
     }
 
     [TestMethod]
-    public void EveryGoodFromOneToTwentySixHasAnEntryThatCitesAnAddress()
+    public void TheNameTableHoldsNoGood()
     {
-        foreach (var good in Enumerable.Range(1, 26))
+        // A good takes its name from its catalog entry (ADR 0020); the table names objects, jobs, states, and building types.
+        foreach (var entry in NameTable.Entries)
         {
-            var entry = NameTable.Entries.Single(entry => entry.Kind == NameTable.CodeKind.Good && entry.Code == good);
-            StringAssert.Matches(
-                entry.Evidence,
-                new System.Text.RegularExpressions.Regex("0x[0-9a-f]{6}"),
-                $"good {good} {entry.Name}"
-            );
+            Assert.AreNotEqual("log", entry.Name);
+            Assert.AreNotEqual("shield", entry.Name);
         }
+
+        Assert.IsFalse(NameTable.IsName("fish"));
     }
 
     [TestMethod]
@@ -163,45 +103,23 @@ public sealed class NameTableTests
     {
         Assert.IsNull(NameTable.StateName(0x43));
         Assert.IsNull(Table().ObjectName(5));
-        Assert.IsNull(NameTable.JobName(99));
-        Assert.IsNull(NameTable.BuildingName(99));
     }
 
     [TestMethod]
-    public void EveryPortedJobHasAName()
+    public void TheNameTableHoldsNoJob()
     {
-        foreach (var number in new[] { 0, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14, 15, 21 })
-        {
-            Assert.IsNotNull(NameTable.JobName(number), $"job {number}");
-        }
-    }
-
-    [TestMethod]
-    public void TheNamesTheJobModulesStateAreInTheTableWithTheirEvidence()
-    {
-        var jobs = NameTable.Entries.Where(entry => entry.Kind == NameTable.CodeKind.Job).ToArray();
-
+        // A job takes its name from its type and its catalog entry (ADR 0020), whose name cites its evidence (JobTests).
+        Assert.IsFalse(NameTable.IsName("carrier"));
+        Assert.IsFalse(NameTable.IsName("knight-level-0"));
         CollectionAssert.AreEquivalent(
-            new[]
-            {
-                "carrier",
-                "digger",
-                "builder",
-                "castle-settler",
-                "woodcutter",
-                "sawmiller",
-                "miller",
-                "baker",
-                "pig-farmer",
-                "stonecutter",
-                "forester",
-                "farmer",
-                "fisher",
-                "butcher",
-                "jobless",
-            },
-            jobs.Select(entry => entry.Name).ToArray()
+            new[] { NameTable.CodeKind.Object, NameTable.CodeKind.State },
+            NameTable.Entries.Select(entry => entry.Kind).Distinct().ToArray()
         );
+    }
+
+    [TestMethod]
+    public void TheStateNamesTheJobModulesStateAreInTheTableWithTheirEvidence()
+    {
         Assert.AreEqual(
             "the code of the Activity record (src/Domain/Activity.cs)",
             NameTable.Entries.Single(entry => entry.Kind == NameTable.CodeKind.State && entry.Code == 0x11).Evidence
@@ -284,9 +202,6 @@ public sealed class NameTableTests
             table[code] = (byte)@class;
         }
 
-        return new NameTable(new RuleTables(table, ZeroStock()));
+        return new NameTable(new RuleTables(table, TestProgram.MadeStartStock()));
     }
-
-    static byte[][] ZeroStock() =>
-        [.. Enumerable.Range(0, RuleTables.StartStockRows).Select(_ => new byte[StartStock.Goods])];
 }

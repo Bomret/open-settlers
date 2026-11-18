@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using OpenSettlers.Domain;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Launch;
@@ -48,4 +49,34 @@ public static class LayoutLoad
 
         return 0;
     }
+
+    /// <summary>
+    /// Builds the game of a played run over <paramref name="tables"/> and <paramref name="map"/> with the start stock level
+    /// <paramref name="stockLevel"/> and the settler rate <paramref name="settlerRate"/>, as the game view does (every pass turns, the
+    /// castle hands its goods out, and new settlers come at the rate), and starts it from <paramref name="layout"/> as
+    /// <see cref="Start(Layout, Game, out Game, out string)"/> does.
+    /// </summary>
+    public static int Start(
+        Layout? layout,
+        RuleTables tables,
+        Map map,
+        int stockLevel,
+        int settlerRate,
+        out Game? started,
+        out string? message
+    ) =>
+        Start(
+            layout,
+            GameFactory.Create(
+                tables,
+                map,
+                stockLevel,
+                everyPassTurns: true,
+                handsOutGoods: true,
+                settlerSupply: true,
+                settlerRate: settlerRate
+            ),
+            out started,
+            out message
+        );
 }

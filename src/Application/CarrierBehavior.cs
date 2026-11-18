@@ -566,8 +566,8 @@ public sealed class CarrierBehavior(
         }
     }
 
-    // State 0xe (0x43c4ea) when its timer has run out. The first time the good goes into the building: its byte 8 or 9 (the log
-    // and the goods from 9 on but 13 count in byte 9, the others in byte 8) gains 0x0f, and where that carries out of the byte the
+    // State 0xe (0x43c4ea) when its timer has run out. The first time the good goes into the building: its byte 8 or 9 (the
+    // handover counter of the good's entry, RuleTables.HandoverCounterOf) gains 0x0f, and where that carries out of the byte the
     // word of both bytes becomes 0xffff and the good is counted in the building's storage, up to 50000. The castle's bytes are
     // 0xffff, so each good delivered to it counts. The carrier then turns the frame round, takes the other half of the step's
     // time, and the second time goes on in state 3 at the flag, where the exchange runs again.
@@ -594,7 +594,7 @@ public sealed class CarrierBehavior(
                 movement.Become(settler, hands with { Load = null });
                 if (movement.BuildingAt(node) is { IsDemolishing: false } building)
                 {
-                    var counter = good.FillsHigh ? FillCounter.High : FillCounter.Low;
+                    var counter = movement.Tables.HandoverCounterOf(good);
                     var sum = building.FillOf(counter) + 0x0f;
                     building.SetFill(counter, sum);
                     if (sum > 0xff)
@@ -612,9 +612,9 @@ public sealed class CarrierBehavior(
                         buildingSlot,
                         EventType.Handover,
                         Cause.Goods,
-                        $"{history.SettlerId(slot)} good {good}"
+                        $"{history.SettlerId(slot)} good {history.GoodText(good)}"
                     );
-                    given = $"{history.BuildingId(buildingSlot)} good {good}";
+                    given = $"{history.BuildingId(buildingSlot)} good {history.GoodText(good)}";
                 }
             }
 

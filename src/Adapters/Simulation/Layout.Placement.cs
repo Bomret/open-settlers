@@ -11,7 +11,8 @@ public sealed partial class Layout
     // One entry of the file that a game takes as a command: its name in the file (flags[1]) and the command; a refusal
     // reports the reason Refusal gives for the command's kind. A building, settler, or good entry is no command a player gives:
     // its Place puts it in the game directly (Game.PlaceFinishedBuilding, WalkBehavior.StandWorkerInHut,
-    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null.
+    // CarrierBehavior.PlaceCarrierOnRoad, GoodsTransport.PlaceGood) and returns why it refused, or null. A command's Check runs
+    // before the game takes it and returns why the game's content set refuses a name the entry gives, or null.
     sealed record Step
     {
         public required string Name { get; init; }
@@ -19,6 +20,8 @@ public sealed partial class Layout
         public required Command Command { get; init; }
 
         public Func<Game, string?>? Place { get; init; } = null;
+
+        public Func<Game, string?>? Check { get; init; } = null;
     }
 
     /// <summary>
@@ -54,6 +57,11 @@ public sealed partial class Layout
                 }
 
                 continue;
+            }
+
+            if (step.Check?.Invoke(game) is { } refused)
+            {
+                return $"{_file}: {step.Name}: {refused}";
             }
 
             var revision = game.Revision;
@@ -159,27 +167,16 @@ public sealed partial class Layout
             return good;
         }
 
-        // The building types a finished-building entry names (docs/rules/layouts.md), by the names of the build panel.
-        static readonly Dictionary<string, BuildingType> BuildingNames = new()
-        {
-            ["woodcutter"] = BuildingType.Woodcutter,
-            ["stonecutter"] = BuildingType.Stonecutter,
-            ["forester"] = BuildingType.Forester,
-            ["sawmill"] = BuildingType.Sawmill,
-            ["fisher"] = BuildingType.Fisher,
-            ["farm"] = BuildingType.Farm,
-            ["baker"] = BuildingType.Baker,
-            ["mill"] = BuildingType.Mill,
-            ["pig-farm"] = BuildingType.PigFarm,
-            ["butcher"] = BuildingType.Butcher,
-        };
-
-        const string BuildingNameList =
-            "woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher";
-
         const string BuildingShape =
-            "{\"type\": \"woodcutter\", \"stonecutter\", \"forester\", \"sawmill\", \"fisher\", \"farm\", \"baker\", \"mill\", \"pig-farm\", or \"butcher\", \"x\", \"y\"} (the node of the building, "
-            + "finished with its flag south-east of it)";
+            "{\"type\": a stable name, \"x\", \"y\"} (the node of the building, finished with its flag south-east of it)";
+
+        // The building types a finished-building entry may name (docs/rules/layouts.md): the types the placement builds that the
+        // catalog holds, by stable name in ordinal order.
+        static IEnumerable<string> PlaceableNames(ContentCatalog catalog) =>
+            BuildingPlacement
+                .Types.Where(type => catalog.EntryOf(type) is not null)
+                .Select(type => type.Name)
+                .Order(StringComparer.Ordinal);
 
         // A finished-building entry: the building stands finished at tick 0 as the original's mission start leaves a building
         // (0x41f2d2 places it through 0x449a63 and finishes it).
@@ -203,20 +200,20 @@ public sealed partial class Layout
                 return false;
             }
 
-            if (!entry.TryGetProperty("type", out var typeEntry) || typeEntry.ValueKind != JsonValueKind.String)
+            if (!entry.TryGetProperty("type", out var typeEntry))
             {
                 Fail(name, $"a building needs a \"type\": a building is {BuildingShape}");
 
                 return false;
             }
 
-            var typeName = typeEntry.GetString();
-            if (typeName is null || !BuildingNames.TryGetValue(typeName, out var type))
+            // The game's catalog is not known while the file is read: a name the catalog lacks, or a build-panel name, is refused when
+            // the layout is built, with the names the game's content set knows.
+            var type = new BuildingType
             {
-                Fail(name, $"no building type {typeName}: a layout builds {BuildingNameList}");
-
-                return false;
-            }
+                Name = typeEntry.ValueKind == JsonValueKind.String ? typeEntry.GetString() ?? "" : "",
+            };
+            var given = typeEntry.GetRawText();
 
             if (!Whole(entry, "x", out var x) || !Whole(entry, "y", out var y))
             {
@@ -250,7 +247,9 @@ public sealed partial class Layout
                     Name = name,
                     Command = command,
                     Place = game =>
-                        !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
+                        PlaceableNames(game.Tables.Catalog).ToList() is var placeable && !placeable.Contains(type.Name)
+                            ? $"the building type {given} is no stable name of a building type of this content set, use {string.Join(", ", placeable)}"
+                        : !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
                         : game.Walks.StandsWorker(type) ? game.Walks.StandWorkerInHut(x, y)
                         : null,
                 }
@@ -325,7 +324,7 @@ public sealed partial class Layout
 
         bool ReadGood(string name, JsonElement entry, List<Step> steps)
         {
-            const string Shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": 1 to 25}";
+            const string Shape = "{\"x\", \"y\", \"place\": 0 to 7, \"good\": a stable name}";
             if (entry.ValueKind != JsonValueKind.Object)
             {
                 Fail(name, $"must be {Shape}");
@@ -349,21 +348,27 @@ public sealed partial class Layout
                 || !Whole(entry, "y", out var y)
                 || !Whole(entry, "place", out var place)
                 || place is < 0 or > 7
-                || !Whole(entry, "good", out var good)
-                || good is < 1 or >= StartStock.Goods
+                || !entry.TryGetProperty("good", out var named)
             )
             {
-                Fail(name, $"must be {Shape}, whole numbers");
+                Fail(name, $"must be {Shape}, x, y, and place whole numbers");
 
                 return false;
             }
 
+            // The game's catalog is not known while the file is read: a number or a name the catalog lacks is refused when the layout is
+            // built, with the names the game's content set knows.
+            var good = new Good { Name = named.ValueKind == JsonValueKind.String ? named.GetString() ?? "" : "" };
+            var given = named.GetRawText();
             steps.Add(
                 new Step
                 {
                     Name = name,
                     Command = default,
-                    Place = game => game.Goods.PlaceGood(x, y, place, good),
+                    Place = game =>
+                        good.IsNone || game.Tables.Catalog.EntryOf(good) is null
+                            ? $"the good {given} is no stable name of a good of this content set, use {string.Join(", ", game.Tables.Catalog.Goods.Select(entry => entry.Name))}"
+                            : game.Goods.PlaceGood(x, y, place, good),
                 }
             );
 
@@ -411,7 +416,7 @@ public sealed partial class Layout
                 return false;
             }
 
-            int[]? stock = null;
+            Dictionary<Good, int>? stock = null;
             if (castle && entry.TryGetProperty("stock", out var stockEntry) && !ReadStock(name, stockEntry, out stock))
             {
                 return false;
@@ -446,19 +451,32 @@ public sealed partial class Layout
                 return false;
             }
 
-            steps.Add(new Step { Name = name, Command = command });
+            steps.Add(
+                new Step
+                {
+                    Name = name,
+                    Command = command,
+                    Check = stock is null ? null : game => StockRefusal(game, stock),
+                }
+            );
 
             return true;
         }
 
-        // The goods the name table names (NameTable.GoodName), by name: the good numbers 1 to 26.
-        static readonly Dictionary<string, int> GoodNumbers = Enumerable
-            .Range(1, StartStock.Goods)
-            .ToDictionary(good => NameTable.GoodName(good)!, good => good);
+        // The game's catalog is not known while the file is read: a good of the castle's stock that the catalog lacks is refused when
+        // the layout is built, with the names the game's content set knows.
+        static string? StockRefusal(Game game, IReadOnlyDictionary<Good, int> stock) =>
+            stock
+                .Keys.Where(good => game.Tables.Catalog.EntryOf(good) is null)
+                .Select(good => good.Name)
+                .FirstOrDefault()
+                is { } unknown
+                ? $"stock: the good {unknown} is no stable name of a good of this content set, use {string.Join(", ", game.Tables.Catalog.Goods.Select(entry => entry.Name))}"
+                : null;
 
-        // The castle's stock key: an object of good names and counts, each a whole number from 0 to 50000 (the most a count of
-        // CastleStock holds). Every good it does not name counts 0. An engine stand-in: the original has no such start.
-        bool ReadStock(string name, JsonElement entry, out int[]? stock)
+        // The castle's stock key: an object of goods by stable name and counts, each a whole number from 0 to 50000 (the most a count
+        // of CastleStock holds). Every good it does not name counts 0. An engine stand-in: the original has no such start.
+        bool ReadStock(string name, JsonElement entry, out Dictionary<Good, int>? stock)
         {
             stock = null;
             if (entry.ValueKind != JsonValueKind.Object)
@@ -468,17 +486,11 @@ public sealed partial class Layout
                 return false;
             }
 
-            var counts = new int[StartStock.Goods];
-            var named = new HashSet<string>();
+            var counts = new Dictionary<Good, int>();
             var good = true;
             foreach (var property in entry.EnumerateObject())
             {
-                if (!GoodNumbers.TryGetValue(property.Name, out var number))
-                {
-                    Fail(name, $"stock: {property.Name} is no good's name");
-                    good = false;
-                }
-                else if (!named.Add(property.Name))
+                if (counts.ContainsKey(new Good { Name = property.Name }))
                 {
                     Fail(name, $"stock: {property.Name} is given twice");
                     good = false;
@@ -494,7 +506,7 @@ public sealed partial class Layout
                 }
                 else
                 {
-                    counts[number - 1] = count;
+                    counts[new Good { Name = property.Name }] = count;
                 }
             }
 
@@ -503,14 +515,11 @@ public sealed partial class Layout
             return good;
         }
 
-        // The jobs the name table names (NameTable.JobName) but the castle settler, by name: the jobs a castle's named settlers take.
-        static readonly Dictionary<string, Job> JobsByName = Enumerable
-            .Range(0, JobCount)
-            .Where(code => NameTable.JobName(code) is not (null or CastleSettlerName))
-            .ToDictionary(code => NameTable.JobName(code)!, Job.Of);
+        // The jobs with a stable name (Job.Ported) but the castle settler, by name: the jobs a castle's named settlers take.
+        static readonly Dictionary<string, Job> JobsByName = Job
+            .Ported.Where(job => job.Name != CastleSettlerName)
+            .ToDictionary(job => job.Name);
 
-        // The job numbers 0 to 31.
-        const int JobCount = 32;
         const string CastleSettlerName = "castle-settler";
 
         static readonly string JobNameList =

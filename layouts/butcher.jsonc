@@ -1,5 +1,5 @@
 // A finished butcher's shop at 13,10 with its butcher inside (a settler without a job that the castle made the butcher with a knife), its
-// flag at 14,11 joined to the castle's flag at 11,11 by a road with its carrier, and two pigs (good 2) on the castle's flag. The pigs go to
+// flag at 14,11 joined to the castle's flag at 11,11 by a road with its carrier, and two pigs on the castle's flag. The pigs go to
 // the shop, the butcher works on each and carries the meat out, and the meat goes back to the castle. The seed draws a start stock level
 // that holds the butcher's knife. Play it with play/butcher.play.
 {
@@ -80,7 +80,7 @@
   "buildings": [{"type": "butcher", "x": 13, "y": 10}],
   "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
   "goods": [
-    {"x": 11, "y": 11, "place": 0, "good": 2},
-    {"x": 11, "y": 11, "place": 1, "good": 2}
+    {"x": 11, "y": 11, "place": 0, "good": "pig"},
+    {"x": 11, "y": 11, "place": 1, "good": "pig"}
   ]
 }

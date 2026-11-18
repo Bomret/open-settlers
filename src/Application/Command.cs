@@ -7,7 +7,8 @@ namespace OpenSettlers.Simulation;
 /// <summary>
 /// A player's action that the simulation takes at a given tick. <c>Kind</c> names the action; its codes belong to
 /// the slices that add actions. <c>X</c> and <c>Y</c> are the tile the action aims at. Two commands are equal when
-/// their fields, their <c>Directions</c>, their <c>Stock</c>, and their <c>Settlers</c>, element by element, are equal.
+/// their fields, their <c>Directions</c> and their <c>Settlers</c>, element by element, and their <c>Stock</c>, good by good, are equal; a
+/// good a stock does not name counts 0 there.
 /// </summary>
 public readonly record struct Command : IEquatable<Command>
 {
@@ -36,11 +37,11 @@ public readonly record struct Command : IEquatable<Command>
     public BuildingType? Building { get; init; }
 
     /// <summary>
-    /// The goods the castle a <see cref="CommandKind.PlaceCastle"/> places holds in place of its start stock, one count for each of the
-    /// <see cref="RuleTables.Goods"/> goods; null for the start stock and for every other action. Only a layout's castle names it
-    /// (<c>docs/rules/layouts.md</c>), an engine stand-in.
+    /// The goods the castle a <see cref="CommandKind.PlaceCastle"/> places holds in place of its start stock, each good by stable name
+    /// with its count; a good it does not name counts 0. Null for the start stock and for every other action. Only a layout's castle
+    /// names it (<c>docs/rules/layouts.md</c>), an engine stand-in.
     /// </summary>
-    public IReadOnlyList<int>? Stock { get; init; }
+    public IReadOnlyDictionary<Good, int>? Stock { get; init; }
 
     /// <summary>
     /// The settlers that wait in the castle a <see cref="CommandKind.PlaceCastle"/> places in place of its 20 first settlers, after its
@@ -58,9 +59,17 @@ public readonly record struct Command : IEquatable<Command>
         && Y == other.Y
         && Building == other.Building
         && (Directions ?? []).SequenceEqual(other.Directions ?? [])
-        && (Stock ?? []).SequenceEqual(other.Stock ?? [])
+        && (Stock is null) == (other.Stock is null)
+        && Holds(Stock ?? Empty, other.Stock ?? Empty)
+        && Holds(other.Stock ?? Empty, Stock ?? Empty)
         && (Settlers is null) == (other.Settlers is null)
         && (Settlers ?? []).SequenceEqual(other.Settlers ?? []);
+
+    static readonly IReadOnlyDictionary<Good, int> Empty = new Dictionary<Good, int>();
+
+    // Whether every count of a holds in b, where a good b does not name counts 0.
+    static bool Holds(IReadOnlyDictionary<Good, int> a, IReadOnlyDictionary<Good, int> b) =>
+        a.All(pair => b.GetValueOrDefault(pair.Key) == pair.Value);
 
     /// <inheritdoc/>
     public override int GetHashCode()

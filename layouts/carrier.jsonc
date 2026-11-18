@@ -1,4 +1,4 @@
-// A carrier on the road from the castle's flag at 11,11 to a flag at 14,11, and two logs (good 7) on that flag. The carrier
+// A carrier on the road from the castle's flag at 11,11 to a flag at 14,11, and two logs on that flag. The carrier
 // takes them to the castle. Play it with play/carrier-log.play.
 {
   "size": 1,
@@ -77,7 +77,7 @@
   "roads": [{"x": 11, "y": 11, "directions": [0, 0, 0]}],
   "settlers": [{"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0}],
   "goods": [
-    {"x": 14, "y": 11, "place": 0, "good": 7},
-    {"x": 14, "y": 11, "place": 1, "good": 7}
+    {"x": 14, "y": 11, "place": 0, "good": "log"},
+    {"x": 14, "y": 11, "place": 1, "good": "log"}
   ]
 }

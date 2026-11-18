@@ -169,7 +169,7 @@ public sealed class BakerWalkTests
         }
 
         game.ApplyCommands();
-        Assert.AreEqual(BuildingType.Baker.Code, hut[2], "the fixture's building is a bakery");
+        Assert.AreEqual(TestCatalog.CodeOf(BuildingType.Baker), hut[2], "the fixture's building is a bakery");
         Assert.IsTrue(
             Huts.Place(game, hut[0] - 1, hut[1] - 1, BuildingType.Baker),
             "the fixture's building has its site"
@@ -192,7 +192,7 @@ public sealed class BakerWalkTests
         {
             foreach (var put in puts.Where(put => put.Pass == pass))
             {
-                game.Goods.LayGood(put.Flag, put.Place, put.Good);
+                game.Goods.LayGood(put.Flag, put.Place, TestCatalog.GoodOf(put.Good));
             }
 
             game.Tick();
@@ -225,7 +225,9 @@ public sealed class BakerWalkTests
             if (line.TryGetValue("g", out var goods))
             {
                 var places = game.Flags[hutFlag].Places;
-                var bytes = string.Concat(places.Select(place => FlagEncoder.GoodByte(place).ToString("X2")));
+                var bytes = string.Concat(
+                    places.Select(place => FlagEncoder.GoodWord(place, game.Tables.Catalog).ToString("X2"))
+                );
                 Assert.AreEqual(
                     goods.Split('/')[1],
                     bytes,

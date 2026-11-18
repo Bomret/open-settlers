@@ -11,7 +11,7 @@ using OpenSettlers.Simulation;
 namespace OpenSettlers.Tests;
 
 // INV-0011 and ADR 0017: the simulation reaches game data through the import ports. The domain and the application reference no
-// source assembly, and the adapter assembly names one History Edition type, the job and state names of JobTableNames.
+// source assembly, and the adapter assembly names one History Edition type, the state names of JobTableNames.
 [TestClass]
 public sealed class ImportPortBoundaryTests
 {

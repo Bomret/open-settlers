@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -19,7 +20,8 @@ static class StandInRulesReader
         AllowTrailingCommas = true,
     };
 
-    static readonly string[] GoodNames =
+    // The set's goods by stable name, in the order of their numbers 1 to 26; the graphics source keys a good's image by the name.
+    internal static readonly string[] GoodNames =
     [
         "fish",
         "pig",
@@ -71,15 +73,29 @@ static class StandInRulesReader
         .Select((name, at) => (name, direction: new Direction { Value = at }))
         .ToDictionary(entry => entry.name, entry => entry.direction);
 
-    static readonly IReadOnlyDictionary<string, Good> GoodTerms = GoodNames
-        .Select((name, at) => (name, good: new Good { Code = at + 1 }))
-        .ToDictionary(entry => entry.name, entry => entry.good);
+    static readonly IReadOnlyDictionary<string, Good> GoodTerms = GoodNames.ToDictionary(
+        name => name,
+        name => new Good { Name = name }
+    );
 
     static readonly IReadOnlyDictionary<string, FillCounter> CounterTerms = new Dictionary<string, FillCounter>
     {
         ["low"] = FillCounter.Low,
         ["high"] = FillCounter.High,
         ["none"] = FillCounter.None,
+    };
+
+    // A handover fills the low or the high byte of a building's fill: a good counted in no byte is no handover.
+    static readonly IReadOnlyDictionary<string, FillCounter> HandoverTerms = new Dictionary<string, FillCounter>
+    {
+        ["low"] = FillCounter.Low,
+        ["high"] = FillCounter.High,
+    };
+
+    static readonly IReadOnlyDictionary<string, bool> Resource1Terms = new Dictionary<string, bool>
+    {
+        ["counts"] = true,
+        ["none"] = false,
     };
 
     static readonly IReadOnlyDictionary<string, RequestWord> WordTerms = new Dictionary<string, RequestWord>
@@ -93,6 +109,12 @@ static class StandInRulesReader
         ["mine"] = BuildingSize.Mine,
         ["small"] = BuildingSize.Small,
         ["large"] = BuildingSize.Large,
+    };
+
+    static readonly IReadOnlyDictionary<string, bool> SecondFigureTerms = new Dictionary<string, bool>
+    {
+        ["second-figure"] = true,
+        ["one-figure"] = false,
     };
 
     static readonly IReadOnlyDictionary<string, bool> MaterialTerms = new Dictionary<string, bool>
@@ -113,9 +135,9 @@ static class StandInRulesReader
         var goods = Open(folder, OpenSettlersRuleTables.GoodsFile)
             .Fields(["goods", "distribution", "startStock", "ranks"]);
         var buildings = Open(folder, OpenSettlersRuleTables.BuildingsFile).Fields(["buildings"]);
-        var jobs = Open(folder, OpenSettlersRuleTables.JobsFile).Fields(["jobs"]);
+        var jobs = Open(folder, OpenSettlersRuleTables.JobsFile).Fields(["names", "jobs"]);
         var ranks = goods["ranks"].Fields(["plank", "mill"]);
-        var (buildingRules, castleDoor) = Buildings(buildings["buildings"]);
+        var (buildingRules, castleDoor, castleTieRank) = Buildings(buildings["buildings"]);
         var jobData = jobs["jobs"].Fields(["builder", "digger", "pig-farmer"]);
         var pig = jobData["pig-farmer"].Fields(["rankBase", "growth"]);
 
@@ -143,16 +165,39 @@ static class StandInRulesReader
             MillRank = (byte)ranks["mill"].Int(1, 255),
             Buildings = buildingRules,
             CastleDoor = castleDoor,
+            CastleTieRank = castleTieRank,
             BuilderTool = Tool(jobData["builder"].Fields(["tool"])["tool"]),
             DiggerTool = Tool(jobData["digger"].Fields(["tool"])["tool"]),
+            Jobs = JobsNamed(jobs["names"]),
             PigRank = (byte)pig["rankBase"].Int(1, 255),
             PigGrowthPercent = [.. pig["growth"].Items(8).Select(item => item.Int(0, 100))],
         };
     }
 
+    // The jobs the jobs file lists by stable name. The rules of every job of the engine hang on its type, so the set has each of them: a
+    // name that is no job's, and a job the list leaves out, refuse the file.
+    static ImmutableArray<Job> JobsNamed(RuleNode node)
+    {
+        var listed = node.Items()
+            .Select(item =>
+                Job.Named(item.Text())
+                ?? throw item.Fault(
+                    $"'{item.Text()}' is no stable name of a job, use {string.Join(", ", Job.Ported.Select(job => job.Name).Order(StringComparer.Ordinal))}"
+                )
+            )
+            .ToImmutableArray();
+        var missing = Job.Ported.Where(job => !listed.Contains(job)).Select(job => job.Name).ToList();
+        if (missing.Count > 0)
+        {
+            throw node.Fault($"the list leaves out {string.Join(", ", missing)}, which the set has");
+        }
+
+        return listed;
+    }
+
     // The building types the buildings file names, with the name each has there.
     static IEnumerable<(BuildingType Type, string Name)> Named() =>
-        OpenSettlersSource.FinishedKeys.Select(finished => (finished.Type, finished.Key["building/".Length..]));
+        OpenSettlersSource.FinishedKeys.Select(finished => (finished.Type, finished.Type.Name));
 
     // The root of a rule file, which the walk steps file shares with the rule files.
     internal static RuleNode Open(string folder, string file)
@@ -256,8 +301,8 @@ static class StandInRulesReader
         var result = new List<StandInGood>();
         foreach (var name in GoodNames)
         {
-            var fields = entries[name].Fields(["counts", "priority", "request"]);
-            var priority = fields["priority"].Int(1, RuleTables.Goods);
+            var fields = entries[name].Fields(["counts", "handover", "resource1", "priority", "request"]);
+            var priority = fields["priority"].Int(1, GoodNames.Length);
             if (byRank.TryGetValue(priority, out var other))
             {
                 throw fields["priority"]
@@ -271,6 +316,8 @@ static class StandInRulesReader
                 {
                     Good = GoodTerms[name],
                     Counts = fields["counts"].Term(CounterTerms, "counting"),
+                    Handover = fields["handover"].Term(HandoverTerms, "handover counter"),
+                    CountsAgainstResource1 = fields["resource1"].Term(Resource1Terms, "resource 1 counting"),
                     Priority = priority,
                     Request = request.IsText ? NoRequest(request) : Request(request),
                     StartStock =
@@ -317,15 +364,17 @@ static class StandInRulesReader
 
     static (
         IReadOnlyDictionary<BuildingType, StandInBuilding> Rules,
-        (byte Standing, byte Constructing) CastleDoor
+        (byte Standing, byte Constructing) CastleDoor,
+        int CastleTieRank
     ) Buildings(RuleNode node)
     {
         var entries = node.Fields(Named().Select(entry => entry.Name));
-        var castleDoor = Door(entries["castle"].Fields(["door"])["door"]);
+        var castle = entries["castle"].Fields(["door", "tieRank"]);
         var result = new Dictionary<BuildingType, StandInBuilding>();
         foreach (var (type, name) in Named().Where(entry => entry.Type != BuildingType.Castle))
         {
-            var fields = entries[name].Fields(["size", "needs", "door", "materials", "blows"], ["worker"]);
+            var fields = entries[name]
+                .Fields(["size", "needs", "door", "materials", "blows", "secondFigure", "tieRank"], ["worker"]);
             var needs = fields["needs"].Fields(["planks", "stones"]);
             var blows = fields["blows"].Fields(["firstHalf", "secondHalf"]);
             var (standing, constructing) = Door(fields["door"]);
@@ -343,10 +392,12 @@ static class StandInRulesReader
                 FirstHalfBlows = blows["firstHalf"].Int(1, 0x8000),
                 SecondHalfBlows = blows["secondHalf"].Int(1, 0x8000),
                 Worker = fields.TryGetValue("worker", out var worker) ? Worker(worker) : null,
+                SecondFigure = fields["secondFigure"].Term(SecondFigureTerms, "second figure"),
+                TieRank = fields["tieRank"].Int(1, 255),
             };
         }
 
-        return (result, castleDoor);
+        return (result, Door(castle["door"]), castle["tieRank"].Int(1, 255));
     }
 
     static (byte Standing, byte Constructing) Door(RuleNode node)

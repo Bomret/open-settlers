@@ -6,15 +6,21 @@ using OpenSettlers.Domain;
 namespace OpenSettlers.Simulation;
 
 /// <summary>The player's castle and the goods in it: the one home of both.</summary>
-public sealed class CastleStock
+/// <param name="catalog">The content catalog of the game: the stock holds a place for each of its goods.</param>
+public sealed class CastleStock(ContentCatalog catalog)
 {
+    /// <summary>The cap of a good's count in the castle.</summary>
+    const int Cap = 50000;
+
     /// <summary>The castle of the one player, or null before it is placed.</summary>
     public Castle? Castle { get; private set; }
 
+    /// <summary>The content catalog the stock is keyed by.</summary>
+    public ContentCatalog Catalog { get; } = catalog;
+
     /// <summary>
-    /// The goods in the castle: the 26 counts of the storage item from its word at 6 (<see cref="RuleTables.Goods"/> of them), so
-    /// the count of the good <c>g</c> is the entry <c>g - 1</c> (the word for a log, the good 7, lies at <c>0x12</c> of the
-    /// item). Empty before the castle is placed.
+    /// The goods in the castle: the count of each entry of the catalog, in the order of <see cref="ContentCatalog.Goods"/> (entry
+    /// <c>i</c> of the catalog has the count <c>i</c>). Empty before the castle is placed.
     /// </summary>
     public IReadOnlyList<int> Stock { get; private set; } = [];
 
@@ -27,17 +33,28 @@ public sealed class CastleStock
     /// <summary>The stones the castle holds.</summary>
     public int Stones => Count(Good.Stone);
 
-    /// <summary>The counts of the six food goods (<see cref="Good.Foods"/>) in the castle, in the order of their numbers.</summary>
+    /// <summary>The counts of the six food goods (<see cref="Good.Foods"/>) in the castle, in the order of the food readout.</summary>
     public IReadOnlyList<int> FoodCounts => [.. Good.Foods.Select(Count)];
 
-    /// <summary>The count of a good in the castle; 0 for a number that is no good of the stock, and before the castle is placed.</summary>
-    public int Count(Good good) => Holds(good) ? Stock[good.Code - 1] : 0;
+    /// <summary>
+    /// The count of a good in the castle; 0 for no good and before the castle is placed. Throws for a good the catalog lacks, naming it.
+    /// </summary>
+    public int Count(Good good) => PlaceOf(good) is { } place && place < Stock.Count ? Stock[place] : 0;
 
-    /// <summary>The castle stands, holding <paramref name="stock"/>.</summary>
-    public void Place(Castle castle, IReadOnlyList<int> stock)
+    /// <summary>
+    /// The castle stands, holding <paramref name="stock"/>: a count for each good it names and 0 for every other good of the catalog.
+    /// Throws for a good the catalog lacks, naming it.
+    /// </summary>
+    public void Place(Castle castle, IReadOnlyDictionary<Good, int> stock)
     {
+        var counts = new int[Catalog.Goods.Length];
+        foreach (var (good, count) in stock)
+        {
+            counts[PlaceOf(good) ?? throw new ArgumentException("the start stock names no good")] = count;
+        }
+
         Castle = castle;
-        Stock = stock;
+        Stock = counts;
     }
 
     /// <summary>The castle takes one good in, up to the 50000 its count holds.</summary>
@@ -56,17 +73,22 @@ public sealed class CastleStock
         return true;
     }
 
-    bool Holds(Good good) => good.Code >= 1 && good.Code <= Stock.Count;
+    // The place of the good's entry in the catalog's order; null for no good. A good the catalog lacks is an error.
+    int? PlaceOf(Good good) => good.IsNone ? null : _places[Catalog.Require(good).Name];
+
+    readonly Dictionary<string, int> _places = catalog
+        .Goods.Select((entry, place) => (entry.Name, place))
+        .ToDictionary(entry => entry.Name, entry => entry.place);
 
     void Change(Good good, int by)
     {
-        if (!Holds(good))
+        if (PlaceOf(good) is not { } place || place >= Stock.Count)
         {
             return;
         }
 
         int[] stock = [.. Stock];
-        stock[good.Code - 1] = Math.Min(stock[good.Code - 1] + by, 50000);
+        stock[place] = Math.Min(stock[place] + by, Cap);
         Stock = stock;
     }
 }
