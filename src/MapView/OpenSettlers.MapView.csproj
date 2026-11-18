@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <!-- The tests read the internal members of the map view. -->
-    <InternalsVisibleTo Include="OpenSettlers.Tests" />
     <InternalsVisibleTo Include="OpenSettlers.MapView.Tests" />
   </ItemGroup>
   <ItemGroup>

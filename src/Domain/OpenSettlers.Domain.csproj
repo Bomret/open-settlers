@@ -9,7 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- The tests that build state by hand see the internal setters. -->
-    <InternalsVisibleTo Include="OpenSettlers.Tests" />
     <InternalsVisibleTo Include="OpenSettlers.Domain.Tests" />
   </ItemGroup>
 </Project>

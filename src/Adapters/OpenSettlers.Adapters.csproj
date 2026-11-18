@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <!-- The tests read the simulation's internal members, such as Map.Index. -->
-    <InternalsVisibleTo Include="OpenSettlers.Tests" />
     <InternalsVisibleTo Include="OpenSettlers.Adapters.Tests" />
   </ItemGroup>
   <ItemGroup>

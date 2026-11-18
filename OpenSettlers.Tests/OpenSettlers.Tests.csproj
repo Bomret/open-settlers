@@ -1,8 +1,7 @@
 <Project Sdk="MSTest.Sdk">
   <PropertyGroup>
-    <!-- The tests of the repository itself (ADR 0019, INV-0012). The assembly name differs from the project name while
-         tests/OpenSettlers.Tests, which keeps the InternalsVisibleTo grants of the libraries, still builds as
-         OpenSettlers.Tests. -->
+    <!-- The tests of the repository itself (ADR 0019, INV-0012): no library grants it internals, so the assembly name
+         carries no library's name. -->
     <AssemblyName>OpenSettlers.Repository.Tests</AssemblyName>
     <RootNamespace>OpenSettlers.Tests</RootNamespace>
   </PropertyGroup>
