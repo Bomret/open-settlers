@@ -184,8 +184,8 @@ public sealed class RoadMarkerDrawsTests
         var drawing = new RoadDrawing(game);
         drawing.Click(16, 6);
         drawing.Click(17, 6);
-        drawing.Click(18, 6);
-        Assert.AreEqual((18, 6), drawing.Nodes[^1]);
+        drawing.Click(18, 7);
+        Assert.AreEqual((18, 7), drawing.Nodes[^1]);
 
         game.Map.At(17, 6).Owner = Owner.Player(1);
 
