@@ -2,12 +2,12 @@ namespace OpenSettlers.Simulation;
 
 /// <summary>
 /// Puts the player's first castle on the node where the original allows it, and once (<see cref="CommandKind.PlaceCastle"/>):
-/// the castle with its stock, its flag, and its 20 first settlers.
+/// the castle with its stock, its flag, and its 20 first settlers, or the stock and settlers the command names.
 /// </summary>
 /// <param name="tables">The rule tables.</param>
 /// <param name="map">The map the castle is written into: the castle, its flag, the heights, and the territory.</param>
 /// <param name="castle">The castle and its stock.</param>
-/// <param name="startStock">The stock the castle holds when it is placed.</param>
+/// <param name="startStock">The stock the castle holds when it is placed, unless the command names its own (<see cref="Command.Stock"/>).</param>
 /// <param name="flags">The flag table.</param>
 /// <param name="settlers">The settler table.</param>
 /// <param name="roster">The castle's settlers.</param>
@@ -52,12 +52,12 @@ public sealed class PlaceCastleHandler(
                 Y = y,
                 Height = site.Height,
             },
-            startStock
+            command.Stock ?? startStock
         );
         CastlePlacement.Apply(map, x, y, site.Height, 0);
         // The castle's flag stands south-east of it and takes the first slot of the flag table.
         FlagSlots.Add(flags, history, (x + 1) & (map.Size.Width - 1), (y + 1) & (map.Size.Height - 1));
-        roster.CreateCastleSettlers(x, y);
+        roster.CreateCastleSettlers(x, y, command.Settlers);
         supply?.Start();
         var cause = causes.Command(history.BuildingId(0));
         history.RecordBuilding(0, EventType.PlaceCastle, cause, history.FlagId(0).ToString());

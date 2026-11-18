@@ -292,6 +292,8 @@ script alone. Add a layout only where none of them holds the situation.
   second road down, so its carrier walks home along the first road, and checks that it enters the castle. The pass with a
   woodcutter walking out is pinned by the golden scenario `head-on-pass-layout` (it puts a finished hut down at tick 401)
   and by `HeadOnPassTests`: a hut a layout stands has its worker inside from tick 0.
+- `layouts/castle-contents.jsonc` and `play/castle-contents.play`: a castle that names its settlers and goods, two carriers and
+  one settler without a job, and two sawmills. The first sawmill takes the settler without a job, and the second finds no settler. It runs on the install and with `--content-set basic`.
 - `layouts/hut-flag.jsonc`, `layouts/hut-on-road.jsonc`, and `layouts/two-logs.jsonc` with `play/hut-flag.play`,
   `play/hut-on-road.play`, and `play/two-logs.play`: a finished hut whose flag the entry puts down, a hut whose flag splits a
   road, and a woodcutter's flag whose road no carrier works until the castle's settler supply makes a settler: the play run
@@ -316,7 +318,8 @@ applies it to a game. A layout that does not load therefore fails the unit tests
 
 The entries follow, and the game applies them in the file's order:
 
-- `castle`: `{"x","y"}`.
+- `castle`: `{"x","y"}`, optionally with `stock`, the goods it holds by name, and `settlers`, the settlers that wait in it by job name
+  ([The layout rules](../rules/layouts.md#the-castles-goods)).
 - `flags`.
 - `roads`: `{"x","y","directions"}`, the start flag and one direction for each step.
 - `buildings`: finished-building entries `{"type","x","y"}` of woodcutter, stonecutter, forester, sawmill, fisher, farm, baker, mill, pig-farm, or butcher (a

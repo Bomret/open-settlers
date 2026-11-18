@@ -79,6 +79,11 @@ triangle, objects), a seed for the game's random generator, the castle, flags, r
 commands, and settlers and goods in entry states.
 _Avoid_: scenario, save, fixture
 
+**Castle contents**
+The goods and settlers the castle holds when it is placed. By default these are the goods and the 20 settlers the original's castle
+starts with, as `docs/rules/castle.md` records. A layout can name goods and settlers in their place.
+_Avoid_: castle inventory, start roster
+
 **Graphics source**
 Where the map view gets the image for each draw term: the History Edition source, which reads the install's
 archives, or the images of a content set the repository ships. The content set a run uses brings its graphics

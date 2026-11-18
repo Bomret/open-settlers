@@ -1,0 +1,91 @@
+// The castle names its settlers and goods (docs/rules/layouts.md): two carriers, one settler without a job, and two saws. Two
+// sawmills stand finished east and west of the castle at 15,10 and 6,10, each on a road from the castle's flag at 11,11 to its own
+// flag, and each road's carrier is one of the castle's two. A sawmill's worker is not stood in at load: each sawmill asks for a
+// sawmiller as the game runs. The castle holds none, so the first request makes the settler without a job the sawmiller with a saw,
+// and the second finds no settler. Play it with play/castle-contents.play.
+{
+  "size": 1,
+  "seed": "1234567812345678",
+  "height": [
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "11111111111111111111111111111111"
+  ],
+  "terrain": [
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg",
+    "gggggggggggggggggggggggggggggggg"
+  ],
+  "castle": {"x": 10, "y": 10, "settlers": {"carrier": 2, "jobless": 1}, "stock": {"saw": 2}},
+  "flags": [{"x": 16, "y": 11}, {"x": 7, "y": 11}],
+  "roads": [
+    {"x": 11, "y": 11, "directions": [0, 0, 0, 0, 0]},
+    {"x": 11, "y": 11, "directions": [3, 3, 3, 3]}
+  ],
+  "buildings": [
+    {"type": "sawmill", "x": 15, "y": 10},
+    {"type": "sawmill", "x": 6, "y": 10}
+  ],
+  "settlers": [
+    {"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 0},
+    {"job": "carrier", "state": "waiting-on-road", "x": 11, "y": 11, "direction": 3}
+  ]
+}
