@@ -177,7 +177,32 @@ public sealed class TerrainQuadsTests
     }
 
     [TestMethod]
-    public void TheRoadPassListsEachNodesEdgesEastSouthEastSouthEachAStripOrAPost()
+    public void TheRoadPassWalksTheHalfColumnsWestToEastEachZigzagBeforeItsEastEdges()
+    {
+        var map = new Map(MapSize.Offered[0]);
+        map.At(10, 10).Owner = Owner.Player(0);
+
+        var posts = EdgeTerms.Posts(map).Select(post => (post.Column, post.Row, post.Direction));
+
+        // The node 10,10 lies on the half-column 2 * 10 - 10 = 10. The east edge of 9,10 (half-column 8); the zigzag
+        // east of half-column 9, down the rows: south-east of 9,9, south of 10,10; the zigzag east of half-column 10:
+        // south of 10,9, south-east of 10,10; the east edge of 10,10.
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                (9, 10, RoadDirection.East),
+                (9, 9, RoadDirection.SouthEast),
+                (10, 10, RoadDirection.South),
+                (10, 9, RoadDirection.South),
+                (10, 10, RoadDirection.SouthEast),
+                (10, 10, RoadDirection.East),
+            },
+            posts.ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void TheRoadPassDrawsEachEdgeAsAStripOrAPostInTheOneWalk()
     {
         var map = new Map(MapSize.Offered[0]);
         map.At(10, 10).Roads = RoadSet.Of(0);
@@ -186,12 +211,12 @@ public sealed class TerrainQuadsTests
 
         var quads = TerrainQuads.Edges(map, new FakeSource(), new ImageLayers());
 
-        // Row 10: the south-east edge of 9,10, then the east strip and the south post of 10,10. Row 11: the east edge of
-        // 9,11, then the three edges of 10,11.
-        CollectionAssert.AreEqual(new[] { 6, 8, 6, 6, 6, 6, 6 }, quads.Select(quad => quad.Width).ToArray());
+        // The east edge of 9,11; the zigzag east of half-column 8: 9,10 south-east, 10,11 south; the zigzag east of
+        // half-column 9: 10,10 south, 10,11 south-east; the east edge of 10,11; the east strip of 10,10 (half-column 10).
+        CollectionAssert.AreEqual(new[] { 6, 6, 6, 6, 6, 6, 8 }, quads.Select(quad => quad.Width).ToArray());
         var post = BorderDraws.Post(map, 10, 10, RoadDirection.South)!.Value;
-        Assert.AreEqual(post.X - 2, quads[2].X);
-        Assert.AreEqual(post.Y - 7, quads[2].Y);
+        Assert.AreEqual(post.X - 2, quads[3].X);
+        Assert.AreEqual(post.Y - 7, quads[3].Y);
     }
 
     [TestMethod]

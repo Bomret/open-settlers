@@ -336,10 +336,16 @@ heights (the mean height at 4 pixels per step), and adds the offsets of the tabl
 for the other two, y minus 4 for east and plus 6 for the other two. It then subtracts the 38 pixels of the program's
 own layout from y, as the road strips do, and draws the sprite there.
 
-**The order.** `Render_DrawRoadsAndBorders` walks the view's window column by column, 16 pixels at a time. Each step
-runs the east pass of one half of the rows (`0x427d16`), the zigzag `0x427e3a`, the east pass of the other half
-(`0x427d3e`), and the zigzag `0x427f1f`. Each post and each strip is drawn as that walk reaches its edge, so a post
-lies over the strips and posts drawn before it.
+**The order.** `Render_DrawRoadsAndBorders` walks the view's window from west to east, 16 pixels a step, and each pass
+it runs goes down the rows from the top. Call the view's top row 0 and the column of pixels of its nodes x. Four passes
+repeat: the east pass `0x427d16` draws the east edges of the odd rows, whose nodes stand at x - 16, from row 1; the
+zigzag `0x427e3a` draws the edges between x and x + 16, the south-east edge of a node of an even row and the south
+edge of a node of an odd row in turn, from row 0; the east pass `0x427d3e` draws the east edges of the even rows, whose
+nodes stand at x, from row 2; the zigzag `0x427f1f` draws the edges between x + 16 and x + 32, starting with the south
+edge of row 0. Then x moves on by 32. So the walk takes the half-columns of 16 pixels from west to east, and for each
+draws the zigzag of the edges that lie in it and then the east edges of the nodes on its west side. Each post and each
+strip is drawn as the walk reaches its edge, so a post lies over the strips and posts drawn before it. Evidence: the
+calls of `0x427c09` and the start row, row step, and pixel step of each pass.
 
 **Inferred:** the pixel alignment and the order against the terrain.
 
@@ -380,11 +386,16 @@ the road being drawn is a white line.
 The border posts ([How a border is drawn](#how-a-border-is-drawn)) come from `BorderDraws` (`src/MapView/BorderDraws.cs`):
 a `BorderPost` term per edge east, south-east, and south of a node whose owner differs from the neighbor's and where the
 node holds no road bit of that direction, with the slope sum and ground of the road strip of that edge
-(`RoadDraws.SlopeAndGround`). `TerrainQuads.Edges` builds the road pass of the map view and the game view alike: per node in
-row-major order, its edges east, south-east, and south, each the strip or the post. The History Edition source picks 610 to
+(`RoadDraws.SlopeAndGround`). `TerrainQuads.Edges` builds the road pass of the map view and the game view alike, each edge the
+strip or the post, in the walk of [The order](#how-a-border-is-drawn) over the whole map: the half-columns of the map's
+pixel plane (a node's is twice its column less its row) from west to east, each its zigzag and then the east edges of
+the nodes on its west side, each pass down from row 0. The History Edition source picks 610 to
 619 through `BorderRules`, and the basic content set draws `border/pole` on land and `border/water` in water. The game view
-redraws the posts when the castle's placement claims the territory. Departure: the original walks the view column by
-column (`Render_DrawRoadsAndBorders`), so where two posts or a post and a strip overlap, the engine's order can differ. Departures: the length class, the second bit byte at `+5`, and the items'
+redraws the posts when the castle's placement claims the territory. **Inferred** departure in the order: the engine
+builds one mesh for the whole map and draws it in every copy of the map, so its walk starts at the map's west-most node
+and at row 0, where the original's starts at the view's west edge and top row, and it draws the east edges of every row,
+where the original leaves out those of the view's top row. Where two posts or a post and a strip overlap across the
+map's seam or the view's edge, the engine's order can differ. Departures: the length class, the second bit byte at `+5`, and the items'
 pointers are not kept (a later slice reads the road from the map and from `Game.Network.Roads`). Also left out are the `+0x37e` option, the
 second-button click that puts a flag on a road ([A flag on a road](#a-flag-on-a-road)), the step back at the start, the sounds, and the
 pixel alignment of the strips. Directions after the road reached a flag are refused.
