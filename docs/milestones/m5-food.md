@@ -43,10 +43,10 @@ when it fills the player blocks of a new game:
 - The fisher's work cycle: the search for a node at a shore (`0x433f71`), the arrival (`0x438232`), the cast (`0x433e05`), the catch from the
   lake details, and the fish on the flag: [Fishing](../rules/fishing.md). known
 - The butcher's work cycle (state `0x26`, `0x4332a8`), his request for pigs and its rank (`0x43d275`, `0x42e1b3`), the butcher's figure (`0x43ff90`), the castle's hand-out of pigs, and the shop's removal: [Butchering](../rules/butchering.md). known
-- The settlers after the castle's 20 first settlers, which hold 5 jobless ones: the settler supply adds a settler without a job to the
-  castle each period, so a game gets more settlers than its 5 jobless first ones: [New settlers](../rules/new-settlers.md). A carrier for
-  each road and a worker for each food building without a tool take them. `play/basic-production.play` plays the farm, the mill, and the
-  baker in one game. known
+- The settlers after the castle's 20 first settlers, which hold 5 without a job: `Player_MakeSettlers` (`0x428a75`) makes a settler
+  without a job in a storage of the player for each period that passes, and `0x42055e` sets the period at the start of a game:
+  [New settlers](../rules/new-settlers.md). A carrier for each road takes a settler without a job. A worker, a builder, and a digger take
+  one, with the tool of the job where it has one, when no settler of the job waits ([Settlers](../rules/settlers.md#the-request)). known
 
 ## Open questions
 
