@@ -76,7 +76,7 @@
   "buildings": [
     {"type": "farm", "x": 7, "y": 6},
     {"type": "baker", "x": 12, "y": 6},
-    {"type": "fisher-hut","x": 14, "y": 10},
+    {"type": "fisher-hut", "x": 14, "y": 10},
     {"type": "pig-farm", "x": 14, "y": 13},
     {"type": "mill", "x": 7, "y": 14},
     {"type": "butcher", "x": 12, "y": 14}

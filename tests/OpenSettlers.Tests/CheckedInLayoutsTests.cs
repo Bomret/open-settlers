@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using OpenSettlers.Import.ContentSet;
 using OpenSettlers.Simulation;
 
 namespace OpenSettlers.Tests;
@@ -27,7 +28,7 @@ public sealed class CheckedInLayoutsTests
     }
 
     // The first problem of a layout's text, or null when it reads and every entry applies.
-    static string? Problem(string text, string file)
+    static string? Problem(string text, string file, RuleTables? tables = null)
     {
         var read = Layout.Read(text, file);
         if (read.Layout is null)
@@ -35,7 +36,11 @@ public sealed class CheckedInLayoutsTests
             return string.Join("; ", read.Problems);
         }
 
-        return read.Layout.Apply(LayoutSettlersTests.NewGame(read.Layout));
+        return read.Layout.Apply(
+            tables is null
+                ? LayoutSettlersTests.NewGame(read.Layout)
+                : GameFactory.Create(tables, read.Layout.BuildMap())
+        );
     }
 
     [TestMethod]
@@ -47,6 +52,31 @@ public sealed class CheckedInLayoutsTests
         var problems = files.Select(file => Problem(File.ReadAllText(file), Path.GetFileName(file))).OfType<string>();
 
         Assert.AreEqual("", string.Join("\n", problems));
+    }
+
+    // Every layout applies under the tables of one content set; the problems name each file that a set refuses.
+    static string ProblemsUnder(RuleTables tables) =>
+        string.Join(
+            "\n",
+            Directory
+                .GetFiles(LayoutsFolder(), "*.jsonc")
+                .Select(file => Problem(File.ReadAllText(file), Path.GetFileName(file), tables))
+                .OfType<string>()
+        );
+
+    [TestMethod]
+    public void EveryLayoutOfTheRepositoryAppliesUnderTheBasicSet()
+    {
+        var basic = Path.Combine(Path.GetDirectoryName(LayoutsFolder())!, "content", "basic");
+
+        Assert.AreEqual("", ProblemsUnder(new OpenSettlersRuleTables(basic).Read()));
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EveryLayoutOfTheRepositoryAppliesUnderTheHistoryEditionTables()
+    {
+        Assert.AreEqual("", ProblemsUnder(TestProgram.Tables()));
     }
 
     [TestMethod]

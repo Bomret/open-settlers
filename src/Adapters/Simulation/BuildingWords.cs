@@ -42,19 +42,10 @@ public static class BuildingWords
     /// Throws an <see cref="ArgumentException"/> that names both types where two building types of the catalog with no original code have one
     /// word, which the building table's item and the digest could not tell apart.
     /// </summary>
-    public static void Check(ContentCatalog catalog)
-    {
-        var byWord = new Dictionary<int, string>();
-        foreach (var entry in catalog.Buildings.Where(entry => entry.OriginalCode is null))
-        {
-            var word = GoodWords.WordOf(entry.Name);
-            if (!byWord.TryAdd(word, entry.Name))
-            {
-                throw new ArgumentException(
-                    $"The building types {byWord[word]} and {entry.Name} have no original code and the same exporter word, 0x{word:x}.",
-                    nameof(catalog)
-                );
-            }
-        }
-    }
+    public static void Check(ContentCatalog catalog) =>
+        GoodWords.CheckCodeless(
+            "building types",
+            catalog.Buildings.Where(entry => entry.OriginalCode is null).Select(entry => entry.Name),
+            nameof(catalog)
+        );
 }

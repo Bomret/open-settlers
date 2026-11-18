@@ -238,8 +238,8 @@ public sealed partial class Layout
                     Name = name,
                     Command = command,
                     Place = game =>
-                        !PlaceableNames(game.Tables.Catalog).Contains(type.Name)
-                            ? $"the building type {given} is no stable name of a building type of this content set, use {string.Join(", ", PlaceableNames(game.Tables.Catalog))}"
+                        PlaceableNames(game.Tables.Catalog).ToList() is var placeable && !placeable.Contains(type.Name)
+                            ? $"the building type {given} is no stable name of a building type of this content set, use {string.Join(", ", placeable)}"
                         : !game.PlaceFinishedBuilding(type, x, y) ? BuildingRefusal
                         : game.Walks.StandsWorker(type) ? game.Walks.StandWorkerInHut(x, y)
                         : null,

@@ -183,7 +183,7 @@ static class TestCatalog
     public static readonly Good AiToken = new() { Name = "ai-token" };
 
     /// <summary>The 26 goods and <see cref="AiToken"/>, which has no original code.</summary>
-    public static ContentCatalog WithAiToken() =>
+    public static ContentCatalog WithAiToken(byte door = 0) =>
         new(
             [
                 .. Of().Goods,
@@ -196,7 +196,7 @@ static class TestCatalog
                     TransportRank = 100,
                 },
             ],
-            Buildings()
+            Buildings(door)
         );
 
     /// <summary>One good of <see cref="Names"/> with its code and the given facts.</summary>

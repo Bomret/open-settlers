@@ -9,7 +9,7 @@ namespace OpenSettlers.MapView;
 
 /// <summary>
 /// The <c>&lt;what&gt;</c> of an <c>expect-at</c> or <c>expect-count</c> step: a kind (<c>object</c>, <c>settler</c>,
-/// <c>building</c>, <c>flag</c>, <c>road</c>), a name from the name table, or <c>object:0xNN</c> for one raw map
+/// <c>building</c>, <c>flag</c>, <c>road</c>), a name from the name table or the stable name of a building type, or <c>object:0xNN</c> for one raw map
 /// object code. A name several codes share matches a thing of any of them.
 /// </summary>
 public sealed record ThingSelector
@@ -82,7 +82,7 @@ public sealed record ThingSelector
             )
             : (
                 null,
-                $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, or object:0xNN"
+                $"unknown name '{text}', use a kind ({string.Join(", ", Kinds)}), a name of the name table, the stable name of a building type, or object:0xNN"
             );
     }
 
