@@ -268,6 +268,18 @@ One of the player's people, one object for its whole life: its place on the map,
 one activity. Its slot in the settler table is its number and the slot of its thing ID.
 _Avoid_: worker, unit, figure
 
+**Settler supply**
+A player's timer that makes one settler without a job in a storage for each period that passes. The player's settler
+rate, a start setting from 0 to 40, sets the period: the higher the rate, the shorter the period. About 31 % of the new
+settlers are owed as knights, and the new settler becomes one where its storage holds a sword and a shield
+(`docs/rules/new-settlers.md`).
+_Avoid_: reproduction, spawning, birth, population growth
+
+**Settler cap**
+The most settlers a player may hold before its settler supply stops making new ones: an eighth of the settler table,
+plus the player's share of the rest by the land it owns. A player alone in a game holds the whole table.
+_Avoid_: population limit, settler limit
+
 **Building**
 A building of the player's, finished or a building site: its type, its node and flag, whether its worker is inside
 or on the way, and the counters of the goods it takes in. Its slot in the building table is its number. The castle

@@ -291,7 +291,8 @@ script alone. Add a layout only where none of them holds the situation.
   and by `HeadOnPassTests`: a hut a layout stands has its worker inside from tick 0.
 - `layouts/hut-flag.jsonc`, `layouts/hut-on-road.jsonc`, and `layouts/two-logs.jsonc` with `play/hut-flag.play`,
   `play/hut-on-road.play`, and `play/two-logs.play`: a finished hut whose flag the entry puts down, a hut whose flag splits a
-  road, and a woodcutter's flag whose road no carrier works until a decoy road is taken down. `play/first-loop.play` and
+  road, and a woodcutter's flag whose road no carrier works until the castle's settler supply makes a settler: the play run
+  shows in the game view the supply's new settler taking the road ([New settlers](../rules/new-settlers.md#in-the-engine)). `play/first-loop.play` and
   `play/settler-bodies.play` run on `layouts/woodcutter.jsonc`.
 
 ```sh

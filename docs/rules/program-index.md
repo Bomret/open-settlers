@@ -390,7 +390,7 @@ entries per phase (see "Item tables").
 | `0x42f512` | `View_ScanSettlers` | One view: returns for a hidden view (bit 0 of its byte 0); clears the row lists (`0x4409d5`); scans the nodes of the view row by row (two rows a step, the columns from the view's west edge) for the settler word of each node (`+2` of the second layer); for each settler runs its turn (`0x42fc81`) and builds its record (`0x43f537`); ends the row lists with `-1` (`0x440a53`). | confirmed | game | Called by `0x42f4f1`. |
 | `0x43f537` | `Settler_BuildRecord` | Builds the draw record of the settler at the item pointer. It ends at once unless the node's settler word is the settler's slot. It takes the view row: the view's `+0x4c` plus the node's row plus the signed byte of the frame in the table at `0x43f402`. It takes the position `(32 x - 16 y + view +0x9a, 20 y + view +0x90 - 4 * height - 2)`. It takes the triple of the sequence of its frame (entry 2, through `+0xb0`) at 3 times the timer shifted right 3. Then it jumps to the job's handler (`0x43f744`). The handler appends (flags, figure word, x, y) to the row's list at `+0x92` of the view if the row is below the view's `+0x50`. | confirmed | game | Called by `0x42f512`. |
 | `0x43f402` | `Settler_FrameRows` | Data: 181 signed bytes, one for each frame of a settler (up to the table at `0x43f4b7`): what `0x43f537` adds to the row of the record; -1 for the frames 9 to 26, 63 to 80, 121 and 122, and 125 to 128, else 0. | confirmed | game | Read by `0x43f537`. `RuleTables.FrameRows`. |
-| `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `0x428a75` for each player block. | unknown | game | Called by `Main_Loop`. |
+| `0x4286d8` | — | Runs `0x428728`, `Sound_RunAmbient`, and `0x428d10`, then `Player_MakeSettlers` for each player block. | unknown | game | Called by `Main_Loop`. |
 | `0x428728` | `Sim_ClearRetryBits` | Each pass clears bit 2 of the status of a window of `Table18` buildings from a cursor (`+0x54`, the window `+0x52`, stops after 10 set bits), and bit 7 of the flag status of a window of `Table70` (cursor `+0x56`). | confirmed | game | Called by `0x4286d8`. [Settlers](settlers.md#the-retry-scan). |
 | `0x42be63` | `Building_RequestWorker` | A building asks the storages for a settler of the job in the registers: a search over the flags from the building's flag; at a storage flag it takes the waiting settler of the job (state 15, mode 255, target the building's flag) or makes one of a jobless settler and a tool from the stock ([the worker request](construction.md#the-worker-request)). | confirmed | game | Called by the building handlers (`0x42e0b8` and its siblings through `0x42cd1d`) and by `0x42d55f`. [Settlers](settlers.md#the-request). |
 | `0x42b455` | `Road_RequestCarrier` | A land road asks the storages for a carrier: the search of `0x42be63` started at both ends of the road marks every flag with the end it was reached from; at a storage's flag it takes the waiting settler of job 0, or makes one of a waiting settler of job 21 (no tool), sends it (state 15, mode the direction of the road at the end the storage's flag was reached from, target that end's flag), and sets bit 7 of the road byte at both ends. | confirmed | game | Called by `0x464c36`. [Carriers](carriers.md#the-request). |
@@ -500,13 +500,13 @@ entries per phase (see "Item tables").
 | `0x44fa79` | — | The common part of the draw of a building under construction: tests the progress word at `+0xc` of its item (0 draws the object 144, `0x44fa69`), draws the goods delivered, then the stage. Entry inferred. | inferred | game | Jumped to by the stubs of the types with bit 7 set, from `0x44f92e`. |
 | `0x44257a` | `Rng_StepSettler` | The draw the settlers' routines use: the same step as `Rng_Step`, the new first word left in item word `+0x14` of the EDI block. | confirmed | game | Called by `0x438b8c` and the other searches. |
 | `0x428d10` | `Map_ObjectPass` | Every 20 clock units takes the next nodes of a cursor that moves 23 columns on (a row down where it wraps), as many as the map's size gives (`+0x21c`): a lake node with detail may move its detail (one draw); an object code from `0x53` goes through the table at `0x428eb8`, 8 bytes an entry: `0x53` vanishes when a draw's low two bits are 0, `0x5d` to `0x66` become `0x53`, the saplings `0x67` and `0x68` grow into trees ([Forestry](forestry.md#growth)), the codes from `0x69` grow or decay. | confirmed | game | Called by `0x4286d8`; draws through `Rng_Step`. [Woodcutting](woodcutting.md#the-object-pass). |
-| `0x428a75` | — | Counts down three timers of a player block; the timer at `+0x120` repeats its work once per period that has elapsed. | unknown | game | Called by `0x4286d8`. |
+| `0x428a75` | `Player_MakeSettlers` | For a player in the game whose castle stands: takes the clock units since `+0x11e` off the countdown `+0x120` and, for each period `+0x122` that has passed, makes a settler through `Settler_CreateInStorage`, a knight where one is owed (`+0x10c`, fed by 20000 added to `+0x126` per settler) and the storage holds goods 25 and 26. Also zeroes `+0x112`, `+0x116`, `+0x11a` near overflow and counts down `+0x1b0`, `+0x1b2` (computer players) and `+0x170` (byte 2 bits 2, 4, 5; role open). | confirmed | game | Called by `0x4286d8` for each player block. [New settlers](new-settlers.md). |
 | `0x42a74a` | — | Copies `Clock_ElapsedTotal` and resets it, then calls `0x42a7ac` for each player block. | unknown | game | Called by `0x42965c` while the clock runs. |
 | `0x42965c` | `Storage_HandOutGoods` | Phase 32: calls `0x42b18d`, also while the clock is stopped; only while the clock runs it calls `0x42a3f1`, `0x42a74a`, and `0x42abac` (player statistics), draws once from the generator, and runs one of the three orders of hand-out steps (`0x42a313`, `0x42a35d`, `0x42a3a7`, picked by the draw): for each step each storage whose stock holds the step's good hands one to the flag whose request ranks highest ([Materials for a building site](construction-materials.md#the-castles-hand-out), [Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entry 0 of the phase table at `0x4292ee`; the stock words of the storage fall in the emulator's `construct:` games. |
 | `0x4293f6` | — | Phases 33 to 48, with `0x42944d`, `0x4294a4`, and `0x4294fb` for the player blocks at `+0x64` to `+0x70`: for a block with bits 7 and 6 of byte 2 set (inferred: an active computer player), draws through `Rng_Step` and may call `0x46986d`; otherwise advances `Sim_Phase` within the same pass ([Timing](timing.md#rules-that-count-passes)). | confirmed | game | Entries 1 to 16 of the phase table at `0x4292ee`; writes `Sim_Phase` at `0x429445`, `0x42949c`, `0x4294f3`, `0x42954a`, `0x429578`. |
 | `0x429580` | `Ai_PhaseUpdate` | Phase-table entry: runs `Ai_UpdatePlayer` when the player block at `+0x64` has bits 7 and 6 of byte 2 set. | confirmed | game | Entry of the phase table at `0x42923c`. |
-| `0x42a3f1` | — | Counts the player blocks with bit 6 of byte 2 set, sums their `+0x112`, compares the count with `+0x48`, then scales the sum and calls `0x42a567`. | unknown | game | Called by `0x42965c`. |
-| `0x42a567` | — | Scales a player's `+0x112` by `+0x4a` and adds `+0x58`; role open. | unknown | game | Called by `0x42a3f1`. |
+| `0x42a3f1` | `Player_UpdateSettlerCaps` | Counts the players in the game and sums their owned nodes (`+0x112`); where the settler table has at least as many free slots (`+0x48`) as players, shifts the sum into 16 bits and runs `Player_UpdateSettlerCap` for each player. | confirmed | game | Called by `0x42965c`. [New settlers](new-settlers.md#the-cap). |
+| `0x42a567` | `Player_UpdateSettlerCap` | The player's cap of settlers: its share of the owned nodes times `+0x4a`, plus `+0x58`; sets bit 2 of player byte 3 where the sum of the player's 27 counts at `-0x3a` to `-6` is below the cap, else clears it. | confirmed | game | Called by `Player_UpdateSettlerCaps`. [New settlers](new-settlers.md#the-cap). |
 | `0x42b1ce` | — | Writes player `+0x188` (sum of `+0x17c` and `+0x180`, capped) and `+0x184` (a ratio to `+0x4c` scaled by `+0x5a`, plus `0x400`, adjusted by `+0x15e`). | unknown | game | Called by `0x42b18d`. |
 | `0x42e7e0` | `Building_HandleCastle` | The handler of the building type 0x18, the castle (knights and defence). Not ported. Entry inferred. At its common tail (from `0x42edb9`) it sets the scratch word `+0x30` of the item block to a map-table address on every turn, and on some turns to a slot address after that, never to the player block: the pig farm's handler reads its rank through that word ([Pig farming](pig-farming.md#the-rank-of-the-request-for-grain)). | inferred | game | Entry 0x18 of `0x42cd1d` (jump at `0x42cddd`); follows a `ret`. |
 | `0x43013b` | — | A soldier's work at a military building (code to `0x4312ed`). Entry inferred. | inferred | game | Entry 0x34 of `0x42fca1` (jump at `0x42fe41`). |
@@ -697,14 +697,14 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x41f6a5` | `Map_BuildNeighborOffsets` | Turns the spiral table into the masked node offsets at state `+0xc4`, 295 of them. | confirmed | game | Called by `Game_Start` and `Game_ResumeLoaded`. |
 | `0x442630` | `Castle_PlaceFromClick` | The click action for the castle: judges the node under the cursor and places the castle where the node state is 7 and the site is 5, else asks for the error sound. | confirmed | game | Called by `0x440d23` for build action 5. |
 | `0x442704` | `Castle_Place` | Takes the first slots of the storage, building, and flag tables, writes the castle, its flag, the heights, and the start stock, and calls `Castle_CreateSettlers`. | confirmed | game | Called by `Castle_PlaceAtStart`. |
-| `0x442f0c` | `Castle_CreateSettlers` | Creates the castle's 20 first settlers one by one and takes their tools from the storage item. | inferred | game | Called by `Castle_Place`. |
-| `0x44333d` | `Settler_TakeFromStorage` | Creates one settler of a player from the storage item that holds the fewest. | inferred | game | Called by `Castle_CreateSettlers` and `0x428a75`. |
+| `0x442f0c` | `Castle_CreateSettlers` | Sets bit 2 of player byte 3, then creates the castle's 20 first settlers one by one through `Settler_CreateInStorage`, gives each its job, and takes their tools and the three knights' weapons from the storage item. | inferred | game | Called by `Castle_Place`. [New settlers](new-settlers.md#knights). |
+| `0x44333d` | `Settler_CreateInStorage` | Where player byte 3 bit 2 is set and the settler table has a free slot, creates a settler of job 21 in state 1 in the player's storage with the fewest settlers without a job (`+0x40`); in a knight try (player `+0x10e` not 0) first only among storages that hold goods 25 and 26. Returns the sign flag set where it made none. | confirmed | game | Called by `Castle_CreateSettlers` and `Player_MakeSettlers`. [New settlers](new-settlers.md#making-one-settler). |
 | `0x442244` | `Flag_PlaceFromButton` | The flag button: judges the node under the cursor and, where the site is not 0 and the node state is 4, 6, or 7, goes on to `Flag_Place`, else to the error report (`0x44c768`). It first clears view byte 0 bit 7, so the build markers are judged again. | confirmed | game | Called by `0x440d23`. |
 | `0x4422c5` | `Flag_Place` | Takes the first free slot of the flag table, writes the flag bit and the flag object on the node, moves the node's deposit to its neighbors, and stores the slot as the node's link. Where the node state at `+0x100` is 4 (the node holds road bits) it then calls `Road_SplitAtFlag` on the node. | confirmed | game | Called by `Flag_PlaceFromButton` (`0x4422c3`) and twice by `Road_ClickStep` (`0x44426c`, `0x444491`). See [Roads](roads.md#a-flag-on-a-road). |
 | `0x45d7ad` | `Table70_Allocate` | Takes the first free slot of the flag table, clears the item, and leaves the slot number in the registers; reports a full table. | confirmed | game | Called by `Flag_Place`, `Castle_Place`, `0x421530`, and `0x449a63`. |
 | `0x45da8f` | `Table18_Allocate` | Takes the first free slot of the building table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Castle_Place`, and `0x449a63`. |
 | `0x45dd1c` | `Table120_Allocate` | Takes the first free slot of the storage table ([Item tables](item-tables.md)). | confirmed | game | Called by `Castle_Place`. |
-| `0x45e121` | `Table16_Allocate` | Takes the first free slot of the settler table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Settler_TakeFromStorage`, and `0x41f2d2`. |
+| `0x45e121` | `Table16_Allocate` | Takes the first free slot of the settler table ([Item tables](item-tables.md)). | confirmed | game | Called by `0x421530`, `Settler_CreateInStorage`, and `0x41f2d2`. |
 | `0x449f58` | `Flag_MoveDeposit` | Moves the resource deposit of a node that is about to hold a flag to the nodes around it. | confirmed | game | Called by `Flag_Place` and `0x449a63`. |
 | `0x449a63` | `Building_Place` | Places a building on the judged node (`+0xfc`, `+0xfe` of the player block): takes a building slot, and a flag slot unless the node state at `+0x100` is 5. It writes the building's object and marks on the node. Where the node state is not 5 it writes a flag on the south-east node as `Flag_Place` does: the object code 1, the flag bit `0x80`, the deposit moved through `Flag_MoveDeposit`, and the new slot as the link. Where the node state is 5 it takes the flag that stands there. | confirmed | game | Two callers, none a player's click: `0x41f2f6` (the start-of-mission placement `0x41f2d2`, which hands it a building of type 2 or 3 with no node-state check) and `0x42d274` (in `Building_Free`, only where the node state is 5, 6, or 7). Where the node state is 6 it ends with a call of `Road_SplitAtFlag` on the south-east node (`0x449f12`). The click that places a building is not recovered. See [Castle and build sites](build-sites.md#placing-a-building). |
 | `0x44a0aa` | `Deposit_MergeInto` | Adds a deposit to the byte of one node: into an empty byte, or into one of the same type up to 31, carrying the rest on. | confirmed | game | Called by `Flag_MoveDeposit`. |
@@ -730,7 +730,7 @@ The rules are in [Build sites](build-sites.md) and [Castle](castle.md).
 | `0x41e640` | `Map_ObjectClassTable` | Data: 128 bytes, the class (size) of each object code; code 1 is class 3 (flag), codes 2 to 4 are classes 4 to 6 (buildings, castle), generated trees and stones classes 1 and 2. | confirmed | game | Stored into `+0xc8` by `0x41dbea`; read from the executable by `ProgramTablesImporter` (`RuleTables.ClassOf`). |
 | `0x45e44b` | — | One of the five checks `Territory_Update` runs on the tiles around a position. | unknown | game | Only caller is `Territory_Update`. |
 | `0x45e4ca` | — | One of the five checks `Territory_Update` runs on the tiles around a position. | unknown | game | Only caller is `Territory_Update`. |
-| `0x45eb4c` | — | One of the five checks `Territory_Update` runs on the tiles around a position; calls `0x45ed5f`. | unknown | game | Only caller is `Territory_Update`. |
+| `0x45eb4c` | — | One of the five checks `Territory_Update` runs on the tiles around a position; calls `0x45ed5f`. Keeps each player's count of owned nodes (`+0x112`): adds 1 where a node takes the player's owner bits, takes 1 where a node loses them. | unknown | game | Only caller is `Territory_Update`. [New settlers](new-settlers.md#the-cap). |
 | `0x45f154` | — | One of the five checks `Territory_Update` runs on the tiles around a position; reads the map geometry fields `+0x0` to `+0xc`. | unknown | game | Only caller is `Territory_Update`. |
 | `0x674a30` | `BuildSite_NeighborTiles` | Data: a list of tile pointers around a node; the build-site checks read the object byte of each; game state `+0x98e`. | inferred | game | Read by `BuildSite_EvaluateFromSouthEast`, `Road_UpdateCursor`, `BuildSite_Evaluate`, `0x44bd72`. |
 
@@ -930,7 +930,10 @@ the timed messages at `+0x1f34`. The bytes `-0x54` to `-0x3b` (good g at `-0x55 
 `Player_SetTransportPriorities` writes; the carrier's exchange (`0x43b054`, in `Settler_WalkRoad`) and the direction step of
 `Table70_Pass` (`0x46501a`) read them by the good's low 5 bits ([Goods](goods.md#transport-priorities)). The words at `-0x3a`
 and `-0x36`, which those reads reach for the goods 27 and 31, are counters that `Castle_CreateSettlers` adds to (inferred:
-counts of settlers).
+counts of settlers). The 27 words from `-0x3a` to `-6` are the counts that `Player_UpdateSettlerCap` sums (inferred: the
+player's settlers by kind; a new settler counts in `-0x10`, a knight in `-0xe`). Byte 3 bit 2 lets
+`Settler_CreateInStorage` make settlers. The settler timer and the knights owed are at `+0x10c` to `+0x126`, the owned
+nodes at `+0x112`, the knights made at `+0x11a` ([New settlers](new-settlers.md)).
 
 ### View records
 
@@ -1185,7 +1188,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x4286d8` | — | unknown | Simulation |
 | `0x428728` | `Sim_ClearRetryBits` | confirmed | Simulation |
 | `0x428964` | `Sound_RunAmbient` | inferred | Sound |
-| `0x428a75` | — | unknown | Simulation |
+| `0x428a75` | `Player_MakeSettlers` | confirmed | Simulation |
 | `0x428d10` | `Map_ObjectPass` | confirmed | Simulation |
 | `0x4290d5` | `Sapling_GrowFirst` | confirmed | Simulation |
 | `0x42910f` | `Sapling_GrowSecond` | confirmed | Simulation |
@@ -1201,8 +1204,8 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x42a313` | `Storage_HandOutOrder1` | confirmed | Simulation |
 | `0x42a35d` | `Storage_HandOutOrder2` | confirmed | Simulation |
 | `0x42a3a7` | `Storage_HandOutOrder3` | confirmed | Simulation |
-| `0x42a3f1` | — | unknown | Simulation |
-| `0x42a567` | — | unknown | Simulation |
+| `0x42a3f1` | `Player_UpdateSettlerCaps` | confirmed | Simulation |
+| `0x42a567` | `Player_UpdateSettlerCap` | confirmed | Simulation |
 | `0x42a74a` | — | unknown | Simulation |
 | `0x42abed` | `Player_CheckWarnings` | confirmed | Simulation |
 | `0x42b1ce` | — | unknown | Simulation |
@@ -1350,7 +1353,7 @@ Built from the topic tables by `tools/GhidraDump/program_index.py`; do not edit 
 | `0x442704` | `Castle_Place` | confirmed | Castle and build sites |
 | `0x442e8a` | `Castle_StartStockRows` | confirmed | Castle and build sites |
 | `0x442f0c` | `Castle_CreateSettlers` | inferred | Castle and build sites |
-| `0x44333d` | `Settler_TakeFromStorage` | inferred | Castle and build sites |
+| `0x44333d` | `Settler_CreateInStorage` | confirmed | Castle and build sites |
 | `0x443f62` | `Road_ClickStep` | confirmed | Roads |
 | `0x444780` | `Map_CountPlayerObjects` | inferred | Views, panels, and drawing |
 | `0x444954` | `Map_CountNodeObject` | inferred | Views, panels, and drawing |
@@ -1568,7 +1571,7 @@ band, after `CreateMissingFunctions` and the index entries (`tools/GhidraDump/RE
 reached only through a computed jump can still be missing, so 471 is a lower bound.
 
 <!-- coverage:start -->
-Coverage: the index names 399 routines of the 513 functions in the dump's game code band and lists 66 more without a name: 346 confirmed, 69 inferred, 50 unknown.
+Coverage: the index names 402 routines of the 513 functions in the dump's game code band and lists 63 more without a name: 350 confirmed, 68 inferred, 47 unknown.
 <!-- coverage:end -->
 
 Open anchors:
