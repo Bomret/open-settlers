@@ -38,7 +38,7 @@ public sealed class PositionalRecordTests
         var files = SourceFiles(root).ToList();
 
         Assert.IsGreaterThan(100, files.Count(file => file.StartsWith("src/", StringComparison.Ordinal)));
-        Assert.IsGreaterThan(100, files.Count(file => file.StartsWith("tests/", StringComparison.Ordinal)));
+        Assert.IsGreaterThan(100, files.Count(file => file.Contains(".Tests/", StringComparison.Ordinal)));
         foreach (var exempt in Exempt)
         {
             Assert.HasCount(1, PositionalRecords(root, exempt), exempt);
