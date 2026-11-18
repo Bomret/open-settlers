@@ -36,4 +36,5 @@ public static class BuildingWords
     /// shows its name alone (INV-0006).
     /// </summary>
     public static bool HasCode(ContentCatalog catalog, BuildingType type) =>
-        !type.IsNone && catalog.Require(type).OriginalCode is not null;}
+        !type.IsNone && catalog.Require(type).OriginalCode is not null;
+}

@@ -32,4 +32,5 @@ public static class JobWords
     /// shows its name alone (INV-0006).
     /// </summary>
     public static bool HasCode(ContentCatalog catalog, Job job) =>
-        job is UnportedJob || catalog.Require(job).OriginalCode is not null;}
+        job is UnportedJob || catalog.Require(job).OriginalCode is not null;
+}

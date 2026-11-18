@@ -90,16 +90,18 @@ public sealed class StartStockTests
         var coal = new Good { Name = "coal" };
         var rows = TestProgram
             .MadeStartStock()
-            .Select((row, at) =>
-            {
-                var counts = row.Where(pair => pair.Key != coal).ToDictionary();
-                if (at == 1)
+            .Select(
+                (row, at) =>
                 {
-                    counts[coal] = 10;
-                }
+                    var counts = row.Where(pair => pair.Key != coal).ToDictionary();
+                    if (at == 1)
+                    {
+                        counts[coal] = 10;
+                    }
 
-                return (IReadOnlyDictionary<Good, byte>)counts;
-            })
+                    return (IReadOnlyDictionary<Good, byte>)counts;
+                }
+            )
             .ToArray();
         var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, catalog: TestCatalog.Of());
 

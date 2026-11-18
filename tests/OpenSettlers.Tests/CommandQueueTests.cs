@@ -163,11 +163,13 @@ public sealed class CommandQueueTests
     [TestMethod]
     public void TwoPlacementsThatDifferInTheBuildingAreBothKeptInTheOrderOfTheirTieRanksWhicheverIsAddedFirst()
     {
-        foreach (var (first, second) in new[]
-        {
-            (BuildingType.Woodcutter, BuildingType.Sawmill),
-            (BuildingType.Stonecutter, BuildingType.Forester),
-        })
+        foreach (
+            var (first, second) in new[]
+            {
+                (BuildingType.Woodcutter, BuildingType.Sawmill),
+                (BuildingType.Stonecutter, BuildingType.Forester),
+            }
+        )
         {
             var forward = new CommandQueue(TestCatalog.Default);
             forward.Add(Place(first), 0);
