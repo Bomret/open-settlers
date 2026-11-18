@@ -24,6 +24,11 @@ interface that returns dedicated types, never a format type.
   port. Its readers and tables are internal; its public types are the ones the host builds, plus `JobTableNames`
   for the adapters.
 - `src/Import.OpenSettlers/` reads `content/basic/` and implements the graphics source, the rule tables port, and the walk steps port.
+- A rule tables source builds the content catalog (ADR 0020) and hands it over as `RuleTables.Catalog`:
+  `ProgramTablesImporter.Catalog` in the History Edition source builds the original's entries, `StandInRules` in the
+  Open Settlers source builds the basic set's. The rules, the adapters, and the map view read it from the rule tables.
+  The adapters take only the state names from the History Edition source, through `JobTableNames`; goods, building
+  types, and jobs take theirs from the catalog.
 - The map view, `src/Assets/`, the domain, and the application name no source type. The launch code and the asset
   browser build a source.
 

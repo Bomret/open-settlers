@@ -27,6 +27,11 @@ The simulation is three class-library assemblies under `src/` that depend only i
   of which it names only `JobTableNames`, for the state names (INV-0011). `ProgramTablesImporter` is internal to the
   History Edition source (`src/Import.HistoryEdition/Tables/`, ADR 0017).
 
+The content catalog (`ContentCatalog`, ADR 0020) is built by a rule tables source, in the History Edition source by
+`ProgramTablesImporter.Catalog` and in the Open Settlers source by `StandInRules`, and every layer reads it as
+`RuleTables.Catalog`. A rule identifies a good, building type, or job by its stable name and never reads an original
+code (INV-0014). The adapters take only the state names from the History Edition source (`JobTableNames`).
+
 Place new code by what it does: a rule goes in the application, a type that states what a rule reads goes in the
 domain, and a conversion from or to the original's bytes goes in the adapters.
 
