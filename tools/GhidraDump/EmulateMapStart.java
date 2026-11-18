@@ -6,9 +6,9 @@
 // pointer. The script builds both in unused memory, loads the input, runs the original's instructions from
 // a start address to a stop address, and reads the result back. Each script argument is one command, with
 // hexadecimal words and no spaces. A launch is one emulate.py call. Its commands are independent: each prints the
-// lines it prints in a launch of its own (INV-0018). A command that fails ends a launch that runs no draw: batch,
-// and emulate.py prints nothing on stdout for the call. A command of a draw: batch that fails prints a failure line, and the batch
-// runs on.
+// lines it prints in a launch of its own (INV-0018). A command that fails ends a launch that runs no draw: batch, and
+// emulate.py prints nothing on stdout for the call. A command of a draw: batch that fails prints a failure line, and
+// the batch runs on.
 //
 //   rng:S0,S1,S2             one Rng_Step (0x466ade) from the state words S0,S1,S2; prints the new words
 //   steps:N:S0,S1,S2         N steps in a row; prints the words after each
@@ -174,8 +174,8 @@
 //
 // Output lines start with "EMU " so that the caller can tell them from Ghidra's log. After the verb of the command N
 // (counting from 1) returns, the script prints "EMU command=N ended"; a command that throws prints no such line.
-// emulate.py exits 0 only where every command ended, leaves these lines out of its output, and otherwise prints nothing on
-// stdout and names the first command that did not end on stderr. EmulateDraw prints only "EMU draw " lines, so its
+// emulate.py exits 0 only where every command ended, leaves these lines out of its output, and otherwise prints nothing
+// on stdout and names the first command that did not end on stderr. EmulateDraw prints only "EMU draw " lines, so its
 // output carries none of them.
 //@category OpenSettlers
 // simplicity: EmulatorHelper is deprecated for removal in Ghidra 12.1; the pcode emulator API replaces it

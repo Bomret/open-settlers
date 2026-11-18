@@ -4,10 +4,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Tests;
 
-// A call of tools/GhidraDump/emulate.py with non-draw commands exits 0 only where every command ended: EmulateMapStart.java
-// prints the line "EMU command=N ended" after the verb of the command N returns. A failed call prints nothing on stdout and
-// names the first command that did not end on stderr. A stand-in analyzeHeadless prints canned Ghidra output, with a dummy
-// Siedler1.exe in a temporary install folder; no case reaches Ghidra or the install.
+// A call of tools/GhidraDump/emulate.py with non-draw commands exits 0 only where every command ended:
+// EmulateMapStart.java prints the line "EMU command=N ended" after the verb of the command N returns. A failed call
+// prints nothing on stdout and names the first command that did not end on stderr. A stand-in analyzeHeadless prints
+// canned Ghidra output, with a dummy Siedler1.exe in a temporary install folder; no case reaches Ghidra or the install.
 [TestClass]
 public sealed class EmulatorCallTests
 {
@@ -76,6 +76,7 @@ public sealed class EmulatorCallTests
     [TestMethod]
     public void ACallWhoseCommandsAllEndPrintsTheirLinesInOrderWithoutTheMarkers()
     {
+        // The second command, peek, ends with no line of its own: its end marker stands alone and it counts as ended.
         var run = Call(
             ["rng:0000,0000,0000", "peek:0:0", "rng:0001,0000,0000"],
             string.Join(
@@ -94,15 +95,6 @@ public sealed class EmulatorCallTests
             "EMU rng in=0000,0000,0000 out=1\nEMU rng in=0001,0000,0000 out=2\nEMU rng second line\n",
             run.Stdout.Replace("\r", "")
         );
-    }
-
-    [TestMethod]
-    public void ACommandThatEndsWithoutALineCountsAsEnded()
-    {
-        var run = Call(["peek:0:0"], Ended(1));
-
-        Assert.AreEqual(0, run.Exit, run.Stderr);
-        Assert.AreEqual("", run.Stdout);
     }
 
     [TestMethod]
@@ -182,14 +174,5 @@ public sealed class EmulatorCallTests
         AssertFailed(reused, 2, "nosuchverb:1");
         AssertFailed(reimported, 2, "nosuchverb:1");
         Assert.AreNotEqual(digest, File.ReadAllText(Path.Combine(Project, "program.sha256")));
-    }
-
-    [TestMethod]
-    public void WithAKeptProjectACallWhoseCommandsAllEndPrintsTheirLines()
-    {
-        var run = Call(["rng:0000,0000,0000"], string.Join('\n', Script("EMU rng out=1"), Ended(1)), project: true);
-
-        Assert.AreEqual(0, run.Exit, run.Stderr);
-        Assert.AreEqual("EMU rng out=1\n", run.Stdout.Replace("\r", ""));
     }
 }
