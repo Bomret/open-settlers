@@ -56,9 +56,18 @@ public sealed record JobSearch
     {
         for (var entry = First; entry <= Last; entry++)
         {
-            var (dx, dy) = Spiral.Offsets[entry];
-
-            yield return ((x + dx) & (map.Size.Width - 1), (y + dy) & (map.Size.Height - 1));
+            yield return NodeAt(map, entry, x, y);
         }
+    }
+
+    /// <summary>
+    /// The node of the spiral entry <paramref name="entry"/> around the node at (<paramref name="x"/>, <paramref name="y"/>): the
+    /// entry's offset added, wrapped at <paramref name="map"/>'s edges.
+    /// </summary>
+    public static (int X, int Y) NodeAt(Map map, int entry, int x, int y)
+    {
+        var (dx, dy) = Spiral.Offsets[entry];
+
+        return ((x + dx) & (map.Size.Width - 1), (y + dy) & (map.Size.Height - 1));
     }
 }

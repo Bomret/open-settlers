@@ -143,8 +143,7 @@ public sealed class StonecutterRules(JobParts parts) : JobRules<Stonecutter>(par
         {
             var entry = Search.Entry(_draws.Draw());
             var (dx, dy) = Spiral.Offsets[entry];
-            var x = (settler.X + dx) & (Map.Size.Width - 1);
-            var y = (settler.Y + dy) & (Map.Size.Height - 1);
+            var (x, y) = JobSearch.NodeAt(Map, entry, settler.X, settler.Y);
             if (Search.Accepts(Map, x, y))
             {
                 // The vector to the node beside the heap is taken from the flag the first step reaches: one less each way.
