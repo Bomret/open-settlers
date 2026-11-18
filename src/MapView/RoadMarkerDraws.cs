@@ -38,20 +38,16 @@ public static class RoadMarkerDraws
     {
         var (endX, endY) = nodes[^1];
         var endHeight = map.At(endX, endY).Height;
-        var draws = new List<RoadMarkerDraw> { Draw(map, endX, endY, new RoadMarker { Kind = RoadMarkerKind.End }) };
+        var draws = new List<RoadMarkerDraw> { Draw(map, endX, endY, RoadMarker.Of(RoadMarkerKind.End)) };
         for (var direction = 0; direction < 6; direction++)
         {
             var (dx, dy) = RoadBuilding.Steps[direction];
             var (column, row) = (endX + dx, endY + dy);
             var marker = verdicts[direction] switch
             {
-                RoadCursorVerdict.Blocked => new RoadMarker { Kind = RoadMarkerKind.Blocked },
-                RoadCursorVerdict.WayBack => new RoadMarker { Kind = RoadMarkerKind.WayBack },
-                _ => new RoadMarker
-                {
-                    Kind = RoadMarkerKind.Slope,
-                    Difference = map.At(column, row).Height - endHeight,
-                },
+                RoadCursorVerdict.Blocked => RoadMarker.Of(RoadMarkerKind.Blocked),
+                RoadCursorVerdict.WayBack => RoadMarker.Of(RoadMarkerKind.WayBack),
+                _ => RoadMarker.Slope(map.At(column, row).Height - endHeight),
             };
             draws.Add(Draw(map, column, row, marker));
         }

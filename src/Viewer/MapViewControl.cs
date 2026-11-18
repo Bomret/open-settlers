@@ -1079,22 +1079,23 @@ public partial class MapViewControl(
             return null;
         }
 
-        var quads = ObjectQuads.Flat(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
-
-        return quads.Count == 0
-            ? null
-            : BuildQuadMesh(quads.Select(q => (q.X, q.Y, q.Width, q.Height, LayerColor(q.Layer))));
+        return MarkerMesh(BuildMarkerDraws.Of(_game, 0), source, _markerLayers);
     }
 
     // One mesh of the road markers of the road being drawn; null where none is drawn or the source draws none.
-    ArrayMesh? RoadMarkerMesh()
-    {
-        if (_game is null || _drawing is null || _source is null)
-        {
-            return null;
-        }
+    ArrayMesh? RoadMarkerMesh() =>
+        _game is null || _drawing is null || _source is null
+            ? null
+            : MarkerMesh(RoadMarkerDraws.Of(_game, _drawing), _source, _roadMarkerLayers);
 
-        var quads = ObjectQuads.Flat(RoadMarkerDraws.Of(_game, _drawing), _source, _roadMarkerLayers);
+    // One flat mesh of marker draws, each image in its layer; null where the source draws none of them.
+    ArrayMesh? MarkerMesh(
+        System.Collections.Generic.IReadOnlyList<ObjectTerm> draws,
+        IGraphicsSource source,
+        ImageLayers layers
+    )
+    {
+        var quads = ObjectQuads.Flat(draws, source, layers);
 
         return quads.Count == 0
             ? null

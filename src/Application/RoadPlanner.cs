@@ -26,5 +26,5 @@ public sealed class RoadPlanner(RuleTables tables, Map map, CastleStock castle)
     /// blocked before the castle stands.
     /// </summary>
     public IReadOnlyList<RoadCursorVerdict> Verdicts(int x, int y, IReadOnlyList<int> directions) =>
-        castle.Castle is null ? [.. new RoadCursorVerdict[6]] : RoadBuilding.Verdicts(tables, map, x, y, directions);
+        castle.Castle is null ? new RoadCursorVerdict[6] : RoadBuilding.Verdicts(tables, map, x, y, directions);
 }

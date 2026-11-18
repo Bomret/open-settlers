@@ -46,7 +46,7 @@ public sealed class RoadDrawing(Game game)
     }
 
     /// <summary>The directions of the steps drawn so far, from the start flag on. Empty when no road is being drawn.</summary>
-    public IReadOnlyList<int> Directions => _directions;
+    public IReadOnlyList<int> Directions => [.. _directions];
 
     /// <summary>
     /// A click on a node. With no road being drawn, a flag of the player's starts one. With one, the click on a node

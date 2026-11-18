@@ -28,4 +28,10 @@ public readonly record struct RoadMarker
 
     /// <summary>For a slope, the neighbor's height less the end's height; 0 for every other kind.</summary>
     public int Difference { get; init; }
+
+    /// <summary>The marker of a kind with no height difference: the end, blocked, or way-back mark.</summary>
+    public static RoadMarker Of(RoadMarkerKind kind) => new() { Kind = kind };
+
+    /// <summary>The slope mark of a height difference.</summary>
+    public static RoadMarker Slope(int difference) => new() { Kind = RoadMarkerKind.Slope, Difference = difference };
 }

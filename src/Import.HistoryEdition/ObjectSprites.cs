@@ -145,7 +145,11 @@ static class ObjectSprites
     /// </summary>
     public static int MarkerEntry(BuildMarker marker) => MarkerFirstEntry + (int)marker;
 
-    /// <summary>The first entry of the sprites the road cursor's words reach through <c>0x44de9a</c>, which adds 320.</summary>
+    /// <summary>
+    /// The first entry of the sprites the road cursor's words reach through <c>0x44de9a</c>, which adds 320. The range
+    /// overlaps the goods (320 to 351) and the build markers (367 to 370); the loader decodes only its entries that no
+    /// earlier range loads.
+    /// </summary>
     public const int CursorFirstEntry = 321;
 
     /// <summary>The last of those sprites (<c>docs/rules/graphics-images.md</c>, "Transparent sprites").</summary>
