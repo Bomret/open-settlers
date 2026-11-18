@@ -1,22 +1,24 @@
 using System.Linq;
+using OpenSettlers.Application.Testing;
+using OpenSettlers.Domain;
+using OpenSettlers.Domain.Testing;
 using OpenSettlers.Simulation;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Adapters.Testing;
 
 /// <summary>
 /// The woodcutter's world on made-up tables (no install). The map of the seed 1234,5678,9ABC has its castle at 15,5 with its
 /// flag at 16,6; the hut stands north-west of the flag at 17,3 (16,2), and roads run from the castle's flag east to 18,6, from
-/// there north and east to 19,4, and from 17,3 east and south-east to 19,4. It stays with the tests because the hut's reach is
-/// read from <c>MapGenerator.SpiralOffsets</c>, which is internal to the adapters.
+/// there north and east to 19,4, and from 17,3 east and south-east to 19,4. Tests of the adapters and of the map view build it.
 /// </summary>
-static class WoodcuttingWorld
+public static class WoodcuttingWorld
 {
     /// <summary>The 128 nodes around the hut the worker draws from, as the spiral gives them.</summary>
     public static (int X, int Y)[] Reach() =>
         [
             .. Enumerable
                 .Range(1, 128)
-                .Select(entry => (16 + MapGenerator.SpiralOffsets[entry].Dx, 2 + MapGenerator.SpiralOffsets[entry].Dy)),
+                .Select(entry => (16 + Spiral.Offsets[entry].Dx, 2 + Spiral.Offsets[entry].Dy)),
         ];
 
     /// <summary>

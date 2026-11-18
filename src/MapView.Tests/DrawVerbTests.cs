@@ -102,9 +102,7 @@ public sealed class DrawVerbTests
             Assert.Inconclusive("analyzeHeadless is not on the path");
         }
 
-        var install = TestProgram.OpenInstall();
-
-        return install.Root;
+        return TestProgram.InstallRoot();
     }
 
     [TestMethod]
@@ -366,7 +364,7 @@ public sealed class DrawVerbTests
     {
         var bin = FakeDrawHeadless();
 
-        var (exit, _) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+        var (exit, _) = Emulate(TestProgram.InstallRoot(), ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
 
         Assert.AreEqual(0, exit);
         var call = Calls().Single();
@@ -383,7 +381,7 @@ public sealed class DrawVerbTests
         var bin = FakeDrawHeadless();
 
         var (exit, output) = Emulate(
-            TestProgram.OpenInstall().Root,
+            TestProgram.InstallRoot(),
             ["draw:1-1:0,0:a", "draw:2-2:0,0:fail", "draw:1-1:0,0:a"],
             path: bin
         );
@@ -413,7 +411,7 @@ public sealed class DrawVerbTests
         var bin = FakeDrawHeadless();
         string[] commands = ["draw:1-1:0,0:a", "draw:2-2:0,0:b", "draw:3-3:0,0:c"];
 
-        Emulate(TestProgram.OpenInstall().Root, commands, path: bin);
+        Emulate(TestProgram.InstallRoot(), commands, path: bin);
 
         var scripts = Calls().Single().Split("-postScript ")[1..].Select(part => part.Trim()).ToArray();
         CollectionAssert.AreEqual(commands.Select(command => $"EmulateDraw.java {command}").ToArray(), scripts);
@@ -425,7 +423,7 @@ public sealed class DrawVerbTests
     {
         var bin = FakeDrawHeadless(crashes: true);
 
-        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+        var (exit, output) = Emulate(TestProgram.InstallRoot(), ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
 
         Assert.AreNotEqual(0, exit);
         CollectionAssert.AreEqual(
@@ -446,7 +444,7 @@ public sealed class DrawVerbTests
     {
         var bin = FakeDrawHeadless(importFails: true);
 
-        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
+        var (exit, output) = Emulate(TestProgram.InstallRoot(), ["draw:1-1:0,0:a", "draw:2-2:0,0:b"], path: bin);
 
         Assert.AreNotEqual(0, exit);
         CollectionAssert.AreEqual(
@@ -463,8 +461,8 @@ public sealed class DrawVerbTests
         var project = Path.Combine(_folder, "project");
         string[] commands = ["draw:1-1:0,0:a", "draw:2-2:0,0:b"];
 
-        var (firstExit, _) = Emulate(TestProgram.OpenInstall().Root, commands, project, bin);
-        var (exit, output) = Emulate(TestProgram.OpenInstall().Root, commands, project, bin);
+        var (firstExit, _) = Emulate(TestProgram.InstallRoot(), commands, project, bin);
+        var (exit, output) = Emulate(TestProgram.InstallRoot(), commands, project, bin);
 
         Assert.AreEqual(0, firstExit);
         Assert.AreEqual(0, exit);

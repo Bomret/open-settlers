@@ -51,6 +51,17 @@ public static class TestProgram
         return install;
     }
 
+    /// <summary>
+    /// The folder of the reference install named by <c>SIEDLER_DIR</c>, for a test that hands it to a tool; the test is
+    /// inconclusive as <see cref="OpenInstall"/> is.
+    /// </summary>
+    public static string InstallRoot()
+    {
+        OpenInstall();
+
+        return Environment.GetEnvironmentVariable(GameVariable)!;
+    }
+
     /// <summary>The rule tables of the install's program.</summary>
     public static RuleTables Tables()
     {

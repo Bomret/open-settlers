@@ -116,9 +116,11 @@ public sealed class GameThingTests
     public void AFlagNamesTheGoodsOnItsPlacesInTheOrderOfThePlaces()
     {
         var game = World();
-        game.Goods.LayGood(1, 0, Good.Foods[1]);
-        game.Goods.LayGood(1, 3, Good.Foods[2]);
-        game.Goods.LayGood(1, 5, TestCatalog.AiToken);
+        foreach (var (place, good) in new[] { (0, Good.Foods[1]), (3, Good.Foods[2]), (5, TestCatalog.AiToken) })
+        {
+            game.Flags[1].Places[place].Lay(good, null, null);
+            game.Flags[1].MarkGoodsTurnDue();
+        }
 
         var lines = Lines(game);
 

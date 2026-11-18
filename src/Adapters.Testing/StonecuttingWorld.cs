@@ -1,15 +1,17 @@
 using System.Linq;
+using OpenSettlers.Application.Testing;
+using OpenSettlers.Domain;
+using OpenSettlers.Domain.Testing;
 using OpenSettlers.Simulation;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Adapters.Testing;
 
 /// <summary>
 /// The stonecutter's world on made-up tables (no install), in the world of <see cref="WoodcuttingWorld"/>: the castle at 15,5 with
 /// its flag at 16,6, the stonecutter's hut at 16,2 with its flag at 17,3 (slot 3), and the roads of that world. The generated
-/// trees and heaps are gone from the map; a heap stands where a test puts it. It stays with the tests because the hut's reach is
-/// read from <c>MapGenerator.SpiralOffsets</c>, which is internal to the adapters.
+/// trees and heaps are gone from the map; a heap stands where a test puts it. Tests of the adapters and of the map view build it.
 /// </summary>
-static class StonecuttingWorld
+public static class StonecuttingWorld
 {
     /// <summary>The column of the stonecutter's hut.</summary>
     public const int HutX = 16;
@@ -24,8 +26,8 @@ static class StonecuttingWorld
                 .Range(1, 128)
                 .Select(entry =>
                     (
-                        (HutX + MapGenerator.SpiralOffsets[entry].Dx - 1) & 31,
-                        (HutY + MapGenerator.SpiralOffsets[entry].Dy - 1) & 31
+                        (HutX + Spiral.Offsets[entry].Dx - 1) & 31,
+                        (HutY + Spiral.Offsets[entry].Dy - 1) & 31
                     )
                 ),
         ];
