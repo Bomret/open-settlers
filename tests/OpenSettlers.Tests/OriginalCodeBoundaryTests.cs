@@ -20,13 +20,28 @@ namespace OpenSettlers.Tests;
 public sealed class OriginalCodeBoundaryTests
 {
     // A read of an original code found in one file.
-    sealed record Violation(string File, int Line, string Rule, string Text)
+    sealed class Violation(string file, int line, string rule, string text)
     {
+        public string File { get; } = file;
+
+        public string Text { get; } = text;
+
+        public int Line { get; } = line;
+
+        public string Rule { get; } = rule;
+
         public override string ToString() => $"{File}:{Line}: {Rule}";
     }
 
     // A declaration site that stays: the file it lies in, the exact line, and why it is no rule's read.
-    sealed record Allowed(string FileRegex, string LineRegex, string Reason);
+    sealed class Allowed(string fileRegex, string lineRegex, string reason)
+    {
+        public string FileRegex { get; } = fileRegex;
+
+        public string LineRegex { get; } = lineRegex;
+
+        public string Reason { get; } = reason;
+    }
 
     static readonly Allowed[] AllowList =
     [
