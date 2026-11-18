@@ -48,7 +48,7 @@ build their fixtures in code and pass with `SIEDLER_DIR` unset and no Ghidra on 
 inconclusive. Each spawns
 its tool through `PythonTool`. `PythonTool` removes `SIEDLER_DIR`, every `GIT_*` variable, and any host `analyzeHeadless` from the child's environment.
 `RepositoryContentTests` runs `tools/basic-art.py` into a temporary folder and fails where
-`content/basic/` holds a file the generator does not write the same. `HeadlessEntryTests` runs
+`content/basic/` holds a file the generator does not write the same. Its test `EachScriptAndShaderGodotScansKeepsItsUid` lists the tracked files with git and reports inconclusive without git or outside a git work tree. `HeadlessEntryTests` runs
 `tools/GhidraDump/headless.py` in a temporary folder on a path that holds only stand-in `analyzeHeadless` and `gradle`
 shell scripts, so a Ghidra or Gradle of the host never runs. Its worktree cases build a git repository with a linked
 worktree and add a stand-in `git` that runs the host's git. It reports inconclusive without python3, and its stand-in
