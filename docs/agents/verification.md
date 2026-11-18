@@ -258,6 +258,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/fisher-catch.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, a fisher's site
   at 18,5 joins it by a road, and the fisher fishes at the generated lake to the east. The script fast-forwards to his cast, to his first
   catch (he carries the fish), and to the fish on his flag, with a shot of each and one of him on the way back.
+- `play/border-posts.play` on the game view with seed `4455544685788642` and size 1: the castle's click places it at 15,5, and the
+  shots show its border posts, poles on land and posts in the lake to the east. It runs with the install and with
+  `--content-set basic`; the script's header holds both run lines.
 - `play/build-help.play` on the same layout checks the build markers of the castle's territory, on and off. It checks their
   change after a flag is placed.
 - `play/build-help-start.play` runs on the game view of the default seed. It checks the castle sites before the castle stands.

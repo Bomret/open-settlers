@@ -110,6 +110,7 @@ mise run map
 - The goods at flags.
 - The four build markers of the build-site overlay.
 - The road markers of road mode: the end, blocked, and way-back marks, and a slope mark for each height difference from -4 to 4.
+- The border posts of the territory: a pole on land and a post in water.
 - One figure per job and kind of activity for the settlers.
 
  A settler's heading, step, and frame all draw that one figure, and the player shows as a colored mark on it. It draws nothing for the water ripple and for shadows. The History Edition set's rules come from the install's `Siedler1.exe`. The basic set's rules come from `content/basic/rules/`, so the basic set needs no install ("Without the game"). The two sets play by different rules. One seed, layout, and command list give the same game under both only where the rules agree. A broken content set shows an error in the view that names `manifest.json` and the key, and draws no map. These break a set: a malformed manifest, a term with no image, a missing or undecodable PNG, a missing or non-integer anchor, a duplicate key, and an absolute path or one that leaves the set. A bad `--content-set` is a bad argument. It exits with code 4 and names the known sets, `basic` and `history-edition`. These are bad: an unknown name, a missing value, a value that is another flag, a repeat, and use with the asset browser or `--check` (even with `history-edition`). `--graphics` is a bad argument too. Its message names `--content-set` and the known sets.

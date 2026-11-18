@@ -88,7 +88,7 @@ _Avoid_: skin, theme, renderer, asset pack
 
 **Draw term**
 What the map view asks a graphics source to draw, named in game terms: a terrain triangle, a map object, a
-settler, a road, a build marker, or a road marker, with the data that picks its image, such as a settler's job, activity, heading, and
+settler, a road, a border post, a build marker, or a road marker, with the data that picks its image, such as a settler's job, activity, heading, and
 animation step. A draw term never holds an entry number (INV-0010).
 _Avoid_: sprite ID, entry, frame number
 
@@ -241,6 +241,11 @@ mark on the end itself, and on each neighbor a blocked mark where no step may go
 came from, or otherwise a slope mark for the height difference of that step. The original's road cursor picks each
 neighbor's mark. A click on a neighbor's mark is a click on that node.
 _Avoid_: cursor symbol, pointer sprite, slope icon
+
+**Border post**
+One piece of the territory border that the views draw between two neighbor nodes whose owners differ and where no road
+lies: a pole on land, a post in water. The views draw it in the pass that draws the roads, so trees and buildings cover it.
+_Avoid_: border marker, pole, boundary line
 
 **Carrier**
 A settler who walks one road and carries goods between its two flags.

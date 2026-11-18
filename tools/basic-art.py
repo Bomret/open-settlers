@@ -3,7 +3,8 @@
 
 The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
-buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, and one pose per job and kind of activity for the
+buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, the border posts
+(a pole on land and a post in water), and one pose per job and kind of activity for the
 settlers, all drawn here from nothing but numbers. It holds nothing derived from an install (ADR 0015). A settler's
 player shows as the pixels of the mark color (255, 0, 255), which OpenSettlersSource replaces with the player's color.
 The water ripple and the shadows have no art: the source draws nothing for them. Run it from the repository root:
@@ -474,6 +475,18 @@ def good(code):
 MARKER = (245, 225, 70)
 
 
+def border_post(water):
+    """A border post standing with its foot on the term's position: a black and white pole on land, a red post in water.
+    Both ignore the slope of the ground."""
+    c = Canvas(3, 10)
+    if water:
+        c.rect(0, 0, 3, 10, (200, 40, 40))
+    else:
+        for y in range(0, 10, 2):
+            c.rect(0, y, 3, 2, INK if y % 4 == 0 else (235, 235, 230))
+    return c, (-1, -9)
+
+
 def marker(kind):
     """A build marker, standing with its foot on the node: a pennant for a flag, a pick for a mine, a small house for a
     small building, and a wide house for a large building, in one bright colour with an outline so it reads over any
@@ -669,6 +682,8 @@ def main():
         add(f"road-marker/{kind}", f"road-marker/{kind}.png", road_marker(kind))
     for difference in range(-4, 5):
         add(f"road-marker/slope/{difference}", f"road-marker/slope-{difference}.png", road_marker("slope", difference))
+    add("border/pole", "border/pole.png", border_post(water=False))
+    add("border/water", "border/water.png", border_post(water=True))
     for job, color in JOBS.items():
         for kind in KINDS:
             load = STONE if job == "stonecutter" else GRAIN if job == "farmer" else FISH if job == "fisher" else WOOD

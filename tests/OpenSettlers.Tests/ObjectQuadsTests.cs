@@ -42,6 +42,8 @@ public sealed class ObjectQuadsTests
 
         public ObjectImage? Draw(RoadStrip strip) => null;
 
+        public ObjectImage? Draw(BorderPost post) => null;
+
         public ObjectImage? Draw(BuildMarker marker) => null;
 
         public ObjectImage? Draw(RoadMarker marker) => null;
@@ -205,6 +207,8 @@ public sealed class ObjectQuadsTests
         public ObjectImage? Draw(TerrainTriangle triangle) => null;
 
         public ObjectImage? Draw(RoadStrip strip) => null;
+
+        public ObjectImage? Draw(BorderPost post) => null;
 
         public ObjectImage? Draw(BuildMarker marker) => null;
 

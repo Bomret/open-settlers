@@ -932,7 +932,8 @@ public partial class MapViewControl(
                 copy.AddChild(new MeshInstance2D { Mesh = mesh, Material = surface });
             }
 
-            // The roads are strips over the terrain of the whole map and under the objects.
+            // The roads are strips over the terrain of the whole map and under the objects; the border posts are drawn with
+            // them, so the objects cover the posts too.
             if (roadMesh is not null)
             {
                 copy.AddChild(new MeshInstance2D { Mesh = roadMesh, Material = surface });
@@ -1106,10 +1107,10 @@ public partial class MapViewControl(
     ShaderMaterial? SettlerMaterial() =>
         LayerMaterial(_settlerLayers, "Objects", "the settlers", ref _settlerMaterial, ref _settlerImages);
 
-    // One mesh of every road strip of the map, or null where there is none or the source draws none.
+    // One mesh of every road strip and border post of the map, or null where there is none or the source draws none.
     ArrayMesh? BuildRoadMesh(IGraphicsSource source, Map map)
     {
-        var quads = TerrainQuads.Strips(RoadDraws.Of(map), source, _layers);
+        var quads = TerrainQuads.Edges(map, source, _layers);
 
         return quads.Count == 0
             ? null
