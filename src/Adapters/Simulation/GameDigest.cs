@@ -97,7 +97,7 @@ public sealed class GameDigest : IGameDigest
     // The castle's list of waiting settlers in the original's order: the slot that waits for each job number, then, in the catalog's order
     // of stable names, the hash of the name and the slot of each job with no code that has one waiting. A job with no code and no waiting
     // settler leaves the digest as it is.
-    static void MixWaiting(Game game, ref ulong hash)
+    internal static void MixWaiting(Game game, ref ulong hash)
     {
         var catalog = game.Tables.Catalog;
         for (var code = 0; code < WaitingJobCount; code++)
