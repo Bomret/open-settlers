@@ -143,6 +143,20 @@ public sealed class FlameListsTests
     }
 
     [TestMethod]
+    [DataRow((byte)4)]
+    [DataRow((byte)0x7f)]
+    public void ASizeByteNeither0Nor8FailsTheLoad(byte size)
+    {
+        var exe = Executable(exe =>
+        {
+            Lists(exe);
+            exe[At(FlameLists.Address) + 70] = size;
+        });
+
+        Assert.Throws<InvalidDataException>(() => FlameLists.Read(exe));
+    }
+
+    [TestMethod]
     [DataRow(FlameSize.Small, 0, 456)]
     [DataRow(FlameSize.Small, 7, 463)]
     [DataRow(FlameSize.Large, 0, 464)]

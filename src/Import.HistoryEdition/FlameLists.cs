@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 
 namespace OpenSettlers.Import.HistoryEdition;
 
@@ -36,7 +36,8 @@ sealed class FlameLists
 
     /// <summary>
     /// Reads the lists from the program's bytes. Throws <see cref="System.IO.InvalidDataException"/> where the header or a
-    /// list lies outside the program's image: a header offset past it, or a list that runs past it unterminated.
+    /// list lies outside the program's image: a header offset past it, or a list that runs past it unterminated, and where a
+    /// flame's size byte is neither 0 nor 8.
     /// </summary>
     public static FlameLists Read(byte[] exe)
     {
@@ -49,6 +50,13 @@ sealed class FlameLists
             while (ProgramTablesImporter.Slice(exe, at, 1)[0] < EndOfList)
             {
                 var flame = ProgramTablesImporter.Slice(exe, at, FlameBytes);
+                if (flame[0] is not (0 or LargeSize))
+                {
+                    throw new InvalidDataException(
+                        $"flame list {list} holds the size byte {flame[0]} at 0x{at:x}, neither 0 nor {LargeSize}"
+                    );
+                }
+
                 flames.Add(
                     new Flame
                     {
@@ -70,15 +78,16 @@ sealed class FlameLists
     /// The flames of a burning building of <paramref name="type"/>: list 0 for an early site, else the list of the type's
     /// number; none for a type outside 0 to 24.
     /// </summary>
-    public IReadOnlyList<Flame> Of(BuildingType type, bool earlySite) =>
-        earlySite ? _lists[0]
-        : type.Code is >= 0 and < ListCount ? _lists[type.Code]
-        : [];
+    public IReadOnlyList<Flame> Of(BuildingType type, bool earlySite)
+    {
+        if (earlySite)
+        {
+            return _lists[0];
+        }
+
+        return type.Code is >= 0 and < ListCount ? _lists[type.Code] : [];
+    }
 
     /// <summary>The sprite entry of a flame (<c>0x44e329</c>): 136, plus its size byte, plus its phase, plus the 320 that <c>Gfx_DrawSpriteBase320</c> adds.</summary>
     public static int Entry(FlameSize size, int phase) =>
-        FirstEntry + (size == FlameSize.Large ? LargeSize : 0) + (phase & 7);
-
-    /// <summary>The flame sprite entries 456 to 471: two sizes of 8 phases.</summary>
-    public static IEnumerable<int> Entries => Enumerable.Range(FirstEntry, 16);
-}
+        FirstEntry + (size == FlameSize.Large ? LargeSize : 0) + (phase & 7);}

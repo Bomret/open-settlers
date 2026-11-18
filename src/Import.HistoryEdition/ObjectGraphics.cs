@@ -81,7 +81,7 @@ sealed class ObjectGraphics
         AddSprites(Enumerable.Range(ObjectSprites.WaterFirstEntry, ObjectSprites.WaterCount), "the water sprite");
         AddSprites(Enumerable.Range(ObjectSprites.FlagEntry + 1, ObjectSprites.FlagFrames - 1), "the flag sprite");
         AddSprites(Enum.GetValues<BuildMarker>().Select(ObjectSprites.MarkerEntry), "the build marker sprite");
-        AddSprites(FlameLists.Entries, "the flame sprite");
+        AddSprites(Enumerable.Range(FlameLists.FirstEntry, 16), "the flame sprite");
         AddSprites(
             Enumerable
                 .Range(
