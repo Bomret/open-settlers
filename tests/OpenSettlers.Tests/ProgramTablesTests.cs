@@ -910,15 +910,34 @@ public sealed class ProgramTablesTests
     }
 
     [TestMethod]
-    public void AHandlerThatAsksForAJobNoModuleNamesIsRefused()
+    [DataRow(30)]
+    [DataRow(9)]
+    public void AHandlerThatAsksForAJobTheCatalogLacksIsRefused(int job)
     {
         var address = ProgramTablesImporter.WorkerRequestAddresses[0].Address;
-        var exe = Executable(bytes => bytes[FileOffset(address) + 1] = 30);
+        var exe = Executable(bytes => bytes[FileOffset(address) + 1] = (byte)job);
 
         var refusal = Assert.ThrowsExactly<InvalidDataException>(() => ProgramTablesImporter.Import(exe));
 
-        StringAssert.Contains(refusal.Message, "job 30");
+        StringAssert.Contains(refusal.Message, $"job {job}");
         StringAssert.Contains(refusal.Message, "no entry");
+    }
+
+    [TestMethod]
+    public void TheCatalogHoldsTheJobsOfTheEngineWithTheirCodesNamesAndEvidence()
+    {
+        var tables = ProgramTablesImporter.Import(Executable(_ => { }));
+
+        CollectionAssert.AreEqual(
+            Job.Ported.Select(job => job.Name).Order(StringComparer.Ordinal).ToArray(),
+            tables.Catalog.Jobs.Select(entry => entry.Name).ToArray()
+        );
+        Assert.IsTrue(tables.Catalog.Jobs.All(entry => entry.OriginalCode is not null));
+        Assert.IsTrue(tables.Catalog.Jobs.All(entry => !string.IsNullOrEmpty(entry.NameEvidence)));
+        Assert.AreEqual(5, tables.Catalog.Require(new Woodcutter()).OriginalCode);
+        Assert.AreEqual(4, tables.Catalog.Require(new CastleSettler()).OriginalCode);
+        Assert.AreEqual(24, tables.Catalog.Require(new Knight(2)).OriginalCode);
+        Assert.IsNull(tables.Catalog.EntryOf(new UnportedJob(9)));
     }
 
     [TestMethod]

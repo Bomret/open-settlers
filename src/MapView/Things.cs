@@ -74,7 +74,9 @@ public sealed record Thing
             Y = settler.Y,
             Values =
             [
-                ("job", settler.Job.ToString()),
+                .. JobWords.HasCode(catalog, settler.Job)
+                    ? new[] { ("job", JobWords.Of(catalog, settler.Job).ToString(CultureInfo.InvariantCulture)) }
+                    : [],
                 ("state", Hex(raw.State)),
                 ("player", settler.Player.ToString(CultureInfo.InvariantCulture)),
                 .. codeless ? [] : new[] { ("mode", Hex(raw.Mode)) },
@@ -94,7 +96,9 @@ public sealed record Thing
     {
         var name = string.Join(
             " ",
-            new[] { NameTable.JobName(settler.Job.Code), NameTable.StateName(settler.Activity.Code) }.OfType<string>()
+            new[] { settler.Job.Name, NameTable.StateName(settler.Activity.Code) }.Where(name =>
+                !string.IsNullOrEmpty(name)
+            )
         );
 
         return name.Length > 0 ? name : null;

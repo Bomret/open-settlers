@@ -73,7 +73,7 @@ public sealed class SnapshotExporter(
         {
             Fields =
             [
-                ("job", s.Job.Code),
+                ("job", JobWords.Of(catalog, s.Job)),
                 ("state", raw.State),
                 ("player", s.Player),
                 ("mode", raw.Mode),

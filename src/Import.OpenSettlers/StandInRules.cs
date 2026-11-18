@@ -117,6 +117,9 @@ sealed record StandInRules
     /// <summary>The rank the pig farm's grain request starts from.</summary>
     public required byte PigRank { get; init; }
 
+    /// <summary>The jobs the set has, each named by its stable name in the jobs file; none has an original code.</summary>
+    public required ImmutableArray<Job> Jobs { get; init; }
+
     /// <summary>The chance in percent that a pig grows, by the pigs the farm holds, 0 to 7.</summary>
     public required ImmutableArray<int> PigGrowthPercent { get; init; }
 
@@ -208,7 +211,8 @@ sealed record StandInRules
                         CountsAgainstResource1 = good.CountsAgainstResource1,
                         TransportRank = good.Priority,
                     }),
-                    buildings
+                    buildings,
+                    Jobs.Select(job => new JobEntry { Name = job.Name })
                 ),
                 distribution: [.. Distribution.Select(order => order.ToArray())],
                 plankRankBase: PlankRank,

@@ -77,6 +77,33 @@ public sealed class GameDigest : IGameDigest
         }
     }
 
+    // The number of jobs the original's list of waiting settlers has an entry for (0x42 + 2 times the job, up to 0x82).
+    const int WaitingJobCount = 32;
+
+    // The castle's list of waiting settlers in the original's order: the slot that waits for each job number, then, in the catalog's order
+    // of stable names, the hash of the name and the slot of each job with no code that has one waiting. A job with no code and no waiting
+    // settler leaves the digest as it is.
+    static void MixWaiting(Game game, ref ulong hash)
+    {
+        var catalog = game.Tables.Catalog;
+        for (var code = 0; code < WaitingJobCount; code++)
+        {
+            var job = Job.Of(code);
+            if (job is UnportedJob || catalog.EntryOf(job)?.OriginalCode == code)
+            {
+                hash = Mix(hash, game.Roster.Waiting(job));
+            }
+        }
+
+        foreach (var entry in catalog.Jobs.Where(entry => entry.OriginalCode is null))
+        {
+            if (Job.Named(entry.Name) is { } job && game.Roster.Waiting(job) is var slot and not 0)
+            {
+                hash = Mix(Mix(hash, (long)Fnv1a.Of(entry.Name)), slot);
+            }
+        }
+    }
+
     // The commands the game applied, folded one after the other.
     static ulong Applied(Game game)
     {
@@ -161,7 +188,7 @@ public sealed class GameDigest : IGameDigest
             foreach (
                 var value in new[]
                 {
-                    settler.Job.Code,
+                    JobWords.Of(game.Tables.Catalog, settler.Job),
                     settler.Player,
                     settler.Frame,
                     settler.Timer,
@@ -180,10 +207,7 @@ public sealed class GameDigest : IGameDigest
             }
         }
 
-        foreach (var slot in game.Roster.WaitingList)
-        {
-            hash = Mix(hash, slot);
-        }
+        MixWaiting(game, ref hash);
 
         foreach (var (index, slot) in game.Movement.Occupied)
         {

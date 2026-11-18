@@ -710,7 +710,7 @@ public sealed class PlayScript
             return (null, Usage);
         }
 
-        // The job names are the name table's (ADR 0010).
+        // The job names are the stable names of the job types (ADR 0020).
         if (FastForwardJobStep.Named(args[0]) is not { } job)
         {
             return (null, $"'{args[0]}' is not a job name, use {string.Join(", ", FastForwardJobStep.Names())}");

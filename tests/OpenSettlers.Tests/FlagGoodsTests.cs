@@ -101,7 +101,7 @@ public sealed class FlagGoodsTests
     static string Carrier(Settler s, int width)
     {
         var raw = SettlerEncoder.Fields(s, TestCatalog.Default);
-        var bytes = new List<byte> { (byte)(s.Job.Code << 2 | s.Player), (byte)s.Frame };
+        var bytes = new List<byte> { (byte)(s.Job.OriginalCode!.Value << 2 | s.Player), (byte)s.Frame };
         bytes.AddRange(BitConverter.GetBytes(s.Timer));
         bytes.AddRange(BitConverter.GetBytes((s.Y * 2 * width + s.X) * 4));
         bytes.AddRange(BitConverter.GetBytes(raw.Stamp));

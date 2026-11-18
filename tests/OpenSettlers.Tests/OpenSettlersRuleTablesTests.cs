@@ -127,6 +127,42 @@ public sealed partial class OpenSettlersRuleTablesTests
     }
 
     [TestMethod]
+    public void TheBasicSetsJobsAreNamedByStableNameAndHaveNoCodes()
+    {
+        var tables = Checked();
+
+        CollectionAssert.AreEqual(
+            Job.Ported.Select(job => job.Name).Order(StringComparer.Ordinal).ToArray(),
+            tables.Catalog.Jobs.Select(entry => entry.Name).ToArray()
+        );
+        Assert.IsTrue(tables.Catalog.Jobs.All(entry => entry.OriginalCode is null));
+        Assert.AreEqual("woodcutter", tables.Catalog.Require(new Woodcutter()).Name);
+        Assert.AreEqual("knight-level-3", tables.Catalog.Require(new Knight(3)).Name);
+    }
+
+    [TestMethod]
+    public void AJobNameThatIsNoJobOfTheEngineIsRefusedWithTheNamesItKnows()
+    {
+        using var folder = new RuleFolder();
+        folder.Replace(Jobs, "\"baker\",", "\"chef\",");
+
+        var message = folder.Refusal();
+
+        Assert.StartsWith($"{Jobs}: names[0]: 'chef' is no stable name of a job, use baker, builder", message);
+    }
+
+    [TestMethod]
+    public void AJobOfTheEngineThatTheListLeavesOutIsRefusedNamingIt()
+    {
+        using var folder = new RuleFolder();
+        folder.Replace(Jobs, "\"baker\",", "");
+
+        var message = folder.Refusal();
+
+        Assert.StartsWith($"{Jobs}: names: the list leaves out baker", message);
+    }
+
+    [TestMethod]
     public void TheBasicSetsBuildingTypesAreNamedByStableNameHaveNoCodesAndStateTheSecondFigure()
     {
         var tables = Checked();

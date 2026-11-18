@@ -163,7 +163,7 @@ public sealed class ThingHistorySettlersTests
 
                 int[] expected =
                 [
-                    settler.Job.Code,
+                    JobWords.Of(TestCatalog.Default, settler.Job),
                     raw.State,
                     settler.Player,
                     raw.Mode,

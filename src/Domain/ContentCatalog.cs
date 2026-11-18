@@ -6,8 +6,8 @@ using System.Linq;
 namespace OpenSettlers.Domain;
 
 /// <summary>
-/// The engine's list of the goods and building types a game knows, one <see cref="GoodEntry"/> or <see cref="BuildingEntry"/> each
-/// (ADR 0020). A content set's source builds it, and <see cref="RuleTables"/> holds it. It orders its entries of each kind by stable name,
+/// The engine's list of the goods, building types, and jobs a game knows, one <see cref="GoodEntry"/>, <see cref="BuildingEntry"/>, or
+/// <see cref="JobEntry"/> each (ADR 0020). A content set's source builds it, and <see cref="RuleTables"/> holds it. It orders its entries of each kind by stable name,
 /// ordinal, whatever order the source gives them in, so a game plays the same on every run (INV-0002). "No good" and "no building" are
 /// never entries.
 /// </summary>
@@ -18,6 +18,7 @@ public sealed class ContentCatalog
 
     readonly Dictionary<string, GoodEntry> _byName;
     readonly Dictionary<string, BuildingEntry> _buildingsByName = [];
+    readonly Dictionary<string, JobEntry> _jobsByName = [];
 
     /// <summary>
     /// Creates the catalog from its goods. Throws an <see cref="ArgumentException"/> that names the entry and builds nothing for a duplicate
@@ -29,8 +30,38 @@ public sealed class ContentCatalog
     /// The building types, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, and a
     /// stable name outside lowercase letters, digits, and hyphens.
     /// </param>
-    public ContentCatalog(IEnumerable<GoodEntry> goods, IEnumerable<BuildingEntry>? buildings = null)
+    /// <param name="jobs">
+    /// The jobs, in any order. The catalog refuses, naming the entry, a duplicate stable name, a duplicate original code, and a stable name
+    /// outside lowercase letters, digits, and hyphens.
+    /// </param>
+    public ContentCatalog(
+        IEnumerable<GoodEntry> goods,
+        IEnumerable<BuildingEntry>? buildings = null,
+        IEnumerable<JobEntry>? jobs = null
+    )
     {
+        var orderedJobs = (jobs ?? []).OrderBy(job => job.Name, StringComparer.Ordinal).ToList();
+        Dictionary<int, JobEntry> jobsByCode = [];
+        foreach (var job in orderedJobs)
+        {
+            if (job.Name.Length == 0 || !job.Name.All(IsNameCharacter))
+            {
+                throw Refuse(job, "its stable name holds anything other than lowercase letters, digits, and hyphens");
+            }
+
+            if (!_jobsByName.TryAdd(job.Name, job))
+            {
+                throw Refuse(job, "another job has this stable name");
+            }
+
+            if (job.OriginalCode is { } jobCode && !jobsByCode.TryAdd(jobCode, job))
+            {
+                throw Refuse(job, $"{jobsByCode[jobCode].Name} has this original code, {jobCode}");
+            }
+        }
+
+        Jobs = [.. orderedJobs];
+
         var orderedBuildings = (buildings ?? []).OrderBy(building => building.Name, StringComparer.Ordinal).ToList();
         Dictionary<int, BuildingEntry> buildingsByCode = [];
         foreach (var building in orderedBuildings)
@@ -108,6 +139,25 @@ public sealed class ContentCatalog
     /// <summary>The building types in ordinal order of their stable names.</summary>
     public ImmutableArray<BuildingEntry> Buildings { get; }
 
+    /// <summary>The jobs in ordinal order of their stable names.</summary>
+    public ImmutableArray<JobEntry> Jobs { get; }
+
+    /// <summary>
+    /// The entry of <paramref name="job"/>, the one with its stable name; null for a job the catalog lacks and for an
+    /// <see cref="UnportedJob"/>, which has no name.
+    /// </summary>
+    public JobEntry? EntryOf(Job job) => job.Name.Length == 0 ? null : _jobsByName.GetValueOrDefault(job.Name);
+
+    /// <summary>
+    /// The entry of <paramref name="job"/>. Throws an <see cref="InvalidOperationException"/> that names the job where the catalog lacks
+    /// it: a rule that meets a job its game's catalog lacks stops there.
+    /// </summary>
+    public JobEntry Require(Job job) =>
+        EntryOf(job)
+        ?? throw new InvalidOperationException(
+            $"The job '{job}' is no entry of the content catalog, which holds: {string.Join(", ", Jobs.Select(entry => entry.Name))}."
+        );
+
     /// <summary>
     /// The entry of <paramref name="type"/>, the one with its stable name; null for the type of no building and for a type the catalog lacks.
     /// </summary>
@@ -143,6 +193,8 @@ public sealed class ContentCatalog
 
     static ArgumentException Refuse(GoodEntry good, string reason) =>
         new($"The good '{good.Name}' is refused: {reason}.");
+
+    static ArgumentException Refuse(JobEntry job, string reason) => new($"The job '{job.Name}' is refused: {reason}.");
 
     static ArgumentException Refuse(BuildingEntry building, string reason) =>
         new($"The building type '{building.Name}' is refused: {reason}.");

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -134,7 +135,7 @@ static class StandInRulesReader
         var goods = Open(folder, OpenSettlersRuleTables.GoodsFile)
             .Fields(["goods", "distribution", "startStock", "ranks"]);
         var buildings = Open(folder, OpenSettlersRuleTables.BuildingsFile).Fields(["buildings"]);
-        var jobs = Open(folder, OpenSettlersRuleTables.JobsFile).Fields(["jobs"]);
+        var jobs = Open(folder, OpenSettlersRuleTables.JobsFile).Fields(["names", "jobs"]);
         var ranks = goods["ranks"].Fields(["plank", "mill"]);
         var (buildingRules, castleDoor) = Buildings(buildings["buildings"]);
         var jobData = jobs["jobs"].Fields(["builder", "digger", "pig-farmer"]);
@@ -166,9 +167,31 @@ static class StandInRulesReader
             CastleDoor = castleDoor,
             BuilderTool = Tool(jobData["builder"].Fields(["tool"])["tool"]),
             DiggerTool = Tool(jobData["digger"].Fields(["tool"])["tool"]),
+            Jobs = JobsNamed(jobs["names"]),
             PigRank = (byte)pig["rankBase"].Int(1, 255),
             PigGrowthPercent = [.. pig["growth"].Items(8).Select(item => item.Int(0, 100))],
         };
+    }
+
+    // The jobs the jobs file lists by stable name. The rules of every job of the engine hang on its type, so the set has each of them: a
+    // name that is no job's, and a job the list leaves out, refuse the file.
+    static ImmutableArray<Job> JobsNamed(RuleNode node)
+    {
+        var listed = node.Items()
+            .Select(item =>
+                Job.Named(item.Text())
+                ?? throw item.Fault(
+                    $"'{item.Text()}' is no stable name of a job, use {string.Join(", ", Job.Ported.Select(job => job.Name).Order(StringComparer.Ordinal))}"
+                )
+            )
+            .ToImmutableArray();
+        var missing = Job.Ported.Where(job => !listed.Contains(job)).Select(job => job.Name).ToList();
+        if (missing.Count > 0)
+        {
+            throw node.Fault($"the list leaves out {string.Join(", ", missing)}, which the set has");
+        }
+
+        return listed;
     }
 
     // The building types the buildings file names, with the name each has there.

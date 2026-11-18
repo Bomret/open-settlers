@@ -4,12 +4,12 @@ using System.Linq;
 namespace OpenSettlers.Simulation;
 
 /// <summary>
-/// Open Settlers' names for the original's bare codes: map object codes, settler jobs, and settler states (ADR 0010, INV-0006). The
-/// goods and building types are entries of the content catalog, which name themselves (ADR 0020). Each entry cites its evidence
+/// Open Settlers' names for the original's bare codes: map object codes and settler states (ADR 0010, INV-0006). The goods, building
+/// types, and jobs are entries of the content catalog, which name themselves (ADR 0020). Each entry cites its evidence
 /// beside it. A code with no entry has no name and shows its raw value. A name several codes share (<c>tree</c>) resolves to all of
 /// them through <see cref="CodesNamed"/>. The object names read the class table the engine loaded (<see cref="RuleTables"/>):
-/// <c>stone</c> names a code the docs call a stone only where that table says class 2. The job and state names need no table and are
-/// static. The names of the jobs, and of the states a job owns, come from the jobs' tables modules of the History
+/// <c>stone</c> names a code the docs call a stone only where that table says class 2. The state names need no table and are
+/// static. The names of the states a job owns come from the jobs' tables modules of the History
 /// Edition source through <see cref="JobTableNames"/>, the one type of that source this assembly names (INV-0011); the
 /// states that belong to no one job are stated here.
 /// </summary>
@@ -32,7 +32,6 @@ public sealed class NameTable(RuleTables tables)
     internal enum CodeKind
     {
         Object,
-        Job,
         State,
     }
 
@@ -74,9 +73,6 @@ public sealed class NameTable(RuleTables tables)
         return name == "stone" && !_tables.ClassOf(new MapObject { Code = (byte)(code & 0x7f) }).IsStone ? null : name;
     }
 
-    /// <summary>The name of the settler job, or null where the table has none.</summary>
-    public static string? JobName(int job) => Find(CodeKind.Job, job);
-
     /// <summary>The name of the settler state, or null where the table has none.</summary>
     public static string? StateName(int state) => Find(CodeKind.State, state);
 
@@ -87,7 +83,7 @@ public sealed class NameTable(RuleTables tables)
             .Select(entry => entry.Code)
             .Where(code => ObjectName((byte)code) == name);
 
-    /// <summary>Whether the table names an object, job, or state <paramref name="name"/>.</summary>
+    /// <summary>Whether the table names an object or a state <paramref name="name"/>.</summary>
     public static bool IsName(string name) => Entries.Any(entry => entry.Name == name);
 
     /// <summary>Whether the table names an object code <paramref name="name"/>.</summary>
@@ -148,13 +144,8 @@ public sealed class NameTable(RuleTables tables)
             "docs/rules/woodcutting.md (the cut writes 0x5d to 0x66, the object pass turns each into 0x53, 0x428eb8)"
         );
 
-        // The names of the jobs and of the states a job owns come from the tables modules (JobTableNames); the states that
+        // The names of the states a job owns come from the tables modules (JobTableNames); the states that
         // belong to no one job, the walks and the door among them, are here.
-        foreach (var (code, name, evidence) in JobTableNames.Jobs)
-        {
-            AddOne(CodeKind.Job, code, name, evidence);
-        }
-
         foreach (var (code, name, evidence) in JobTableNames.States)
         {
             AddOne(CodeKind.State, code, name, evidence);
