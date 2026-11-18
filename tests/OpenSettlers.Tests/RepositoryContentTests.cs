@@ -38,11 +38,122 @@ public sealed class RepositoryContentTests
     [TestMethod]
     public void TheRepositoryHoldsNoFileOfAnInstallsFileTypes()
     {
-        var found = Files(RepositoryRoot())
-            .Where(path => InstallExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-            .ToList();
+        var found = InstallFiles(RepositoryRoot());
 
         Assert.IsEmpty(found, $"install file types in the repository: {string.Join(", ", found)}");
+    }
+
+    // The check judges the files git would commit: a tracked file, a force-added one, and an untracked file no ignore rule
+    // covers, each by its real name and its last extension in any letter case. A gitignored folder and a linked worktree
+    // under the root hold nothing it judges, and run in a linked worktree it judges that worktree's own files.
+    [TestMethod]
+    public void TheInstallCheckJudgesTheFilesGitWouldCommit()
+    {
+        var folder = Directory.CreateTempSubdirectory("install-check-").FullName;
+        try
+        {
+            var (git, main, worktree) = PythonTool.Worktree(folder);
+            void Run(params string[] arguments) =>
+                Assert.AreEqual(0, PythonTool.Git(git, main, arguments).Exit, string.Join(' ', arguments));
+            void Write(string path) =>
+                File.WriteAllText(Path.Combine(main, path.Replace('/', Path.DirectorySeparatorChar)), "");
+
+            Directory.CreateDirectory(Path.Combine(main, "ignored"));
+            File.WriteAllText(Path.Combine(main, ".gitignore"), "ignored/\n");
+            Write("ignored/hidden.pal");
+            Write("ignored/forced.pal");
+            Write("X.PAL");
+            Write("loose.pal");
+            Write("é b.pal");
+            Write("a.pal.txt");
+            Write("a.txt.pal");
+            Run("add", "X.PAL");
+            Run("add", "-f", "ignored/forced.pal");
+            Run("worktree", "add", "-q", Path.Combine(main, "nested"));
+            Write("nested/other.pal");
+            File.WriteAllText(Path.Combine(worktree, "own.pal"), "");
+
+            CollectionAssert.AreEquivalent(
+                new[] { "X.PAL", "ignored/forced.pal", "loose.pal", "é b.pal", "a.txt.pal" },
+                InstallFiles(main)
+            );
+            // A git hook runs the suite with GIT_DIR set; the check must not list that repository. The case sets GIT_DIR on
+            // the test process for the listing and restores it.
+            var before = Environment.GetEnvironmentVariable("GIT_DIR");
+            Environment.SetEnvironmentVariable("GIT_DIR", Path.Combine(main, ".git"));
+            try
+            {
+                CollectionAssert.AreEquivalent(new[] { "own.pal" }, InstallFiles(worktree));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("GIT_DIR", before);
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    // A checkout that lists no file at all gives the check nothing to judge, so it fails rather than passes.
+    [TestMethod]
+    public void TheInstallCheckFailsOnAnEmptyListing()
+    {
+        var folder = Directory.CreateTempSubdirectory("empty-checkout-").FullName;
+        try
+        {
+            var (_, main, _) = PythonTool.Worktree(folder);
+
+            var failure = Assert.ThrowsExactly<AssertFailedException>(() => InstallFiles(main));
+
+            StringAssert.Contains(failure.Message, main);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [TestMethod]
+    public void TheInstallCheckFailsWithoutGit()
+    {
+        var failure = Assert.ThrowsExactly<AssertFailedException>(() => InstallFiles(RepositoryRoot(), searchPath: ""));
+
+        StringAssert.Contains(failure.Message, "git");
+        StringAssert.Contains(failure.Message, RepositoryRoot());
+    }
+
+    // A folder outside any work tree makes git exit non-zero. The case reports inconclusive itself where the host's temporary
+    // folder lies inside a work tree.
+    [TestMethod]
+    public void TheInstallCheckFailsOutsideAGitCheckoutWithGitsMessage()
+    {
+        var folder = Directory.CreateTempSubdirectory("no-checkout-").FullName;
+        try
+        {
+            var git = PythonTool.Locate(null, "git");
+            if (git is null)
+            {
+                Assert.Inconclusive("git is not on the path");
+            }
+
+            var probe = PythonTool.Git(git, folder, "ls-files");
+            if (probe.Exit == 0)
+            {
+                Assert.Inconclusive($"the temporary folder {folder} lies inside a git work tree");
+            }
+
+            var failure = Assert.ThrowsExactly<AssertFailedException>(() => InstallFiles(folder));
+
+            StringAssert.Contains(failure.Message, "git");
+            StringAssert.Contains(failure.Message, folder);
+            StringAssert.Contains(failure.Message, probe.Stderr.Trim());
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
     }
 
     // The content set is the output of tools/basic-art.py, which draws every image from numbers, so the set holds
@@ -315,6 +426,39 @@ public sealed class RepositoryContentTests
         Assert.AreEqual(0, listing.Exit, $"git ls-files: {listing.Stderr}");
 
         return [.. listing.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
+    }
+
+    // The files git would commit in root whose last extension is an install file type, by repository-relative path: the
+    // tracked files and the untracked files no ignore rule covers, from git ls-files with every GIT_* variable of the host
+    // removed. The listing is split on NUL, so a name git would quote keeps its real form. A nested repository or linked
+    // worktree lists as one folder entry with a trailing slash, which has no extension. Fails, naming git, the folder, and
+    // git's error, where git is not on searchPath (the host's path where null), exits non-zero, or lists no file.
+    static List<string> InstallFiles(string root, string? searchPath = null)
+    {
+        var git = PythonTool.Locate(searchPath, "git");
+        if (git is null)
+        {
+            Assert.Fail($"git is not on the path, so the files git would commit in {root} cannot be listed");
+        }
+
+        var listing = PythonTool.Git(git, root, "ls-files", "--cached", "--others", "--exclude-standard", "-z");
+        if (listing.Exit != 0)
+        {
+            Assert.Fail($"git ls-files in {root} exited {listing.Exit}: {listing.Stderr.Trim()}");
+        }
+
+        var paths = listing.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        if (paths.Length == 0)
+        {
+            Assert.Fail($"git ls-files in {root} listed no file: {listing.Stderr.Trim()}");
+        }
+
+        return
+        [
+            .. paths.Where(path =>
+                InstallExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase)
+            ),
+        ];
     }
 
     // Godot skips a file or folder whose name starts with a dot, at any depth, every folder at any depth below a .gdignore, and
