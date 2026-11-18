@@ -6,7 +6,7 @@ Class: legal
 Concepts: Install, Asset
 Statement: The repository contains no bytes taken from an install and no code transcribed from the game's program; tests build their fixtures in code, and rules recovered from the program are described in our own words. The stand-in rules of the basic content set are values of the project's own making. They are never read from the program (ADR 0018). A test may hold a short sequence of values observed in a run of the original, or a digest of the original's output. The test states the seed and the origin of each sequence and each digest. A test never holds a dump of the original's output.
 Breaks: silently
-Check: `RepositoryContentTests` fails on a file with the extension of an install's file types; no cheap test can tell a copied byte sequence or a transcribed routine from an original one, so reviewers check three things. Fixtures are built in code. The recovered rules in `docs/rules/` are restated, not transcribed. The basic set's stand-in values are invented.
+Check: `RepositoryContentTests` fails on a file with the extension of an install's file types among the files git would commit: the tracked files and the untracked files no ignore rule covers. It fails where git is missing or cannot list the repository. No cheap test can tell a copied byte sequence or a transcribed routine from an original one, so reviewers check three things. Fixtures are built in code. The recovered rules in `docs/rules/` are restated, not transcribed. The basic set's stand-in values are invented.
 
 ### INV-0002
 
@@ -143,3 +143,12 @@ Statement: A gatherer's search range and target test exist once, in its job rule
 Breaks: silently
 Check: `JobSearchTests` pins each gatherer's range against the draw mask of its loop. It pins its target test against the nodes its worker accepts. `GoldenTests` and the gatherer tests (`WoodcuttingTests`, `StonecuttingTests`, `ForestryTests`, `FisherTests`, `FarmerTests`) keep the searches' outcomes. `WorkAreaDrawsTests` checks that the overlay's marks equal the job search's spiral entries around each building. It also checks that no file under `src/MapView/` or `src/Viewer/` names the spiral. Reviewers check that no such file names a spiral entry bound or a target condition.
 Paths: src/Application/*Rules.cs, src/MapView/**
+
+### INV-0018
+
+Class: fidelity
+Concepts: Rule
+Statement: A command of the emulator harness prints the same lines whatever commands ran before it in the same launch. It prints them whether the launch imports the program or reuses a kept project. The harness is `EmulateMapStart.java` and, for the `draw:` verb, `EmulateDraw.java`; a launch is one `emulate.py` call. Each command, of every verb and of a draw batch, starts from the state a launch of its own gives it. So a reference value recorded from the harness (ADR 0008) does not depend on the order or company of the commands it was recorded with. The invariant covers the commands that run. A command that fails ends a launch that runs no draw batch, and the later commands of that launch print nothing. A command of a draw batch that fails prints its failure line, and the batch runs on.
+Breaks: silently
+Check: a Ghidra-category test runs commands that each change a different part of the harness's state in one launch. It compares each command's lines with the lines of a launch of its own. `EmulatorLaunchTests.ACommandThatRestoresTheCachedGenerationAfterAnotherDidPrintsItsOwnLaunchLines` covers the cached map generation. `EmulatorLaunchTests.ACommandAfterACommandOfAnotherVerbRunsWithItsOwnVerbsSettingsOnly` covers the settings of a verb. `EmulatorLaunchTests.EachCommandOfADrawBatchPrintsTheLinesOfASingleDrawCommand` covers a draw batch. `EmulatorLaunchTests.ACommandAgainstAKeptProjectPrintsTheLinesOfAFreshImport` covers a kept project. `EmulatorSettingsTests.DefaultSettingsSetsEveryFieldOfTheScriptThatACommandCanChange` reads `EmulateMapStart.java`. It fails where `defaultSettings`, which runs at the start of each command, does not set a field of the script other than the emulator, or does not clear a list or an array that a final field holds. Reviewers check that a new verb keeps every setting it sets in such a field. They also check that state shared across the commands of a launch holds only what a launch of its own would compute the same.
+Paths: tools/GhidraDump/**

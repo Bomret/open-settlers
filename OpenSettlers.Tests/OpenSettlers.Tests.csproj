@@ -20,7 +20,7 @@
     <ProjectReference Include="../src/Import.OpenSettlers/OpenSettlers.Import.OpenSettlers.csproj" />
     <!-- JobCoverageTests compares the jobs with rules (the application's modules) with the jobs every source draws. -->
     <ProjectReference Include="../src/Application/OpenSettlers.Application.csproj" />
-    <ProjectReference Include="../src/Import.Testing/OpenSettlers.Import.Testing.csproj" />
+    <ProjectReference Include="../src/Import.Testing/OpenSettlers.Import.Testing.csproj" /> <!-- EmulatorLaunchTests hands the install's folder to the emulator harness. --> <ProjectReference Include="../src/Import.HistoryEdition.Testing/OpenSettlers.Import.HistoryEdition.Testing.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />

@@ -7,6 +7,7 @@ Status: the engine reads the data files of an install and generates the map of a
 ## Requirements
 
 - [mise](https://mise.jdx.dev). It installs the pinned tools listed in `mise.toml`: the .NET SDKs 10 and 8, the Godot 4.7.2 .NET build, and, for rule recovery, a JDK, Gradle, Python, and Ghidra. Install mise on macOS or Linux with `curl https://mise.run | sh`, or on Windows with `winget install jdx.mise`.
+- [git](https://git-scm.com) and a git clone of the repository. The unit tests list the files git would commit, so they fail without git or in a copy that is not a git checkout, such as an extracted source archive.
 - Windows: the Microsoft Visual C++ Redistributable, which mise needs (`winget install Microsoft.VCRedist.2015+.x64`, or `.arm64` on ARM).
 - Linux: the ICU library, which .NET loads (Debian and Ubuntu: the `libicu` package).
 - A History Edition install (see below) for the original's art and rules, and for rule recovery from the game's program. Without one, run on the basic content set ("Without the game").

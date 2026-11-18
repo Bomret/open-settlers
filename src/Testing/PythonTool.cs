@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Testing;
@@ -22,7 +23,8 @@ public readonly record struct ToolRun
 /// to run <c>mise install</c>, as <c>docs/agents/verification.md</c> states, except in <see cref="RunOnPath"/>, which reports
 /// inconclusive. Each run sets its environment: <c>SIEDLER_DIR</c>
 /// is absent unless the caller passes it, no <c>GIT_*</c> variable of the host reaches the child, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
-/// <see cref="Worktree"/> builds a git repository with a linked worktree for the tools that find the main checkout.
+/// <see cref="Worktree"/> builds a git repository with a linked worktree for the tools that find the main checkout, and
+/// <see cref="Git"/> runs git with every <c>GIT_*</c> variable of the host removed.
 /// </summary>
 public static class PythonTool
 {
@@ -56,7 +58,8 @@ public static class PythonTool
         return found;
     }
 
-    static string? Locate(string? searchPath, string name = "python3") =>
+    /// <summary>The program <paramref name="name"/> on <paramref name="searchPath"/> (the host's path where null), or null.</summary>
+    public static string? Locate(string? searchPath, string name = "python3") =>
         (searchPath ?? Environment.GetEnvironmentVariable("PATH") ?? "")
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
             .SelectMany(dir => new[] { Path.Combine(dir, name), Path.Combine(dir, name + ".exe") })
@@ -102,11 +105,27 @@ public static class PythonTool
 
     static void RunGit(string git, string workingDirectory, params string[] arguments)
     {
+        var run = Git(git, workingDirectory, arguments);
+        if (run.Exit != 0)
+        {
+            Assert.Fail($"git {string.Join(' ', arguments)} exited {run.Exit}: {run.Stderr}");
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="git"/> with the arguments in <paramref name="workingDirectory"/>, with every <c>GIT_*</c> variable
+    /// of the host removed, and returns its exit status and output, read as UTF-8.
+    /// </summary>
+    public static ToolRun Git(string git, string workingDirectory, params string[] arguments)
+    {
         var info = new ProcessStartInfo(git)
         {
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            // git writes paths in UTF-8; a console code page of the host must not decode them.
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
         };
         foreach (var argument in arguments)
         {
@@ -116,13 +135,16 @@ public static class PythonTool
         RemoveGitVariables(info);
 
         using var process = Process.Start(info)!;
+        var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
-        process.StandardOutput.ReadToEnd();
         process.WaitForExit();
-        if (process.ExitCode != 0)
+
+        return new ToolRun
         {
-            Assert.Fail($"git {string.Join(' ', arguments)} exited {process.ExitCode}: {stderr.Result}");
-        }
+            Exit = process.ExitCode,
+            Stdout = stdout.Result,
+            Stderr = stderr.Result,
+        };
     }
 
     // A GIT_DIR of the host, as a git hook sets it, would make git resolve the host's repository.

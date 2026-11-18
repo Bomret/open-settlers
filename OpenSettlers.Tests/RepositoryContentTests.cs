@@ -31,14 +31,132 @@ public sealed class RepositoryContentTests
 
     static readonly string[] SkippedFolders = [".git", ".godot", "bin", "obj", ".superdev"];
 
+    // The scripts and shaders Godot writes a .uid for (Godot 4.4 and later). Scenes, resources, and imported assets carry their
+    // UID elsewhere.
+    static readonly string[] ScriptExtensions = [".cs", ".gd", ".gdshader", ".gdshaderinc"];
+
     [TestMethod]
     public void TheRepositoryHoldsNoFileOfAnInstallsFileTypes()
     {
-        var found = Files(RepositoryRoot())
-            .Where(path => InstallExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-            .ToList();
+        var found = InstallFiles(RepositoryRoot());
 
         Assert.IsEmpty(found, $"install file types in the repository: {string.Join(", ", found)}");
+    }
+
+    // The check judges the files git would commit: a tracked file, a force-added one, a tracked one deleted from disk, and
+    // an untracked file no ignore rule covers, each by its real name and its last extension in any letter case. A gitignored
+    // folder and a linked worktree under the root hold nothing it judges, and run in a linked worktree it judges that worktree's own files.
+    [TestMethod]
+    public void TheInstallCheckJudgesTheFilesGitWouldCommit()
+    {
+        var folder = Directory.CreateTempSubdirectory("install-check-").FullName;
+        try
+        {
+            var (git, main, worktree) = PythonTool.Worktree(folder);
+            void Run(params string[] arguments) =>
+                Assert.AreEqual(0, PythonTool.Git(git, main, arguments).Exit, string.Join(' ', arguments));
+            void Write(string path) =>
+                File.WriteAllText(Path.Combine(main, path.Replace('/', Path.DirectorySeparatorChar)), "");
+
+            Directory.CreateDirectory(Path.Combine(main, "ignored"));
+            File.WriteAllText(Path.Combine(main, ".gitignore"), "ignored/\n");
+            Write("ignored/hidden.pal");
+            Write("ignored/forced.pal");
+            Write("X.PAL");
+            Write("loose.pal");
+            Write("é b.pal");
+            Write("a.pal.txt");
+            Write("a.txt.pal");
+            Run("add", "X.PAL");
+            Run("add", "-f", "ignored/forced.pal");
+            Write("gone.pal");
+            Run("add", "gone.pal");
+            File.Delete(Path.Combine(main, "gone.pal"));
+            Run("worktree", "add", "-q", Path.Combine(main, "nested"));
+            Write("nested/other.pal");
+            File.WriteAllText(Path.Combine(worktree, "own.pal"), "");
+
+            CollectionAssert.AreEquivalent(
+                new[] { "X.PAL", "ignored/forced.pal", "gone.pal", "loose.pal", "é b.pal", "a.txt.pal" },
+                InstallFiles(main)
+            );
+            // A git hook runs the suite with GIT_DIR set; the check must not list that repository. The case sets GIT_DIR on
+            // the test process for the listing and restores it.
+            var before = Environment.GetEnvironmentVariable("GIT_DIR");
+            Environment.SetEnvironmentVariable("GIT_DIR", Path.Combine(main, ".git"));
+            try
+            {
+                CollectionAssert.AreEquivalent(new[] { "own.pal" }, InstallFiles(worktree));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("GIT_DIR", before);
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    // A checkout that lists no file at all gives the check nothing to judge, so it fails rather than passes.
+    [TestMethod]
+    public void TheInstallCheckFailsOnAnEmptyListing()
+    {
+        var folder = Directory.CreateTempSubdirectory("empty-checkout-").FullName;
+        try
+        {
+            var (_, main, _) = PythonTool.Worktree(folder);
+
+            var failure = Assert.ThrowsExactly<AssertFailedException>(() => InstallFiles(main));
+
+            StringAssert.Contains(failure.Message, main);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    [TestMethod]
+    public void TheInstallCheckFailsWithoutGit()
+    {
+        var failure = Assert.ThrowsExactly<AssertFailedException>(() => InstallFiles(RepositoryRoot(), searchPath: ""));
+
+        StringAssert.Contains(failure.Message, "git");
+        StringAssert.Contains(failure.Message, RepositoryRoot());
+    }
+
+    // A folder outside any work tree makes git exit non-zero. The case reports inconclusive itself where the host's temporary
+    // folder lies inside a work tree.
+    [TestMethod]
+    public void TheInstallCheckFailsOutsideAGitCheckoutWithGitsMessage()
+    {
+        var folder = Directory.CreateTempSubdirectory("no-checkout-").FullName;
+        try
+        {
+            var git = PythonTool.Locate(null, "git");
+            if (git is null)
+            {
+                Assert.Inconclusive("git is not on the path");
+            }
+
+            var probe = PythonTool.Git(git, folder, "ls-files");
+            if (probe.Exit == 0)
+            {
+                Assert.Inconclusive($"the temporary folder {folder} lies inside a git work tree");
+            }
+
+            var failure = Assert.ThrowsExactly<AssertFailedException>(() => InstallFiles(folder));
+
+            StringAssert.Contains(failure.Message, "git");
+            StringAssert.Contains(failure.Message, folder);
+            StringAssert.Contains(failure.Message, probe.Stderr.Trim());
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
     }
 
     // The content set is the output of tools/basic-art.py, which draws every image from numbers, so the set holds
@@ -222,6 +340,198 @@ public sealed class RepositoryContentTests
             projectFolders,
             "a project of the solution is not left out of the Godot compile"
         );
+    }
+
+    // Godot writes a .uid beside each script and shader in a folder it scans, so a Godot run leaves the working tree clean only
+    // where each of them is tracked; a .uid beside no source, or one Godot skips, is stale.
+    [TestMethod]
+    [DataRow("src/Launch/A.cs", "no .uid: src/Launch/A.cs")]
+    [DataRow("src/Viewer/W.gdshader", "no .uid: src/Viewer/W.gdshader")]
+    [DataRow("src/Viewer/W.gdshaderinc", "no .uid: src/Viewer/W.gdshaderinc")]
+    [DataRow("tools/t.gd", "no .uid: tools/t.gd")]
+    [DataRow("src/Launch/Gone.cs.uid", "no source: src/Launch/Gone.cs.uid")]
+    [DataRow("src/Domain/.gdignore,src/Domain/D.cs,src/Domain/D.cs.uid", "skipped by Godot: src/Domain/D.cs.uid")]
+    [DataRow("src/Domain/.gdignore,src/Domain/Deep/D.cs.uid", "skipped by Godot: src/Domain/Deep/D.cs.uid")]
+    [DataRow(".claude/x/D.cs,.claude/x/D.cs.uid", "skipped by Godot: .claude/x/D.cs.uid")]
+    [DataRow("src/.hidden/D.cs.uid", "skipped by Godot: src/.hidden/D.cs.uid")]
+    [DataRow("src/Launch/.H.cs,src/Launch/.H.cs.uid", "skipped by Godot: src/Launch/.H.cs.uid")]
+    [DataRow("sub/project.godot,sub/S.cs,sub/S.cs.uid", "skipped by Godot: sub/S.cs.uid")]
+    [DataRow("sub/project.godot,sub/Deep/S.cs.uid", "skipped by Godot: sub/Deep/S.cs.uid")]
+    [DataRow("src/Launch/A.cs,src/Launch/a.cs.uid", "no .uid: src/Launch/A.cs,no source: src/Launch/a.cs.uid")]
+    public void UidPairingNamesEachOffence(string tracked, string offences)
+    {
+        CollectionAssert.AreEquivalent(offences.Split(','), UidOffences(tracked.Split(',')));
+    }
+
+    // A script or shader with its .uid, a hidden one, one in a skipped folder, and a scene or resource need nothing.
+    [TestMethod]
+    public void UidPairingAcceptsPairedAndSkippedFilesAndNeedsNoneForScenes()
+    {
+        string[] tracked =
+        [
+            "src/Launch/A.cs",
+            "src/Launch/A.cs.uid",
+            "Root.cs",
+            "Root.cs.uid",
+            "src/Domain/.gdignore",
+            "src/Domain/Deep/D.cs",
+            ".github/x.gd",
+            "src/Launch/.H.cs",
+            "project.godot",
+            "sub/project.godot",
+            "sub/S.cs",
+            "sub/Deep/S.gd",
+            "scenes/main.tscn",
+            "theme.tres",
+            "content/basic/object/a.png",
+        ];
+
+        Assert.IsEmpty(UidOffences(tracked));
+    }
+
+    // The offences against Godot's .uid pairing among the tracked repository-relative paths, each named by its path.
+    // The check reads the tracked files alone, so another worktree or an ignored local folder does not change its result. It
+    // finds the shaders of src/Viewer, so a wrong root or skip rule cannot pass on an empty listing.
+    [TestMethod]
+    public void EachScriptAndShaderGodotScansKeepsItsUid()
+    {
+        var tracked = TrackedFiles(RepositoryRoot());
+
+        CollectionAssert.Contains(tracked, "src/Viewer/Water.gdshader");
+        CollectionAssert.Contains(tracked, "src/Viewer/Water.gdshader.uid");
+        var offences = UidOffences(tracked);
+        Assert.IsEmpty(offences, $"unpaired Godot .uid files: {string.Join(", ", offences)}");
+    }
+
+    [TestMethod]
+    public void TheUidCheckReportsInconclusiveWithoutGit()
+    {
+        Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(RepositoryRoot(), searchPath: ""));
+    }
+
+    // An extracted archive, or a checkout git refuses as unsafe, is no git work tree. The case needs a temporary folder outside
+    // any work tree, and reports inconclusive itself where the host's temporary folder lies inside one.
+    [TestMethod]
+    public void TheUidCheckReportsInconclusiveOutsideAGitWorkTree()
+    {
+        var folder = Directory.CreateTempSubdirectory("no-work-tree-").FullName;
+        try
+        {
+            var git = PythonTool.Locate(null, "git");
+            if (git is not null && PythonTool.Git(git, folder, "rev-parse", "--is-inside-work-tree").Exit == 0)
+            {
+                Assert.Inconclusive($"the temporary folder {folder} lies inside a git work tree");
+            }
+
+            Assert.ThrowsExactly<AssertInconclusiveException>(() => TrackedFiles(folder));
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+
+    // The repository's tracked files by repository-relative path, from git ls-files with every GIT_* variable of the host
+    // removed. Reports inconclusive where git is not on searchPath (the host's path where null) or root is not in a git work
+    // tree.
+    static List<string> TrackedFiles(string root, string? searchPath = null)
+    {
+        var git = PythonTool.Locate(searchPath, "git");
+        if (git is null)
+        {
+            Assert.Inconclusive("git is not on the path");
+        }
+
+        var inside = PythonTool.Git(git, root, "rev-parse", "--is-inside-work-tree");
+        if (inside.Exit != 0 || inside.Stdout.Trim() != "true")
+        {
+            Assert.Inconclusive($"{root} is not a git work tree: {inside.Stderr.Trim()}");
+        }
+
+        var listing = PythonTool.Git(git, root, "ls-files", "-z");
+        Assert.AreEqual(0, listing.Exit, $"git ls-files: {listing.Stderr}");
+
+        return [.. listing.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries)];
+    }
+
+    // The files git would commit in root whose last extension is an install file type, by repository-relative path: the
+    // tracked files and the untracked files no ignore rule covers, from git ls-files with every GIT_* variable of the host
+    // removed. The listing is split on NUL, so a name git would quote keeps its real form. A nested repository or linked
+    // worktree lists as one folder entry with a trailing slash, which has no extension. Fails, naming git, the folder, and
+    // git's error, where git is not on searchPath (the host's path where null), exits non-zero, or lists no file.
+    static List<string> InstallFiles(string root, string? searchPath = null)
+    {
+        var git = PythonTool.Locate(searchPath, "git");
+        if (git is null)
+        {
+            Assert.Fail($"git is not on the path, so the files git would commit in {root} cannot be listed");
+        }
+
+        var listing = PythonTool.Git(git, root, "ls-files", "--cached", "--others", "--exclude-standard", "-z");
+        if (listing.Exit != 0)
+        {
+            Assert.Fail($"git ls-files in {root} exited {listing.Exit}: {listing.Stderr.Trim()}");
+        }
+
+        var paths = listing.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        if (paths.Length == 0)
+        {
+            Assert.Fail($"git ls-files in {root} listed no file: {listing.Stderr.Trim()}");
+        }
+
+        return
+        [
+            .. paths.Where(path =>
+                InstallExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase)
+            ),
+        ];
+    }
+
+    // Godot skips a file or folder whose name starts with a dot, at any depth, every folder at any depth below a .gdignore, and
+    // every folder at any depth below a project.godot other than the project's own (EditorFileSystem::_scan_new_dir and
+    // _should_skip_directory in editor/file_system/editor_file_system.cpp, DirAccessUnix::is_hidden in
+    // drivers/unix/dir_access_unix.cpp, godotengine/godot tag 4.7.2-stable). On Windows Godot reads a file's hidden attribute
+    // in place of the dot; the check follows the macOS and Linux rule. Names match by exact case.
+    internal static List<string> UidOffences(IReadOnlyCollection<string> tracked)
+    {
+        var files = tracked.ToHashSet(StringComparer.Ordinal);
+        var ignored = tracked
+            .Where(path =>
+                path == ".gdignore"
+                || path.EndsWith("/.gdignore", StringComparison.Ordinal)
+                || path.EndsWith("/project.godot", StringComparison.Ordinal)
+            )
+            .Select(path => path[..(path.LastIndexOf('/') + 1)])
+            .ToList();
+        bool Skipped(string path) =>
+            path.Split('/').Any(name => name.StartsWith('.'))
+            || ignored.Any(folder => path.StartsWith(folder, StringComparison.Ordinal));
+
+        var offences = new List<string>();
+        foreach (var path in tracked.Order(StringComparer.Ordinal))
+        {
+            if (path.EndsWith(".uid", StringComparison.Ordinal))
+            {
+                if (Skipped(path))
+                {
+                    offences.Add($"skipped by Godot: {path}");
+                }
+                else if (!files.Contains(path[..^".uid".Length]))
+                {
+                    offences.Add($"no source: {path}");
+                }
+            }
+            else if (
+                ScriptExtensions.Contains(Path.GetExtension(path), StringComparer.Ordinal)
+                && !Skipped(path)
+                && !files.Contains(path + ".uid")
+            )
+            {
+                offences.Add($"no .uid: {path}");
+            }
+        }
+
+        return offences;
     }
 
     // The set's files by path relative to the folder, with forward slashes.

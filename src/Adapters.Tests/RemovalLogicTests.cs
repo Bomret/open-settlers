@@ -250,6 +250,56 @@ public sealed class RemovalLogicTests
         );
     }
 
+    // The join marks every settler past the length class's number, a carrier that hands a good over included (0x462153), and the
+    // handover's second half takes that mark for its own and goes on in state 3 (0x43c4ea): the carrier keeps working the joined
+    // road, which counts one carrier fewer than it holds. **Inferred:** made-up tables (Made); no emulator run reaches a join
+    // with more settlers than the length class holds.
+    [TestMethod]
+    public void ACarrierThatHandsAGoodOverWhenItsRoadIsJoinedPastItsLengthClassKeepsWorkingTheRoadUncounted()
+    {
+        var game = World(capacity: 1, hut: false);
+        for (var tick = 0; tick < 4000 && game.Settlers.Count(settler => settler.Activity is WaitsAtFlag) < 3; tick++)
+        {
+            game.Tick();
+        }
+
+        // A log on the flag at 18,6 for the castle: the carrier of the road to the castle's flag takes it there and hands it over.
+        game.LayGood(1, 0, Good.Log, destination: 0);
+        var deliverer = -1;
+        for (var tick = 0; tick < 4000 && deliverer < 0; tick++)
+        {
+            game.Tick();
+            deliverer = Enumerable
+                .Range(0, game.Settlers.Count)
+                .FirstOrDefault(slot => game.Settlers[slot].Activity is HandsOver { Marked: false }, -1);
+        }
+
+        Assert.IsTrue(deliverer > 0, "the carrier hands the log over at the castle's flag");
+        Assert.IsTrue(Applied(game, CommandKind.RemoveFlag, 18, 6));
+
+        var carrier = game.Settlers[deliverer];
+        Assert.IsTrue(
+            carrier.Activity is HandsOver { Marked: true, Load: null },
+            "the join marks the carrier past the class's number and its log is lost"
+        );
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "the joined road counts the other carrier alone");
+
+        for (var tick = 0; tick < 400 && carrier.Activity is HandsOver; tick++)
+        {
+            game.Tick();
+        }
+
+        Assert.IsTrue(
+            carrier.Activity is WalksRoad { Marked: false } or WaitsAtFlag,
+            $"the handover takes the mark and the carrier works on along the road, not home ({carrier.Activity.GetType().Name})"
+        );
+        Assert.AreEqual(1, game.Flags[0].Side(0).Carriers, "the road still counts one carrier");
+        Assert.IsFalse(
+            game.History.Events.All.Any(e => e.Type == EventType.CarrierGoesHome),
+            "no carrier leaves the road for a storage"
+        );
+    }
+
     [TestMethod]
     public void AGoodLostWithAFlagIsCountedAgainstTheBuildingItWasToGoTo()
     {
