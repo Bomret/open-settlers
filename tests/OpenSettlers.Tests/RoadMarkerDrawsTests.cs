@@ -174,4 +174,21 @@ public sealed class RoadMarkerDrawsTests
         Assert.AreNotEqual(RoadMarkerKind.Blocked, before[2].Kind);
         Assert.AreEqual(new RoadMarker { Kind = RoadMarkerKind.Blocked }, after[2].Marker);
     }
+
+    // A departure (docs/rules/roads.md, "Departures"): the verdicts walk the whole road again, so a game change that refuses
+    // an earlier step, here an inner node passing to another owner, shows the blocked mark on all six neighbors.
+    [TestMethod]
+    public void AnInnerNodePassingToAnotherOwnerShowsTheBlockedMarkOnEveryNeighbor()
+    {
+        var game = RoadsTests.TwoFlags();
+        var drawing = new RoadDrawing(game);
+        drawing.Click(16, 6);
+        drawing.Click(17, 6);
+        drawing.Click(18, 6);
+        Assert.AreEqual((18, 6), drawing.Nodes[^1]);
+
+        game.Map.At(17, 6).Owner = Owner.Player(1);
+
+        AssertMarkers(game, drawing, [.. Enumerable.Repeat(RoadMarkerKind.Blocked, 6)]);
+    }
 }
