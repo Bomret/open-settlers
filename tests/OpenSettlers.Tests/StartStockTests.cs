@@ -65,7 +65,7 @@ public sealed class StartStockTests
 
         var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
 
-        StringAssert.Contains(error.Message, "'fish'");
+        StringAssert.Contains(error.Message, $"'{tables.StartStock[0].First().Key.Name}'");
         StringAssert.Contains(error.Message, "is no entry of the content catalog");
     }
 
