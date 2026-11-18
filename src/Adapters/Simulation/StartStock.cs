@@ -32,10 +32,11 @@ public static class StartStock
     ];
 
     /// <summary>
-    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good that the rows of
-    /// the program's table name. Throws an <see cref="InvalidOperationException"/> that names the good for a row good the catalog lacks, and
-    /// for a deduction of the castle whose good no row holds. Each count steps from its value in the lower row towards the higher row
-    /// (<see cref="RuleTables.StartStock"/>) by the tenths of the level, rounded as the original rounds.
+    /// The stock of a castle at a start stock level (0 to 255; the free game draws 0 to 40), a count for each good that either of the two
+    /// rows of the program's table the level lies between names. Throws an <see cref="InvalidOperationException"/> that names the good for
+    /// a row good the catalog lacks, and for a deduction of the castle whose good neither row holds. Each count steps from its value in the
+    /// lower row towards the higher row (<see cref="RuleTables.StartStock"/>, where a good a row does not name counts 0) by the tenths of
+    /// the level, rounded as the original rounds.
     /// </summary>
     public static IReadOnlyDictionary<Good, int> At(RuleTables tables, int level)
     {
@@ -49,10 +50,12 @@ public static class StartStock
         var weight = (level - 10 * low) * 0x199a & 0xffff;
         var rows = tables.StartStock;
         var stock = new Dictionary<Good, int>();
-        foreach (var (good, from) in rows[low])
+        // A good one row does not name counts 0 there.
+        foreach (var good in rows[low].Keys.Union(rows[high].Keys))
         {
             tables.Catalog.Require(good);
 
+            var from = rows[low].GetValueOrDefault(good);
             var difference = (ushort)(rows[high].GetValueOrDefault(good) - from);
             var product = (uint)difference * (uint)weight;
             var rounded = (product & 0xffff) > 0x7fff ? 1 : 0;

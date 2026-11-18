@@ -83,6 +83,29 @@ public sealed class StartStockTests
         StringAssert.Contains(error.Message, "'plank'");
     }
 
+    // A good a row does not name counts 0 there, so a good only the higher row names steps up from 0.
+    [TestMethod]
+    public void AGoodOnlyTheHigherRowNamesStepsUpFromNone()
+    {
+        var coal = new Good { Name = "coal" };
+        var rows = TestProgram
+            .MadeStartStock()
+            .Select((row, at) =>
+            {
+                var counts = row.Where(pair => pair.Key != coal).ToDictionary();
+                if (at == 1)
+                {
+                    counts[coal] = 10;
+                }
+
+                return (IReadOnlyDictionary<Good, byte>)counts;
+            })
+            .ToArray();
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, goods: TestCatalog.Of());
+
+        Assert.AreEqual(5, StartStock.At(tables, 5).GetValueOrDefault(coal));
+    }
+
     [TestMethod]
     public void LevelZeroTakesTheCastlesSubtractionsFromTheFirstRow()
     {
