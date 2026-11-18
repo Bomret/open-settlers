@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace OpenSettlers.Simulation;
 
@@ -29,4 +30,18 @@ public sealed record JobSearch
 
     /// <summary>The spiral entry a draw picks: the draw masked, the first entry added four times over, and the sum shifted right by two.</summary>
     public int Entry(ushort draw) => ((draw & Mask) + (First << 2)) >> 2;
+
+    /// <summary>
+    /// The work area around the node at (<paramref name="x"/>, <paramref name="y"/>): the node of each spiral entry of the range, in
+    /// the order of the entries, wrapped at <paramref name="map"/>'s edges as the worker's search wraps them.
+    /// </summary>
+    public IEnumerable<(int X, int Y)> Area(Map map, int x, int y)
+    {
+        for (var entry = First; entry <= Last; entry++)
+        {
+            var (dx, dy) = Spiral.Offsets[entry];
+
+            yield return ((x + dx) & (map.Size.Width - 1), (y + dy) & (map.Size.Height - 1));
+        }
+    }
 }

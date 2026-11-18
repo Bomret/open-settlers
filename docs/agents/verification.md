@@ -292,6 +292,9 @@ script alone. Add a layout only where none of them holds the situation.
 - `play/castle-growing.play` on the game view with seed `4455544685788642` and size 1, and `play/castle-growing-basic.play` on the
   basic set with seed `1234567812345634` and size 1: each script places the castle with a click. It fast-forwards to ticks 20, 30, 31, 32, and 45, while
   the castle grows, and to tick 200, after it stands. A cropped shot of the castle follows each. The shots of ticks 30 to 32 show the castle grow each pass.
+- `play/work-areas.play` on the game view with seed `1234567812345678` and size 1: the castle's click places it at 24,19 and a
+  stonecutter's site goes to 28,18, near the heaps at 26,17 and 24,15. The script shoots the work-area tint around the site with Work
+  areas on and off, checks the digest is the same before and after the press, and checks that a new seed turns the button off.
 - `layouts/carrier.jsonc` and `play/carrier-log.play`: a carrier on a road with logs on its far flag,
   fast-forwarded to the carrier carrying a log.
 - `layouts/head-on-pass.jsonc` and `play/head-on-pass.play`: two roads with their carriers. The script takes the

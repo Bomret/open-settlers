@@ -1,0 +1,34 @@
+# The work-area overlay: Work areas tints every node a gatherer's worker searches. A stonecutter's site stands near the stone
+# heaps at 26,17 and 24,15. The digest stays the same with the overlay on and off, and a new seed turns it off.
+# Run it on the game view with seed 1234567812345678 and size 1:
+#   sh tools/play-run.sh work-areas --game-view --seed 1234567812345678 --size 1 --fps 10
+# The castle's click places it at 24,19. The stonecutter's site goes to 28,18.
+click-tile 24 19
+wait 0.3
+expect-at 24 19 building
+button Stonecutter
+click-tile 28 18
+button Stonecutter
+wait 0.3
+expect-at 28 18 building
+
+# The ticks hold from the fast-forward until the next shot, so the digest before and after the press is of one tick.
+fast-forward until ticks >= 40 max 100
+expect digest = da62d96f83fc3cae
+button Work areas
+wait 0.3
+expect digest = da62d96f83fc3cae
+shot tint 28 18 7 1
+
+# Off again: the tint is gone.
+button Work areas
+wait 0.3
+shot untinted 28 18 7 1
+
+# A new seed starts a new game, and Work areas starts off: the new map shows no tint.
+button Work areas
+wait 0.3
+seed 1234567812345634
+wait 0.3
+expect seed = 1234567812345634
+shot new-seed
