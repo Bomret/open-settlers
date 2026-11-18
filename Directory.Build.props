@@ -5,8 +5,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- docs/agents/CODING.md, "Document": the doc-comment diagnostics (CS1591 and the malformed or unresolved reference
-         ones) fail the build of every source project. The test project stays with review. -->
-    <GenerateDocumentationFile Condition="'$(MSBuildProjectName)' != 'OpenSettlers.Tests'"
+         ones) fail the build of every source project. Test projects (*.Tests) and helper projects (*.Testing) stay with
+         review: a helper project's public types serve tests only, so it generates no documentation file either. -->
+    <GenerateDocumentationFile
+      Condition="!$(MSBuildProjectName.EndsWith('.Tests')) And !$(MSBuildProjectName.EndsWith('.Testing'))"
       >true</GenerateDocumentationFile>
   </PropertyGroup>
 </Project>

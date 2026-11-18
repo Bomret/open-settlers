@@ -1,8 +1,9 @@
-<Project Sdk="MSTest.Sdk/4.5.1">
+<Project Sdk="MSTest.Sdk">
   <PropertyGroup>
     <RootNamespace>OpenSettlers.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Using Include="OpenSettlers.Testing" />
     <Using Include="OpenSettlers.Domain" />
     <Using Include="OpenSettlers.Import" />
     <Using Include="OpenSettlers.Import.HistoryEdition" />
@@ -13,6 +14,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/Testing/OpenSettlers.Testing.csproj" />
     <ProjectReference Include="../../src/Domain/OpenSettlers.Domain.csproj" />
     <ProjectReference Include="../../src/Import/OpenSettlers.Import.csproj" />
     <ProjectReference Include="../../src/Import.HistoryEdition/OpenSettlers.Import.HistoryEdition.csproj" />
@@ -26,8 +28,12 @@
     <ProjectReference Include="../../src/Generators/OpenSettlers.Generators.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="windows-run.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The file lives in OpenSettlers.Tests/, which reads it for WindowsRunTests; MapGeneratorTests reads it here. -->
+    <None
+      Include="../../OpenSettlers.Tests/map-digests.txt"
+      Link="map-digests.txt"
+      CopyToOutputDirectory="PreserveNewest"
+    />
     <None Include="build-sites.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="castle-placements.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="castle-sites.txt" CopyToOutputDirectory="PreserveNewest" />

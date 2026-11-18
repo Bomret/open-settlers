@@ -5,10 +5,10 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Testing;
 
 /// <summary>The exit status and the output of one run of a python tool.</summary>
-readonly record struct ToolRun
+public readonly record struct ToolRun
 {
     public required int Exit { get; init; }
 
@@ -24,7 +24,7 @@ readonly record struct ToolRun
 /// is absent unless the caller passes it, no <c>GIT_*</c> variable of the host reaches the child, and the path holds no <c>analyzeHeadless</c> of the host unless the caller asks for it.
 /// <see cref="Worktree"/> builds a git repository with a linked worktree for the tools that find the main checkout.
 /// </summary>
-static class PythonTool
+public static class PythonTool
 {
     public const string MissingHint = "python3 is not on the path; mise install provides it";
 

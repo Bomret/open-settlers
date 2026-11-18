@@ -1,0 +1,7 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- A helper library of the test projects: it references no library of the engine (INV-0012) and runs no test. -->
+    <OutputType>Library</OutputType>
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+  </PropertyGroup>
+</Project>

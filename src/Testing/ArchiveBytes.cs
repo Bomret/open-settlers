@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Testing;
 
 /// <summary>Builds a graphics archive in memory: header, 8-byte rows (size, offset), then the payloads.</summary>
 public static class ArchiveBytes
