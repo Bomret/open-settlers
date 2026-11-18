@@ -140,7 +140,7 @@ The call sites of `0x44de9a` and the entries they reach (the number is the value
 | `0x44dba2`, `0x44dbf2`, `0x44dc42`, `0x44dcfd`, `0x44dd4d`, `0x44dd9d`, `0x44dded`, `0x44de3d` | an object byte masked to 0 to 31 | 320 to 351 (inside the sprite range 321 to 372) |
 | `0x44faf3`, `0x44fba7` | the immediates 10 and 8 | 330 and 328 |
 | `0x44f528`, `0x44f5c8`, `0x44f908` | the counter at the game state block's `+0x206`, shifted right by 3 and masked to 0 to 7, plus 128 | 448 to 455 |
-| `0x44e0d1` | an entry of a sprite list (0 or 8 in the 25 inline lists at `0x44e114`), plus a phase of 0 to 7 that the routine cycles, plus 136 | 456 to 471 |
+| `0x44e0d1` | a flame's size byte (0 or 8, from the flame lists at `0x44e114`), plus a phase of 0 to 7 that steps by 3 from flame to flame, plus 136 | 456 to 471 |
 | `0x44e720`, `0x44e86d`, `0x44e9ba`, `0x44eb07` and `0x44e781`, `0x44e8ce`, `0x44ea1b`, `0x44eb68` | the immediates 152 and 153 | 472 and 473 |
 | `0x44f42e` | the counter, shifted right by 3 and masked to 0 to 7, plus 154 | 474 to 481 |
 | `0x44ee56`, `0x44eeda`, `0x44ef5e`, `0x44efd8`, `0x44f05c`, `0x44f0e0`, `0x44f160`, `0x44f1e3` | the first byte of a byte pair of the table at `0x44f225`, found by an even index of 0 to 254; the table is 128 pairs (the data after the jump at `0x44f220`, up to the code at `0x44f325`) and its first bytes are 162 to 173, each of them present | 482 to 493 |

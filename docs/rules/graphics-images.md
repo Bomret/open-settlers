@@ -131,7 +131,7 @@ same.
 | --- | --- | --- |
 | 321 to 372 | `0x44de9a` and `0x44fd4a`: an index plus 320 | palette |
 | 448 to 455 | `0x44de9a` from `0x44f528`, `0x44f5c8`, `0x44f908`: the counter at `+0x206` of the game state block, shifted right by 3 and masked to 0 to 7, plus 128, plus 320 | palette |
-| 456 to 471 | `0x44de9a` from `0x44e0d1`: a sprite-list entry (0 or 8), a phase of 0 to 7, plus 136, plus 320 | palette |
+| 456 to 471 | `0x44de9a` from `0x44e0d1`: the flames of a burning building, a flame's size byte (0 small, 8 large), a phase of 0 to 7, plus 136, plus 320 ([Removal](removal.md#the-burning-draw)) | palette |
 | 472 and 473 | `0x44de9a` from eight sites each (`0x44e720` and 3 more for 472, `0x44e781` and 3 more for 473): the immediates 152 and 153 plus 320 | palette |
 | 474 to 481 | `0x44de9a` from `0x44f42e`: the counter shifted and masked to 0 to 7, plus 154, plus 320 | palette |
 | 482 to 493 | `0x44de9a` from `0x44ee56` and seven more sites: the first bytes (162 to 173) of the byte-pair table at `0x44f225`, plus 320 | palette |

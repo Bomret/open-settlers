@@ -713,6 +713,41 @@ public sealed class HistoryEditionSourceTests
         );
     }
 
+    // The install's program holds a flame list for every type the game can take down and for an early site, and its archive the
+    // flames' sprites (docs/rules/removal.md, "The burning draw").
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void TheInstallGivesEveryBuildingTheGameCanTakeDownItsFlamesAndTheirSprites()
+    {
+        var source = HistoryEditionSource.Load(TestProgram.OpenInstall(), TestProgram.Tables());
+
+        Assert.IsNull(source.ObjectsProblem);
+        foreach (
+            var (type, earlySite) in BuildingPlacement
+                .Types.Select(type => (type, false))
+                .Append((BuildingType.Woodcutter, true))
+        )
+        {
+            var flames = source.Flames(type, earlySite);
+            Assert.IsNotEmpty(flames, $"{type} early site {earlySite}");
+            foreach (var flame in flames)
+            {
+                Assert.IsNotNull(
+                    source.Draw(
+                        new FlameDraw
+                        {
+                            Row = 0,
+                            X = 0,
+                            Y = 0,
+                            Size = flame.Size,
+                            Phase = 7,
+                        }
+                    )
+                );
+            }
+        }
+    }
+
     // The install's own archive holds the scaffold and the finished building of each type, so a site draws its stages as it grows: the
     // drawing of a larger progress word covers at least the rows of a smaller one's, and the last one covers the finished building.
     [TestMethod]

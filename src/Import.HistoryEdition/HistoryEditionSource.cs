@@ -28,6 +28,7 @@ public sealed class HistoryEditionSource : IGraphicsSource
     readonly SiteDrawings _sites;
     readonly Dictionary<int, RippleImage?> _ripples = [];
     readonly SettlerSprites? _settlers;
+    readonly FlameLists? _flames;
 
     HistoryEditionSource(
         TerrainGraphics terrain,
@@ -36,9 +37,11 @@ public sealed class HistoryEditionSource : IGraphicsSource
         ObjectGraphics? objects,
         string? objectsProblem,
         SettlerSprites? settlers,
-        string? settlersProblem
+        string? settlersProblem,
+        FlameLists? flames
     )
     {
+        _flames = flames;
         _terrain = terrain;
         _roads = roads;
         RoadsProblem = roadsProblem;
@@ -68,7 +71,9 @@ public sealed class HistoryEditionSource : IGraphicsSource
     /// <see cref="InvalidDataException"/>, naming the entry and the reason, where the terrain graphics are absent or
     /// unreadable. Unreadable road graphics set <see cref="RoadsProblem"/>, unreadable object graphics
     /// <see cref="ObjectsProblem"/>, and unreadable settler graphics <see cref="SettlersProblem"/>, instead. The settlers are
-    /// drawn by the figure tables of the exe's <paramref name="tables"/>; with none the source draws no settler.
+    /// drawn by the figure tables of the exe's <paramref name="tables"/>; with none the source draws no settler. With
+    /// <paramref name="tables"/>, the source also reads the flame lists from the exe; lists it cannot read set
+    /// <see cref="ObjectsProblem"/> where the objects loaded, and the source places no flames then.
     /// </summary>
     public static HistoryEditionSource Load(Install install, RuleTables? tables = null)
     {
@@ -77,15 +82,20 @@ public sealed class HistoryEditionSource : IGraphicsSource
         var objects = Try(() => ObjectGraphics.Load(install), out var objectsProblem);
         string? settlersProblem = null;
         var settlers = tables is null ? null : Try(() => SettlerSprites.Load(install, tables), out settlersProblem);
+        string? flamesProblem = null;
+        var flames = tables is null
+            ? null
+            : Try(() => FlameLists.Read(install.ReadAll(Install.Program)), out flamesProblem);
 
         return new HistoryEditionSource(
             terrain,
             roads,
             roadsProblem,
             objects,
-            objectsProblem,
+            objectsProblem ?? flamesProblem,
             settlers,
-            settlersProblem
+            settlersProblem,
+            flames
         );
     }
 
@@ -165,10 +175,11 @@ public sealed class HistoryEditionSource : IGraphicsSource
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => [];
+    public IReadOnlyList<Flame> Flames(BuildingType type, bool earlySite) => _flames?.Of(type, earlySite) ?? [];
 
     /// <inheritdoc />
-    public ObjectImage? Draw(FlameDraw flame) => null;
+    public ObjectImage? Draw(FlameDraw flame) =>
+        Usable(_objects?.Sprites.GetValueOrDefault(FlameLists.Entry(flame.Size, flame.Phase)));
 
     /// <inheritdoc />
     public ObjectImage? Draw(BuildMarker marker) =>
