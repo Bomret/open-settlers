@@ -43,39 +43,6 @@
     <None Include="flag-placements.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-builds.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="road-strips.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="wood-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="stone-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="fish-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="forester-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="saw-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="farm-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="saw-removals.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mill-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="busy-road-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="butcher-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="butcher-removals.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="butcher-materials.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mill-removals.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="mill-materials.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="baker-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="baker-removals.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="baker-materials.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pig-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pig-removals.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="pig-materials.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="grain-split.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="grain-split-farm.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="flag-goods.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="home-walks.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="settler-supply.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="removals.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="road-splits.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="building-sites.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="food-sites.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="construction-materials.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="construction-builder.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="construction-digger.txt" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="construction-removal.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="settler-draws.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
