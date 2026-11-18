@@ -212,13 +212,14 @@ public partial class MapViewControl(
             Food = _gameView ? _game?.CastleStock.FoodCounts ?? new int[PlayFields.Food.Length] : null,
         };
 
-    // The castle bar's text: the castle's logs, planks, stones, and each food good.
+    // The castle bar's text: the castle's logs, planks, stones, and each food good, and each added good the castle holds.
     static string CastleBar(Game game) =>
         CastleReadout.Text(
             game.CastleStock.Logs,
             game.CastleStock.Planks,
             game.CastleStock.Stones,
-            game.CastleStock.FoodCounts
+            game.CastleStock.FoodCounts,
+            CastleReadout.AddedGoods(game.CastleStock)
         );
 
     /// <summary>
