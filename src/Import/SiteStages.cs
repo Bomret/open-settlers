@@ -100,14 +100,10 @@ public static class SiteStages
         [new SitePart { Layer = SiteLayer.Finished, Fraction = progress }];
 
     /// <summary>
-    /// The drawing of the site the progress word gives: the layers of <see cref="Parts"/> drawn one over another, each taken from
-    /// <paramref name="layer"/> (null for a layer the source has no art for, which draws nothing), the images and the shadows joined. Null
-    /// where no layer has art.
+    /// The drawing of <paramref name="parts"/> (<see cref="Parts"/> or <see cref="CastleParts"/>) drawn one over another, each layer taken
+    /// from <paramref name="layer"/> (null for a layer the source has no art for, which draws nothing), the images and the shadows joined.
+    /// Null where no layer has art.
     /// </summary>
-    public static ObjectDrawing? Compose(ushort progress, Func<SiteLayer, ObjectDrawing?> layer) =>
-        Compose(Parts(progress), layer);
-
-    /// <summary>The drawing of <paramref name="parts"/> drawn one over another, as <see cref="Compose(ushort, Func{SiteLayer, ObjectDrawing?})"/> draws them.</summary>
     public static ObjectDrawing? Compose(IReadOnlyList<SitePart> parts, Func<SiteLayer, ObjectDrawing?> layer)
     {
         ObjectImage? image = null;

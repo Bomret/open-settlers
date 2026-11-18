@@ -148,6 +148,32 @@ public sealed class SiteStagesTests
     }
 
     [TestMethod]
+    public void AContentSetWithNoCastleArtDrawsNothingForTheCastleUnderConstruction()
+    {
+        var sites = new SiteDrawings((_, _) => null);
+
+        Assert.IsNull(sites.Of(BuildingType.Castle, 0x4000));
+    }
+
+    [TestMethod]
+    public void TheSiteOfAnotherBuildingFromTheTopBitAsksForTheStageAndTheFinishedLayer()
+    {
+        var asked = new System.Collections.Generic.List<SiteLayer>();
+        var sites = new SiteDrawings(
+            (_, layer) =>
+            {
+                asked.Add(layer);
+
+                return new ObjectDrawing { Image = Image(width: 2, height: 4), Shadow = null };
+            }
+        );
+
+        sites.Of(BuildingType.Sawmill, 0x8001);
+
+        CollectionAssert.AreEqual(new[] { SiteLayer.Stage, SiteLayer.Finished }, asked);
+    }
+
+    [TestMethod]
     public void AGrowingImageShowsItsBottomRowsByTheFractionOfItsHeight()
     {
         var image = Image(width: 2, height: 4, offsetY: -10);

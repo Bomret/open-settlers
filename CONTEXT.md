@@ -286,7 +286,8 @@ _Avoid_: construction site, site (alone), unfinished building
 
 **Castle under construction**
 The castle from its placement until it stands, while its first settler raises its progress word. It is no building
-site: no digger, no builder, and no planks or stones come to it.
+site: no digger, no builder, and no planks or stones come to it. The engine draws it through the site drawing types
+(`BuildingDraw.SiteProgress`, `SitePart`, `SiteLayer`, `SiteDrawings`).
 _Avoid_: castle site (a node where the castle may be placed), unfinished castle
 
 **Request**
