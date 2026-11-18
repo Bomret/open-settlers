@@ -49,7 +49,7 @@ public sealed class WorkAreaDrawsTests
               "height": [{{rows}}],
               "terrain": [{{terrain}}],
               "objects": [],
-              "castle": {"x": 10, "y": 10},
+              "castle": {"x": 10, "y": 10, "stock": {"scythe": 1, "fishing-rod": 1} },
               "buildings": [{{buildings}}]
             }
             """;
