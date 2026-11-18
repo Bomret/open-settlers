@@ -22,8 +22,8 @@ public sealed class FocusedTestsTests
         Write("src/Domain/Mill.cs", "namespace D;\npublic sealed class Mill { }\n");
         Write("tools/play-run.sh", "echo run\n");
         Write("content/open-settlers/manifest.json", "{}\n");
-        Write("tests/OpenSettlers.Tests/Needs.cs", "namespace OpenSettlers.Tests;\nstatic class Needs { }\n");
-        Write("tests/OpenSettlers.Tests/Huts.cs", "namespace OpenSettlers.Tests;\nstatic class Huts { Hut A; }\n");
+        Write("src/Domain.Tests/Needs.cs", "namespace OpenSettlers.Tests;\nstatic class Needs { }\n");
+        Write("src/Domain.Tests/Huts.cs", "namespace OpenSettlers.Tests;\nstatic class Huts { Hut A; }\n");
         Test("HutTests", "new Hut();");
         Test("HutSiteTests", "new HutSite(1);");
         Test("HelperTests", "Huts.A;");
@@ -41,7 +41,7 @@ public sealed class FocusedTestsTests
         File.WriteAllText(full, text);
     }
 
-    void Test(string name, string body, string project = "tests/OpenSettlers.Tests") =>
+    void Test(string name, string body, string project = "src/Domain.Tests") =>
         Write(
             $"{project}/{name}.cs",
             $"namespace OpenSettlers.Tests;\n[TestClass]\npublic sealed class {name}\n{{\n    void Case() {{ {body} }}\n}}\n"
@@ -62,7 +62,7 @@ public sealed class FocusedTestsTests
 
     [TestMethod]
     public void AChangedTestFileSelectsItsOwnClass() =>
-        CollectionAssert.AreEqual(Classes("HutSiteTests"), List("tests/OpenSettlers.Tests/HutSiteTests.cs"));
+        CollectionAssert.AreEqual(Classes("HutSiteTests"), List("src/Domain.Tests/HutSiteTests.cs"));
 
     [TestMethod]
     public void ASourceFileSelectsTheClassesNamingItsTypesAsAWholeWord() =>
@@ -94,7 +94,7 @@ public sealed class FocusedTestsTests
     [DataRow("Directory.Build.props")]
     [DataRow("src/Domain/OpenSettlers.Domain.csproj")]
     [DataRow("src/Generators/Place.cs")]
-    [DataRow("tests/OpenSettlers.Tests/Needs.cs")]
+    [DataRow("src/Domain.Tests/Needs.cs")]
     public void ASharedFileSelectsTheWholeSuite(string path) =>
         CollectionAssert.AreEqual(new[] { "all" }, List("docs/notes.md", path));
 
@@ -162,11 +162,11 @@ public sealed class FocusedTestsTests
         StringAssert.StartsWith(run.Stderr, "usage: ");
     }
 
-    // Every test project of the repository takes part in the selection: a *.Tests folder at the root, under tests/, under
-    // src/, or under a folder of src/.
+    // Every test project of the repository takes part in the selection: a *.Tests folder at the root, under src/, or under
+    // a folder of src/.
     [TestMethod]
     [DataRow("OpenSettlers.Tests")]
-    [DataRow("src/Domain.Tests")]
+    [DataRow("src/Import.Tests")]
     [DataRow("src/Import/Import.Tests")]
     public void AChangedTestFileOfAnotherTestProjectSelectsItsClass(string project)
     {
@@ -222,11 +222,65 @@ public sealed class FocusedTestsTests
             {
                 "dotnet test --project OpenSettlers.Tests --filter "
                     + "(ClassName=OpenSettlers.Tests.ElsewhereTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
-                "dotnet test --project tests/OpenSettlers.Tests --filter "
+                "dotnet test --project src/Domain.Tests --filter "
                     + "(ClassName=OpenSettlers.Tests.HutSiteTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
             },
             run.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries)
         );
+    }
+
+    // A class may be split across two test projects under one full name, as JobCatalogTests is.
+    [TestMethod]
+    public void AClassSplitAcrossTwoProjectsSelectsBothHalves()
+    {
+        Test("SplitTests", "new Hut();", "src/Domain.Tests");
+        Test("SplitTests", "new Hut();", "src/Import.Tests");
+        var run = RunWithStandInDotnet("src/Domain/Hut.cs");
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        var commands = run.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains(
+            "dotnet test --project src/Domain.Tests --filter "
+                + "(ClassName=OpenSettlers.Tests.HelperTests|ClassName=OpenSettlers.Tests.HutTests|ClassName=OpenSettlers.Tests.SplitTests)"
+                + "&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
+            commands
+        );
+        Assert.Contains(
+            "dotnet test --project src/Import.Tests --filter "
+                + "(ClassName=OpenSettlers.Tests.SplitTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
+            commands
+        );
+        CollectionAssert.AreEqual(Classes("HelperTests", "HutTests", "SplitTests"), List("src/Domain/Hut.cs"));
+    }
+
+    [TestMethod]
+    public void AChangedTestFileOfASplitClassSelectsTheClassInBothProjects()
+    {
+        Test("SplitTests", "new Hut();", "src/Domain.Tests");
+        Test("SplitTests", "new Hut();", "src/Import.Tests");
+        var run = RunWithStandInDotnet("src/Import.Tests/SplitTests.cs");
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "dotnet test --project src/Domain.Tests --filter "
+                    + "(ClassName=OpenSettlers.Tests.SplitTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
+                "dotnet test --project src/Import.Tests --filter "
+                    + "(ClassName=OpenSettlers.Tests.SplitTests)&TestCategory!=Install&TestCategory!=Ghidra --ignore-exit-code 8",
+            },
+            run.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        );
+    }
+
+    // The single test project of tests/ is gone, so a folder there holds no test project.
+    [TestMethod]
+    public void AFolderUnderTestsIsNoTestProject()
+    {
+        Test("StrayTests", "new Hut();", "tests/Stray.Tests");
+
+        CollectionAssert.AreEqual(Classes("HelperTests", "HutTests"), List("src/Domain/Hut.cs"));
+        Assert.DoesNotContain("StrayTests", Run("--classes").Stdout);
     }
 
     [TestMethod]
