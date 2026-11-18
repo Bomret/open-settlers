@@ -49,7 +49,7 @@ public sealed class CastleReadoutTests
         return stock;
     }
 
-    static IEnumerable<Good> StartGoodsOf(RuleTables tables) => tables.StartStock.SelectMany(row => row.Keys);
+    static IEnumerable<IReadOnlyDictionary<Good, byte>> StartGoodsOf(RuleTables tables) => tables.StartStock;
 
     static string RepositoryRoot()
     {
@@ -138,6 +138,23 @@ public sealed class CastleReadoutTests
             new[] { ("ai-token", 1) },
             CastleReadout.AddedGoods(stock, StartGoodsOf(tables)).ToArray()
         );
+    }
+
+    [TestMethod]
+    public void AGoodOnlyALaterStartStockRowNamesStaysOutOfTheBar()
+    {
+        var rows = TestProgram
+            .MadeStartStock()
+            .Select((row, at) =>
+                at == 1
+                    ? (IReadOnlyDictionary<Good, byte>)row.Append(new(TestCatalog.AiToken, 3)).ToDictionary()
+                    : row
+            )
+            .ToArray();
+        var stock = Holding(TestCatalog.WithAiToken(), TestCatalog.Names, 1);
+        stock.Add(TestCatalog.AiToken);
+
+        Assert.IsEmpty(CastleReadout.AddedGoods(stock, rows));
     }
 
     [TestMethod]
