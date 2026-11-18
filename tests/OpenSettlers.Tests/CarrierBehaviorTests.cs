@@ -223,7 +223,7 @@ public sealed class CarrierBehaviorTests
 
         Assert.IsNull(
             rig.Bench.Flags[1].Places[7].Destination,
-            "the storage search no longer goes along the cleared road, so the new good waits"
+            "the storage search does not go along the cleared road, so the new good waits"
         );
     }
 
