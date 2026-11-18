@@ -354,11 +354,14 @@ public sealed class OpenSettlersSource : IGraphicsSource
             Door => 3,
             HandsOver => 4,
             WaitsOffRoad => 5,
-            WalksFree { Trip.Purpose: BackToHut { Carrying: true } }
-            or WaitsOutStep { Then: PutsDownGood }
-            or PutsDownGood => 1,
-            _ => DrawingOf(draw.Carried) is null ? 0 : 1,
+            WalksFree { Trip.Purpose: BackToHut { Carrying: true } } => 1,
+            WaitsOutStep { Then: PutsDownGood then } => PoseOf(then.Good),
+            PutsDownGood putting => PoseOf(putting.Good),
+            _ => PoseOf(draw.Carried),
         };
+
+    // The carrying pose where the set has an image of the good, else the walking pose.
+    int PoseOf(Good good) => DrawingOf(good) is null ? 0 : 1;
 
     // The manifest's entries by key, each as its image path and anchor, checked for everything but the image file.
     static Dictionary<string, (string Path, int X, int Y)> ReadManifest(string folder)

@@ -644,6 +644,28 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
+    public void AGoodWithNoImageLaidDownOrSteppedOutWithIsNotDrawnCarried()
+    {
+        using var folder = new ContentFolder();
+        folder.Png("walks.png", "2x2:1");
+        folder.Png("carries.png", "2x2:2");
+        folder.Entries["settler/sawmiller/walks"] = ContentFolder.Entry("walks.png", "0, 0");
+        folder.Entries["settler/sawmiller/carries"] = ContentFolder.Entry("carries.png", "0, 0");
+        var source = folder.Load();
+        var wine = new Good { Name = "wine" };
+
+        var putsDown = source.Draw(Settler(new Sawmiller(), new PutsDownGood { Good = wine }))!.Image!;
+        var stepsOut = source
+            .Draw(Settler(new Sawmiller(), new WaitsOutStep { Then = new PutsDownGood { Good = wine } }))!
+            .Image!;
+        var plank = source
+            .Draw(Settler(new Sawmiller(), new PutsDownGood { Good = Good.Plank }))!
+            .Image!;
+
+        Assert.AreEqual((1, 1, 2), (putsDown.Rgba[0], stepsOut.Rgba[0], plank.Rgba[0]));
+    }
+
+    [TestMethod]
     [DataRow("good/fish")]
     [DataRow("good/shield")]
     public void AGoodKeyTheManifestLacksIsRefusedByFileAndKey(string key)
