@@ -1,24 +1,26 @@
-# The production chains on the basic content set, with no install: bread from the mill and the baker, grain from the farm to the mill, meat
-# from the pig farm and the butcher, and fish from the fisher, each reaching the castle. It needs no install and no SIEDLER_DIR. Run it with
+# The production chains on the basic content set, with no install: bread from the farm's grain through the mill and the baker, meat from
+# the pig farm and the butcher, and fish from the fisher, each reaching the castle. It needs no install and no SIEDLER_DIR. Run it with
 # seed 4455544685788642 and size 1 (picked with `mise run seed-info -- --content-set basic --seed 4455544685788642`):
 #   sh tools/play-run.sh basic-production --game-view --content-set basic --seed 4455544685788642 --size 1 --fps 10
 # On that map the castle's click places it at 15,5 (flag 16,6). Its start stock holds 16 planks, 11 stones, 3 grain, 1 flour, 1 pig, 2 meat,
 # 2 bread, and 2 fish; a lake lies east of 18,5. Sites at 18,5 (small), 18,9 and 20,12 (large) have their flags at 19,6, 19,10, and 21,13.
 #
-# What it proves and what it cannot. The castle holds 20 first settlers, 5 of them without a job (CastleRoster), and every worker without a
-# tool and every road's carrier takes one. A game's first site also turns one of the five into a settler of another job (a settler of job 3
-# joins the castle's idle ones, seen in the lists), so four are left for workers and carriers; a second large site built at once takes one more.
-# The settler supply adds a settler without a job to the castle each period from the castle's placement on, so the castle's idle settlers grow
-# as a game runs. Each chain is still played from the start stock of a game of its own, so its counts start from known values and a check of
-# one chain does not see the goods of another: the script plays four fresh games on the one seed, each started by `seed` to another seed and
-# back:
-#   1. mill and baker: the castle's grain goes over the road to the mill, its flour on to the baker, and bread back (bread 2 -> 6, grain and
-#      flour used up);
-#   2. farm and mill: the farm's grain reaches the mill, and the flour piles up past the 4 the start stock could give (flour 1 -> 6);
-#   3. butcher, then pig farm (built in turn: both sites at once leave the butcher without a settler): the pig farm's pigs reach the butcher, and meat rises past the
+# Where the settlers come from. The castle holds 20 first settlers, 5 of them without a job (CastleRoster). Every road's carrier and every
+# worker without a tool takes a settler without a job, and the sites take builders and a digger. The bread chain needs 6 settlers without a
+# job for its three roads and its three workers. The settler supply adds a settler without a job to the castle each period from the castle's
+# placement on (docs/rules/new-settlers.md); a supply settler is made a knight instead when one is owed and the castle holds a sword and a
+# shield. This seed gives the settler rate 23, a period of (60 - 23) * 50 = 1850 clock units, a new settler about every 231 ticks. In the
+# bread game the mill's, the baker's, and the farm's workers are supply settlers (indices 20, 25, and 26 in the list, past the first 20).
+#
+# The script plays three games on the one seed, each from the start stock, so its counts start from known values and a check of one chain
+# does not see the goods of another. The meat game and the fish game are each started fresh by `seed` to another seed and back:
+#   1. farm, mill, and baker in one game: the farm's grain goes to the mill, its flour to the baker, and bread to the castle. The start
+#      stock's 3 grain and 1 flour make at most 4 bread, so bread 2 can reach 6 without the farm; bread 7 proves the farm's grain. The game
+#      reaches it at about tick 16400, and the fast-forward stops at 60000 ticks, so a stall fails the run;
+#   2. butcher, then pig farm (built in turn: both sites at once leave the butcher without a settler): the pig farm's pigs reach the butcher, and meat rises past the
 #      3 the start stock could give;
-#   4. fisher: his catch reaches the castle (fish 2 -> 5).
-# So bread is proved in two games (farm to mill, mill to baker), never as one chain farm to baker. The rules are the basic set's stand-ins (ADR 0018).
+#   3. fisher: his catch reaches the castle (fish 2 -> 5).
+# The rules are the basic set's stand-ins (ADR 0018).
 expect seed = 4455544685788642
 expect size = 1
 wait 0.3
@@ -27,20 +29,28 @@ wait 0.3
 expect bread = 2
 expect flour = 1
 expect grain = 3
+button Mill
+click-tile 18 5
+button Mill
+click-tile 15 5
 button Baker
 click-tile 18 9
 button Baker
 click-tile 15 5
-button Mill
+button Farm
 click-tile 20 12
-button Mill
+button Farm
 click-tile 15 5
 wait 0.3
-expect-count building = 3
+expect-count building = 4
 button Road
 click-tile 16 6
 click-tile 17 6
 click-tile 18 6
+click-tile 19 6
+button Road
+click-tile 15 5
+button Road
 click-tile 19 6
 click-tile 19 7
 click-tile 19 8
@@ -57,55 +67,11 @@ click-tile 21 13
 button Road
 click-tile 15 5
 wait 0.3
-fast-forward until bread >= 6 max 200000
-expect bread = 6
-expect flour = 0
-expect grain = 0
+fast-forward until bread >= 7 max 60000
+expect bread >= 7
 shot bread 19 9 5 3
 dump bread
 list bread
-
-# The next game: another seed and back starts a fresh game on this seed, with its 20 first settlers and its start stock again.
-seed 1234567812345678
-wait 0.3
-seed 4455544685788642
-wait 0.3
-expect planks = 0
-click-tile 15 5
-wait 0.3
-expect flour = 1
-expect grain = 3
-button Mill
-click-tile 18 5
-button Mill
-click-tile 15 5
-button Farm
-click-tile 18 9
-button Farm
-click-tile 15 5
-wait 0.3
-expect-count building = 3
-button Road
-click-tile 16 6
-click-tile 17 6
-click-tile 18 6
-click-tile 19 6
-button Road
-click-tile 15 5
-button Road
-click-tile 19 6
-click-tile 19 7
-click-tile 19 8
-click-tile 19 9
-click-tile 19 10
-button Road
-click-tile 15 5
-wait 0.3
-fast-forward until flour >= 6 max 300000
-expect flour >= 6
-shot flour 19 8 5 3
-dump flour
-list flour
 
 # The next game: another seed and back starts a fresh game on this seed, with its 20 first settlers and its start stock again.
 seed 1234567812345678
