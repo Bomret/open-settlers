@@ -6,7 +6,7 @@ Class: legal
 Concepts: Install, Asset
 Statement: The repository contains no bytes taken from an install and no code transcribed from the game's program; tests build their fixtures in code, and rules recovered from the program are described in our own words. The stand-in rules of the basic content set are values of the project's own making. They are never read from the program (ADR 0018). A test may hold a short sequence of values observed in a run of the original, or a digest of the original's output. The test states the seed and the origin of each sequence and each digest. A test never holds a dump of the original's output.
 Breaks: silently
-Check: `RepositoryContentTests` fails on a file with the extension of an install's file types; no cheap test can tell a copied byte sequence or a transcribed routine from an original one, so reviewers check three things. Fixtures are built in code. The recovered rules in `docs/rules/` are restated, not transcribed. The basic set's stand-in values are invented.
+Check: `RepositoryContentTests` fails on a file with the extension of an install's file types among the files git would commit: the tracked files and the untracked files no ignore rule covers. It fails where git is missing or cannot list the repository. No cheap test can tell a copied byte sequence or a transcribed routine from an original one, so reviewers check three things. Fixtures are built in code. The recovered rules in `docs/rules/` are restated, not transcribed. The basic set's stand-in values are invented.
 
 ### INV-0002
 
