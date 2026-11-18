@@ -20,7 +20,7 @@ public sealed class GameOperationsTests
 
     static Layout Read(string extra)
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + extra), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
 
         return read.Layout!;
@@ -32,8 +32,8 @@ public sealed class GameOperationsTests
         classes[MapObject.Flag.Code] = 3;
         var tables = new RuleTables(
             classes,
-            TestProgram.MadeStartStock(),
-            workers: TestProgram.MadeWorkers(stonecutter: true)
+            MadeProgram.MadeStartStock(),
+            workers: MadeProgram.MadeWorkers(stonecutter: true)
         );
 
         return GameFactory.Create(tables, layout.BuildMap(), settlerSupply: supply, settlerRate: 40);

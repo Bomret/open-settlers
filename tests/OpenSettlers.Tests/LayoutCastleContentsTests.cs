@@ -7,16 +7,16 @@ namespace OpenSettlers.Tests;
 
 // The castle contents a layout's castle entry names (docs/rules/layouts.md): the goods it holds under "stock" and the settlers
 // that wait in it under "settlers". The map is flat grass and the castle stands at 10,10, as in LayoutApplyTests. The made
-// tables' woodcutter takes a fish as his tool (TestProgram.MadeWorkers).
+// tables' woodcutter takes a fish as his tool (MadeProgram.MadeWorkers).
 [TestClass]
 public sealed class LayoutCastleContentsTests
 {
     static string[] Problems(string castle) =>
-        [.. Layout.Read(LayoutTests.Text(extra: "\n\"castle\": " + castle), "t.jsonc").Problems];
+        [.. Layout.Read(LayoutText.Text(extra: "\n\"castle\": " + castle), "t.jsonc").Problems];
 
     static Layout Read(string extra)
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "t.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + extra), "t.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
 
         return read.Layout!;
@@ -26,7 +26,7 @@ public sealed class LayoutCastleContentsTests
     {
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[MapObject.Flag.Code] = 3;
-        var tables = new RuleTables(classes, TestProgram.MadeStartStock(), workers: TestProgram.MadeWorkers());
+        var tables = new RuleTables(classes, MadeProgram.MadeStartStock(), workers: MadeProgram.MadeWorkers());
 
         return GameFactory.Create(tables, layout.BuildMap(), stockLevel);
     }
@@ -126,7 +126,7 @@ public sealed class LayoutCastleContentsTests
         CollectionAssert.AreEqual(
             new[] { "t.jsonc: flags[0]: unknown key stock, an entry is {\"x\", \"y\"}" },
             Layout
-                .Read(LayoutTests.Text(extra: "\n\"flags\": [{\"x\": 1, \"y\": 1, \"stock\": {}}]"), "t.jsonc")
+                .Read(LayoutText.Text(extra: "\n\"flags\": [{\"x\": 1, \"y\": 1, \"stock\": {}}]"), "t.jsonc")
                 .Problems.ToArray()
         );
     }
@@ -274,7 +274,7 @@ public sealed class LayoutCastleContentsTests
         CollectionAssert.AreEqual(
             new[] { "t.jsonc: flags[0]: unknown key settlers, an entry is {\"x\", \"y\"}" },
             Layout
-                .Read(LayoutTests.Text(extra: "\n\"flags\": [{\"x\": 1, \"y\": 1, \"settlers\": {}}]"), "t.jsonc")
+                .Read(LayoutText.Text(extra: "\n\"flags\": [{\"x\": 1, \"y\": 1, \"settlers\": {}}]"), "t.jsonc")
                 .Problems.ToArray()
         );
     }
@@ -311,7 +311,7 @@ public sealed class LayoutCastleContentsTests
     public void SettlersBeyondTheSettlerTableAreOneProblem()
     {
         // The map of size 1 holds a table of 2000 settlers, the game one less (SettlerTable.IsFull); the castle settler is one.
-        var most = SettlerTable.SizeOf(Layout.Read(LayoutTests.Text()).Layout!.Size) - 2;
+        var most = SettlerTable.SizeOf(Layout.Read(LayoutText.Text()).Layout!.Size) - 2;
 
         Assert.IsEmpty(
             Problems("{\"x\": 10, \"y\": 10, \"settlers\": {\"jobless\": " + (most - 1) + ", \"carrier\": 1}}")
@@ -329,7 +329,7 @@ public sealed class LayoutCastleContentsTests
     public void ALayoutWithNoSizeFailsTheLoadWhateverCountItsCastleNames()
     {
         // The size is the only problem: the castle entry adds no line of its own and the count makes no settlers.
-        var text = LayoutTests
+        var text = LayoutText
             .Text(extra: "\n\"castle\": {\"x\": 10, \"y\": 10, \"settlers\": {\"jobless\": 2147483647}}")
             .Replace("\"size\": 1,", "");
 

@@ -1125,10 +1125,10 @@ public sealed class HistoryEditionSourceTests
 
         return new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             figureBases: bases,
             idleOffsets: idleOffsets,
-            jobData: TestProgram.MadeJobData()
+            jobData: MadeProgram.MadeJobData()
         );
     }
 
@@ -1242,10 +1242,10 @@ public sealed class HistoryEditionSourceTests
         offsets[2 * 4] = 1;
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             figureBases: [.. SettlerTables().Figures.Bases],
             figureOffsets: offsets,
-            jobData: TestProgram.MadeJobData()
+            jobData: MadeProgram.MadeJobData()
         );
         using var fake = SettlerFake(payloads => payloads[1951] = ObjectGraphicsTests.Sprite());
         var source = OpenWithSettlers(fake, tables);

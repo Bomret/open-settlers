@@ -22,9 +22,9 @@ public sealed class GameTests
     static Game Run(params Command[] commands)
     {
         var game = GameFactory.Create(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x6359,
@@ -75,9 +75,9 @@ public sealed class GameTests
     {
         var directions = new[] { 1, 2 };
         var game = GameFactory.Create(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x6359,

@@ -116,7 +116,7 @@ public sealed class SeedInfoTests
     public void RunningMadeUpTablesExitsZeroWithTheReportOfTheirMap()
     {
         Seed.TryParse(SeedText, out var seed, out _);
-        var expected = SeedInfo.Report(SeedText, MapOf(SeedText, 1, TestProgram.Made()));
+        var expected = SeedInfo.Report(SeedText, MapOf(SeedText, 1, MadeProgram.Made()));
 
         var code = SeedInfo.Run(FakeRuleTables.Made, SeedText, seed, MapSize.Offered[0], out var text);
 

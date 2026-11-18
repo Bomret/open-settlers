@@ -6,7 +6,7 @@ namespace OpenSettlers.Tests;
 
 // The castle's stock at a start stock level (docs/rules/castle.md): each count steps from its value in the lower row of the table
 // towards the higher row by the tenths of the level, rounded half up, less what the castle's site and first settlers take.
-// The made-up tables (TestProgram.Made) hold 10 * row + good in the entry of each good, so the rows differ by 10 everywhere and each
+// The made-up tables (MadeProgram.Made) hold 10 * row + good in the entry of each good, so the rows differ by 10 everywhere and each
 // tenth of a level adds 1: the expected counts are hand arithmetic, level 0 counting the entries of the good as they are less the
 // subtraction vector of docs/rules/castle.md (entry 7 by 7, 9 by 2, 15 by 1, 16 by 4, 17 by 1, 20 by 1, 21 by 2, 22 by 3, 24 by 3,
 // 25 by 3).
@@ -44,7 +44,7 @@ public sealed class StartStockTests
         22,
     ];
 
-    static int[] AtLevel(int level) => [.. StartStock.At(TestProgram.Made(), level)];
+    static int[] AtLevel(int level) => [.. StartStock.At(MadeProgram.Made(), level)];
 
     [TestMethod]
     public void LevelZeroTakesTheCastlesSubtractionsFromTheFirstRow()

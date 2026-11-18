@@ -22,7 +22,7 @@ public sealed class LayoutRefusalTests
 
     static string[] Problems(string text) => [.. Layout.Read(text, "t.jsonc").Problems];
 
-    static string[] Extra(string extra) => Problems(LayoutTests.Text(extra: "\n" + extra));
+    static string[] Extra(string extra) => Problems(LayoutText.Text(extra: "\n" + extra));
 
     static string Road(string directions) => $$""" "roads": [{"x": 11, "y": 11, "directions": {{directions}}}] """;
 
@@ -166,7 +166,7 @@ public sealed class LayoutRefusalTests
     [DataRow("[{\"x\": \"1\", \"y\": 1, \"code\": 8}]", "objects[0]: x, y, and code must each be a whole number")]
     public void AnObjectsEntryOfTheWrongKindIsOneProblem(string objects, string problem)
     {
-        CollectionAssert.AreEqual(new[] { "t.jsonc: " + problem }, Problems(LayoutTests.Text(objects: objects)));
+        CollectionAssert.AreEqual(new[] { "t.jsonc: " + problem }, Problems(LayoutText.Text(objects: objects)));
     }
 
     [TestMethod]
@@ -176,15 +176,15 @@ public sealed class LayoutRefusalTests
 
         CollectionAssert.AreEqual(
             new[] { $"t.jsonc: terrain: {Reason}" },
-            Problems(LayoutTests.Text(terrain: "\"g\""))
+            Problems(LayoutText.Text(terrain: "\"g\""))
         );
-        CollectionAssert.AreEqual(new[] { $"t.jsonc: terrain: {Reason}" }, Problems(LayoutTests.Text(terrain: "[3]")));
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: terrain: {Reason}" }, Problems(LayoutText.Text(terrain: "[3]")));
         CollectionAssert.AreEqual(
             new[] { $"t.jsonc: terrainLower: {Reason}" },
-            Problems(LayoutTests.Text(lower: "{}"))
+            Problems(LayoutText.Text(lower: "{}"))
         );
-        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutTests.Text(lakes: "3")));
-        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutTests.Text(lakes: "[null]")));
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutText.Text(lakes: "3")));
+        CollectionAssert.AreEqual(new[] { $"t.jsonc: lakes: {Reason}" }, Problems(LayoutText.Text(lakes: "[null]")));
     }
 
     // The whole-number spellings: the readers take a number as whole when System.Text.Json reads it as an int, so only the
@@ -196,7 +196,7 @@ public sealed class LayoutRefusalTests
     [DataRow("-0")]
     public void AWholeNumberSpellingIsRead(string x)
     {
-        Assert.IsEmpty(Problems(LayoutTests.Text(objects: $$"""[{"x": {{x}}, "y": 1, "code": 8}]""")));
+        Assert.IsEmpty(Problems(LayoutText.Text(objects: $$"""[{"x": {{x}}, "y": 1, "code": 8}]""")));
     }
 
     [TestMethod]
@@ -211,7 +211,7 @@ public sealed class LayoutRefusalTests
     {
         CollectionAssert.AreEqual(
             new[] { "t.jsonc: objects[0]: x, y, and code must each be a whole number" },
-            Problems(LayoutTests.Text(objects: $$"""[{"x": {{x}}, "y": 1, "code": 8}]"""))
+            Problems(LayoutText.Text(objects: $$"""[{"x": {{x}}, "y": 1, "code": 8}]"""))
         );
     }
 }

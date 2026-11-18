@@ -54,7 +54,7 @@ public sealed class RuleTablesShapeTests
     static RuleTables Distinct() =>
         new(
             [.. Enumerable.Range(0, RuleTables.ClassCount).Select(i => (ObjectClass)(i % 4))],
-            TestProgram.MadeStartStock(),
+            MadeProgram.MadeStartStock(),
             stepTimes: [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => (ushort)(1000 + i))],
             doorSpeeds: [.. Enumerable.Range(0, RuleTables.DoorSpeedCount).Select(i => (byte)(100 + i))],
             scanWindows: [.. Enumerable.Range(0, RuleTables.ScanWindowCount).Select(i => (ushort)(300 + i))],
@@ -95,7 +95,7 @@ public sealed class RuleTablesShapeTests
     [TestMethod]
     public void TheStartStockHoldsTheGoodsOfEachRowAtTheLevels0To40()
     {
-        var tables = TestProgram.Made();
+        var tables = MadeProgram.Made();
 
         Assert.AreEqual(RuleTables.StartStockRows, tables.StartStock.Length);
         for (var row = 0; row < RuleTables.StartStockRows; row++)
@@ -148,7 +148,7 @@ public sealed class RuleTablesShapeTests
     [TestMethod]
     public void TheStartStockIsCopiedAndHoldsNoRowOfTheCaller()
     {
-        var rows = TestProgram.MadeStartStock();
+        var rows = MadeProgram.MadeStartStock();
         var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows);
         rows[2][4] = 99;
 
@@ -158,7 +158,7 @@ public sealed class RuleTablesShapeTests
     [TestMethod]
     public void AStartStockRowPastTheLastIsNoRow()
     {
-        var tables = TestProgram.Made();
+        var tables = MadeProgram.Made();
 
         Assert.ThrowsExactly<IndexOutOfRangeException>(() => tables.StartStock[RuleTables.StartStockRows]);
     }

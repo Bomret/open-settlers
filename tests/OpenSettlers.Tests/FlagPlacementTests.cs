@@ -144,12 +144,12 @@ public sealed class FlagPlacementTests
     public void AFlagIsRefusedBeforeTheCastleStandsAndOutsideTheMapAndForAnotherPlayer()
     {
         var game = GameFactory.Create(
-            TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+            MadeProgram.Made(),
+            MapGenerator.Generate(MadeProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
         var fresh = GameFactory.Create(
-            TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
+            MadeProgram.Made(),
+            MapGenerator.Generate(MadeProgram.Made(), ParseSeed("1234,5678,9ABC"), MapSize.Offered[0])
         );
         game.Enqueue(
             new Command
@@ -327,8 +327,8 @@ public sealed class FlagPlacementTests
     static Game GameWithCastle(int x = 15, int y = 5, string seed = "1234,5678,9ABC")
     {
         var game = GameFactory.Create(
-            TestProgram.Made(),
-            MapGenerator.Generate(TestProgram.Made(), ParseSeed(seed), MapSize.Offered[0])
+            MadeProgram.Made(),
+            MapGenerator.Generate(MadeProgram.Made(), ParseSeed(seed), MapSize.Offered[0])
         );
         game.Enqueue(
             new Command
@@ -346,7 +346,7 @@ public sealed class FlagPlacementTests
     }
 
     static bool Allows(Game game, int x, int y) =>
-        BuildSite.Evaluate(TestProgram.Made(), game.Map, x, y, 0, hasCastle: true).AllowsFlag;
+        BuildSite.Evaluate(MadeProgram.Made(), game.Map, x, y, 0, hasCastle: true).AllowsFlag;
 
     // The first node, in row-major order, where the flag button puts a flag.
     static (int X, int Y) FirstFlagSite(Game game) =>

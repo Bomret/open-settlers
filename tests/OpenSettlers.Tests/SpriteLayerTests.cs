@@ -27,7 +27,7 @@ public sealed class SpriteLayerTests
         var pair = SettlerPair.Of(install, tables);
         var source = HistoryEditionSource.Load(install, tables);
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

@@ -84,7 +84,7 @@ public sealed class CheckedInLayoutsTests
     [TestMethod]
     public void ALayoutWhoseEntryTheGameRefusesIsAProblemNamingTheFileAndEntry()
     {
-        var text = LayoutTests.Text(
+        var text = LayoutText.Text(
             extra: "\n\"castle\": {\"x\": 10, \"y\": 10}, \"buildings\": [{\"x\": 0, \"y\": 0}]"
         );
 

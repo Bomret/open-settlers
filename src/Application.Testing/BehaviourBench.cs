@@ -1,20 +1,21 @@
 using System;
 using System.Collections.Generic;
 using OpenSettlers.Domain;
+using OpenSettlers.Domain.Testing;
 using OpenSettlers.Simulation;
 
-namespace OpenSettlers.Tests;
+namespace OpenSettlers.Application.Testing;
 
 // The pieces a settler behaviour is built from, made by hand: the map, the item tables, the movement, a history, and a fixed
 // sequence of random draws. A test builds a behaviour from them and runs its turns without a castle or a game.
-sealed class BehaviourBench
+public sealed class BehaviourBench
 {
     public BehaviourBench(params ushort[] draws)
         : this((byte[]?)null, draws) { }
 
     // The tables hold the made-up transport priorities (index good - 1), or all 0 for none.
     public BehaviourBench(byte[]? transportPriorities, params ushort[] draws)
-        : this(LayoutSettlersTests.MadeTables(transportPriorities: transportPriorities), draws) { }
+        : this(MadeProgram.MadeTables(transportPriorities: transportPriorities), draws) { }
 
     // The rule tables are the given ones: a test of the materials that reach a building site gives tables that name the goods' classes.
     public BehaviourBench(RuleTables tables, params ushort[] draws)
@@ -75,10 +76,13 @@ sealed class BehaviourBench
         var end = Flags[to].Side(back);
         start.SetLength(length, carrierOnTheWay: false);
         end.SetLength(length, carrierOnTheWay: false);
-        start.FarDirection = back;
-        end.FarDirection = direction;
-        start.HoldsCarrier = carrier;
-        end.HoldsCarrier = carrier;
+        start.TakeRoad(back);
+        end.TakeRoad(direction);
+        if (carrier)
+        {
+            start.HoldCarrier();
+            end.HoldCarrier();
+        }
 
         return road;
     }
@@ -94,7 +98,7 @@ sealed class BehaviourBench
     }
 }
 
-sealed class QueuedDraws(ushort[] draws) : IRandomDraws
+public sealed class QueuedDraws(ushort[] draws) : IRandomDraws
 {
     readonly Queue<ushort> _draws = new(draws);
 
@@ -112,7 +116,7 @@ sealed class QueuedDraws(ushort[] draws) : IRandomDraws
     }
 }
 
-sealed class NoSnapshots : IThingSnapshots
+public sealed class NoSnapshots : IThingSnapshots
 {
     public ThingState Building(int slot) => new() { Fields = [] };
 

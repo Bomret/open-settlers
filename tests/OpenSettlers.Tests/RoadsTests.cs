@@ -33,7 +33,7 @@ public sealed class RoadsTests
     internal static Game TwoFlags()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -191,7 +191,7 @@ public sealed class RoadsTests
         var fresh = GameFactory.Create(
             Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,
@@ -251,7 +251,7 @@ public sealed class RoadsTests
         var freshSame = GameFactory.Create(
             Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,

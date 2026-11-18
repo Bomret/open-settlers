@@ -1,50 +1,13 @@
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenSettlers.Simulation;
+using static OpenSettlers.Testing.LayoutText;
 
 namespace OpenSettlers.Tests;
 
 [TestClass]
 public sealed class LayoutTests
 {
-    const string Seed = "1234567812345678";
-
-    // A grid of 32 rows with one row replaced; rows[y] is the replacement text of row y.
-    static string Grid(char fill, params (int Row, string Text)[] rows) =>
-        "["
-        + string.Join(
-            ", ",
-            Enumerable
-                .Range(0, 32)
-                .Select(y => $"\"{rows.FirstOrDefault(r => r.Row == y).Text ?? new string(fill, 32)}\"")
-        )
-        + "]";
-
-    static string Row(char fill, int at, char with) => new string(fill, at) + with + new string(fill, 31 - at);
-
-    internal static string Text(
-        string size = "1",
-        string? height = null,
-        string? terrain = null,
-        string? lower = null,
-        string? lakes = null,
-        string objects = "[]",
-        string seed = $"\"{Seed}\"",
-        string extra = ""
-    ) =>
-        $$"""
-            // a drawn map
-            {
-              "size": {{size}},
-              "seed": {{seed}},
-              "height": {{height ?? Grid('1')}},
-              "terrain": {{terrain ?? Grid('g')}},
-              {{(lower is null ? "" : $"\"terrainLower\": {lower},")}}
-              {{(lakes is null ? "" : $"\"lakes\": {lakes},")}}
-              "objects": {{objects}},{{extra}}
-            }
-            """;
-
     static Map Built(string text)
     {
         var read = Layout.Read(text, "test.jsonc");
@@ -101,7 +64,7 @@ public sealed class LayoutTests
             .Range(first, 200)
             .Select(word =>
                 MapGenerator.Generate(
-                    TestProgram.Made(),
+                    MadeProgram.Made(),
                     new MapSeed
                     {
                         W0 = (ushort)word,
@@ -294,7 +257,7 @@ public sealed class LayoutTests
 
     static Game Played(string text, int ticks)
     {
-        var game = GameFactory.Create(TestProgram.Made(), Built(text));
+        var game = GameFactory.Create(MadeProgram.Made(), Built(text));
         for (var i = 0; i < ticks; i++)
         {
             game.Tick();
@@ -324,10 +287,10 @@ public sealed class LayoutTests
     [TestMethod]
     public void TheGamesRandomGeneratorStartsWhereTheMapGeneratorLeavesItForTheSeed()
     {
-        OpenSettlers.Simulation.Seed.TryParse(Seed, out var seed, out _);
+        OpenSettlers.Simulation.Seed.TryParse(LayoutText.Seed, out var seed, out _);
         var words = seed.ToMapSeed();
 
-        var game = GameFactory.Create(TestProgram.Made(), Built(Text()));
+        var game = GameFactory.Create(MadeProgram.Made(), Built(Text()));
 
         Assert.AreEqual(
             new RandomGenerator

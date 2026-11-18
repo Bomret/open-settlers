@@ -27,7 +27,7 @@ public sealed class LayoutLoadTests
         try
         {
             var bad = System.IO.Path.Combine(folder, "bad.jsonc");
-            System.IO.File.WriteAllText(bad, LayoutTests.Text(size: "9"));
+            System.IO.File.WriteAllText(bad, LayoutText.Text(size: "9"));
 
             var code = LayoutLoad.Run(bad, out var layout, out var message);
 
@@ -48,7 +48,7 @@ public sealed class LayoutLoadTests
         try
         {
             var good = System.IO.Path.Combine(folder, "good.jsonc");
-            System.IO.File.WriteAllText(good, LayoutTests.Text());
+            System.IO.File.WriteAllText(good, LayoutText.Text());
 
             var code = LayoutLoad.Run(good, out var layout, out var message);
 
@@ -99,7 +99,7 @@ public sealed class LayoutLoadTests
         try
         {
             var bad = System.IO.Path.Combine(folder, "bad.jsonc");
-            System.IO.File.WriteAllText(bad, LayoutTests.Text(size: "9", seed: "5"));
+            System.IO.File.WriteAllText(bad, LayoutText.Text(size: "9", seed: "5"));
 
             var code = LayoutLoad.Run(bad, out _, out var message);
 
@@ -114,13 +114,13 @@ public sealed class LayoutLoadTests
         }
     }
 
-    static Game NewGame(Layout layout) => GameFactory.Create(TestProgram.Made(), layout.BuildMap());
+    static Game NewGame(Layout layout) => GameFactory.Create(MadeProgram.Made(), layout.BuildMap());
 
     [TestMethod]
     public void AStartWithARefusedEntryExitsFourWithTheFullMessageAndNoGame()
     {
         var layout = Layout
-            .Read(LayoutTests.Text(extra: "\n\"flags\": [{\"x\": 14, \"y\": 11}]"), "test.jsonc")
+            .Read(LayoutText.Text(extra: "\n\"flags\": [{\"x\": 14, \"y\": 11}]"), "test.jsonc")
             .Layout!;
 
         var code = LayoutLoad.Start(layout, NewGame(layout), out var game, out var message);
@@ -137,7 +137,7 @@ public sealed class LayoutLoadTests
     [TestMethod]
     public void AStartWithABuiltLayoutGivesTheGameWithExitZero()
     {
-        var layout = Layout.Read(LayoutTests.Text(extra: "\n\"castle\": {\"x\": 10, \"y\": 10}"), "test.jsonc").Layout!;
+        var layout = Layout.Read(LayoutText.Text(extra: "\n\"castle\": {\"x\": 10, \"y\": 10}"), "test.jsonc").Layout!;
         var made = NewGame(layout);
 
         var code = LayoutLoad.Start(layout, made, out var game, out var message);
@@ -151,7 +151,7 @@ public sealed class LayoutLoadTests
     [TestMethod]
     public void AStartWithNoLayoutGivesTheGameUntouched()
     {
-        var made = GameFactory.Create(TestProgram.Made(), Layout.Read(LayoutTests.Text(), "t").Layout!.BuildMap());
+        var made = GameFactory.Create(MadeProgram.Made(), Layout.Read(LayoutText.Text(), "t").Layout!.BuildMap());
 
         var code = LayoutLoad.Start(null, made, out var game, out _);
 

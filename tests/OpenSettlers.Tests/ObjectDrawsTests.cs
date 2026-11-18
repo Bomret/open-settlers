@@ -15,7 +15,7 @@ public sealed class ObjectDrawsTests
     {
         // Emulator: site:1:1234,5678,9ABC lists 15,5 as a castle site of height 15; its flag stands at 16,6 on height 15.
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -24,7 +24,7 @@ public sealed class ObjectDrawsTests
             },
             MapSize.Offered[0]
         );
-        var game = GameFactory.Create(TestProgram.Made(), map);
+        var game = GameFactory.Create(MadeProgram.Made(), map);
         game.Enqueue(
             new Command
             {
@@ -181,7 +181,7 @@ public sealed class ObjectDrawsTests
         // The hut at 16,2 stands tied to the flag at 17,3 (the road test world of HutTests); its node's height is read from
         // the map: x = 16 * 32 - 2 * 16, y = 2 * 20 - height * 4.
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -192,7 +192,7 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -240,7 +240,7 @@ public sealed class ObjectDrawsTests
     public void ABuildingSiteIsDrawnAtItsNodeWithItsProgressAndAFinishedBuildingWithNone()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -253,7 +253,7 @@ public sealed class ObjectDrawsTests
         classes[1] = 3;
         var sizes = Enumerable.Repeat((byte)1, RuleTables.BuildingTypeCount).ToArray();
         sizes[BuildingType.Sawmill.Code] = 2;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock(), buildingSizes: sizes), map);
+        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock(), buildingSizes: sizes), map);
         game.Enqueue(
             new Command
             {
@@ -311,7 +311,7 @@ public sealed class ObjectDrawsTests
     public void AFinishedBuildingOfEachTypeIsDrawnWithItsType()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -322,7 +322,7 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -477,7 +477,7 @@ public sealed class ObjectDrawsTests
     {
         // The castle at 15,5 with its flag at 16,6 (goods on it), and the hut at 16,2 tied to the flag at 17,3.
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -488,7 +488,7 @@ public sealed class ObjectDrawsTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -765,7 +765,7 @@ public sealed class ObjectDrawsTests
 
     static Map MadeMap() =>
         MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

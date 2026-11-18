@@ -24,7 +24,7 @@ public sealed class BuildMarkerDrawsTests
     static Game Game(bool applied)
     {
         var layout = Woodcutter();
-        var game = LayoutSettlersTests.NewGame(layout);
+        var game = LayoutGames.NewGame(layout);
         if (applied)
         {
             Assert.IsNull(layout.Apply(game));

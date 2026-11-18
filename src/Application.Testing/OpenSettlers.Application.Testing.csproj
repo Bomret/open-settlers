@@ -1,0 +1,11 @@
+<Project Sdk="MSTest.Sdk">
+  <PropertyGroup>
+    <!-- The helpers of the tests that name the application's types. It references the application and the helpers of the
+         domain, and holds no test (INV-0012). -->
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Application/OpenSettlers.Application.csproj" />
+    <ProjectReference Include="../Domain.Testing/OpenSettlers.Domain.Testing.csproj" />
+  </ItemGroup>
+</Project>

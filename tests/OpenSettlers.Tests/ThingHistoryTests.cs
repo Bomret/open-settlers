@@ -30,14 +30,14 @@ public sealed class ThingHistoryTests
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: TestProgram.MadeWorkers()
+            workers: MadeProgram.MadeWorkers()
         );
     }
 
     internal static Game NewGame()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -369,9 +369,9 @@ public sealed class ThingHistoryTests
 
     internal static Game Laid(string extra = Built)
     {
-        var read = Layout.Read(LayoutTests.Text(extra: "\n" + extra), "test.jsonc");
+        var read = Layout.Read(LayoutText.Text(extra: "\n" + extra), "test.jsonc");
         Assert.AreEqual(0, read.Problems.Count, string.Join("; ", read.Problems));
-        var game = LayoutSettlersTests.NewGame(read.Layout!);
+        var game = LayoutGames.NewGame(read.Layout!);
         Assert.IsNull(read.Layout!.Apply(game));
 
         return game;
@@ -417,7 +417,7 @@ public sealed class ThingHistoryTests
     }
 
     static List<string> Lines(Game game) =>
-        [.. Thing.Of(game, new NameTable(TestProgram.Made())).Select(thing => thing.Line())];
+        [.. Thing.Of(game, new NameTable(MadeProgram.Made())).Select(thing => thing.Line())];
 
     [TestMethod]
     public void EveryFlagLineEndsWithItsId()

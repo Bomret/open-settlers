@@ -27,10 +27,10 @@ public sealed class ThingHistorySettlersTests
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            workers: TestProgram.MadeWorkers()
+            workers: MadeProgram.MadeWorkers()
         );
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

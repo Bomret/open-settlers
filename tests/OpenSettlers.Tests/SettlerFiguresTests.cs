@@ -178,7 +178,7 @@ public sealed class SettlerFiguresTests
         new(
             new RuleTables(
                 new ObjectClass[RuleTables.ClassCount],
-                TestProgram.MadeStartStock(),
+                MadeProgram.MadeStartStock(),
                 figureBases: bases,
                 figureOffsets: offsets,
                 carriedFigures: carried ?? [],
@@ -378,7 +378,7 @@ public sealed class SettlerFiguresTests
 
     static Map Map() =>
         MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

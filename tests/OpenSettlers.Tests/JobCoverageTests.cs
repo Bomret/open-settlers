@@ -63,7 +63,7 @@ public sealed class JobCoverageTests
         {
             [HistoryEdition] =
             [
-                .. HistoryEditionLookRegistry.Build(TestProgram.Made()).Select(look => look.Job.GetType()),
+                .. HistoryEditionLookRegistry.Build(MadeProgram.Made()).Select(look => look.Job.GetType()),
                 .. extra,
             ],
             [ContentSet] = [.. OpenSettlersLookRegistry.Build().Select(look => look.Job.GetType()), .. extra],

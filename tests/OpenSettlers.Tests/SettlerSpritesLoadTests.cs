@@ -46,7 +46,7 @@ public sealed class SettlerSpritesLoadTests
     }
 
     // The rule tables are read only after the three entries, so a load that fails on an entry never reaches them.
-    static RuleTables Tables() => new(new ObjectClass[RuleTables.ClassCount], TestProgram.MadeStartStock());
+    static RuleTables Tables() => new(new ObjectClass[RuleTables.ClassCount], MadeProgram.MadeStartStock());
 
     static InvalidDataException Refused(Dictionary<int, byte[]> payloads)
     {

@@ -45,7 +45,7 @@ public sealed class WoodcuttingTests
             [.. Enumerable.Repeat((byte)8, RuleTables.DoorSpeedCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            workers: workers ?? TestProgram.MadeWorkers()
+            workers: workers ?? MadeProgram.MadeWorkers()
         );
     }
 
@@ -69,7 +69,7 @@ public sealed class WoodcuttingTests
     internal static Game World(bool trees, out Map map)
     {
         map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -263,7 +263,7 @@ public sealed class WoodcuttingTests
     public void TheWorkersDrawsComeFromTheGamesGeneratorAndShowInTheDigest()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -281,7 +281,7 @@ public sealed class WoodcuttingTests
         var same = GameFactory.Create(
             Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,
@@ -294,7 +294,7 @@ public sealed class WoodcuttingTests
         Assert.AreEqual(game.Digest(), same.Digest());
 
         var other = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

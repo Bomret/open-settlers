@@ -52,7 +52,7 @@ public sealed class ForestryTests
     {
         var hut = type ?? BuildingType.Forester;
         var made = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

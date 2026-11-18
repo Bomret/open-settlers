@@ -44,7 +44,7 @@ public sealed class RemovalLogicTests
     static Game World(byte capacity = 8, bool hut = true, byte[]? transportPriorities = null)
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

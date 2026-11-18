@@ -159,9 +159,9 @@ public sealed class PlayStateTests
     public void AGameViewDumpEndsItsGameFieldsWithTheGamesDigest()
     {
         var game = GameFactory.Create(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x6359,
@@ -271,9 +271,9 @@ public sealed class PlayStateTests
         static string Dump()
         {
             var game = GameFactory.Create(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 MapGenerator.Generate(
-                    TestProgram.Made(),
+                    MadeProgram.Made(),
                     new MapSeed
                     {
                         W0 = 0x6359,
@@ -317,9 +317,9 @@ public sealed class PlayStateTests
     public void AGameWithNoCastleHoldsNoLogs()
     {
         var game = GameFactory.Create(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x6359,

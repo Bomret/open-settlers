@@ -268,9 +268,9 @@ public sealed class FlagGoodsTests
     public void AGoodOnAFlagWithNoCarrierWaitsAndTheFlagAsksAgainAtEachTurn()
     {
         var game = GameFactory.Create(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             MapGenerator.Generate(
-                TestProgram.Made(),
+                MadeProgram.Made(),
                 new MapSeed
                 {
                     W0 = 0x1234,

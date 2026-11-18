@@ -16,7 +16,7 @@ public sealed class RoadLoopTests
     static Game Started()
     {
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,

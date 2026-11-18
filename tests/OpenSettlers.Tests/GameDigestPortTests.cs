@@ -22,7 +22,7 @@ public sealed class GameDigestPortTests
     [TestMethod]
     public void TheDigestOfTheGameIsWhatTheDigestPortGivesForTheGame()
     {
-        var tables = TestProgram.Made();
+        var tables = MadeProgram.Made();
         var map = MapGenerator.Generate(
             tables,
             new MapSeed
@@ -43,7 +43,7 @@ public sealed class GameDigestPortTests
     [TestMethod]
     public void TheDigestOfTheGameThePortBuildsFollowsTheCommandsApplied()
     {
-        var tables = TestProgram.Made();
+        var tables = MadeProgram.Made();
         Game Make() =>
             GameFactory.Create(
                 tables,

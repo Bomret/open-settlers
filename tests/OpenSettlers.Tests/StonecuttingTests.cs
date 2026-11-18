@@ -51,7 +51,7 @@ public sealed class StonecuttingTests
     internal static Game World(byte? heap, out Map map, RuleTables? tables = null, bool everyPass = false)
     {
         var made = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -215,7 +215,7 @@ public sealed class StonecuttingTests
         var needs = new byte[2 * RuleTables.BuildingTypeCount];
         needs[(2 * BuildingType.Forester.Code) + 1] = 2;
 
-        return LayoutSettlersTests.MadeTables(
+        return MadeProgram.MadeTables(
             buildingClass: 4,
             transportPriorities: [.. Enumerable.Range(1, RuleTables.Goods).Select(good => (byte)good)],
             buildingSizes: ConstructionTables.Sizes(),

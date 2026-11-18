@@ -14,7 +14,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void OpeningGeneratesTheMapOfTheGivenSeedAndSize()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
 
         Assert.IsNotNull(state.Map);
         Assert.AreEqual(32, state.Map.Size.Width);
@@ -25,7 +25,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void AValidNewSeedRegeneratesTheMap()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
         var first = state.Map;
 
         var changed = state.Apply("8765432187654321", 1);
@@ -38,7 +38,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void TheAppliedSeedTypedInGroupsDoesNotRegenerate()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
 
         var changed = state.Apply("1234 5678 1234 5678", 1);
 
@@ -48,7 +48,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void ANewSizeRegeneratesTheMap()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
 
         var changed = state.Apply(Seed, 2);
 
@@ -60,7 +60,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void TheSameSeedAndSizeKeepTheMap()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
         var first = state.Map;
 
         Assert.IsFalse(state.Apply(Seed, 1));
@@ -70,7 +70,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void AnInvalidSeedShowsItsReasonAndKeepsTheLastMap()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
         var first = state.Map;
 
         var changed = state.Apply("12345678123456", 2);
@@ -85,7 +85,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void AValidChangeClearsTheProblem()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
         state.Apply("9", 1);
 
         state.Apply("8765432187654321", 1);
@@ -96,7 +96,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void ASizeTheOriginalDoesNotOfferKeepsTheLastMap()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
         var first = state.Map;
 
         Assert.IsFalse(state.Apply(Seed, 9));
@@ -107,7 +107,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void TheStockLevelIsThatOfTheAppliedSeed()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
 
         // The screen seed 1234567812345678 is the free-game seed 3905,0577,7739, whose level the emulator gave as 2
         // (opponents:3905,0577,7739).
@@ -117,7 +117,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void TheSettlerRateIsThatOfTheAppliedSeed()
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
 
         // The free-game seed 3905,0577,7739 opens the screen with the rate 16 (opponents:3905,0577,7739, byte +0x37c).
         Assert.AreEqual(16, state.SettlerRate);
@@ -126,7 +126,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void OpeningWithAnInvalidSeedHasNoMapAndAReason()
     {
-        var state = MapViewState.Open(TestProgram.Made(), "0000000000000000", 1);
+        var state = MapViewState.Open(MadeProgram.Made(), "0000000000000000", 1);
 
         Assert.IsNull(state.Map);
         StringAssert.Contains(state.Problem, "'0'");
@@ -158,7 +158,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void OpeningOnASeedWithNoLandHoldsNoMapAndNamesTheGeneratorsReason()
     {
-        var state = MapViewState.Open(TestProgram.Made(), NoLandSeed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), NoLandSeed, 1);
 
         Assert.IsNull(state.Map);
         Assert.AreEqual(NoLandProblem, state.Problem);
@@ -169,7 +169,7 @@ public sealed class MapViewStateTests
     [DataRow(2)]
     public void ASeedWithNoLandKeepsTheLastMapItsSeedAndSize(int sizeValue)
     {
-        var state = MapViewState.Open(TestProgram.Made(), Seed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), Seed, 1);
         var first = state.Map;
 
         var changed = state.Apply(NoLandSeed, sizeValue);
@@ -184,7 +184,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void ASeedWithNoLandTypedAgainAfterARefusedOpeningIsRefusedAgain()
     {
-        var state = MapViewState.Open(TestProgram.Made(), NoLandSeed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), NoLandSeed, 1);
 
         var changed = state.Apply(NoLandSeed, 1);
 
@@ -196,7 +196,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void AValidSeedAfterARefusedSeedWithNoLandGeneratesItsMapAndClearsTheReason()
     {
-        var state = MapViewState.Open(TestProgram.Made(), NoLandSeed, 1);
+        var state = MapViewState.Open(MadeProgram.Made(), NoLandSeed, 1);
 
         var changed = state.Apply(Seed, 1);
 
@@ -209,7 +209,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void OpeningOnALayoutHoldsTheMapItDrawsAndItsSeed()
     {
-        var layout = Layout.Read(LayoutTests.Text(objects: """[{"x": 7, "y": 2, "code": 8}]""")).Layout!;
+        var layout = Layout.Read(LayoutText.Text(objects: """[{"x": 7, "y": 2, "code": 8}]""")).Layout!;
 
         var state = MapViewState.OpenLayout(layout);
 
@@ -225,7 +225,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void OpeningOnALayoutWithUnreadableRuleTablesDrawsNoMapAndNamesTheProblem()
     {
-        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+        var layout = Layout.Read(LayoutText.Text()).Layout!;
 
         var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
 
@@ -236,7 +236,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void ApplyingOnALayoutWithUnreadableRuleTablesKeepsTheFileAndKeyInTheProblem()
     {
-        var layout = Layout.Read(LayoutTests.Text()).Layout!;
+        var layout = Layout.Read(LayoutText.Text()).Layout!;
         var state = MapViewState.OpenLayout(layout, "rules/jobs.jsonc: jobs.builder.tool: unknown good");
 
         state.Apply("abc", layout.Size.Value);
@@ -248,7 +248,7 @@ public sealed class MapViewStateTests
     [TestMethod]
     public void ALayoutStateRefusesANewSeedAndKeepsItsMap()
     {
-        var state = MapViewState.OpenLayout(Layout.Read(LayoutTests.Text()).Layout!);
+        var state = MapViewState.OpenLayout(Layout.Read(LayoutText.Text()).Layout!);
         var map = state.Map;
 
         Assert.IsFalse(state.Apply("8765432187654321", 2));

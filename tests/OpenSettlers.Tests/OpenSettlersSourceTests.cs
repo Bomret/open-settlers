@@ -1750,7 +1750,7 @@ public sealed class OpenSettlersSourceTests
     {
         var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
@@ -1761,7 +1761,7 @@ public sealed class OpenSettlersSourceTests
         );
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
-        var game = GameFactory.Create(new RuleTables(classes, TestProgram.MadeStartStock()), map);
+        var game = GameFactory.Create(new RuleTables(classes, MadeProgram.MadeStartStock()), map);
         game.Enqueue(
             new Command
             {
@@ -1930,7 +1930,7 @@ public sealed class OpenSettlersSourceTests
     {
         var source = OpenSettlersSource.Load(RepoPath("content/basic"), new HeaderDecoder());
         var map = MapGenerator.Generate(
-            TestProgram.Made(),
+            MadeProgram.Made(),
             new MapSeed
             {
                 W0 = 0x1234,
