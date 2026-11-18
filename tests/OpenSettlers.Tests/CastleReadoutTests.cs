@@ -67,15 +67,27 @@ public sealed class CastleReadoutTests
 
     // The rule of the bar rests on this: each content set lists every good it has in each row of its start stock, zeros included.
     [TestMethod]
-    public void EveryStartStockRowOfEachContentSetListsEveryGoodOfItsCatalog()
+    public void EveryStartStockRowOfTheBasicSetAndTheMadeTablesListsEveryGoodOfItsCatalog()
     {
         foreach (var tables in new[] { Basic(), TestProgram.Made() })
         {
-            var names = tables.Catalog.Goods.Select(entry => entry.Name).Order().ToArray();
-            foreach (var row in tables.StartStock)
-            {
-                CollectionAssert.AreEqual(names, row.Keys.Select(good => good.Name).Order().ToArray());
-            }
+            AssertEveryRowListsEveryGood(tables);
+        }
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void EveryStartStockRowOfTheInstallListsEveryGoodOfItsCatalog()
+    {
+        AssertEveryRowListsEveryGood(TestProgram.Tables());
+    }
+
+    static void AssertEveryRowListsEveryGood(RuleTables tables)
+    {
+        var names = tables.Catalog.Goods.Select(entry => entry.Name).Order().ToArray();
+        foreach (var row in tables.StartStock)
+        {
+            CollectionAssert.AreEqual(names, row.Keys.Select(good => good.Name).Order().ToArray());
         }
     }
 
