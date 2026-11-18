@@ -29,7 +29,7 @@ public sealed class RemovalLogicTests
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             roadCapacities: [.. Enumerable.Repeat(capacity, RuleTables.RoadCapacityCount)],
-            goods: TestCatalog.Of(transportPriorities, kinds: kinds, buildings: TestCatalog.Buildings(door: 8)),
+            catalog: TestCatalog.Of(transportPriorities, kinds: kinds, buildings: TestCatalog.Buildings(door: 8)),
             noBuildingDoor: 8
         );
     }

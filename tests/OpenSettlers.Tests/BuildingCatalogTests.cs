@@ -168,7 +168,7 @@ public sealed class BuildingCatalogTests
             .Where(entry => entry.Name != omit)
             .Select(entry => codeless ? entry with { OriginalCode = null } : entry);
         var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn(buildings)),
+            new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn(buildings)),
             layout.BuildMap()
         );
         problem = layout.Apply(game);

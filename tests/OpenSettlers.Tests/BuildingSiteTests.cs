@@ -56,7 +56,7 @@ public sealed class BuildingSiteTests
             classes,
             TestProgram.MadeStartStock(),
             jobData: TestProgram.MadeJobData(),
-            goods: TestCatalog.StandIn(
+            catalog: TestCatalog.StandIn(
                 TestCatalog.Buildings(sizes: sizes, needs: needs, workers: TestProgram.MadeWorkers())
             )
         );

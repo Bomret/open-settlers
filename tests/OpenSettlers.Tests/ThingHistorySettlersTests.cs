@@ -20,7 +20,7 @@ public sealed class ThingHistorySettlersTests
             TestProgram.MadeStartStock(),
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-            goods: TestCatalog.WithDoors(TestProgram.MadeWorkers()),
+            catalog: TestCatalog.WithDoors(TestProgram.MadeWorkers()),
             noBuildingDoor: 8
         );
         var map = MapGenerator.Generate(

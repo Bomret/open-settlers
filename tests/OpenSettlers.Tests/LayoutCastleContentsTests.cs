@@ -29,7 +29,7 @@ public sealed class LayoutCastleContentsTests
         var tables = new RuleTables(
             classes,
             TestProgram.MadeStartStock(),
-            goods: TestCatalog.StandIn(TestCatalog.Buildings(workers: TestProgram.MadeWorkers()))
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(workers: TestProgram.MadeWorkers()))
         );
 
         return GameFactory.Create(tables, layout.BuildMap(), stockLevel);

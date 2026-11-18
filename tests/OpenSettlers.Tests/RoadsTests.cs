@@ -18,7 +18,7 @@ public sealed class RoadsTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
 
-        return new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn());
+        return new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn());
     }
 
     internal static Game TwoFlags()

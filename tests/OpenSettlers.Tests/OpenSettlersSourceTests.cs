@@ -1797,7 +1797,7 @@ public sealed class OpenSettlersSourceTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
             map
         );
         game.Enqueue(

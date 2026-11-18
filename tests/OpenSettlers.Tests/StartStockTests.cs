@@ -60,7 +60,7 @@ public sealed class StartStockTests
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            goods: new ContentCatalog([TestCatalog.Entry(7, 1)])
+            catalog: new ContentCatalog([TestCatalog.Entry(7, 1)])
         );
 
         var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
@@ -76,7 +76,7 @@ public sealed class StartStockTests
             .MadeStartStock()
             .Select(row => (IReadOnlyDictionary<Good, byte>)row.Where(pair => pair.Key.Name != "plank").ToDictionary())
             .ToArray();
-        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, goods: TestCatalog.Of());
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, catalog: TestCatalog.Of());
 
         var error = Assert.ThrowsExactly<InvalidOperationException>(() => StartStock.At(tables, 0));
 
@@ -101,7 +101,7 @@ public sealed class StartStockTests
                 return (IReadOnlyDictionary<Good, byte>)counts;
             })
             .ToArray();
-        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, goods: TestCatalog.Of());
+        var tables = new RuleTables(new ObjectClass[RuleTables.ClassCount], rows, catalog: TestCatalog.Of());
 
         Assert.AreEqual(5, StartStock.At(tables, 5).GetValueOrDefault(coal));
     }
@@ -144,7 +144,7 @@ public sealed class StartStockTests
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
             [.. rows.Select(row => (IReadOnlyDictionary<Good, byte>)row)],
-            goods: TestCatalog.Of()
+            catalog: TestCatalog.Of()
         );
         var stock = StartStock.At(tables, 1);
 

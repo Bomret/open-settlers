@@ -95,7 +95,7 @@ public sealed class LayoutSettlersTests
             scanWindows ?? [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
             // The goods of the catalog a test gives, or the made-up ones, with building types of the made-up facts of the arguments.
-            goods: new ContentCatalog(
+            catalog: new ContentCatalog(
                 (
                     catalog
                     ?? (

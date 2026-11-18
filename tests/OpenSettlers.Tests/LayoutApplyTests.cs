@@ -40,7 +40,7 @@ public sealed class LayoutApplyTests
         var tables = new RuleTables(
             classes,
             TestProgram.MadeStartStock(),
-            goods: TestCatalog.StandIn(TestCatalog.Buildings(workers: TestProgram.MadeWorkers(stonecutter: true)))
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(workers: TestProgram.MadeWorkers(stonecutter: true)))
         );
 
         return GameFactory.Create(tables, layout.BuildMap());
@@ -147,7 +147,7 @@ public sealed class LayoutApplyTests
             new RuleTables(
                 classes,
                 TestProgram.MadeStartStock(),
-                goods: TestCatalog.StandIn(
+                catalog: TestCatalog.StandIn(
                     TestCatalog.Buildings(sizes: sizes, workers: TestProgram.MadeWorkers(stonecutter: true))
                 )
             ),
@@ -196,7 +196,7 @@ public sealed class LayoutApplyTests
                     classes,
                     TestProgram.MadeStartStock(),
                     jobData: TestProgram.MadeJobData(),
-                    goods: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, workers: workers))
+                    catalog: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, workers: workers))
                 ),
                 of.BuildMap()
             );

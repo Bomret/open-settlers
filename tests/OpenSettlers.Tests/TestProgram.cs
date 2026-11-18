@@ -35,7 +35,7 @@ static class TestProgram
         new(
             new ObjectClass[RuleTables.ClassCount],
             MadeStartStock(),
-            goods: transportPriorities is null
+            catalog: transportPriorities is null
                 ? TestCatalog.StandIn(TestCatalog.Buildings(workers: MadeWorkers()))
                 : TestCatalog.Of(ranks: transportPriorities, buildings: TestCatalog.Buildings(workers: MadeWorkers())),
             jobData: MadeJobData()

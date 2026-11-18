@@ -193,7 +193,7 @@ public sealed class ObjectDrawsTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
             map
         );
         game.Enqueue(
@@ -260,7 +260,7 @@ public sealed class ObjectDrawsTests
             new RuleTables(
                 classes,
                 TestProgram.MadeStartStock(),
-                goods: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes))
+                catalog: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes))
             ),
             map
         );
@@ -333,7 +333,7 @@ public sealed class ObjectDrawsTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
             map
         );
         game.Enqueue(
@@ -502,7 +502,7 @@ public sealed class ObjectDrawsTests
         var classes = new ObjectClass[RuleTables.ClassCount];
         classes[1] = 3;
         var game = GameFactory.Create(
-            new RuleTables(classes, TestProgram.MadeStartStock(), goods: TestCatalog.StandIn()),
+            new RuleTables(classes, TestProgram.MadeStartStock(), catalog: TestCatalog.StandIn()),
             map
         );
         game.Enqueue(

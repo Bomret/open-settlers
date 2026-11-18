@@ -71,7 +71,7 @@ public sealed class RuleTablesTests
         new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            goods: new ContentCatalog([
+            catalog: new ContentCatalog([
                 new GoodEntry
                 {
                     Name = "log",
@@ -187,7 +187,7 @@ public sealed class RuleTablesTests
         var tables = new RuleTables(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            goods: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, needs: needs))
+            catalog: TestCatalog.StandIn(TestCatalog.Buildings(sizes: sizes, needs: needs))
         );
 
         Assert.AreEqual(BuildingSize.Mine, tables.SizeOf(BuildingType.Farm));

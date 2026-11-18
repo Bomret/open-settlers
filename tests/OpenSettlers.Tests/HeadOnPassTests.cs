@@ -41,7 +41,7 @@ public sealed class HeadOnPassTests
             [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
             [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
             walkRows: rows,
-            goods: TestCatalog.WithDoors(),
+            catalog: TestCatalog.WithDoors(),
             noBuildingDoor: 8
         );
     }

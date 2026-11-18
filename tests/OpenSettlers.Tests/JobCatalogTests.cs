@@ -107,7 +107,7 @@ public sealed class JobCatalogTests
             new RuleTables(
                 classes,
                 TestProgram.MadeStartStock(),
-                goods: new ContentCatalog(TestCatalog.StandIn(buildings).Goods, buildings, jobs)
+                catalog: new ContentCatalog(TestCatalog.StandIn(buildings).Goods, buildings, jobs)
             ),
             layout.BuildMap()
         );

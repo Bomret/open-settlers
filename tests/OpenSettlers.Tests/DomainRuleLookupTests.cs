@@ -19,7 +19,7 @@ public sealed class DomainRuleLookupTests
         new(
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
-            goods: new ContentCatalog(
+            catalog: new ContentCatalog(
                 [],
                 TestCatalog
                     .Buildings()
@@ -71,7 +71,7 @@ public sealed class DomainRuleLookupTests
             new ObjectClass[RuleTables.ClassCount],
             TestProgram.MadeStartStock(),
             stepTimes: [.. Enumerable.Range(0, RuleTables.StepTimeCount).Select(i => (ushort)(1000 + i))],
-            goods: TestCatalog.StandIn(
+            catalog: TestCatalog.StandIn(
                 TestCatalog
                     .Buildings(
                         order: [.. Enumerable.Repeat((ushort)0xffff, TestCatalog.BuildingSlots)],

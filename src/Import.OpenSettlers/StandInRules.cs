@@ -209,7 +209,7 @@ sealed record StandInRules
                 walkRows: walk,
                 roadCapacities: [.. RoadCapacities],
                 frameRows: [.. FrameRows],
-                goods: new ContentCatalog(
+                catalog: new ContentCatalog(
                     Goods.Select(good => new GoodEntry
                     {
                         Name = good.Good.Name,

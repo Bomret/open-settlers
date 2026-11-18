@@ -70,7 +70,7 @@ public sealed class RuleTables
     /// <summary>
     /// Creates tables from their contents. The tables of the settlers' walk (<paramref name="stepTimes"/>,
     /// <paramref name="scanWindows"/>) are empty where a test needs none; the walk then reads them as zeros. The facts of the building
-    /// types are those of their entries in the catalog <paramref name="goods"/> holds.
+    /// types are those of their entries in <paramref name="catalog"/>.
     /// </summary>
     public RuleTables(
         ObjectClass[] classes,
@@ -90,7 +90,7 @@ public sealed class RuleTables
         byte plankRankBase = 0,
         byte millRankBase = 0,
         IEnumerable<(Job Job, object Data)>? jobData = null,
-        ContentCatalog? goods = null,
+        ContentCatalog? catalog = null,
         byte noBuildingDoor = 0
     )
     {
@@ -108,7 +108,7 @@ public sealed class RuleTables
         _walkRows = [.. walkRows ?? new byte[WalkRowCount * WalkRowSize]];
         _roadCapacities = [.. roadCapacities ?? new byte[RoadCapacityCount]];
         // A catalog the caller does not give holds no good and no building type, so a rule that meets one stops with an error naming it.
-        Catalog = goods ?? ContentCatalog.Empty;
+        Catalog = catalog ?? ContentCatalog.Empty;
         Figures = new FigureTables(
             figureBases,
             figureOffsets,

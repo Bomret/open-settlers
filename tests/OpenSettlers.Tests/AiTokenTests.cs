@@ -41,7 +41,7 @@ public sealed class AiTokenTests
                 TestProgram.MadeStartStock(),
                 [.. Enumerable.Repeat((ushort)100, RuleTables.StepTimeCount)],
                 [.. Enumerable.Repeat((ushort)16, RuleTables.ScanWindowCount)],
-                goods: withAiToken ? TestCatalog.WithAiToken(door: 8) : TestCatalog.WithDoors(),
+                catalog: withAiToken ? TestCatalog.WithAiToken(door: 8) : TestCatalog.WithDoors(),
                 noBuildingDoor: 8
             ),
             map
