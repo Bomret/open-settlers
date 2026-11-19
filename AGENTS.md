@@ -60,6 +60,9 @@ The install also holds the game's manual as PDF: `$SIEDLER_DIR/THE SETTLERS - Ma
 and French editions beside it (`-DE.pdf`, `-FR.pdf`). The manual is a valid source of information on the
 game's rules and terms. Cite it by file and page.
 
+Official material of the original game, such as screenshots and the reference card, is also a valid source.
+Its folder on the local machine is in `CLAUDE.local.md`. Cite an image by file name and a PDF by file and page.
+
 ## Agent skills
 
 ### Slice store
