@@ -178,6 +178,29 @@ public sealed class ToolArgumentTests
     }
 
     [TestMethod]
+    [DataRow]
+    [DataRow("")]
+    [DataRow("ten")]
+    [DataRow("0")]
+    [DataRow("-1")]
+    [DataRow("nan")]
+    [DataRow("inf")]
+    public void ATimeoutThatIsNoPositiveNumberOfSecondsIsRefusedBeforeGhidraStarts(params string[] value)
+    {
+        var bin = RecordingHeadless("exit 0");
+
+        var run = PythonTool.Run(
+            _folder,
+            [Emulate(), "--game", Game(), "--timeout", .. value, .. value.Length == 0 ? [] : new[] { "rng:0,0,0" }],
+            bin
+        );
+
+        AssertUsage(run);
+        StringAssert.Contains(run.Stderr, "--timeout");
+        Assert.IsFalse(File.Exists(Path.Combine(_folder, "args.txt")), "Ghidra started");
+    }
+
+    [TestMethod]
     public void NoCommandIsRefusedWithUsage() => AssertUsage(PythonTool.Run(_folder, [Emulate(), "--game", Game()]));
 
     [TestMethod]

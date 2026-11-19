@@ -1,6 +1,6 @@
 """Runs the emulator harness EmulateMapStart.java on Siedler1.exe from the install. See README.md.
 
-Usage: python3 -I emulate.py [--game <dir>] [--project <dir>] <command>...
+Usage: python3 -I emulate.py [--game <dir>] [--project <dir>] [--timeout <seconds>] <command>...
 
 Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. The commands of one call
 run in one Ghidra launch, in argument order. They are independent: each prints the lines it prints in a call of its own
@@ -12,6 +12,14 @@ stderr, with its number and its text, and the tail of Ghidra's output. A draw ba
 script finds EmulateMapStart.java and EmulateDraw.java beside itself, from any folder. The install is the --game folder
 or SIEDLER_DIR, as for the game itself. The script imports Siedler1.exe into a project in a temporary folder, without
 analysis, and removes the project afterwards: it keeps no program bytes.
+
+Each command runs under a bound, --timeout seconds, 600 by default: a finite number above 0, in any order among the other
+flags. The clock covers one step at a time and restarts at each: Ghidra's start and the import, up to Ghidra's line
+"INFO  SCRIPT: ", then each command, up to its end line. A step that runs past the bound, whether or not Ghidra prints
+meanwhile, fails the call: the script ends every process of the launch, prints nothing on stdout, exits non-zero, and
+writes to stderr the import or the first command that did not end, with its number and its text, the bound, and the tail
+of Ghidra's output. A call that Ctrl-C or SIGTERM stops while Ghidra runs ends the launch the same way. The temporary
+project folder goes in every case.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
@@ -32,14 +40,25 @@ where any command fails.
 """
 
 import hashlib
+import math
 import os
+import queue
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 
 PROJECT_NAME = "Emu"
 DIGEST_FILE = "program.sha256"
+
+# The per-command bound in seconds where the call passes no --timeout.
+DEFAULT_TIMEOUT = 600
+
+# Ghidra opens each script run with this line: the import before it has ended.
+SCRIPT_OPENS = "INFO  SCRIPT: "
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 
@@ -79,16 +98,127 @@ def clear(project):
     os.makedirs(project, exist_ok=True)
 
 
-def run(headless, project, mode, script, argv, environment):
+def remove(folder):
+    """Removes a folder. On Windows a file of a process that just ended can stay locked for a moment."""
+    for attempt in range(20):
+        try:
+            shutil.rmtree(folder)
+            return
+        except FileNotFoundError:
+            return
+        except OSError:
+            if attempt == 19:
+                raise
+            time.sleep(0.25)
+
+
+def pump(stream, lines, events):
+    """Reads a pipe of Ghidra to its end, so a full pipe never stalls Ghidra, and hands each line to the events."""
+    for line in stream:
+        lines.append(line)
+        if events is not None:
+            events.put(line)
+    if events is not None:
+        events.put(None)
+
+
+def end(process):
+    """Ends the process tree of the launch and returns once it is gone: on macOS and Linux the process group the launch
+    runs in (the mise shim, analyzeHeadless, launch.sh, and java), on Windows the tree under analyzeHeadless.bat."""
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True)
+        process.wait()
+        return
+    # macOS answers EPERM for a group whose members have all ended but are not yet reaped.
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+    process.wait()
+    # The group outlives its leader until the system has reaped every member the kill ended.
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        try:
+            os.killpg(process.pid, 0)
+        except (ProcessLookupError, PermissionError):
+            return
+        time.sleep(0.05)
+
+
+def run(headless, project, mode, script, argv, environment, bound):
+    """Runs Ghidra and reads its output while it runs. The clock covers one step at a time: Ghidra's start and the
+    import up to the first "INFO  SCRIPT: " line, then each command up to its end line; each such line restarts it.
+    Returns the completed run and whether a step ran past the bound, in which case the launch was ended."""
     # Each draw command gets its own -postScript, so each runs in a new script instance.
     if script == "EmulateDraw.java":
         scripts = [part for command in argv for part in ("-postScript", script, command)]
     else:
         scripts = ["-postScript", script, *argv]
-    return subprocess.run(
-        [headless, project, PROJECT_NAME, *mode, "-scriptPath", SCRIPTS, *scripts],
-        capture_output=True, text=True, env=environment,
+    command = [headless, project, PROJECT_NAME, *mode, "-scriptPath", SCRIPTS, *scripts]
+    marker = script + "> "
+    ends = {f"EMU command={index} ended" for index in range(1, len(argv) + 1)}
+    # A process group of its own, so that end() reaches every process of the launch and nothing else.
+    if os.name == "nt":
+        group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    else:
+        group = {"start_new_session": True}
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=environment, **group
     )
+    finished = False
+    try:
+        stdout, stderr, events = [], [], queue.Queue()
+        readers = [
+            threading.Thread(target=pump, args=(process.stdout, stdout, events), daemon=True),
+            threading.Thread(target=pump, args=(process.stderr, stderr, None), daemon=True),
+        ]
+        for reader in readers:
+            reader.start()
+        deadline = time.monotonic() + bound
+        expired = False
+        while True:
+            try:
+                line = events.get(timeout=max(0.0, deadline - time.monotonic()))
+            except queue.Empty:
+                expired = True
+                break
+            if line is None:
+                break
+            if line.startswith(SCRIPT_OPENS) or (
+                marker in line
+                and line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() in ends
+            ):
+                deadline = time.monotonic() + bound
+        if not expired:
+            try:
+                process.wait(timeout=max(0.0, deadline - time.monotonic()))
+            except subprocess.TimeoutExpired:
+                expired = True
+        if expired:
+            end(process)
+        for reader in readers:
+            reader.join(10)
+        finished = True
+    finally:
+        # Ctrl-C, SIGTERM, or an exception while Ghidra runs.
+        if not finished:
+            end(process)
+    return subprocess.CompletedProcess(command, process.returncode, "".join(stdout), "".join(stderr)), expired
+
+
+def overrun(argv, result, marker, bound):
+    """Writes the step that ran past the bound to stderr: the import where no script run opened, otherwise the first
+    command that did not end, then the tail of Ghidra's output."""
+    lines = result.stdout.splitlines()
+    texts = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() for line in lines if marker in line]
+    if texts or any(line.startswith(SCRIPT_OPENS) for line in lines):
+        hung = next((index for index in range(len(argv)) if f"EMU command={index + 1} ended" not in texts), None)
+        what = "Ghidra, after the last command ended," if hung is None else f"command {hung + 1} ({argv[hung]})"
+    else:
+        what = "the import"
+    sys.stderr.write(f"emulate.py: {what} ran past the bound of {bound:g} s\n")
+    sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
+    sys.exit(1)
 
 
 def batch(commands, result, marker, install):
@@ -121,10 +251,18 @@ def batch(commands, result, marker, install):
 def main(argv):
     game = os.environ.get("SIEDLER_DIR")
     shared = None
-    while argv[:1] in (["--game"], ["--project"]):
-        if len(argv) < 2 or not argv[1]:
+    bound = DEFAULT_TIMEOUT
+    while argv[:1] in (["--game"], ["--project"], ["--timeout"]):
+        if argv[0] == "--timeout":
+            try:
+                bound = float(argv[1])
+            except (IndexError, ValueError):
+                bound = math.nan
+            if not (math.isfinite(bound) and bound > 0):
+                fail(f"--timeout needs a number of seconds above 0. {__doc__.strip().splitlines()[2]}")
+        elif len(argv) < 2 or not argv[1]:
             fail(f"{argv[0]} needs a folder. {__doc__.strip().splitlines()[2]}")
-        if argv[0] == "--game":
+        elif argv[0] == "--game":
             game = argv[1]
         else:
             shared = argv[1]
@@ -149,19 +287,28 @@ def main(argv):
             fail(f"{program} is not the reference build of the History Edition (SHA-256 {digest})")
         install = f"EMU draw install=History Edition program=Siedler1.exe bytes={len(data)} sha256={digest}"
     if shared is None:
-        with tempfile.TemporaryDirectory(prefix="emulate") as project:
-            result = run(headless, project, ["-import", program, "-noanalysis", "-deleteProject"], script, argv, environment)
+        project = tempfile.mkdtemp(prefix="emulate")
+        try:
+            result, expired = run(
+                headless, project, ["-import", program, "-noanalysis", "-deleteProject"], script, argv, environment, bound
+            )
+        finally:
+            remove(project)
     else:
         if imported(shared, digest):
-            result = run(headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment)
+            result, expired = run(
+                headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment, bound
+            )
         else:
             clear(shared)
-            result = run(headless, shared, ["-import", program, "-noanalysis"], script, argv, environment)
+            result, expired = run(headless, shared, ["-import", program, "-noanalysis"], script, argv, environment, bound)
             # The import precedes the script, so a run whose script fails still leaves the program imported.
             if "REPORT: Import succeeded" in result.stdout:
                 with open(os.path.join(shared, DIGEST_FILE), "w") as file:
                     file.write(digest)
     marker = script + "> "
+    if expired and not drawing:
+        overrun(argv, result, marker, bound)
     if drawing and len(argv) > 1:
         batch(argv, result, marker, install)
         return
@@ -188,4 +335,9 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    # SIGTERM unwinds the call as Ctrl-C does, so the launch ends and the temporary project folder goes.
+    signal.signal(signal.SIGTERM, lambda number, frame: sys.exit("emulate.py: terminated"))
+    try:
+        main(sys.argv[1:])
+    except KeyboardInterrupt:
+        sys.exit("emulate.py: interrupted")
