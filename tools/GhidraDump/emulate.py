@@ -4,10 +4,13 @@ Usage: python3 -I emulate.py [--game <dir>] [--project <dir>] <command>...
 
 Each command is one of the forms EmulateMapStart.java lists, for example rng:0000,0000,0000. The commands of one call
 run in one Ghidra launch, in argument order. They are independent: each prints the lines it prints in a call of its own
-(INV-0018). A command that fails ends the launch, and the later commands print nothing. A draw batch is the
-exception, as below. The script finds
-EmulateMapStart.java and EmulateDraw.java beside itself, from any folder. The install is the --game folder or
-SIEDLER_DIR, as for the game itself. The script imports Siedler1.exe into a project in a temporary folder, without
+(INV-0018). The call exits 0 only where every command ended. EmulateMapStart.java prints "EMU command=N ended" after
+the command N returns, and the script leaves these lines out of its output. A command that prints no line still ends. A
+command does not end where it throws, where Ghidra stops before it, where the import fails, or where Ghidra exits
+non-zero. A failed call prints nothing on stdout and exits non-zero. It writes the first command that did not end to
+stderr, with its number and its text, and the tail of Ghidra's output. A draw batch is the exception, as below. The
+script finds EmulateMapStart.java and EmulateDraw.java beside itself, from any folder. The install is the --game folder
+or SIEDLER_DIR, as for the game itself. The script imports Siedler1.exe into a project in a temporary folder, without
 analysis, and removes the project afterwards: it keeps no program bytes.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
@@ -170,11 +173,18 @@ def main(argv):
             sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
             sys.exit(1)
         print(install)
+    else:
+        # A command ended where the script printed its end line. Where Ghidra exits non-zero, no command counts as ended.
+        ends = [f"EMU command={index} ended" for index in range(1, len(argv) + 1)]
+        ended = set(lines) if result.returncode == 0 else set()
+        failed = next((index for index, end in enumerate(ends) if end not in ended), None)
+        if failed is not None:
+            sys.stderr.write(f"emulate.py: command {failed + 1} ({argv[failed]}) did not end\n")
+            sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
+            sys.exit(1)
+        lines = [line for line in lines if line not in ends]
     for line in lines:
         print(line)
-    if not drawing and (result.returncode != 0 or not any(line.startswith("EMU ") for line in lines)):
-        sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
-        sys.exit(1)
 
 
 if __name__ == "__main__":

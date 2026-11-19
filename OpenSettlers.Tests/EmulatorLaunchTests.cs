@@ -22,6 +22,14 @@ public sealed class EmulatorLaunchTests
     // With a project folder, emulate.py keeps the project there (--project): the first launch imports, later ones reuse it.
     static string[] EmulateIn(string? project, params string[] commands)
     {
+        var run = Launch(project, commands);
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+
+        return run.Stdout.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    static ToolRun Launch(string? project, string[] commands)
+    {
         if (
             !(Environment.GetEnvironmentVariable("PATH") ?? "")
                 .Split(Path.PathSeparator)
@@ -31,7 +39,7 @@ public sealed class EmulatorLaunchTests
             Assert.Inconclusive("analyzeHeadless is not on the path");
         }
 
-        var run = PythonTool.Run(
+        return PythonTool.Run(
             Path.GetTempPath(),
             [
                 PythonTool.InRepo("tools", "GhidraDump", "emulate.py"),
@@ -42,9 +50,6 @@ public sealed class EmulatorLaunchTests
             ],
             realHeadless: true
         );
-        Assert.AreEqual(0, run.Exit, run.Stderr);
-
-        return run.Stdout.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
     }
 
     // A supply line without its label (verb, size, seed, castle, level, rate), as settler-supply.txt holds it.
@@ -96,6 +101,17 @@ public sealed class EmulatorLaunchTests
     public void ACommandAfterACommandOfAnotherVerbRunsWithItsOwnVerbsSettingsOnly()
     {
         AssertRecorded(Emulate($"construct:1:{Seed}:0:18,20::::0:1:c@18,20", $"supply:1:{Seed}:0:18,20:0:376"));
+    }
+
+    // A command that throws after a command that printed a line: the call fails, prints nothing, and names the command.
+    [TestMethod]
+    public void ACallWithACommandThatThrowsFailsAndNamesTheCommand()
+    {
+        var run = Launch(null, ["rng:0000,0000,0000", "nosuchverb:1", "rng:0001,0000,0000"]);
+
+        Assert.AreNotEqual(0, run.Exit);
+        Assert.AreEqual("", run.Stdout);
+        StringAssert.Contains(run.Stderr, "command 2 (nosuchverb:1) did not end");
     }
 
     // The carrier game of DrawVerbTests: a goods: game whose carrier is on its road at pass 100.
