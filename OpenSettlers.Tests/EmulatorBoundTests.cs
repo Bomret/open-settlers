@@ -66,36 +66,11 @@ public sealed class EmulatorBoundTests
     ToolRun Call(string body, string[] commands, params string[] options) =>
         PythonTool.RunOnPath(_folder, Arguments(options, commands), [StandIn(body)], null, Limit);
 
-    // A pid that no longer names a process. The launch's processes may take a moment to be reaped.
-    static bool Dead(int pid)
-    {
-        var watch = Stopwatch.StartNew();
-        while (watch.Elapsed < TimeSpan.FromSeconds(10))
-        {
-            try
-            {
-                using var process = Process.GetProcessById(pid);
-                if (process.HasExited)
-                {
-                    return true;
-                }
-            }
-            catch (ArgumentException)
-            {
-                return true;
-            }
-
-            Thread.Sleep(100);
-        }
-
-        return false;
-    }
-
     void AssertLaunchGone()
     {
         Assert.IsTrue(File.Exists(Grandchild), "the stand-in never reached its hang");
         var pid = int.Parse(File.ReadAllText(Grandchild).Trim());
-        Assert.IsTrue(Dead(pid), $"the grandchild {pid} of the launch still runs");
+        Assert.IsTrue(PythonTool.Gone(pid), $"the grandchild {pid} of the launch still runs");
         var project = File.ReadAllText(ProjectRecord);
         Assert.IsFalse(Directory.Exists(project), $"the temporary project folder {project} stays");
     }

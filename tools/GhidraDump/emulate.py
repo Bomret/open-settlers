@@ -18,7 +18,7 @@ flags. The clock covers one step at a time and restarts at each: Ghidra's start 
 "INFO  SCRIPT: ", then each command, up to its end line. A step that runs past the bound, whether or not Ghidra prints
 meanwhile, fails the call: the script ends every process of the launch, prints nothing on stdout, exits non-zero, and
 writes to stderr the import or the first command that did not end, with its number and its text, the bound, and the tail
-of Ghidra's output. A call that Ctrl-C or SIGTERM stops while Ghidra runs ends the launch the same way. The temporary
+of Ghidra's output. A draw batch is the exception on stdout, as below. A call that Ctrl-C or SIGTERM stops while Ghidra runs ends the launch the same way. The temporary
 project folder goes in every case.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
@@ -36,7 +36,9 @@ Several draw commands run as a batch in one Ghidra launch, each in a new script 
 nothing and exits non-zero. Otherwise it prints the install line, then for each command, in argument order, the line
 "EMU draw command=N ended" followed by its recording, or "EMU draw command=N failed" with no lines, N counting from 1. A
 command fails where its run does not end, and where the import fails or Ghidra stops before it. A batch exits non-zero
-where any command fails.
+where any command fails. Each draw command runs in a script run of its own, so Ghidra's "INFO  SCRIPT: " line that opens
+it restarts the bound's clock, and the command ends at its line "EMU draw end". Where a draw command runs past the bound,
+it and each later command fail; stderr names it and the bound as above.
 """
 
 import hashlib
@@ -206,31 +208,41 @@ def run(headless, project, mode, script, argv, environment, bound):
     return subprocess.CompletedProcess(command, process.returncode, "".join(stdout), "".join(stderr)), expired
 
 
-def overrun(argv, result, marker, bound):
-    """Writes the step that ran past the bound to stderr: the import where no script run opened, otherwise the first
-    command that did not end, then the tail of Ghidra's output."""
-    lines = result.stdout.splitlines()
-    texts = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() for line in lines if marker in line]
-    if texts or any(line.startswith(SCRIPT_OPENS) for line in lines):
-        hung = next((index for index in range(len(argv)) if f"EMU command={index + 1} ended" not in texts), None)
-        what = "Ghidra, after the last command ended," if hung is None else f"command {hung + 1} ({argv[hung]})"
-    else:
-        what = "the import"
-    sys.stderr.write(f"emulate.py: {what} ran past the bound of {bound:g} s\n")
-    sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
-    sys.exit(1)
-
-
-def batch(commands, result, marker, install):
-    """Prints the result of each draw command of a batch under its own line, in argument order, and exits non-zero where one
-    fails. Ghidra opens each script run with an "INFO  SCRIPT: " line; a command whose run is missing, as after a failed
-    import or a crash, failed."""
+def script_runs(stdout, marker):
+    """The script lines of each script run, in order. Ghidra opens each script run with an "INFO  SCRIPT: " line."""
     runs = []
-    for line in result.stdout.splitlines():
-        if line.startswith("INFO  SCRIPT: "):
+    for line in stdout.splitlines():
+        if line.startswith(SCRIPT_OPENS):
             runs.append([])
         elif marker in line and runs:
             runs[-1].append(line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip())
+    return runs
+
+
+def overrun(argv, result, marker, bound, drawing):
+    """The stderr line that names the step that ran past the bound: the import where no script run opened, otherwise the
+    first command that did not end. A draw command ends at its "EMU draw end" line, in the script run of its own."""
+    lines = result.stdout.splitlines()
+    texts = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() for line in lines if marker in line]
+    if drawing:
+        runs = script_runs(result.stdout, marker)
+        ended = [index < len(runs) and any(line.startswith("EMU draw end") for line in runs[index])
+                 for index in range(len(argv))]
+    else:
+        ended = [f"EMU command={index + 1} ended" in texts for index in range(len(argv))]
+    if texts or any(line.startswith(SCRIPT_OPENS) for line in lines):
+        hung = next((index for index, done in enumerate(ended) if not done), None)
+        what = "Ghidra, after the last command ended," if hung is None else f"command {hung + 1} ({argv[hung]})"
+    else:
+        what = "the import"
+    return f"emulate.py: {what} ran past the bound of {bound:g} s\n"
+
+
+def batch(commands, result, marker, install, bounded):
+    """Prints the result of each draw command of a batch under its own line, in argument order, and exits non-zero where one
+    fails. A command whose script run is missing, as after a failed import, a crash, or a bound, failed. bounded is the
+    stderr line of a bound, or empty."""
+    runs = script_runs(result.stdout, marker)
     print(install)
     failed = False
     for index in range(len(commands)):
@@ -244,7 +256,7 @@ def batch(commands, result, marker, install):
             print(f"EMU draw command={index + 1} failed")
             failed = True
     if failed or result.returncode != 0:
-        sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
+        sys.stderr.write(bounded + result.stdout[-3000:] + result.stderr[-1000:])
         sys.exit(1)
 
 
@@ -307,17 +319,19 @@ def main(argv):
                 with open(os.path.join(shared, DIGEST_FILE), "w") as file:
                     file.write(digest)
     marker = script + "> "
-    if expired and not drawing:
-        overrun(argv, result, marker, bound)
+    bounded = overrun(argv, result, marker, bound, drawing) if expired else ""
+    if bounded and not drawing:
+        sys.stderr.write(bounded + result.stdout[-3000:] + result.stderr[-1000:])
+        sys.exit(1)
     if drawing and len(argv) > 1:
-        batch(argv, result, marker, install)
+        batch(argv, result, marker, install, bounded)
         return
     lines = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
              for line in result.stdout.splitlines() if marker in line]
     if drawing:
         # A run counts only if it ends: a failed pass stops the script before its last line.
         if result.returncode != 0 or not any(line.startswith("EMU draw end") for line in lines):
-            sys.stderr.write(result.stdout[-3000:] + result.stderr[-1000:])
+            sys.stderr.write(bounded + result.stdout[-3000:] + result.stderr[-1000:])
             sys.exit(1)
         print(install)
     else:

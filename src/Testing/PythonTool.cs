@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Testing;
@@ -180,14 +181,16 @@ public static class PythonTool
     /// <summary>
     /// Runs <c>python3 -I -B</c> with the arguments in <paramref name="workingDirectory"/>. The child's path is
     /// <paramref name="prependPath"/> before the host's path without the folders that hold <c>analyzeHeadless</c>, unless
-    /// <paramref name="realHeadless"/> keeps them.
+    /// <paramref name="realHeadless"/> keeps them. With a <paramref name="limit"/>, a tool still running after it is killed
+    /// with its process tree and the test fails.
     /// </summary>
     public static ToolRun Run(
         string workingDirectory,
         string[] arguments,
         string? prependPath = null,
         string? siedlerDir = null,
-        bool realHeadless = false
+        bool realHeadless = false,
+        TimeSpan? limit = null
     )
     {
         var info = new ProcessStartInfo(Resolve())
@@ -212,7 +215,35 @@ public static class PythonTool
         );
         info.Environment["PATH"] = string.Join(Path.PathSeparator, path);
 
-        return Wait(info, siedlerDir);
+        return Finish(Begin(info, siedlerDir), limit);
+    }
+
+    /// <summary>
+    /// Whether the process <paramref name="pid"/> has ended, waiting up to 10 s for the system to reap it: a process tree
+    /// that was just killed can take a moment to go.
+    /// </summary>
+    public static bool Gone(int pid)
+    {
+        var watch = Stopwatch.StartNew();
+        while (watch.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                if (process.HasExited)
+                {
+                    return true;
+                }
+            }
+            catch (ArgumentException)
+            {
+                return true;
+            }
+
+            Thread.Sleep(100);
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -251,8 +282,6 @@ public static class PythonTool
 
         return Begin(info, siedlerDir);
     }
-
-    static ToolRun Wait(ProcessStartInfo info, string? siedlerDir) => Finish(Begin(info, siedlerDir), null);
 
     static Process Begin(ProcessStartInfo info, string? siedlerDir)
     {
