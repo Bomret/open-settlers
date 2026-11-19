@@ -27,7 +27,9 @@ Each rule note holds:
 
 - The rule, in our own words.
 - One or more addresses as evidence. The game's manual in the install
-  (`THE SETTLERS - Manual-EN.pdf`) is also valid evidence; cite it by file and page.
+  (`THE SETTLERS - Manual-EN.pdf`) is also valid evidence; cite it by file and page. So is official
+  material of the original game, such as screenshots and the reference card (`AGENTS.md`, "Game
+  install"); cite an image by file name and a PDF by file and page.
 - A status: **confirmed** when the code at the address shows the rule, **inferred** when the rule
   follows from the code but no single address shows it, or **stand-in** when the engine supplies a value
   or a check that the program does not confirm.
