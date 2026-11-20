@@ -27,5 +27,12 @@
   <ItemGroup>
     <None Include="map-digests.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="windows-run.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The file lives in OpenSettlers.Adapters.Tests/, which checks it; EmulatorLaunchTests compares launches
+         with it. -->
+    <None
+      Include="../src/Adapters.Tests/settler-supply.txt"
+      Link="settler-supply.txt"
+      CopyToOutputDirectory="PreserveNewest"
+    />
   </ItemGroup>
 </Project>
