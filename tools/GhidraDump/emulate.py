@@ -15,12 +15,12 @@ analysis, and removes the project afterwards: it keeps no program bytes.
 
 Each command runs under a bound, --timeout seconds, 600 by default: a number above 0 and at most Python's
 threading.TIMEOUT_MAX, in any order among the other flags. The clock covers one step at a time and restarts at each:
-Ghidra's start and the import, up to Ghidra's line "INFO  SCRIPT: ", then each command, up to its end line. A step that runs past the bound, whether or not Ghidra prints
-meanwhile, fails the call: the script ends every process of the launch, prints nothing on stdout, exits non-zero, and
-writes to stderr the import or the first command that did not end, with its number and its text, the bound, and the tail
-of Ghidra's output. A draw batch is the exception on stdout, as below. A call that Ctrl-C, SIGTERM, or SIGHUP stops
-while Ghidra runs ends the launch the same way; a call started with SIGHUP ignored, as under nohup, keeps ignoring it.
-The temporary project folder goes in every case.
+Ghidra's start and the import, up to Ghidra's line "INFO  SCRIPT: ", then each command, up to its end line. A step that
+runs past the bound, whether or not Ghidra prints meanwhile, fails the call: the script ends every process of the
+launch, prints nothing on stdout, exits non-zero, and writes to stderr the import or the first command that did not end,
+with its number and its text, the bound, and the tail of Ghidra's output. A draw batch is the exception on stdout, as
+below. A call that Ctrl-C, SIGTERM, or SIGHUP stops while Ghidra runs ends the launch the same way; a call started with
+SIGHUP ignored, as under nohup, keeps ignoring it. The temporary project folder goes in every case.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
@@ -38,8 +38,8 @@ nothing and exits non-zero. Otherwise it prints the install line, then for each 
 "EMU draw command=N ended" followed by its recording, or "EMU draw command=N failed" with no lines, N counting from 1. A
 command fails where its run does not end, and where the import fails or Ghidra stops before it. A batch exits non-zero
 where any command fails. Each draw command runs in a script run of its own, so Ghidra's "INFO  SCRIPT: " line that opens
-it restarts the bound's clock, and the command ends at its line "EMU draw end", which restarts it too. Where a draw command runs past the bound,
-it and each later command fail; stderr names it and the bound as above.
+it restarts the bound's clock, and the command ends at its line "EMU draw end", which restarts it too. Where a draw
+command runs past the bound, it and each later command fail; stderr names it and the bound as above.
 """
 
 import hashlib
