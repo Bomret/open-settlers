@@ -28,7 +28,7 @@ public sealed class EmulatorLaunchTests
         return run.Stdout.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    static ToolRun Launch(string? project, string[] commands)
+    static ToolRun Launch(string? project, string[] commands, TimeSpan? limit = null)
     {
         if (
             !(Environment.GetEnvironmentVariable("PATH") ?? "")
@@ -48,7 +48,8 @@ public sealed class EmulatorLaunchTests
                 .. (project is null ? Array.Empty<string>() : ["--project", project]),
                 .. commands,
             ],
-            realHeadless: true
+            realHeadless: true,
+            limit: limit
         );
     }
 
@@ -137,6 +138,63 @@ public sealed class EmulatorLaunchTests
                 $"command {command}"
             );
         }
+    }
+
+    // A kept project (--project) after a bound ended a launch in it: Ghidra was killed during the import, or during an emulator
+    // command of the call that imported, or of a later call against the import, and left its project lock behind. A later call
+    // on the same folder prints the lines of a call with a fresh import, and no process of the killed launch stays.
+    // The map generation of size 3 runs past a bound of 15 s; Ghidra's start and the import end within it.
+    const string Supply = $"supply:1:{Seed}:0:18,20:0:376";
+
+    [TestMethod]
+    [DataRow("1", "the import", false)]
+    [DataRow("15", $"command 1 (gen:3:{Seed})", false)]
+    [DataRow("15", $"command 1 (gen:3:{Seed})", true)]
+    public void AKeptProjectAfterABoundPrintsTheLinesOfAFreshImport(string timeout, string what, bool importedBefore)
+    {
+        var project = Path.Combine(Path.GetTempPath(), "emulator-launch-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            if (importedBefore)
+            {
+                EmulateIn(project, "rng:0000,0000,0000");
+            }
+
+            var bounded = Launch(project, ["--timeout", timeout, $"gen:3:{Seed}"], TimeSpan.FromMinutes(3));
+
+            Assert.AreNotEqual(0, bounded.Exit, bounded.Stderr);
+            Assert.AreEqual("", bounded.Stdout);
+            StringAssert.Contains(bounded.Stderr, $"emulate.py: {what} ran past the bound of {timeout} s");
+            AssertNoProcessNames(project);
+            CollectionAssert.AreEqual(Emulate(Supply), EmulateIn(project, Supply));
+        }
+        finally
+        {
+            if (Directory.Exists(project))
+            {
+                Directory.Delete(project, true);
+            }
+        }
+    }
+
+    // No running process has the folder on its command line, as every process of a launch on it has: analyzeHeadless,
+    // launch.sh, and java. The process list needs ps, which Windows lacks.
+    static void AssertNoProcessNames(string folder)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var ps = new System.Diagnostics.ProcessStartInfo("ps", ["-ax", "-o", "command="])
+        {
+            RedirectStandardOutput = true,
+        };
+        using var process = System.Diagnostics.Process.Start(ps)!;
+        var lines = process.StandardOutput.ReadToEnd().Split('\n');
+        process.WaitForExit();
+        var left = lines.Where(line => line.Contains(folder, StringComparison.Ordinal)).ToArray();
+        Assert.AreEqual(0, left.Length, string.Join('\n', left));
     }
 
     // A kept project (--project) after an earlier launch ran passes against it: the second launch runs the script against the
