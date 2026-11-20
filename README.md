@@ -102,7 +102,7 @@ mise run map
 
 `--content-set <basic|history-edition>` chooses the content set for the map view, the game view, and seed info. It works with `--map`, `--game-view`, `--layout`, or `--seed-info`, including with `--play` (`-- --map --content-set basic`). With the asset browser or `--check` it is a bad argument. `history-edition` is the default and draws the art of the install. `basic` draws from the repository's own content set `content/basic/`. The set is a `manifest.json` that maps draw terms to PNG files and anchors, plus the PNGs, which hold nothing derived from an install (`tools/basic-art.py` writes the set). The launch names its two sets in code, so a folder added under `content/` is not selectable. The set draws these things:
 
-- Flat terrain and road strips, and crude shapes for the flag.
+- Flat terrain, road strips that lean with a height difference of up to 4 either way (a steeper strip draws nothing, as in the original), and crude shapes for the flag.
 - The map objects of the codes 8 to 127. The farmer's fields are among them.
 - The castle.
 - The huts of the woodcutter, the stonecutter, the forester, and the fisher.

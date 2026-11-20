@@ -223,25 +223,193 @@
       -20
     ]
   },
-  "road/east": {
-    "image": "road/east.png",
+  "road/east/-4": {
+    "image": "road/east/-4.png",
     "anchor": [
       0,
       0
     ]
   },
-  "road/south-east": {
-    "image": "road/south-east.png",
+  "road/east/-3": {
+    "image": "road/east/-3.png",
     "anchor": [
       0,
       0
     ]
   },
-  "road/south": {
-    "image": "road/south.png",
+  "road/east/-2": {
+    "image": "road/east/-2.png",
     "anchor": [
       0,
       0
+    ]
+  },
+  "road/east/-1": {
+    "image": "road/east/-1.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/east/0": {
+    "image": "road/east/0.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/east/1": {
+    "image": "road/east/1.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/east/2": {
+    "image": "road/east/2.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/east/3": {
+    "image": "road/east/3.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/east/4": {
+    "image": "road/east/4.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south-east/-4": {
+    "image": "road/south-east/-4.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south-east/-3": {
+    "image": "road/south-east/-3.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south-east/-2": {
+    "image": "road/south-east/-2.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south-east/-1": {
+    "image": "road/south-east/-1.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south-east/0": {
+    "image": "road/south-east/0.png",
+    "anchor": [
+      0,
+      -1
+    ]
+  },
+  "road/south-east/1": {
+    "image": "road/south-east/1.png",
+    "anchor": [
+      0,
+      -1
+    ]
+  },
+  "road/south-east/2": {
+    "image": "road/south-east/2.png",
+    "anchor": [
+      0,
+      -2
+    ]
+  },
+  "road/south-east/3": {
+    "image": "road/south-east/3.png",
+    "anchor": [
+      0,
+      -2
+    ]
+  },
+  "road/south-east/4": {
+    "image": "road/south-east/4.png",
+    "anchor": [
+      0,
+      -2
+    ]
+  },
+  "road/south/-4": {
+    "image": "road/south/-4.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south/-3": {
+    "image": "road/south/-3.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south/-2": {
+    "image": "road/south/-2.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south/-1": {
+    "image": "road/south/-1.png",
+    "anchor": [
+      0,
+      0
+    ]
+  },
+  "road/south/0": {
+    "image": "road/south/0.png",
+    "anchor": [
+      0,
+      -1
+    ]
+  },
+  "road/south/1": {
+    "image": "road/south/1.png",
+    "anchor": [
+      0,
+      -1
+    ]
+  },
+  "road/south/2": {
+    "image": "road/south/2.png",
+    "anchor": [
+      0,
+      -2
+    ]
+  },
+  "road/south/3": {
+    "image": "road/south/3.png",
+    "anchor": [
+      0,
+      -2
+    ]
+  },
+  "road/south/4": {
+    "image": "road/south/4.png",
+    "anchor": [
+      0,
+      -2
     ]
   },
   "object/flag": {
