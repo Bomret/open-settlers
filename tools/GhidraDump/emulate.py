@@ -38,7 +38,7 @@ nothing and exits non-zero. Otherwise it prints the install line, then for each 
 "EMU draw command=N ended" followed by its recording, or "EMU draw command=N failed" with no lines, N counting from 1. A
 command fails where its run does not end, and where the import fails or Ghidra stops before it. A batch exits non-zero
 where any command fails. Each draw command runs in a script run of its own, so Ghidra's "INFO  SCRIPT: " line that opens
-it restarts the bound's clock, and the command ends at its line "EMU draw end". Where a draw command runs past the bound,
+it restarts the bound's clock, and the command ends at its line "EMU draw end", which restarts it too. Where a draw command runs past the bound,
 it and each later command fail; stderr names it and the bound as above.
 """
 
@@ -187,9 +187,9 @@ def run(headless, project, mode, script, argv, environment, bound):
                 break
             if line is None:
                 break
+            text = line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() if marker in line else None
             if line.startswith(SCRIPT_OPENS) or (
-                marker in line
-                and line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() in ends
+                text is not None and (text in ends or text.startswith("EMU draw end"))
             ):
                 deadline = time.monotonic() + bound
         if not expired:

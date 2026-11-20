@@ -338,7 +338,8 @@ public sealed class DrawVerbTests
     // A stand-in for analyzeHeadless in a draw batch: it logs its arguments and, for each -postScript, prints the line Ghidra
     // opens a script run with, then a recording that ends, or, for a command holding "fail", a partial one that does not.
     // For a command holding "hang", it prints a partial recording and a line of Ghidra's log, then hangs in a foreground
-    // grandchild that writes its pid to grandchild.pid, as launch.sh runs java.
+    // grandchild that writes its pid to grandchild.pid, as launch.sh runs java. For a command holding "slow", it takes 2 s
+    // before the recording that ends and 2 s after it, as a long draw command followed by a slow script teardown.
     // With crashes, it exits 1 after the first script run, as a Ghidra that dies part-way.
     string FakeDrawHeadless(bool importFails = false, bool crashes = false)
     {
@@ -354,6 +355,7 @@ public sealed class DrawVerbTests
                 + "    case \"$3\" in\n"
                 + "      *fail*) echo \"INFO  $2> EMU draw pass=1 partial (GhidraScript)\" ;;\n"
                 + $"      *hang*) echo \"INFO  $2> EMU draw pass=1 partial (GhidraScript)\"; echo STANDIN-LOG; {hang} ;;\n"
+                + "      *slow*) /bin/sleep 2; echo \"INFO  $2> EMU draw pass=1 $3 (GhidraScript)\"; echo \"INFO  $2> EMU draw end passes=1 (GhidraScript)\"; /bin/sleep 2 ;;\n"
                 + "      *) echo \"INFO  $2> EMU draw pass=1 $3 (GhidraScript)\"; echo \"INFO  $2> EMU draw end passes=1 (GhidraScript)\" ;;\n"
                 + "    esac\n"
                 + (crashes ? "    exit 1\n" : "")
@@ -541,6 +543,24 @@ public sealed class DrawVerbTests
 
         AssertBound(run, 1, "draw:1-1:0,0:hang");
         Assert.AreEqual("", run.Stdout);
+    }
+
+    // A draw command ends at its "EMU draw end" line: what Ghidra does after it runs under a bound of its own, so a last
+    // command that ends late in its bound leaves Ghidra the whole bound to exit.
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void GhidraAfterTheLastDrawCommandRunsUnderABoundOfItsOwn()
+    {
+        var bin = FakeDrawHeadless();
+
+        var run = EmulateRun(
+            TestProgram.InstallRoot(),
+            ["--timeout", "3", "draw:1-1:0,0:slow"],
+            path: bin,
+            limit: Limit
+        );
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
     }
 
     [TestMethod]
