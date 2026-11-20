@@ -134,7 +134,12 @@ public sealed class OpenSettlersSourceTests
         Enumerable
             .Range(0, 16)
             .SelectMany(code => new[] { $"terrain/{code}/upper", $"terrain/{code}/lower" })
-            .Concat(["road/east", "road/south-east", "road/south", "object/flag"])
+            .Concat(
+                from direction in new[] { "east", "south-east", "south" }
+                from difference in Enumerable.Range(-4, 9)
+                select $"road/{direction}/{difference}"
+            )
+            .Concat(["object/flag"])
             .Concat(Enumerable.Range(8, 120).Select(code => $"object/{code}"))
             .Concat(BuildingKeys)
             .Concat(StandInRulesReader.GoodNames.Select(OpenSettlersSource.GoodKey))
@@ -226,31 +231,45 @@ public sealed class OpenSettlersSourceTests
     }
 
     [TestMethod]
-    [DataRow(RoadDirection.East, "road/east", 3)]
-    [DataRow(RoadDirection.SouthEast, "road/south-east", 4)]
-    [DataRow(RoadDirection.South, "road/south", 5)]
-    public void ARoadStripDrawsTheImageOfItsDirection(RoadDirection direction, string key, int width)
+    [DataRow(RoadDirection.East, 0, "road/east/0", 3)]
+    [DataRow(RoadDirection.SouthEast, -4, "road/south-east/-4", 4)]
+    [DataRow(RoadDirection.South, 4, "road/south/4", 5)]
+    public void ARoadStripDrawsTheImageOfItsDirectionAndDifference(
+        RoadDirection direction,
+        int difference,
+        string key,
+        int width
+    )
     {
         using var folder = new ContentFolder();
         folder.Png("strip.png", $"{width}x1:1");
         folder.Entries[key] = ContentFolder.Entry("strip.png", "1, 2");
 
-        var image = folder
-            .Load()
-            .Draw(
-                new RoadStrip
-                {
-                    X = 10,
-                    Y = 20,
-                    Direction = direction,
-                    Difference = 0,
-                    Slope = 0,
-                    Ground = new Terrain { Code = 5 },
-                }
-            )!;
+        var image = folder.Load().Draw(Strip(direction, difference))!;
 
         Assert.AreEqual((width, 1, 1, 2), (image.Width, image.Height, image.OffsetX, image.OffsetY));
     }
+
+    [TestMethod]
+    [DataRow(5)]
+    [DataRow(-5)]
+    public void ARoadStripOfADifferenceBeyondFourDrawsNothing(int difference)
+    {
+        using var folder = new ContentFolder();
+
+        Assert.IsNull(folder.Load().Draw(Strip(RoadDirection.East, difference)));
+    }
+
+    static RoadStrip Strip(RoadDirection direction, int difference) =>
+        new()
+        {
+            X = 10,
+            Y = 20,
+            Direction = direction,
+            Difference = difference,
+            Slope = 0,
+            Ground = new Terrain { Code = 5 },
+        };
 
     [TestMethod]
     public void TermsThatShareAFileAndAnAnchorShareOneImageInstance()
@@ -1589,9 +1608,9 @@ public sealed class OpenSettlersSourceTests
     public void AnEntryWithoutAnImagePathIsRefusedByFileAndKey()
     {
         using var folder = new ContentFolder();
-        folder.Entries["road/south"] = """{ "anchor": [0, 0] }""";
+        folder.Entries["road/south/0"] = """{ "anchor": [0, 0] }""";
 
-        Refuses(folder, "manifest.json", "road/south", "no image");
+        Refuses(folder, "manifest.json", "road/south/0", "no image");
     }
 
     [TestMethod]
@@ -1608,9 +1627,9 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
         folder.Png("bad.png", "not an image");
-        folder.Entries["road/east"] = ContentFolder.Entry("bad.png", "0, 0");
+        folder.Entries["road/east/0"] = ContentFolder.Entry("bad.png", "0, 0");
 
-        Refuses(folder, "manifest.json", "road/east", "bad.png", "cannot be decoded");
+        Refuses(folder, "manifest.json", "road/east/0", "bad.png", "cannot be decoded");
     }
 
     [TestMethod]
@@ -1618,9 +1637,9 @@ public sealed class OpenSettlersSourceTests
     {
         using var folder = new ContentFolder();
         folder.Png("none.png", "0x0:0");
-        folder.Entries["road/east"] = ContentFolder.Entry("none.png", "0, 0");
+        folder.Entries["road/east/0"] = ContentFolder.Entry("none.png", "0, 0");
 
-        Refuses(folder, "road/east", "none.png", "cannot be decoded");
+        Refuses(folder, "road/east/0", "none.png", "cannot be decoded");
     }
 
     // A decoder whose images claim a size their pixels do not fill: 2 x 2 pixels, 15 bytes of RGBA.
@@ -1656,9 +1675,9 @@ public sealed class OpenSettlersSourceTests
     public void AnImageValueThatIsNoStringIsRefusedByFileAndKey(string image)
     {
         using var folder = new ContentFolder();
-        folder.Entries["road/south"] = $$"""{ "image": {{image}}, "anchor": [0, 0] }""";
+        folder.Entries["road/south/0"] = $$"""{ "image": {{image}}, "anchor": [0, 0] }""";
 
-        Refuses(folder, "manifest.json", "road/south", "no image");
+        Refuses(folder, "manifest.json", "road/south/0", "no image");
     }
 
     [TestMethod]
@@ -1698,9 +1717,9 @@ public sealed class OpenSettlersSourceTests
     public void ADuplicateKeyIsRefusedByFileAndKey()
     {
         using var folder = new ContentFolder();
-        folder.Extra = "\"road/east\": " + ContentFolder.Entry("a.png", "0, 0");
+        folder.Extra = "\"road/east/0\": " + ContentFolder.Entry("a.png", "0, 0");
 
-        Refuses(folder, "manifest.json", "road/east", "duplicate");
+        Refuses(folder, "manifest.json", "road/east/0", "duplicate");
     }
 
     [TestMethod]

@@ -12,7 +12,7 @@ namespace OpenSettlers.Import.ContentSet;
 /// holds PNG images and one JSON manifest, <see cref="ManifestFile"/>: an object whose keys name draw terms and whose
 /// values are <c>{ "image": "&lt;path&gt;", "anchor": [x, y] }</c>. The path is relative to the set's folder, and the
 /// anchor is the offset of the image's top left corner from the term's position. The keys: <see cref="TerrainKey"/> for
-/// each terrain code and triangle, <see cref="RoadKey"/> for each road direction, <see cref="FlagKey"/> and
+/// each terrain code and triangle, <see cref="RoadKey"/> for each road direction and height difference from -4 to 4, <see cref="FlagKey"/> and
 /// <see cref="ObjectKey"/> for the flag and the object codes 8 to 127, <see cref="CastleKey"/> and
 /// <see cref="WoodcutterKey"/> for the buildings, <see cref="GoodKey"/> for each of the 26 goods by stable name (a good with no image draws nothing), <see cref="MarkerKey"/>
 /// for each of the four build markers, <c>road-marker/end</c>, <c>road-marker/blocked</c>, <c>road-marker/way-back</c>, and
@@ -21,7 +21,8 @@ namespace OpenSettlers.Import.ContentSet;
 /// settler, and <see cref="FlameKey"/> for each flame size and phase. The keys <see cref="SmallFlamesKey"/> and <see cref="LargeFlamesKey"/>
 /// for the finished small and large buildings and <see cref="EarlySiteFlamesKey"/> hold no image but <c>{ "flames": [{ "size": "small" | "large", "at": [x, y] }, …] }</c>,
 /// the flames of a burning building in the order they are drawn, each at its offset from the building (ADR 0021). The art is flat: one image per terrain code
-/// and triangle, one strip per direction, whatever the slope, one border post on land and one in water, whatever the slope,
+/// and triangle, one strip per direction and height difference, whatever the slope across it (a strip of a larger difference
+/// draws nothing, as in the original), one border post on land and one in water, whatever the slope,
 /// one frame per object, and one figure per job and kind of
 /// activity, whatever the settler's heading, step, or frame. A settler's pixels in <see cref="MarkColour"/> show the
 /// player's colour. The source draws no shadow, no water ripple, and no object of the codes 2 to 7. Every key above must
@@ -263,13 +264,16 @@ public sealed class OpenSettlersSource : IGraphicsSource
     /// <summary>The manifest key of a terrain code's upper or lower triangle.</summary>
     public static string TerrainKey(int code, bool upper) => $"terrain/{code}/{(upper ? "upper" : "lower")}";
 
-    /// <summary>The manifest key of a road direction's strip.</summary>
-    public static string RoadKey(RoadDirection direction) =>
+    /// <summary>The largest height difference either way the set draws a road strip for.</summary>
+    const int RoadRange = 4;
+
+    /// <summary>The manifest key of a road direction's strip for a height difference from -4 to 4.</summary>
+    public static string RoadKey(RoadDirection direction, int difference) =>
         direction switch
         {
-            RoadDirection.East => "road/east",
-            RoadDirection.SouthEast => "road/south-east",
-            _ => "road/south",
+            RoadDirection.East => $"road/east/{difference}",
+            RoadDirection.SouthEast => $"road/south-east/{difference}",
+            _ => $"road/south/{difference}",
         };
 
     /// <summary>
@@ -331,10 +335,15 @@ public sealed class OpenSettlersSource : IGraphicsSource
             terrain[code * 2 + 1] = Image(TerrainKey(code, upper: false));
         }
 
-        var roads = new ObjectImage[3];
-        for (var direction = 0; direction < roads.Length; direction++)
+        var roads = new ObjectImage[3 * (2 * RoadRange + 1)];
+        for (var direction = 0; direction < 3; direction++)
         {
-            roads[direction] = Image(RoadKey((RoadDirection)direction));
+            for (var difference = -RoadRange; difference <= RoadRange; difference++)
+            {
+                roads[direction * (2 * RoadRange + 1) + difference + RoadRange] = Image(
+                    RoadKey((RoadDirection)direction, difference)
+                );
+            }
         }
 
         var flag = new ObjectDrawing { Image = Image(FlagKey), Shadow = null };
@@ -621,7 +630,10 @@ public sealed class OpenSettlersSource : IGraphicsSource
             : null;
 
     /// <inheritdoc />
-    public ObjectImage? Draw(RoadStrip strip) => _roads[(int)strip.Direction];
+    public ObjectImage? Draw(RoadStrip strip) =>
+        Math.Abs(strip.Difference) <= RoadRange
+            ? _roads[(int)strip.Direction * (2 * RoadRange + 1) + strip.Difference + RoadRange]
+            : null;
 
     /// <inheritdoc />
     public ObjectImage? Draw(BorderPost post) => post.Ground.IsWater ? _waterPost : _pole;

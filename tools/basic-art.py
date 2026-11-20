@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes the art of the basic content set: content/basic/manifest.json and its PNGs.
 
-The art is the project's own: a flat color per terrain code, a plain strip per road direction, and crude shapes for the
+The art is the project's own: a flat color per terrain code, a plain strip per road direction and height difference, and crude shapes for the
 flag, the map objects, the castle, the huts of the woodcutter, the stonecutter, and the forester, the sawmill, the six food
 buildings (fisher, farm, baker, mill, pig farm, butcher), the building sites that have not started with the scaffolds they grow, the goods, the border posts
 (a pole on land and a post in water), one pose per job and kind of activity for the
@@ -26,6 +26,7 @@ its color below it, which the rows painted after it cover. The skirt is as deep 
 """
 
 import json
+import math
 import os
 import struct
 import sys
@@ -46,7 +47,10 @@ TERRAIN_COLORS = [
     (235, 240, 245),
 ]
 ROAD_COLOR = (150, 110, 60)
+# The thickness of a road strip across its line, and the largest height difference either way that has a strip (the
+# original holds strip masks for 4 either way and draws no strip beyond that).
 STRIP = 5
+ROAD_RANGE = 4
 
 
 def png(path, width, height, rows):
@@ -81,21 +85,36 @@ def triangle(color, upper):
     return rows
 
 
-def strip(direction):
-    """A road strip: level, or leaning down to the east side (south-east) or the west side (south) by one row spacing."""
-    width = WIDTH if direction == "east" else WIDTH // 2
-    height = STRIP if direction == "east" else HEIGHT + STRIP
-    rows = [bytearray(width * 4) for _ in range(height)]
+def strip(direction, difference):
+    """A road strip from its start node to its end node, whose height is the start node's less difference.
+
+    The map view hangs the strip from 2 pixels above a line: for east, the line of the higher node; for south-east and
+    south, the start node's. A height unit is 4 pixels. The strip runs straight from node to node, STRIP pixels thick
+    across its line, so each column holds STRIP rows times the length of the line per column. It returns the width, the
+    height, the rows, and the anchor: the offset of the image's top from the term's position.
+    """
+    if direction == "east":
+        width = WIDTH
+        start, end = (0, 2 + max(0, -difference) * 4), (width, 2 + max(0, difference) * 4)
+    elif direction == "south-east":
+        width = WIDTH // 2
+        start, end = (0, 2), (width, 2 + HEIGHT + difference * 4)
+    else:
+        width = WIDTH // 2
+        start, end = (width, 2), (0, 2 + HEIGHT + difference * 4)
+    lean = (end[1] - start[1]) / (end[0] - start[0])
+    rows_per_column = round(STRIP * (1 + lean * lean) ** 0.5)
+    tops = []
     for x in range(width):
-        if direction == "east":
-            top = 0
-        elif direction == "south-east":
-            top = x * HEIGHT // (WIDTH // 2)
-        else:
-            top = (width - 1 - x) * HEIGHT // (WIDTH // 2)
-        for y in range(top, top + STRIP):
+        middle = start[1] + lean * (x + 0.5 - start[0])
+        tops.append(math.floor(middle - (rows_per_column - 1) / 2 + 0.5))
+    first = min(tops)
+    height = max(tops) + rows_per_column - first
+    rows = [bytearray(width * 4) for _ in range(height)]
+    for x, top in enumerate(tops):
+        for y in range(top - first, top - first + rows_per_column):
             rows[y][x * 4 : x * 4 + 4] = bytes((*ROAD_COLOR, 255))
-    return width, height, [bytes(r) for r in rows]
+    return width, height, [bytes(r) for r in rows], first
 
 
 class Canvas:
@@ -674,12 +693,11 @@ def main():
                 "anchor": [-(WIDTH // 2 + BLEED), 0 if upper else -HEIGHT],
             }
     for direction in ("east", "south-east", "south"):
-        file = f"road/{direction}.png"
-        width, height, rows = strip(direction)
-        png(os.path.join(OUT, file), width, height, rows)
-        # The term's position is the strip's top left corner: the map view puts it 2 pixels above the line, which the
-        # strip's 5 rows center on.
-        manifest[f"road/{direction}"] = {"image": file, "anchor": [0, 0]}
+        for difference in range(-ROAD_RANGE, ROAD_RANGE + 1):
+            file = f"road/{direction}-{difference}.png"
+            width, height, rows, top = strip(direction, difference)
+            png(os.path.join(OUT, file), width, height, rows)
+            manifest[f"road/{direction}/{difference}"] = {"image": file, "anchor": [0, top]}
 
     def add(key, file, art):
         canvas, anchor = art

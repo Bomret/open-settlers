@@ -1,0 +1,22 @@
+# The road strips of the basic content set in all six directions: a loop from the castle's flag round the node 17,7. It needs no
+# install and no SIEDLER_DIR. Run it with the seed and size of basic-production.play:
+#   sh tools/play-run.sh basic-roads --game-view --content-set basic --seed 4455544685788642 --size 1 --fps 10
+# On that map the castle stands at 15,5, its flag at 16,6. The loop goes east, south-east, south, west, north-west, and north
+# (17,6 18,7 18,8 17,8 16,7) back to 16,6.
+expect seed = 4455544685788642
+expect size = 1
+wait 0.3
+click-tile 15 5
+wait 0.3
+button Road
+click-tile 16 6
+click-tile 17 6
+click-tile 18 7
+click-tile 18 8
+click-tile 17 8
+click-tile 16 7
+click-tile 16 6
+button Road
+wait 0.3
+expect-count road = 6
+shot loop 15 4 5 5
