@@ -53,8 +53,8 @@ worktree and add a stand-in `git` that runs the host's git. It reports inconclus
 runs report inconclusive on Windows. The worktree cases also report inconclusive without git. `EmulatorBoundTests` runs
 `tools/GhidraDump/emulate.py` against stand-in `analyzeHeadless` scripts that hang, each case under a wait of its own, so a
 bound that regressed fails the case instead of blocking the run. Its shell stand-ins report inconclusive on Windows, its
-`analyzeHeadless.cmd` case reports inconclusive on every other host, and its SIGINT case reports inconclusive where the
-test host started with SIGINT ignored. `PlayRunWrapperTests` reports its wrapper signal cases for a signal inconclusive
+`analyzeHeadless.cmd` case reports inconclusive on every other host, and its SIGINT and SIGHUP cases report inconclusive where
+the test host started with that signal ignored. `PlayRunWrapperTests` reports its wrapper signal cases for a signal inconclusive
 when the test host started with that signal ignored, such as under `nohup`, because a non-interactive shell cannot trap
 a signal that was ignored on entry.
 

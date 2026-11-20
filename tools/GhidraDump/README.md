@@ -147,14 +147,15 @@ Ghidra stops before it, where the import fails, or where Ghidra exits non-zero. 
 and exits non-zero. It writes the first command that did not end to stderr, with its number and its text. It also
 writes the tail of Ghidra's output there.
 
-Each command runs under a bound: `--timeout <seconds>`, 600 by default, a finite number above 0, before or after
+Each command runs under a bound: `--timeout <seconds>`, 600 by default, above 0 and at most Python's `threading.TIMEOUT_MAX`, before or after
 `--game` and `--project`. The clock covers one step at a time and restarts at each: Ghidra's start and the import, up
 to Ghidra's line `INFO  SCRIPT: `, then each command, up to its end line. A step past the bound fails the call, whether
 or not Ghidra prints meanwhile: `emulate.py` ends every process of the launch (on macOS and Linux the process group
 of `analyzeHeadless`, `launch.sh`, and java; on Windows the process tree of `analyzeHeadless.bat`), prints nothing on
 stdout, and exits non-zero. stderr names the import, or the first command that did not end with its number and its
-text, then the bound and the tail of Ghidra's output. Ctrl-C and SIGTERM while Ghidra runs end the launch the same way,
-and the temporary project folder goes in every case. The slowest command of the `Ghidra`-category tests and the checked-in
+text, then the bound and the tail of Ghidra's output. Ctrl-C, SIGTERM, and SIGHUP while Ghidra runs end the launch the same
+way, and the temporary project folder goes in every case. A call started with SIGHUP ignored, as under `nohup`, keeps
+ignoring it. The slowest command of the `Ghidra`-category tests and the checked-in
 recordings is the `draw:37-40,236-239,...` command of the `goods` scenario in
 `src/Import.HistoryEdition.Tests/settler-draws.txt`: a call of its own took 377 s on an Apple M1, its command step about
 370 s of that. The default stays above it.

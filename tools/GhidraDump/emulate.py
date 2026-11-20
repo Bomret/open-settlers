@@ -13,9 +13,9 @@ script finds EmulateMapStart.java and EmulateDraw.java beside itself, from any f
 or SIEDLER_DIR, as for the game itself. The script imports Siedler1.exe into a project in a temporary folder, without
 analysis, and removes the project afterwards: it keeps no program bytes.
 
-Each command runs under a bound, --timeout seconds, 600 by default: a finite number above 0, in any order among the other
-flags. The clock covers one step at a time and restarts at each: Ghidra's start and the import, up to Ghidra's line
-"INFO  SCRIPT: ", then each command, up to its end line. A step that runs past the bound, whether or not Ghidra prints
+Each command runs under a bound, --timeout seconds, 600 by default: a number above 0 and at most Python's
+threading.TIMEOUT_MAX, in any order among the other flags. The clock covers one step at a time and restarts at each:
+Ghidra's start and the import, up to Ghidra's line "INFO  SCRIPT: ", then each command, up to its end line. A step that runs past the bound, whether or not Ghidra prints
 meanwhile, fails the call: the script ends every process of the launch, prints nothing on stdout, exits non-zero, and
 writes to stderr the import or the first command that did not end, with its number and its text, the bound, and the tail
 of Ghidra's output. A draw batch is the exception on stdout, as below. A call that Ctrl-C, SIGTERM, or SIGHUP stops
@@ -271,8 +271,12 @@ def main(argv):
                 bound = float(argv[1])
             except (IndexError, ValueError):
                 bound = math.nan
-            if not (math.isfinite(bound) and bound > 0):
-                fail(f"--timeout needs a number of seconds above 0. {__doc__.strip().splitlines()[2]}")
+            # The waits on Ghidra take no timeout above threading.TIMEOUT_MAX. NaN fails both comparisons.
+            if not 0 < bound <= threading.TIMEOUT_MAX:
+                fail(
+                    f"--timeout needs a number of seconds above 0 and at most {threading.TIMEOUT_MAX:g}. "
+                    f"{__doc__.strip().splitlines()[2]}"
+                )
         elif len(argv) < 2 or not argv[1]:
             fail(f"{argv[0]} needs a folder. {__doc__.strip().splitlines()[2]}")
         elif argv[0] == "--game":

@@ -185,6 +185,7 @@ public sealed class ToolArgumentTests
     [DataRow("-1")]
     [DataRow("nan")]
     [DataRow("inf")]
+    [DataRow("1e10")]
     public void ATimeoutThatIsNoPositiveNumberOfSecondsIsRefusedBeforeGhidraStarts(params string[] value)
     {
         var bin = RecordingHeadless("exit 0");
