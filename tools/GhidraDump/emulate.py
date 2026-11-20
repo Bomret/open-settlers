@@ -20,7 +20,8 @@ runs past the bound, whether or not Ghidra prints meanwhile, fails the call: the
 launch, prints nothing on stdout, exits non-zero, and writes to stderr the import or the first command that did not end,
 with its number and its text, the bound, and the tail of Ghidra's output. A draw batch is the exception on stdout, as
 below. A call that Ctrl-C, SIGTERM, or SIGHUP stops while Ghidra runs ends the launch the same way; a call started with
-SIGHUP ignored, as under nohup, keeps ignoring it. The temporary project folder goes in every case.
+SIGHUP ignored, as under nohup, keeps ignoring it. The temporary project folder goes in every case: once the call cleans
+up, it ignores all three signals.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
@@ -130,6 +131,13 @@ def script_text(line, marker):
     return line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
 
 
+def shield():
+    """Ignores Ctrl-C, SIGTERM, and SIGHUP from here on, so a signal that repeats cannot cut the cleanup short."""
+    for name in ("SIGINT", "SIGTERM", "SIGHUP"):
+        if hasattr(signal, name):
+            signal.signal(getattr(signal, name), signal.SIG_IGN)
+
+
 def end(process):
     """Ends the process tree of the launch and returns once it is gone: on macOS and Linux the process group the launch
     runs in (the mise shim, analyzeHeadless, launch.sh, and java), on Windows the tree under analyzeHeadless.bat."""
@@ -212,6 +220,7 @@ def run(headless, project, mode, script, argv, environment, bound):
     finally:
         # Ctrl-C, SIGTERM, SIGHUP, or an exception while Ghidra runs.
         if not finished:
+            shield()
             end(process)
     return subprocess.CompletedProcess(command, process.returncode, "".join(stdout), "".join(stderr)), expired
 
@@ -313,19 +322,20 @@ def main(argv):
     if shared is None:
         project = tempfile.mkdtemp(prefix="emulate")
         try:
-            result, expired = run(
-                headless, project, ["-import", program, "-noanalysis", "-deleteProject"], script, argv, environment, bound
-            )
+            mode = ["-import", program, "-noanalysis", "-deleteProject"]
+            result, expired = run(headless, project, mode, script, argv, environment, bound)
         finally:
+            # Ghidra has ended, so from here on the call ignores the signals that would stop it, and the folder goes.
+            shield()
             remove(project)
     else:
         if imported(shared, digest):
-            result, expired = run(
-                headless, shared, ["-process", os.path.basename(program), "-noanalysis"], script, argv, environment, bound
-            )
+            mode = ["-process", os.path.basename(program), "-noanalysis"]
+            result, expired = run(headless, shared, mode, script, argv, environment, bound)
         else:
             clear(shared)
-            result, expired = run(headless, shared, ["-import", program, "-noanalysis"], script, argv, environment, bound)
+            mode = ["-import", program, "-noanalysis"]
+            result, expired = run(headless, shared, mode, script, argv, environment, bound)
             # The import precedes the script, so a run whose script fails still leaves the program imported.
             if "REPORT: Import succeeded" in result.stdout:
                 with open(os.path.join(shared, DIGEST_FILE), "w") as file:
@@ -360,9 +370,9 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    # SIGTERM and SIGHUP unwind the call as Ctrl-C does, so the launch ends and the temporary project folder goes. Ghidra
-    # runs in a session of its own, so a closed terminal hangs up only this process. SIGHUP exists only on POSIX, and a
-    # call started with it ignored, as under nohup, keeps ignoring it.
+    # SIGTERM and SIGHUP unwind the call as Ctrl-C does, so the launch ends and the temporary project folder goes.
+    # Ghidra runs in a session of its own, so a closed terminal hangs up only this process. SIGHUP exists only on POSIX,
+    # and a call started with it ignored, as under nohup, keeps ignoring it. The cleanup ignores all three (shield).
     signal.signal(signal.SIGTERM, lambda number, frame: sys.exit("emulate.py: terminated"))
     if hasattr(signal, "SIGHUP") and signal.getsignal(signal.SIGHUP) != signal.SIG_IGN:
         signal.signal(signal.SIGHUP, lambda number, frame: sys.exit("emulate.py: hung up"))

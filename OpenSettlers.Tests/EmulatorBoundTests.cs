@@ -204,8 +204,30 @@ public sealed class EmulatorBoundTests
             InconclusiveUnlessHeeded(signal);
         }
 
-        var bin = StandIn($"{ScriptOpens}\n{Hang()}");
-        var call = PythonTool.StartOnPath(_folder, Arguments(["--timeout", "60"], ["rng:0,0,0"]), [bin], null);
+        var call = StartHung($"{ScriptOpens}\n{Hang()}");
+
+        using (var kill = Process.Start("sh", ["-c", "kill -s \"$1\" \"$2\"", "sh", signal, call.Id.ToString()])!)
+        {
+            kill.WaitForExit();
+            Assert.AreEqual(0, kill.ExitCode, $"kill -s {signal} failed");
+        }
+
+        var run = PythonTool.Finish(call, Limit);
+
+        Assert.AreNotEqual(0, run.Exit, run.Stderr);
+        Assert.AreEqual("", run.Stdout);
+        AssertLaunchGone();
+    }
+
+    // Starts a call whose stand-in runs the body, and returns once the stand-in reached its hang.
+    Process StartHung(string body)
+    {
+        var call = PythonTool.StartOnPath(
+            _folder,
+            Arguments(["--timeout", "60"], ["rng:0,0,0"]),
+            [StandIn(body)],
+            null
+        );
         var watch = Stopwatch.StartNew();
         while (!File.Exists(Grandchild) || File.ReadAllText(Grandchild).Trim() == "")
         {
@@ -218,16 +240,41 @@ public sealed class EmulatorBoundTests
             Thread.Sleep(50);
         }
 
-        using (var kill = Process.Start("sh", ["-c", "kill -s \"$1\" \"$2\"", "sh", signal, call.Id.ToString()])!)
+        return call;
+    }
+
+    // A signal that repeats while the call cleans up does not cut the cleanup short. The stand-in fills the project
+    // folder with files before it hangs, so removing the folder takes long enough for a burst of SIGTERM to land in it.
+    [TestMethod]
+    public void SignalsThatRepeatDuringTheCleanupLeaveNoProjectFolder()
+    {
+        if (OperatingSystem.IsWindows())
         {
-            kill.WaitForExit();
-            Assert.AreEqual(0, kill.ExitCode, $"kill -s {signal} failed");
+            Assert.Inconclusive("the case sends a POSIX signal");
+        }
+
+        var call = StartHung(
+            $"{ScriptOpens}\n/bin/mkdir \"$1/rep\" && cd \"$1/rep\" && /usr/bin/seq 1 4000 | /usr/bin/xargs /usr/bin/touch && {Hang()}"
+        );
+
+        using (
+            var burst = Process.Start(
+                "sh",
+                [
+                    "-c",
+                    "i=0; while [ $i -lt 400 ] && kill -s TERM \"$1\" 2>/dev/null; do i=$((i+1)); /bin/sleep 0.005; done",
+                    "sh",
+                    call.Id.ToString(),
+                ]
+            )!
+        )
+        {
+            burst.WaitForExit();
         }
 
         var run = PythonTool.Finish(call, Limit);
 
         Assert.AreNotEqual(0, run.Exit, run.Stderr);
-        Assert.AreEqual("", run.Stdout);
         AssertLaunchGone();
     }
 
