@@ -18,8 +18,9 @@ flags. The clock covers one step at a time and restarts at each: Ghidra's start 
 "INFO  SCRIPT: ", then each command, up to its end line. A step that runs past the bound, whether or not Ghidra prints
 meanwhile, fails the call: the script ends every process of the launch, prints nothing on stdout, exits non-zero, and
 writes to stderr the import or the first command that did not end, with its number and its text, the bound, and the tail
-of Ghidra's output. A draw batch is the exception on stdout, as below. A call that Ctrl-C or SIGTERM stops while Ghidra runs ends the launch the same way. The temporary
-project folder goes in every case.
+of Ghidra's output. A draw batch is the exception on stdout, as below. A call that Ctrl-C, SIGTERM, or SIGHUP stops
+while Ghidra runs ends the launch the same way; a call started with SIGHUP ignored, as under nohup, keeps ignoring it.
+The temporary project folder goes in every case.
 
 With --project <dir> the project lives in that folder and stays: the first call imports Siedler1.exe into it, and later
 calls run the script against the imported program instead of importing again. The folder records the SHA-256 of the
@@ -202,7 +203,7 @@ def run(headless, project, mode, script, argv, environment, bound):
             reader.join(10)
         finished = True
     finally:
-        # Ctrl-C, SIGTERM, or an exception while Ghidra runs.
+        # Ctrl-C, SIGTERM, SIGHUP, or an exception while Ghidra runs.
         if not finished:
             end(process)
     return subprocess.CompletedProcess(command, process.returncode, "".join(stdout), "".join(stderr)), expired
@@ -349,8 +350,12 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    # SIGTERM unwinds the call as Ctrl-C does, so the launch ends and the temporary project folder goes.
+    # SIGTERM and SIGHUP unwind the call as Ctrl-C does, so the launch ends and the temporary project folder goes. Ghidra
+    # runs in a session of its own, so a closed terminal hangs up only this process. SIGHUP exists only on POSIX, and a
+    # call started with it ignored, as under nohup, keeps ignoring it.
     signal.signal(signal.SIGTERM, lambda number, frame: sys.exit("emulate.py: terminated"))
+    if hasattr(signal, "SIGHUP") and signal.getsignal(signal.SIGHUP) != signal.SIG_IGN:
+        signal.signal(signal.SIGHUP, lambda number, frame: sys.exit("emulate.py: hung up"))
     try:
         main(sys.argv[1:])
     except KeyboardInterrupt:

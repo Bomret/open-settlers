@@ -173,25 +173,25 @@ public sealed class EmulatorBoundTests
         Assert.AreEqual("EMU rng out=1\n", run.Stdout.Replace("\r", ""));
     }
 
-    // Python takes SIGINT as KeyboardInterrupt only where the signal was not ignored when it started: a test host
-    // under nohup, or a background job of a shell without job control, passes that ignore on.
-    static void InconclusiveUnlessInterruptible()
+    // Python takes SIGINT as KeyboardInterrupt, and emulate.py takes SIGHUP, only where the signal was not ignored
+    // when it started: a test host under nohup, or a background job of a shell without job control, passes that
+    // ignore on.
+    static void InconclusiveUnlessHeeded(string signal)
     {
         var probe = PythonTool.Run(
             Path.GetTempPath(),
-            ["-c", "import signal; print(signal.getsignal(signal.SIGINT) == signal.SIG_IGN)"]
+            ["-c", $"import signal; print(signal.getsignal(signal.SIG{signal}) == signal.SIG_IGN)"]
         );
         if (probe.Stdout.Trim() == "True")
         {
-            Assert.Inconclusive(
-                "SIGINT was ignored when the test host started, so python3 never raises KeyboardInterrupt"
-            );
+            Assert.Inconclusive($"SIG{signal} was ignored when the test host started, so emulate.py keeps ignoring it");
         }
     }
 
     [TestMethod]
     [DataRow("INT")]
     [DataRow("TERM")]
+    [DataRow("HUP")]
     public void ASignalToTheCallWhileGhidraRunsEndsTheLaunch(string signal)
     {
         if (OperatingSystem.IsWindows())
@@ -199,9 +199,9 @@ public sealed class EmulatorBoundTests
             Assert.Inconclusive("the case sends a POSIX signal");
         }
 
-        if (signal == "INT")
+        if (signal != "TERM")
         {
-            InconclusiveUnlessInterruptible();
+            InconclusiveUnlessHeeded(signal);
         }
 
         var bin = StandIn($"{ScriptOpens}\n{Hang()}");
