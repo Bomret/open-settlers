@@ -103,7 +103,7 @@ def strip(direction, difference):
         width = WIDTH // 2
         start, end = (width, 2), (0, 2 + HEIGHT + difference * 4)
     lean = (end[1] - start[1]) / (end[0] - start[0])
-    rows_per_column = round(STRIP * (1 + lean * lean) ** 0.5)
+    rows_per_column = round(STRIP * math.sqrt(1 + lean * lean))
     tops = []
     for x in range(width):
         middle = start[1] + lean * (x + 0.5 - start[0])
@@ -694,7 +694,7 @@ def main():
             }
     for direction in ("east", "south-east", "south"):
         for difference in range(-ROAD_RANGE, ROAD_RANGE + 1):
-            file = f"road/{direction}-{difference}.png"
+            file = f"road/{direction}/{difference}.png"
             width, height, rows, top = strip(direction, difference)
             png(os.path.join(OUT, file), width, height, rows)
             manifest[f"road/{direction}/{difference}"] = {"image": file, "anchor": [0, top]}

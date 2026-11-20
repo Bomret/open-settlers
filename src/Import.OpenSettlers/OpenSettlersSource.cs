@@ -43,7 +43,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
     public const int LastObjectCode = 127;
 
     readonly ObjectImage[] _terrain;
-    readonly ObjectImage[] _roads;
+    readonly ObjectImage[,] _roads;
     readonly ObjectDrawing _flag;
     readonly ObjectDrawing[] _objects;
     readonly IReadOnlyDictionary<string, ObjectDrawing> _buildings;
@@ -66,7 +66,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     OpenSettlersSource(
         ObjectImage[] terrain,
-        ObjectImage[] roads,
+        ObjectImage[,] roads,
         ObjectDrawing flag,
         ObjectDrawing[] objects,
         IReadOnlyDictionary<string, ObjectDrawing> buildings,
@@ -335,14 +335,12 @@ public sealed class OpenSettlersSource : IGraphicsSource
             terrain[code * 2 + 1] = Image(TerrainKey(code, upper: false));
         }
 
-        var roads = new ObjectImage[3 * (2 * RoadRange + 1)];
+        var roads = new ObjectImage[3, 2 * RoadRange + 1];
         for (var direction = 0; direction < 3; direction++)
         {
             for (var difference = -RoadRange; difference <= RoadRange; difference++)
             {
-                roads[direction * (2 * RoadRange + 1) + difference + RoadRange] = Image(
-                    RoadKey((RoadDirection)direction, difference)
-                );
+                roads[direction, difference + RoadRange] = Image(RoadKey((RoadDirection)direction, difference));
             }
         }
 
@@ -631,9 +629,7 @@ public sealed class OpenSettlersSource : IGraphicsSource
 
     /// <inheritdoc />
     public ObjectImage? Draw(RoadStrip strip) =>
-        Math.Abs(strip.Difference) <= RoadRange
-            ? _roads[(int)strip.Direction * (2 * RoadRange + 1) + strip.Difference + RoadRange]
-            : null;
+        Math.Abs(strip.Difference) <= RoadRange ? _roads[(int)strip.Direction, strip.Difference + RoadRange] : null;
 
     /// <inheritdoc />
     public ObjectImage? Draw(BorderPost post) => post.Ground.IsWater ? _waterPost : _pole;

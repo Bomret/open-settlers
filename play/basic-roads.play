@@ -2,7 +2,10 @@
 # install and no SIEDLER_DIR. Run it with the seed and size of basic-production.play:
 #   sh tools/play-run.sh basic-roads --game-view --content-set basic --seed 4455544685788642 --size 1 --fps 10
 # On that map the castle stands at 15,5, its flag at 16,6. The loop goes east, south-east, south, west, north-west, and north
-# (17,6 18,7 18,8 17,8 16,7) back to 16,6.
+# (17,6 18,7 18,8 17,8 16,7) back to 16,6. The generated map gives those nodes the heights 15 (16,6), 13, 10, 11, 13, and 15 (16,7),
+# so the strips, each drawn from the node it leaves east, south-east, or south, have the height differences 2 (16,6 east),
+# 3 (17,6 south-east), -1 (18,7 south), 2 (17,8 east), 2 (16,7 south-east), and 0 (16,6 south): a gap at a node shows a strip
+# that misses its end node.
 expect seed = 4455544685788642
 expect size = 1
 wait 0.3
