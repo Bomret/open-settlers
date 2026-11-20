@@ -119,10 +119,15 @@ def pump(stream, lines, events):
     """Reads a pipe of Ghidra to its end, so a full pipe never stalls Ghidra, and hands each line to the events."""
     for line in stream:
         lines.append(line)
-        if events is not None:
-            events.put(line)
-    if events is not None:
-        events.put(None)
+        events.put(line)
+    events.put(None)
+
+
+def script_text(line, marker):
+    """The text a script printed on a line of Ghidra's log, or None where the line is not the script's."""
+    if marker not in line:
+        return None
+    return line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
 
 
 def end(process):
@@ -173,7 +178,9 @@ def run(headless, project, mode, script, argv, environment, bound):
         stdout, stderr, events = [], [], queue.Queue()
         readers = [
             threading.Thread(target=pump, args=(process.stdout, stdout, events), daemon=True),
-            threading.Thread(target=pump, args=(process.stderr, stderr, None), daemon=True),
+            # simplicity: no one reads stderr's queue, so it holds a second copy of Ghidra's stderr, a few lines, until
+            # the call ends. Where Ghidra's stderr grows large, a reader that takes no queue is the upgrade.
+            threading.Thread(target=pump, args=(process.stderr, stderr, queue.Queue()), daemon=True),
         ]
         for reader in readers:
             reader.start()
@@ -187,7 +194,7 @@ def run(headless, project, mode, script, argv, environment, bound):
                 break
             if line is None:
                 break
-            text = line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() if marker in line else None
+            text = script_text(line, marker)
             if line.startswith(SCRIPT_OPENS) or (
                 text is not None and (text in ends or text.startswith("EMU draw end"))
             ):
@@ -216,7 +223,7 @@ def script_runs(stdout, marker):
         if line.startswith(SCRIPT_OPENS):
             runs.append([])
         elif marker in line and runs:
-            runs[-1].append(line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip())
+            runs[-1].append(script_text(line, marker))
     return runs
 
 
@@ -224,7 +231,7 @@ def overrun(argv, result, marker, bound, drawing):
     """The stderr line that names the step that ran past the bound: the import where no script run opened, otherwise the
     first command that did not end. A draw command ends at its "EMU draw end" line, in the script run of its own."""
     lines = result.stdout.splitlines()
-    texts = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip() for line in lines if marker in line]
+    texts = [script_text(line, marker) for line in lines if marker in line]
     if drawing:
         runs = script_runs(result.stdout, marker)
         ended = [index < len(runs) and any(line.startswith("EMU draw end") for line in runs[index])
@@ -331,8 +338,7 @@ def main(argv):
     if drawing and len(argv) > 1:
         batch(argv, result, marker, install, bounded)
         return
-    lines = [line.split(marker, 1)[1].strip().removesuffix("(GhidraScript)").strip()
-             for line in result.stdout.splitlines() if marker in line]
+    lines = [script_text(line, marker) for line in result.stdout.splitlines() if marker in line]
     if drawing:
         # A run counts only if it ends: a failed pass stops the script before its last line.
         if result.returncode != 0 or not any(line.startswith("EMU draw end") for line in lines):
