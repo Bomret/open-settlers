@@ -157,9 +157,10 @@ stdout, and exits non-zero. stderr names the import, or the first command that d
 text, then the bound and the tail of Ghidra's output. Ctrl-C, SIGTERM, and SIGHUP while Ghidra runs end the launch
 the same way, and the temporary project folder goes in every case: once the call cleans up, it ignores all three
 signals. A call started with SIGHUP ignored, as under `nohup`, keeps ignoring it. The slowest command of the
-`Ghidra`-category tests and the checked-in recordings is the `draw:37-40,236-239,...` command of the `goods` scenario in
-`src/Import.HistoryEdition.Tests/settler-draws.txt`: a call of its own took 377 s on an Apple M1, its command step about
-370 s of that. The default stays above it. A host much slower than the M1 that records the slowest commands again
+`Ghidra`-category tests and the checked-in recordings is the `draw:37-40,236-239,...` command of the scenario named
+`goods`, the `# goods draw:...` line of `src/Import.HistoryEdition.Tests/settler-draws.txt`. One measurement, taken on
+2026-11-20 with a call of its own for that command on an Apple M1, gave 377 s, about 370 s of it the command step. The
+default stays above it. A host much slower than the M1 that records the slowest commands again
 passes `--timeout` with a larger bound.
 
 A kept project folder (`--project`) works after a bound. Ghidra prints `REPORT: Import succeeded` only after the
