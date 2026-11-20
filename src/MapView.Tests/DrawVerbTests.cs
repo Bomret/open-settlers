@@ -17,6 +17,9 @@ public sealed class DrawVerbTests
     // pass 100, the first pass the view finds a settler in; no settler is out before pass 30.
     const string Game = "goods:1:1234,5678,9ABC:0:18,20:16,20:19,21,343:16,20,2:102:0::-1:5,0,7";
 
+    // The wait of a run that may hang: a bound that regressed fails the case instead of blocking the test run.
+    static readonly TimeSpan Limit = TimeSpan.FromSeconds(30);
+
     static string _project = "";
 
     string _folder = "";
@@ -77,7 +80,8 @@ public sealed class DrawVerbTests
         string[] commands,
         string? project = null,
         string? path = null,
-        bool realHeadless = false
+        bool realHeadless = false,
+        TimeSpan? limit = null
     )
     {
         string[] projectArguments = project is null ? [] : ["--project", project];
@@ -86,7 +90,8 @@ public sealed class DrawVerbTests
             Path.GetTempPath(),
             [PythonTool.InRepo("tools", "GhidraDump", "emulate.py"), "--game", game, .. projectArguments, .. commands],
             path,
-            realHeadless: realHeadless
+            realHeadless: realHeadless,
+            limit: limit
         );
     }
 
@@ -332,9 +337,13 @@ public sealed class DrawVerbTests
 
     // A stand-in for analyzeHeadless in a draw batch: it logs its arguments and, for each -postScript, prints the line Ghidra
     // opens a script run with, then a recording that ends, or, for a command holding "fail", a partial one that does not.
+    // For a command holding "hang", it prints a partial recording and a line of Ghidra's log, then hangs in a foreground
+    // grandchild that writes its pid to grandchild.pid, as launch.sh runs java. For a command holding "slow", it takes 2 s
+    // before the recording that ends and 2 s after it, as a long draw command followed by a slow script teardown.
     // With crashes, it exits 1 after the first script run, as a Ghidra that dies part-way.
     string FakeDrawHeadless(bool importFails = false, bool crashes = false)
     {
+        var hang = $"/bin/sh -c 'echo $$ > \"{Path.Combine(_folder, "grandchild.pid")}\"; exec /bin/sleep 60'";
         var bin = FakeHeadless();
         var log = Path.Combine(_folder, "calls.log");
         var run = importFails
@@ -345,6 +354,8 @@ public sealed class DrawVerbTests
                 + "    echo \"INFO  SCRIPT: /scripts/$2 (HeadlessAnalyzer)  \"\n"
                 + "    case \"$3\" in\n"
                 + "      *fail*) echo \"INFO  $2> EMU draw pass=1 partial (GhidraScript)\" ;;\n"
+                + $"      *hang*) echo \"INFO  $2> EMU draw pass=1 partial (GhidraScript)\"; echo STANDIN-LOG; {hang} ;;\n"
+                + "      *slow*) /bin/sleep 2; echo \"INFO  $2> EMU draw pass=1 $3 (GhidraScript)\"; echo \"INFO  $2> EMU draw end passes=1 (GhidraScript)\"; /bin/sleep 2 ;;\n"
                 + "      *) echo \"INFO  $2> EMU draw pass=1 $3 (GhidraScript)\"; echo \"INFO  $2> EMU draw end passes=1 (GhidraScript)\" ;;\n"
                 + "    esac\n"
                 + (crashes ? "    exit 1\n" : "")
@@ -471,6 +482,101 @@ public sealed class DrawVerbTests
         StringAssert.Contains(calls[0], "-import");
         StringAssert.Contains(calls[1], "-process Siedler1.exe");
         Assert.IsTrue(calls.All(call => call.Split("-postScript").Length == 3));
+    }
+
+    // A draw command past the bound: the call ends shortly after it, names the command and the bound on stderr, and leaves
+    // no process of the launch running.
+    void AssertBound(ToolRun run, int command, string text)
+    {
+        Assert.AreNotEqual(0, run.Exit, run.Stderr);
+        StringAssert.Contains(run.Stderr, $"emulate.py: command {command} ({text}) ran past the bound of 1 s");
+        StringAssert.Contains(run.Stderr, "STANDIN-LOG");
+        Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
+        var pid = int.Parse(File.ReadAllText(Path.Combine(_folder, "grandchild.pid")).Trim());
+        Assert.IsTrue(PythonTool.Gone(pid), $"the grandchild {pid} of the launch still runs");
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    [DataRow(1)]
+    [DataRow(2)]
+    [DataRow(3)]
+    public void ABatchWhoseCommandRunsPastTheBoundPrintsEarlierResultsAndFailsTheRest(int hung)
+    {
+        var bin = FakeDrawHeadless();
+        var commands = new[] { "draw:1-1:0,0:a", "draw:2-2:0,0:b", "draw:3-3:0,0:c" };
+        commands[hung - 1] = $"draw:{hung}-{hung}:0,0:hang";
+
+        var run = EmulateRun(TestProgram.InstallRoot(), ["--timeout", "1", .. commands], path: bin, limit: Limit);
+
+        AssertBound(run, hung, commands[hung - 1]);
+        var lines = Lines(run.Stdout);
+        StringAssert.StartsWith(lines[0], "EMU draw install=History Edition ");
+        var expected = Enumerable
+            .Range(1, 3)
+            .SelectMany(command =>
+                command < hung
+                    ? new[]
+                    {
+                        $"EMU draw command={command} ended",
+                        $"EMU draw pass=1 {commands[command - 1]}",
+                        "EMU draw end passes=1",
+                    }
+                    : [$"EMU draw command={command} failed"]
+            )
+            .ToArray();
+        CollectionAssert.AreEqual(expected, lines[1..]);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void ASingleDrawCommandThatRunsPastTheBoundPrintsNothing()
+    {
+        var bin = FakeDrawHeadless();
+
+        var run = EmulateRun(
+            TestProgram.InstallRoot(),
+            ["--timeout", "1", "draw:1-1:0,0:hang"],
+            path: bin,
+            limit: Limit
+        );
+
+        AssertBound(run, 1, "draw:1-1:0,0:hang");
+        Assert.AreEqual("", run.Stdout);
+    }
+
+    // A draw command ends at its "EMU draw end" line: what Ghidra does after it runs under a bound of its own, so a last
+    // command that ends late in its bound leaves Ghidra the whole bound to exit.
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    public void GhidraAfterTheLastDrawCommandRunsUnderABoundOfItsOwn()
+    {
+        var bin = FakeDrawHeadless();
+
+        var run = EmulateRun(
+            TestProgram.InstallRoot(),
+            ["--timeout", "3", "draw:1-1:0,0:slow"],
+            path: bin,
+            limit: Limit
+        );
+
+        Assert.AreEqual(0, run.Exit, run.Stderr);
+    }
+
+    [TestMethod]
+    [TestCategory(Needs.Install)]
+    [DataRow("draw:1-1:0,0:a", "draw:2-2:0,0:fail", "draw:1-1:0,0:a")]
+    [DataRow("draw:1-1:0,0:a")]
+    [DataRow("draw:1-1:0,0:fail")]
+    public void ADrawCallThatEndsWithinAShortBoundPrintsWhatItPrintsWithoutOne(params string[] commands)
+    {
+        var bin = FakeDrawHeadless();
+
+        var bounded = EmulateRun(TestProgram.InstallRoot(), ["--timeout", "5", .. commands], path: bin, limit: Limit);
+        var unbounded = EmulateRun(TestProgram.InstallRoot(), commands, path: bin, limit: Limit);
+
+        Assert.AreEqual(unbounded.Exit, bounded.Exit);
+        Assert.AreEqual(unbounded.Stdout, bounded.Stdout);
     }
 
     [TestMethod]

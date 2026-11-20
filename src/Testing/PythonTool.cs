@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace OpenSettlers.Testing;
@@ -173,19 +174,23 @@ public static class PythonTool
     }
 
     static bool HoldsHeadless(string dir) =>
-        File.Exists(Path.Combine(dir, "analyzeHeadless")) || File.Exists(Path.Combine(dir, "analyzeHeadless.bat"));
+        File.Exists(Path.Combine(dir, "analyzeHeadless"))
+        || File.Exists(Path.Combine(dir, "analyzeHeadless.bat"))
+        || File.Exists(Path.Combine(dir, "analyzeHeadless.cmd"));
 
     /// <summary>
     /// Runs <c>python3 -I -B</c> with the arguments in <paramref name="workingDirectory"/>. The child's path is
     /// <paramref name="prependPath"/> before the host's path without the folders that hold <c>analyzeHeadless</c>, unless
-    /// <paramref name="realHeadless"/> keeps them.
+    /// <paramref name="realHeadless"/> keeps them. With a <paramref name="limit"/>, a tool still running after it is killed
+    /// with its process tree and the test fails.
     /// </summary>
     public static ToolRun Run(
         string workingDirectory,
         string[] arguments,
         string? prependPath = null,
         string? siedlerDir = null,
-        bool realHeadless = false
+        bool realHeadless = false,
+        TimeSpan? limit = null
     )
     {
         var info = new ProcessStartInfo(Resolve())
@@ -210,15 +215,56 @@ public static class PythonTool
         );
         info.Environment["PATH"] = string.Join(Path.PathSeparator, path);
 
-        return Wait(info, siedlerDir);
+        return Finish(Begin(info, siedlerDir), limit);
+    }
+
+    /// <summary>
+    /// Whether the process <paramref name="pid"/> has ended, waiting up to 10 s for the system to reap it: a process tree
+    /// that was just killed can take a moment to go.
+    /// </summary>
+    public static bool Gone(int pid)
+    {
+        var watch = Stopwatch.StartNew();
+        while (watch.Elapsed < TimeSpan.FromSeconds(10))
+        {
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                if (process.HasExited)
+                {
+                    return true;
+                }
+            }
+            catch (ArgumentException)
+            {
+                return true;
+            }
+
+            Thread.Sleep(100);
+        }
+
+        return false;
     }
 
     /// <summary>
     /// Runs <c>python3 -I -B</c> with the arguments in <paramref name="workingDirectory"/>, the child's path replaced by
     /// <paramref name="path"/> alone, so no tool of the host's path reaches the child. python3 runs by its absolute path.
-    /// Reports inconclusive where the host has no python3.
+    /// Reports inconclusive where the host has no python3. With a <paramref name="limit"/>, a tool still running after it
+    /// is killed with its process tree and the test fails.
     /// </summary>
-    public static ToolRun RunOnPath(string workingDirectory, string[] arguments, string[] path, string? siedlerDir)
+    public static ToolRun RunOnPath(
+        string workingDirectory,
+        string[] arguments,
+        string[] path,
+        string? siedlerDir,
+        TimeSpan? limit = null
+    ) => Finish(StartOnPath(workingDirectory, arguments, path, siedlerDir), limit);
+
+    /// <summary>
+    /// Starts <c>python3 -I -B</c> as <see cref="RunOnPath"/> runs it and returns the running process, its output
+    /// redirected. <see cref="Finish"/> waits for it.
+    /// </summary>
+    public static Process StartOnPath(string workingDirectory, string[] arguments, string[] path, string? siedlerDir)
     {
         var python = Locate(null);
         if (python is null)
@@ -234,10 +280,10 @@ public static class PythonTool
 
         info.Environment["PATH"] = string.Join(Path.PathSeparator, path);
 
-        return Wait(info, siedlerDir);
+        return Begin(info, siedlerDir);
     }
 
-    static ToolRun Wait(ProcessStartInfo info, string? siedlerDir)
+    static Process Begin(ProcessStartInfo info, string? siedlerDir)
     {
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
@@ -248,17 +294,35 @@ public static class PythonTool
             info.Environment["SIEDLER_DIR"] = siedlerDir;
         }
 
-        using var process = Start(info);
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
+        return Start(info);
+    }
 
-        return new ToolRun
+    /// <summary>
+    /// Waits for a process that <see cref="StartOnPath"/> started and returns its exit status and output. With a
+    /// <paramref name="limit"/>, a process still running after it is killed with its process tree and the test fails.
+    /// </summary>
+    public static ToolRun Finish(Process process, TimeSpan? limit)
+    {
+        using (process)
         {
-            Exit = process.ExitCode,
-            Stdout = stdout.Result,
-            Stderr = stderr.Result,
-        };
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stderr = process.StandardError.ReadToEndAsync();
+            if (limit is { } bound && !process.WaitForExit(bound))
+            {
+                process.Kill(true);
+                process.WaitForExit();
+                Assert.Fail($"the tool did not end within {bound.TotalSeconds} s");
+            }
+
+            process.WaitForExit();
+
+            return new ToolRun
+            {
+                Exit = process.ExitCode,
+                Stdout = stdout.Result,
+                Stderr = stderr.Result,
+            };
+        }
     }
 
     /// <summary>

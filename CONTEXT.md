@@ -274,6 +274,12 @@ A player's action that the simulation takes at a given tick, such as placing a f
 The same seed and the same commands at the same ticks give the same game (INV-0002).
 _Avoid_: input, event, order
 
+**Emulator command**
+One argument of a call of the emulator harness (`tools/GhidraDump/emulate.py`), such as `rng:0000,0000,0000`: a verb and its
+values, run in the original's code under Ghidra's emulator. One call runs its emulator commands in one Ghidra launch
+(INV-0018). It is not a **Command** of the simulation.
+_Avoid_: command (alone, where a Command of the simulation could be meant)
+
 **Flag**
 A point on the map where roads meet and where goods wait to be carried on. A building stands at a flag.
 _Avoid_: node, waypoint
