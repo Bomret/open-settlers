@@ -62,13 +62,31 @@ public sealed class CiRulesetTests
     }
 
     // GitHub keeps one running and one pending run per concurrency group and cancels the pending one when another
-    // queues, whatever cancel-in-progress says. A group that keys a push to main on its commit holds that push alone.
+    // queues, whatever cancel-in-progress says. A pull request groups by its ref and cancels its earlier run; a push to
+    // main groups by its commit, so it holds that push alone, and is never cancelled.
     [TestMethod]
-    public void EachPushToMainRunsInAConcurrencyGroupOfItsOwn()
+    public void APullRequestCancelsItsEarlierRunAndEachPushToMainRunsAlone()
     {
-        var group = Workflow.Split('\n').Single(l => l.TrimStart().StartsWith("group:", StringComparison.Ordinal));
+        Assert.IsNull(ConcurrencyDrift(Workflow));
+    }
 
-        StringAssert.Contains(group, "github.sha");
+    [TestMethod]
+    public void AGroupKeyedOnTheCommitAloneDrifts()
+    {
+        var bySha = Workflow.Replace("github.event_name == 'pull_request' && github.ref || github.sha", "github.sha");
+
+        StringAssert.Contains(ConcurrencyDrift(bySha), "group");
+    }
+
+    [TestMethod]
+    public void CancellingEveryRunInProgressDrifts()
+    {
+        var always = Workflow.Replace(
+            "cancel-in-progress: ${{ github.event_name == 'pull_request' }}",
+            "cancel-in-progress: true"
+        );
+
+        StringAssert.Contains(ConcurrencyDrift(always), "cancel-in-progress");
     }
 
     // A message naming the difference, or null where the ruleset names exactly the contexts of the workflow's job.
@@ -106,6 +124,24 @@ public sealed class CiRulesetTests
         return posted.SequenceEqual(required)
             ? null
             : $"ci.yml posts [{string.Join(", ", posted)}], main.json requires [{string.Join(", ", required)}]";
+    }
+
+    // A message naming the concurrency key that keys or cancels otherwise than ci.yml's comment states, or null.
+    static string? ConcurrencyDrift(string workflow)
+    {
+        var lines = workflow.Split('\n').Select(l => l.Trim()).ToArray();
+        if (
+            !lines.Contains(
+                "group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}"
+            )
+        )
+        {
+            return "the concurrency group keys a pull request otherwise than on its ref, or a push otherwise than on its commit";
+        }
+
+        return lines.Contains("cancel-in-progress: ${{ github.event_name == 'pull_request' }}")
+            ? null
+            : "cancel-in-progress cancels otherwise than only a pull request's earlier run";
     }
 
     // The value of the workflow job's timeout-minutes: key, or null where the job carries none.
