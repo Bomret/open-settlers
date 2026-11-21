@@ -8,9 +8,10 @@ on:
 permissions:
   contents: read
 
-# A new commit on a pull request cancels the run of its earlier commit. Runs for pushes to main all finish.
+# A new commit on a pull request cancels the run of its earlier commit. Runs for pushes to main all finish: each push
+# has a group of its own, keyed on its commit, because GitHub cancels a group's pending run when another queues.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

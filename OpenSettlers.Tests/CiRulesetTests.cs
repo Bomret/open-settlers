@@ -47,6 +47,16 @@ public sealed class CiRulesetTests
         StringAssert.Contains(Drift(named, Ruleset), "name:");
     }
 
+    // GitHub keeps one running and one pending run per concurrency group and cancels the pending one when another
+    // queues, whatever cancel-in-progress says. A group that keys a push to main on its commit holds that push alone.
+    [TestMethod]
+    public void EachPushToMainRunsInAConcurrencyGroupOfItsOwn()
+    {
+        var group = Workflow.Split('\n').Single(l => l.TrimStart().StartsWith("group:", StringComparison.Ordinal));
+
+        StringAssert.Contains(group, "github.sha");
+    }
+
     // A message naming the difference, or null where the ruleset names exactly the contexts of the workflow's job.
     static string? Drift(string workflow, string ruleset)
     {
