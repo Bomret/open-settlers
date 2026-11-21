@@ -75,11 +75,11 @@ public sealed class EmulatorBoundTests
         Assert.IsFalse(Directory.Exists(project), $"the temporary project folder {project} stays");
     }
 
-    static void AssertBound(ToolRun run, string what)
+    static void AssertBound(ToolRun run, string what, int seconds = 1)
     {
         Assert.AreNotEqual(0, run.Exit, run.Stderr);
         Assert.AreEqual("", run.Stdout);
-        StringAssert.Contains(run.Stderr, $"emulate.py: {what} ran past the bound of 1 s");
+        StringAssert.Contains(run.Stderr, $"emulate.py: {what} ran past the bound of {seconds} s");
         StringAssert.Contains(run.Stderr, Log);
         Assert.IsFalse(run.Stderr.Contains("Traceback"), run.Stderr);
     }
@@ -279,7 +279,8 @@ public sealed class EmulatorBoundTests
     }
 
     // The same check as the first case with an analyzeHeadless.cmd, on a Windows host only: a cmd stand-in runs
-    // powershell as its foreground child, as analyzeHeadless.bat runs launch.bat and java.
+    // powershell as its foreground child, as analyzeHeadless.bat runs launch.bat and java. The bound is 10 s, as
+    // powershell can take more than a second to start and write its pid on a CI runner.
     [TestMethod]
     public void OnWindowsAnEmulatorCommandThatNeverReturnsEndsTheWholeLaunch()
     {
@@ -305,13 +306,13 @@ public sealed class EmulatorBoundTests
 
         var run = PythonTool.RunOnPath(
             _folder,
-            Arguments(["--timeout", "1"], ["rng:0,0,0"]),
+            Arguments(["--timeout", "10"], ["rng:0,0,0"]),
             [bin, system, Path.Combine(system, "WindowsPowerShell", "v1.0")],
             null,
             Limit
         );
 
-        AssertBound(run, "command 1 (rng:0,0,0)");
+        AssertBound(run, "command 1 (rng:0,0,0)", 10);
         AssertLaunchGone();
     }
 }

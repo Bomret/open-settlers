@@ -770,7 +770,8 @@ def main():
             add(f"flame/{size}/{phase}", f"flame/{size}-{phase}.png", flame(size, phase))
     for name, flames in FLAMES.items():
         manifest[f"flames/{name}"] = {"flames": [{"size": size, "at": [x, y]} for size, x, y in flames]}
-    with open(os.path.join(OUT, "manifest.json"), "w") as f:
+    # The manifest has LF line ends on every platform, as the checked-in copy has.
+    with open(os.path.join(OUT, "manifest.json"), "w", encoding="utf-8", newline="\n") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")
 

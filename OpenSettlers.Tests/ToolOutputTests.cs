@@ -21,7 +21,7 @@ public sealed partial class ToolOutputTests
     }
 
     [TestCleanup]
-    public void Cleanup() => Directory.Delete(_folder, true);
+    public void Cleanup() => PythonTool.DeleteFolder(_folder);
 
     static string Section(string text, string name)
     {

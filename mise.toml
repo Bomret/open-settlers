@@ -54,7 +54,7 @@ run = "dotnet build OpenSettlers.csproj"
 description = "Run the unit tests that need neither the install nor Ghidra"
 # Every test project of OpenSettlers.slnx runs. The category names are the constants of src/Testing/Needs.cs. A filter
 # that selects no test of a project makes its test host exit 8, which --ignore-exit-code 8 accepts.
-run = "dotnet test --solution OpenSettlers.slnx --filter 'TestCategory!=Install&TestCategory!=Ghidra' --ignore-exit-code 8"
+run = 'dotnet test --solution OpenSettlers.slnx --filter "TestCategory!=Install&TestCategory!=Ghidra" --ignore-exit-code 8'
 
 [tasks."test:focused"]
 description = "Run the unit-test classes the changed paths can affect: -- <path>..."
@@ -63,14 +63,14 @@ run = "python -I tools/focused-tests.py"
 [tasks."test:integration"]
 description = "Run the integration tests, which need the install (SIEDLER_DIR) and Ghidra"
 # A project with no Install or Ghidra test selects nothing and exits 8, which --ignore-exit-code 8 accepts.
-run = "dotnet test --solution OpenSettlers.slnx --filter 'TestCategory=Install|TestCategory=Ghidra' --ignore-exit-code 8"
+run = 'dotnet test --solution OpenSettlers.slnx --filter "TestCategory=Install|TestCategory=Ghidra" --ignore-exit-code 8'
 
 [tasks.check]
 description = "Full verification: format check, the unit tests that need neither the install nor Ghidra, build"
 depends = ["restore"]
 run = [
   "dotnet csharpier check .",
-  "dotnet test --solution OpenSettlers.slnx --filter 'TestCategory!=Install&TestCategory!=Ghidra' --ignore-exit-code 8",
+  'dotnet test --solution OpenSettlers.slnx --filter "TestCategory!=Install&TestCategory!=Ghidra" --ignore-exit-code 8',
   "dotnet build OpenSettlers.csproj",
 ]
 

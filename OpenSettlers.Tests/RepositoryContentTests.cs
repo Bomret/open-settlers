@@ -95,7 +95,7 @@ public sealed class RepositoryContentTests
         }
         finally
         {
-            Directory.Delete(folder, true);
+            PythonTool.DeleteFolder(folder);
         }
     }
 
@@ -114,7 +114,7 @@ public sealed class RepositoryContentTests
         }
         finally
         {
-            Directory.Delete(folder, true);
+            PythonTool.DeleteFolder(folder);
         }
     }
 
