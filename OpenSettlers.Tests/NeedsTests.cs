@@ -31,14 +31,15 @@ public sealed class NeedsTests
             .Select(f => $"TestCategory!={f.GetRawConstantValue()}")
             .Order()
             .ToArray();
-        var filter = Regex.Match(MiseToml(), @"\[tasks\.test\][^\[]*?--filter '([^']*)'").Groups[1].Value;
+        var filter = Regex.Match(MiseToml(), @"\[tasks\.test\][^\[]*?--filter ""([^""]*)""").Groups[1].Value;
 
         CollectionAssert.AreEqual(expected, filter.Split('&').Order().ToArray());
     }
 
-    // The --filter of the task's section, which ends at the next line that opens a section.
+    // The --filter of the task's section, which ends at the next line that opens a section. The filter stands in double
+    // quotes: cmd.exe, which runs the tasks on Windows, splits a command at an & outside double quotes.
     static string Filter(string task) =>
-        Regex.Match(MiseToml().Split($"[tasks.{task}]")[1].Split("\n[")[0], "--filter '([^']*)'").Groups[1].Value;
+        Regex.Match(MiseToml().Split($"[tasks.{task}]")[1].Split("\n[")[0], "--filter \"([^\"]*)\"").Groups[1].Value;
 
     static string[] Categories(string prefix) =>
         [.. typeof(Needs).GetFields().Select(f => $"{prefix}{f.GetRawConstantValue()}").Order()];
