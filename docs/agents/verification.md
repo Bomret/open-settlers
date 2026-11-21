@@ -130,10 +130,10 @@ The integration command and play runs stay local, because they need the install,
 machine as `## Integration command` and `## Map view Definition-of-Done lines` describe.
 
 On Windows, a test reports inconclusive where it runs a shell-script stand-in, sends a POSIX signal, checks a Unix file
-or folder mode, or needs a case-sensitive folder. A test of the first three kinds checks `OperatingSystem.IsWindows()`
-before its `Assert.Inconclusive`. A test that needs a case-sensitive folder takes it from `CaseSensitiveVolume`, which
-reports the test inconclusive where the temp folder is not case-sensitive. An inconclusive test does not fail the
-result.
+or folder mode, or needs a case-sensitive folder. A test of the first three kinds checks the platform through
+`OperatingSystem` before its `Assert.Inconclusive`. A test that needs a case-sensitive folder takes it from
+`CaseSensitiveVolume`, which reports the test inconclusive where the temp folder is not case-sensitive. An inconclusive
+test does not fail the result.
 
 `.github/rulesets/main.json` requires the three results (`docs/agents/code-management.md`, "Merge gate"), and
 `CiRulesetTests` fails where the job no longer posts them.
