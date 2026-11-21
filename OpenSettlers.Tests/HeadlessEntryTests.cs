@@ -45,7 +45,7 @@ public sealed class HeadlessEntryTests
     }
 
     [TestCleanup]
-    public void Cleanup() => Directory.Delete(_folder, true);
+    public void Cleanup() => PythonTool.DeleteFolder(_folder);
 
     static string Entry() => PythonTool.InRepo("tools", "GhidraDump", "headless.py");
 

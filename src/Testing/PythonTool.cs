@@ -104,6 +104,20 @@ public static class PythonTool
         return (git, main, worktree);
     }
 
+    /// <summary>
+    /// Deletes <paramref name="folder"/> with everything in it, a repository of <see cref="Worktree"/> included. git writes
+    /// its object files read-only, and Windows refuses to delete a read-only file, so each file is made writable first.
+    /// </summary>
+    public static void DeleteFolder(string folder)
+    {
+        foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
+        Directory.Delete(folder, true);
+    }
+
     static void RunGit(string git, string workingDirectory, params string[] arguments)
     {
         var run = Git(git, workingDirectory, arguments);
@@ -298,7 +312,8 @@ public static class PythonTool
     }
 
     /// <summary>
-    /// Waits for a process that <see cref="StartOnPath"/> started and returns its exit status and output. With a
+    /// Waits for a process that <see cref="StartOnPath"/> started and returns its exit status and output, each CRLF line
+    /// end read as LF. With a
     /// <paramref name="limit"/>, a process still running after it is killed with its process tree and the test fails.
     /// </summary>
     public static ToolRun Finish(Process process, TimeSpan? limit)
@@ -316,11 +331,12 @@ public static class PythonTool
 
             process.WaitForExit();
 
+            // Python writes CRLF line ends to a pipe on Windows; the tests read LF on every platform.
             return new ToolRun
             {
                 Exit = process.ExitCode,
-                Stdout = stdout.Result,
-                Stderr = stderr.Result,
+                Stdout = stdout.Result.Replace("\r\n", "\n"),
+                Stderr = stderr.Result.Replace("\r\n", "\n"),
             };
         }
     }

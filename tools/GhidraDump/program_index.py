@@ -71,7 +71,7 @@ def coverage(rows, dump):
     counts = collections.Counter(r[1] for r in band.values())
     total = ""
     if dump:
-        with open(os.path.join(dump, "functions.tsv")) as f:
+        with open(os.path.join(dump, "functions.tsv"), encoding="utf-8") as f:
             functions = sum(1 for line in f.readlines()[1:] if in_band(int(line.split("\t")[0], 16)))
         total = f" of the {functions} functions in the dump's game code band"
     return (
@@ -99,15 +99,16 @@ def main_checkout():
 
 def main(path, dump=None):
     if dump:
-        dump = os.path.join(main_checkout(), dump)
+        dump = os.path.normpath(os.path.join(main_checkout(), dump))
         if not os.path.isfile(os.path.join(dump, "functions.tsv")):
             sys.exit(f"program_index.py: no functions.tsv in {dump}; run mise run ghidra:dump")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         text = f.read()
     rows = topic_rows(text)
     text = replace(text, "by-address", by_address(rows))
     text = replace(text, "coverage", coverage(rows, dump))
-    with open(path, "w") as f:
+    # The index is UTF-8 with LF line ends on every platform.
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
 
 
