@@ -54,6 +54,28 @@ The merge call below degrades the same way: print the exact `gh pr merge`/REST c
   `/superdev:ship` reads the pull request's own `head.sha` only to decide whether to push and to refuse
   when it still differs from that tip after pushing, never as the merge's own pin.
 
+## Merge gate
+
+`.github/rulesets/main.json` is the ruleset of `main`. It requires the results `check (ubuntu-latest)`,
+`check (macos-latest)`, and `check (windows-latest)`, each as posted by GitHub Actions (`integration_id` 15368). It does
+not require a branch to be up to date with `main`. Repository admins can bypass it only through a pull request.
+`CiRulesetTests` fails where the CI job no longer posts the results the ruleset requires.
+
+The file takes effect only when it is applied. Apply it once, after all three results are green on `main`:
+
+```sh
+gh api -X POST repos/Bomret/open-settlers/rulesets --input .github/rulesets/main.json
+```
+
+After a change to the file, update the applied ruleset by its id:
+
+```sh
+gh api -X PUT repos/Bomret/open-settlers/rulesets/<id> --input .github/rulesets/main.json
+```
+
+`gh api repos/Bomret/open-settlers/rulesets` lists the applied rulesets with their ids. Once the ruleset is applied, a
+red or pending result refuses the merge of a non-admin, and the merge call answers with the host's message.
+
 ## Edit the pull request body
 
 A run that resolves a deferred finding after `/superdev:submit-pr` opened the pull request rebuilds that

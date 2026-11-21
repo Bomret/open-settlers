@@ -51,5 +51,8 @@ Run every command through its mise task from the repository root. `mise tasks` l
   `<type>(<scope>): <summary>`, for example `fix(assets): find install files case-insensitively`.
 - Report bugs and propose changes as issues on GitHub (`Bomret/open-settlers`).
 - Open a pull request into `main` on GitHub. Keep one change per pull request.
+- CI runs `mise run check` on Linux, macOS, and Windows for every pull request. A pull request must pass all three
+  results, `check (ubuntu-latest)`, `check (macos-latest)`, and `check (windows-latest)`, before it is merged.
+- A first-time contributor's pull request from a fork runs CI only after a maintainer approves the run.
 - Pull requests are merged by squash. The pull request title becomes the commit message, so it follows
   Conventional Commits too.

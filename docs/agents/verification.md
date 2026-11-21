@@ -113,6 +113,30 @@ mise exec -- dotnet test --project src/MapView.Tests --filter 'ClassName=OpenSet
 The test host (MSTest on Microsoft.Testing.Platform) has no `--filter-class`: it exits 5 and lists the test project under
 `Handshake failures:`. A filter that matches no test exits 8.
 
+## Continuous integration
+
+GitHub Actions runs the full command on every pull request into `main` and on every push to `main`
+(`.github/workflows/ci.yml`). Its job `check` runs on `ubuntu-latest`, `macos-latest`, and `windows-latest`. Each
+platform posts one result: `check (ubuntu-latest)`, `check (macos-latest)`, and `check (windows-latest)`. A failure on
+one platform does not stop the others. A new commit on a pull request cancels the run of its earlier commit, and every
+run for a push to `main` finishes.
+
+The job runs `mise run check` unchanged, with no filter of its own. It installs only the .NET SDKs and the Python that
+`mise.toml` pins: `MISE_DISABLE_TOOLS` leaves out Java, Gradle, Godot, and Ghidra. It sets no `SIEDLER_DIR` and uses no
+secret, so the categories `Install` and `Ghidra` stay filtered out. A step before the full command prints the path and
+version of the Python that the tests reach.
+
+The integration command and play runs stay local, because they need the install, Ghidra, or Godot. Run them on your
+machine as `## Integration command` and `## Map view Definition-of-Done lines` describe.
+
+On Windows, a test reports inconclusive where it runs a shell-script stand-in, sends a POSIX signal, or checks a Unix
+file mode. Each such test checks `OperatingSystem.IsWindows()` before its `Assert.Inconclusive`. An inconclusive test
+does not fail the result.
+
+`.github/rulesets/main.json` requires the three results (`docs/agents/code-management.md`, "Merge gate").
+`CiRulesetTests` fails where the job id or the `os` matrix gives other names than the ruleset requires, and where the
+job carries a `name:` key, which renames its results.
+
 ## Integration command
 
 `mise run test:integration` runs only the tests of the categories `Install` and `Ghidra`. It needs the reference
