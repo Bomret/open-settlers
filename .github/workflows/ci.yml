@@ -8,24 +8,39 @@ on:
 permissions:
   contents: read
 
+# A new commit on a pull request cancels the run of its earlier commit. Runs for pushes to main all finish: each push
+# has a group of its own, keyed on its commit, because GitHub cancels a group's pending run when another queues.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  # Only .NET and Python install: no Java, Gradle, Godot, or Ghidra, and no SIEDLER_DIR, so the Install and Ghidra
+  # test categories stay filtered out.
   MISE_DISABLE_TOOLS: java,gradle,github:godotengine/godot-builds,github:NationalSecurityAgency/ghidra
+  # One install at a time: both .NET SDKs extract into one dotnet folder, and on Windows a parallel second extract
+  # fails on the dotnet.exe the first holds open.
+  MISE_JOBS: "1"
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 
 jobs:
+  # .github/rulesets/main.json requires the contexts this job id and matrix give, and CiRulesetTests compares them.
+  # A name: key on the job would rename them.
   check:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
+        with:
+          version: 2026.11.10
+      - name: Python the tests reach
+        run: mise exec -- python3 -c "import sys; print(sys.executable, sys.version)"
       - run: mise run check
