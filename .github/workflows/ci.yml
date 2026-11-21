@@ -17,6 +17,9 @@ env:
   # Only .NET and Python install: no Java, Gradle, Godot, or Ghidra, and no SIEDLER_DIR, so the Install and Ghidra
   # test categories stay filtered out.
   MISE_DISABLE_TOOLS: java,gradle,github:godotengine/godot-builds,github:NationalSecurityAgency/ghidra
+  # One install at a time: both .NET SDKs extract into one dotnet folder, and on Windows a parallel second extract
+  # fails on the dotnet.exe the first holds open.
+  MISE_JOBS: "1"
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
 
