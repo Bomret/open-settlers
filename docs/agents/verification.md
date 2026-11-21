@@ -133,7 +133,8 @@ On Windows, a test reports inconclusive where it runs a shell-script stand-in, s
 or folder mode, or needs a case-sensitive folder. A test of the first three kinds checks the platform through
 `OperatingSystem` before its `Assert.Inconclusive`. A test that needs a case-sensitive folder takes it from
 `CaseSensitiveVolume`, which reports the test inconclusive where the temp folder is not case-sensitive. An inconclusive
-test does not fail the result.
+test does not fail the result. `PlayRunWrapperTests` does not run on Windows: its
+`[OSCondition(ConditionMode.Exclude, OperatingSystems.Windows)]` reports each of its tests skipped there.
 
 `.github/rulesets/main.json` requires the three results (`docs/agents/code-management.md`, "Merge gate"), and
 `CiRulesetTests` fails where the job no longer posts them.
