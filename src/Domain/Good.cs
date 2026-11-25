@@ -6,7 +6,7 @@ namespace OpenSettlers.Domain;
 /// <summary>
 /// A kind of good (<c>docs/rules/goods.md</c>): the entry of the <see cref="ContentCatalog"/> that its <see cref="Name"/> names (ADR 0020).
 /// The stable name is the good's whole identity: equality, hashing, and text go by it. The facts of a good are the entry's, read through
-/// <see cref="RuleTables"/>; the original's number of a good is an attribute of the entry that the source of the catalog sets and the
+/// <see cref="RuleTables"/>; the original's number of a good is an attribute of the entry that a source of the original's data sets and the
 /// exporters read, and whose presence the readout reads. No good is <see cref="None"/>, which has no name and is never an entry.
 /// </summary>
 public readonly record struct Good

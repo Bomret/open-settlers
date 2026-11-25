@@ -15,6 +15,6 @@ public sealed record JobEntry
     /// <summary>The evidence for the name where the name stands for a job of the original (INV-0006); null for an entry of a set's own.</summary>
     public string? NameEvidence { get; init; }
 
-    /// <summary>The number the original gives the job; null for an entry the original lacks. The source of the catalog sets it, the exporters read it, and the readout reads whether the entry has one.</summary>
+    /// <summary>The number the original gives the job; null for an entry the original lacks. A source of the original's data sets it, the exporters read it, and the readout reads whether the entry has one.</summary>
     public int? OriginalCode { get; init; }
 }

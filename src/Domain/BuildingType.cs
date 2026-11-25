@@ -5,8 +5,8 @@ namespace OpenSettlers.Domain;
 /// <summary>
 /// A kind of building (<c>docs/rules/build-sites.md</c>): the entry of the <see cref="ContentCatalog"/> that its <see cref="Name"/> names
 /// (ADR 0020). The stable name is the type's whole identity: equality, hashing, and text go by it. The facts of a type are the entry's,
-/// read through <see cref="RuleTables"/>; the original's number of a type is an attribute of the entry that the source of the catalog
-/// sets and the exporters read, and whose presence the readout reads. The type of a slot that holds no building is <see cref="None"/>, which has no name and is never an entry.
+/// read through <see cref="RuleTables"/>; the original's number of a type is an attribute of the entry that a source of the original's
+/// data sets and the exporters read, and whose presence the readout reads. The type of a slot that holds no building is <see cref="None"/>, which has no name and is never an entry.
 /// </summary>
 public readonly record struct BuildingType
 {
