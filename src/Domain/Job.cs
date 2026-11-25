@@ -9,7 +9,7 @@ namespace OpenSettlers.Domain;
 /// <see cref="Knight"/> holds one name for each level, and an <see cref="UnportedJob"/> holds any other number as a raw field.
 /// The generator writes <see cref="Name"/>, <see cref="NameEvidence"/>, <see cref="Named"/>, <see cref="Ported"/>, and <see cref="Of"/> from the
 /// job types, and refuses two jobs with one name. A caller names a job by its type (<c>new Woodcutter()</c>, <c>is Woodcutter</c>) or by its
-/// stable name through <see cref="Named"/>. No rule reads <see cref="OriginalCode"/>: the importer and the exporters do.
+/// stable name through <see cref="Named"/>. No rule reads <see cref="OriginalCode"/>: a source of the original's data and the exporters do.
 /// </summary>
 public abstract partial record Job
 {
@@ -27,7 +27,7 @@ public abstract partial record Job
 
     /// <summary>
     /// The types of the data records the job's rules and looks read from the rule tables (<see cref="RuleTables.Get{T}"/>), declared in
-    /// the job's own file. The importer refuses a program whose tables module for the job leaves one unread, so a job's data is
+    /// the job's own file. A source of the original's data refuses a program whose tables module for the job leaves one unread, so a job's data is
     /// never a silent default. Default: none.
     /// </summary>
     public virtual IReadOnlyList<System.Type> Data => [];

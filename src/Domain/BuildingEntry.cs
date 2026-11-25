@@ -17,12 +17,12 @@ public sealed record BuildingEntry
     /// <summary>The evidence for the name where the name stands for a type of the original (INV-0006); null for an entry of a set's own.</summary>
     public string? NameEvidence { get; init; }
 
-    /// <summary>The number the original gives the type; null for an entry the original lacks. The History Edition importer and the exporters read it, and the readout reads whether the entry has one.</summary>
+    /// <summary>The number the original gives the type; null for an entry the original lacks. A source of the original's data sets it, the exporters read it, and the readout reads whether the entry has one.</summary>
     public int? OriginalCode { get; init; }
 
     /// <summary>
     /// The rank that breaks a tie between two building types, the lower first: two commands of one tick that differ only in the type they
-    /// place come in its order. No other type of the catalog holds it. The History Edition importer gives a type its original code, the
+    /// place come in its order. No other type of the catalog holds it. A source of the original's data gives a type its original code, the
     /// order of the original; a set of its own states it in its data.
     /// </summary>
     public required int TieRank { get; init; }

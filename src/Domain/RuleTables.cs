@@ -6,13 +6,12 @@ using System.Linq;
 namespace OpenSettlers.Domain;
 
 /// <summary>
-/// The tables of the original's program data that the rules read, as typed values: the object classes, the start stock,
-/// the step times, and the others below. They come from the install's <c>Siedler1.exe</c> and are never restated in
-/// source (INV-0001): <c>ProgramTablesImporter</c> in the History Edition source builds them from the program's bytes, and a test
-/// builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
-/// <see cref="DoorSpeed(Building?)"/>, and the others). The raw tables the importer's tests check against the original, and the
-/// <see cref="Figures"/> the map view draws from, are read-only values: no member hands out the stored data for change, and the constructor
-/// copies the arrays it is given.
+/// The tables that the rules read, as typed values: the object classes, the start stock, the step times, and the others below.
+/// A content set's source builds them from the data of the set. No source code restates the original's values (INV-0001).
+/// A test builds its own tables from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
+/// <see cref="DoorSpeed(Building?)"/>, and the others). The raw tables and the <see cref="Figures"/> the map view draws from are
+/// read-only values: no member hands out the stored data for change, and the constructor copies the arrays it is given. The tests of a
+/// source of the original's data check the raw tables against the original.
 /// </summary>
 public sealed class RuleTables
 {
@@ -147,7 +146,7 @@ public sealed class RuleTables
 
     /// <summary>
     /// The data of type <typeparamref name="T"/> that the job <paramref name="job"/> owns: the figure adds of its handler, or the
-    /// request a site makes for it. The importer reads each from the job's tables module. Throws where the tables hold none: a job's
+    /// request a site makes for it. A source of the original's data reads each from the job's tables module. Throws where the tables hold none: a job's
     /// missing data is an error and no default.
     /// </summary>
     public T Get<T>(Job job)
@@ -200,13 +199,13 @@ public sealed class RuleTables
     /// <summary>Whether a lost good of this kind counts against the total of resource 1, as its entry states; false for no good, an error for a good the catalog lacks.</summary>
     public bool CountsAgainstResource1(Good good) => !good.IsNone && Catalog.Require(good).CountsAgainstResource1;
 
-    /// <summary>The number of carriers each length class of a road holds at most, as the importer read them.</summary>
+    /// <summary>The number of carriers each length class of a road holds at most, as the content set's source read them.</summary>
     public ImmutableArray<byte> RoadCapacities => _roadCapacities;
 
     /// <summary>The number of carriers a road of the length class <paramref name="lengthClass"/> holds at most.</summary>
     public byte RoadCapacity(int lengthClass) => _roadCapacities[lengthClass];
 
-    /// <summary>The rows of the free walk's direction choice as the importer read them.</summary>
+    /// <summary>The rows of the free walk's direction choice as the content set's source read them.</summary>
     public ImmutableArray<byte> WalkRows => _walkRows;
 
     /// <summary>
@@ -340,7 +339,7 @@ public sealed class RuleTables
         : late ? Catalog.Require(type).LateBlowStep
         : Catalog.Require(type).EarlyBlowStep;
 
-    /// <summary>The scan window table as the importer read it.</summary>
+    /// <summary>The scan window table as the content set's source read it.</summary>
     public ImmutableArray<ushort> ScanWindows => _scanWindows;
 
     /// <summary>
