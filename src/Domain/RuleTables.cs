@@ -7,9 +7,8 @@ namespace OpenSettlers.Domain;
 
 /// <summary>
 /// The tables of the original's program data that the rules read, as typed values: the object classes, the start stock,
-/// the step times, and the others below. They come from the install's <c>Siedler1.exe</c> and are never restated in
-/// source (INV-0001): <c>ProgramTablesImporter</c> in the History Edition source builds them from the program's bytes, and a test
-/// builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
+/// the step times, and the others below. A rule tables source of <c>OpenSettlers.Import</c> builds them from the data of a
+/// content set; the original's values are never restated in source (INV-0001), and a test builds its own from made-up values. The rules read the typed accessors (<see cref="ClassOf"/>, <see cref="StepTime"/>,
 /// <see cref="DoorSpeed(Building?)"/>, and the others). The raw tables the importer's tests check against the original, and the
 /// <see cref="Figures"/> the map view draws from, are read-only values: no member hands out the stored data for change, and the constructor
 /// copies the arrays it is given.

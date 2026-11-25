@@ -6,7 +6,7 @@ namespace OpenSettlers.Domain;
 /// <summary>
 /// A kind of good (<c>docs/rules/goods.md</c>): the entry of the <see cref="ContentCatalog"/> that its <see cref="Name"/> names (ADR 0020).
 /// The stable name is the good's whole identity: equality, hashing, and text go by it. The facts of a good are the entry's, read through
-/// <see cref="RuleTables"/>; the original's number of a good is an attribute of the entry that only the History Edition importer and the
+/// <see cref="RuleTables"/>; the original's number of a good is an attribute of the entry that the source of the catalog sets and the
 /// exporters read, and whose presence the readout reads. No good is <see cref="None"/>, which has no name and is never an entry.
 /// </summary>
 public readonly record struct Good
@@ -55,7 +55,7 @@ public readonly record struct Good
 
     /// <summary>
     /// The pig: the job of the type 0xe puts it (<c>0x433577</c>) and the job of the type 0xd takes it in (class 3 of the
-    /// request word at <c>0x42</c>, <c>0x43d249</c>); the History Edition draws it as a pig. **Inferred** name.
+    /// request word at <c>0x42</c>, <c>0x43d249</c>). **Inferred** name.
     /// </summary>
     public static Good Pig => new() { Name = "pig" };
 
