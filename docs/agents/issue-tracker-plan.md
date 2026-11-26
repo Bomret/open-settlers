@@ -83,12 +83,20 @@ slice-level and feature-level relations never collide on one issue.
   when `/superdev:plan` was seeded from an intent record, revising the line in place on an append seeded
   from another one (ADR 0200).
 
+## Absorbed records
+
+**Connect an absorbed record:** post a comment on the record through the store document's triage record
+**Comment on it** call, its text from a quoted heredoc (`<<'SUPERDEV_TEXT_EOF'`). The text names the scope
+anchor as `#<anchor>` and the feature label, and names no pull-request URL. No native link is written: the anchor's Absorbs line already
+creates a timeline cross-reference on the record.
+
 ## Assignee
 
-Operator configuration, not a slice field (`plan-contract.md` → *Assignee*; ADR 0010, ADR 0073). The
+Operator configuration, not a slice field (`assignee.md` → *Assignee*; ADR 0010, ADR 0073). The
 identifier is a GitHub **login**, read from `.superdev/info.json` under `issue-tracker.assignee`, and
-applied to the **epic and every slice** in the create call, never a follow-up pass. The failure shape below
-is the general *Assignee* recovery rule (`plan-contract.md`) made concrete for GitHub.
+applied to the **epic and every slice** in the create call. The claim `/superdev:implement` writes later is
+the one follow-up write (`assignee.md` → *Claim*). The failure shape below is the general *Assignee*
+recovery rule made concrete for GitHub.
 
 ```json
 {
@@ -98,8 +106,8 @@ is the general *Assignee* recovery rule (`plan-contract.md`) made concrete for G
 
 - GitHub's `assignees` is an **array**, so the single configured login is sent as a one-element
   `["<assignee>"]`. The singular `assignee` field is documented as **closing down** — don't use it.
-- **No file, no `issue-tracker` key, or no `assignee`** → resolve the token's own identity with
-  `GET /user` and use its `login`.
+- **No file, no `issue-tracker` key, or no `assignee`** → use the login `docs/agents/issue-tracker.md` →
+  *Claim* **Resolve the operator** returns.
 - **`"assignee": "none"`** → omit `assignees` entirely. No warning, no error.
 - **A token without push access silently drops the assignment** — and `labels` and `milestone` with it.
   The create **succeeds**, returns `201`, and the returned `assignees` is empty. Nothing is retried or
@@ -124,7 +132,7 @@ created, the controller rewrites each slice-id tag into `#<number>`, in the same
 dependency** above uses to write the native `blocked_by` links, each rewrite a body edit through **Edit an
 issue's body** — both need the same resolved identifiers and both wait on the same event; a `scope` tag is
 left as `scope`, and a `docs` tag as `docs`. That edit's producer is
-`node ${CLAUDE_PLUGIN_ROOT}/scripts/scope.js dod-tags --map-file <path>`, the map file holding one
+`node "${CLAUDE_PLUGIN_ROOT}/scripts/scope.js" dod-tags --map-file <path>`, the map file holding one
 `<id> #<number>` pair per slice (ADR 0209). A tag naming several slices becomes `#<number>, #<number>`,
 never bracketed. The controller types no store tag itself. `dod-tags` refuses, printing nothing, on any
 unjudged line whose tag `dod-line` cannot read or whose slice id the map lacks, so the gate stops the edit
@@ -138,17 +146,18 @@ ADR 0004).
 - **Create only new records; never edit, close, or delete a merged slice.** Append fires new
   `POST /repos/Bomret/open-settlers/issues` calls for the new slices alone. It never `PATCH`es or closes an
   issue a prior run already merged, and never rewrites its labels, sub-issue link, or `blocked_by`
-  dependency — except the anchor lines, which migrate to the new epic issue when append promotes a
-  single-slice feature (below) — a merged issue's `number` is a satisfied `depends-on` root for a newly
-  created one, nothing more.
+  dependency. The one link it adds is the former lone slice's parent link under a new epic (next rule). A
+  merged issue's `number` is a satisfied `depends-on` root for a newly created one.
 - **Create the epic first when none exists.** A feature whose lone issue carries the feature label with
   no sub-issue parent has no epic yet (the single-slice shape, `issue-tracker.md`'s `## Scope anchor`).
   Append creates the epic issue first — its body holding the lone slice's `acceptance` checklist as the
-  global DoD — then links every new slice as its sub-issue. The lone existing issue itself is never edited:
-  no epic body copies onto it, no sub-issue link is written for it, and it stays nobody's child. **The
-  `**Blocked by feature:**`, `**Deploy:**`, `**Repairs:**`, `**Absorbs:**`, and `**Intent:**` lines are the
-  exceptions:** each **migrates to the new epic issue's own body** and is removed from the lone issue —
-  the epic is the anchor now. Nothing else about the lone issue changes.
+  global DoD — then links every new slice as its sub-issue. It also links the former lone slice, open or
+  closed, under the new epic: `POST /repos/Bomret/open-settlers/issues/<epic-number>/sub_issues` with
+  `{ "sub_issue_id": <the lone slice's global id> }`, so the epic stays the feature's one root. That link is
+  best-effort like every sub-issue link: log a failure and carry on. The lone issue is never edited, with two
+  exceptions: its `**Blocked by feature:**`, `**Deploy:**`, `**Repairs:**`, `**Absorbs:**`, and
+  `**Intent:**` lines **migrate to the new epic's own body** and are removed from the lone issue, and it
+  gains the epic as its sub-issue parent, since the epic is the anchor now.
 - **Amend the epic's own body — the one sanctioned edit.** An edit of the epic's body through **Edit an
   issue's body**, the amended body as its result, folds the interview's new criteria into the epic's
   Definition of Done in place, and, the same call, deletes a resolved parked question's line from the
