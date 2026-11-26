@@ -178,6 +178,16 @@ packages itself.
 
 - `*.Tests/`
 
+## CI
+
+- `check (ubuntu-latest)`
+- `check (macos-latest)`
+- `check (windows-latest)`
+
+## Verify skill
+
+`.claude/skills/verify/SKILL.md`
+
 ## Map view Definition-of-Done lines
 
 Verify a Definition-of-Done line about what a player sees in the map view with a play run, and judge
