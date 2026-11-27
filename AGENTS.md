@@ -81,7 +81,7 @@ GitHub wiki of `Bomret/open-settlers`, staged locally and sent by `/superdev:pub
 C# style rules in `docs/agents/CODING.md`; the patterns this repo uses in `docs/agents/CODING_PATTERNS.md`.
 
 ### Toolchain
-.NET SDK 10 (net8.0), Godot 4.7.2 .NET, CSharpier 1.3.0, pinned in `mise.toml`. See `docs/agents/toolchain.md`.
+.NET SDK 10 (net8.0) and Godot 4.7.2 .NET, pinned in `mise.toml`; CSharpier 1.3.0, pinned in `dotnet-tools.json`. See `docs/agents/toolchain.md`.
 
 ### Verification
 Full: format check, unit tests, and build; focused: unit tests; map view behavior: a play run. CI runs the full command on Linux, macOS, and Windows. See `docs/agents/verification.md`.
